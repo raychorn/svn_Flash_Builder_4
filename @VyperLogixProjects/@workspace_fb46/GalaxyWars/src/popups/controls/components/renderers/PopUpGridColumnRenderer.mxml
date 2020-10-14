@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:GridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					xmlns:s="library://ns.adobe.com/flex/spark" 
+					xmlns:mx="library://ns.adobe.com/flex/mx" clipAndEnableScrolling="true">
+	<fx:Declarations>
+	</fx:Declarations>
+	<s:states>
+		<mx:State name="normal" />
+		<mx:State name="hovered"/>
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			override public function set data(value:Object):void {
+				if (value != null) {
+					super.data = value;
+					lbl.text = data[column.dataField]
+				}
+			}
+			
+			[Bindable] protected var __tooltip__:String = 'i';
+			protected function lbl_mouseOverHandler(event:MouseEvent):void {
+				toolTp.visible = true;
+				var isError:Boolean = false;
+				var func:Function = column.dataTipFunction;
+				if (func is Function) {
+					try {
+						this.__tooltip__ = func(data);
+					} catch (err:Error) {
+						isError = true;
+					}
+				} else {
+					isError = true;
+				}
+				if (isError) {
+					this.__tooltip__ = data[column.dataField];
+				}
+			}
+			
+			protected function group1_mouseOutHandler(event:MouseEvent):void {
+				toolTp.visible = false;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Group
+		width="100%" height="100%"
+		mouseOver="lbl_mouseOverHandler(event)" mouseOut="group1_mouseOutHandler(event)"
+		>
+		<s:Label id="lbl" verticalCenter="0" x="3" />
+	</s:Group>
+	
+	<s:PopUpAnchor
+		id="popUpAnc"
+		popUpPosition="center"
+		displayPopUp.hovered="true"
+		>
+		<mx:ToolTip
+			id="toolTp"
+			visible="false"
+			text="{this.__tooltip__}"
+			/>
+	</s:PopUpAnchor>
+	
+</s:GridItemRenderer>

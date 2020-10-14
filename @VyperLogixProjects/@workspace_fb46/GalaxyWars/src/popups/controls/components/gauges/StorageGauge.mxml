@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			[Bindable]
+			private var __value__:Number;
+			
+			[Bindable]
+			private var __color__:uint = 0x00FF00;
+			
+			[Bindable]
+			private var __maximum__:uint = 1;
+			
+			public function get maximum():uint {
+				return this.__maximum__;
+			}
+			
+			public function set maximum(maximum:uint):void {
+				if (this.__maximum__ != maximum) {
+					this.__maximum__ = maximum;
+				}
+			}
+			
+			public function get color():uint {
+				return this.__color__;
+			}
+			
+			public function set color(color:uint):void {
+				if (this.__color__ != color) {
+					this.__color__ = color;
+				}
+			}
+			
+			public function get value():Number {
+				return this.__value__;
+			}
+			
+			public function set value(value:Number):void {
+				if (this.__value__ != value) {
+					this.__value__ = value;
+					var gr:Graphics = this.graphics;
+					gr.clear();
+					var x:Number = (value/this.__maximum__)*this.width;
+					gr.beginFill(0xFFFFFF,1.0);
+					gr.drawRect(0,0,this.width,this.height);
+					gr.endFill();
+					gr.beginFill(this.__color__,1.0);
+					gr.drawRect(0,0,x,this.height);
+					gr.endFill();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+</s:VGroup>

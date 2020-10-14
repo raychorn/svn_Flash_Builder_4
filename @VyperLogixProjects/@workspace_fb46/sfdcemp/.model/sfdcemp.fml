@@ -1,0 +1,69 @@
+
+<model xmlns="http://ns.adobe.com/Fiber/1.0">
+  <annotation name="ActionScriptGeneration">
+    <item name="FullyQualifyReferences">true</item>
+  </annotation>
+  <service name="EmployeeService">
+    <annotation name="ActionScriptGeneration">
+      <item name="ServiceType">HTTPMultiService</item>
+      <item name="Package">services.employeeservice</item>
+    </annotation>
+    <annotation name="ServiceTypeGroup">
+      <item name="ServiceBackendType">HTTPService</item>
+    </annotation>
+    <annotation name="ServiceConfig">
+      <item name="DEFAULT_ENTITY_PACKAGE">valueObjects</item>
+      <item name="LINKED_FILE"></item>
+    </annotation>
+    <function name="Operation1" return-type="Employee[]">
+      <annotation name="analyze group">
+        <item name="analyzed">true</item>
+      </annotation>
+      <annotation name="ActionScriptGeneration">
+        <item name="SerializationFilter">com.adobe.serializers.xml.XMLSerializationFilter</item>
+        <item name="method">GET</item>
+        <item name="url">http://www.riagora.com/sfdc/employees.xml</item>
+      </annotation>
+      <annotation name="url group">
+        <item name="completeURL">http://www.riagora.com/sfdc/employees.xml</item>
+      </annotation>
+      <annotation name="ValidProperties">
+        <item name="propertySpecifier">id,firstName,lastName,title,city,managerId,department,officePhone,cellPhone,email,picture</item>
+      </annotation>
+      <annotation name="Properties">
+        <item name="xPath">/::employee</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+  </service>
+  <entity name="Employee">
+    <annotation name="EntityProperties">
+      <item name="EntityOriginalName">Employee</item>
+    </annotation>
+    <annotation name="service Group">
+      <item name="service">EmployeeService,EmployeeServiceDummy</item>
+    </annotation>
+    <annotation name="ServerProperties">
+      <item name="IncludeRemoteClass">nonempty</item>
+    </annotation>
+    <annotation name="Operation1">
+      <item name="propertySpecifier">id,firstName,lastName,title,city,managerId,department,officePhone,cellPhone,email,picture</item>
+    </annotation>
+    <annotation name="ActionScriptGeneration">
+      <item name="Package">valueObjects</item>
+    </annotation>
+    <property name="id" type="string" required="true"/>
+    <property name="firstName" type="string" required="true"/>
+    <property name="lastName" type="string" required="true"/>
+    <property name="title" type="string" required="true"/>
+    <property name="city" type="string" required="true"/>
+    <property name="managerId" type="string" required="true"/>
+    <property name="department" type="string" required="true"/>
+    <property name="officePhone" type="string" required="true"/>
+    <property name="cellPhone" type="string" required="true"/>
+    <property name="email" type="string" required="true"/>
+    <property name="picture" type="string" required="true"/>
+  </entity>
+</model>

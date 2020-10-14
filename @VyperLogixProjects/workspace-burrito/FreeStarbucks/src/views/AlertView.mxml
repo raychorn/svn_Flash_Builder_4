@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<controls:ErrorPanel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					 xmlns:s="library://ns.adobe.com/flex/spark" 
+					 xmlns:controls="controls.*" 
+					 width="100%" height="100%" 
+					 creationComplete="errorpanel1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			private var callback1:Function;
+			private var callback2:Function;
+			
+// **************************************************************
+//
+//			_this.navigator.pushView(AlertView,{
+//				title:'Question',
+//				info:'Do you want to exit the App ?',
+//				callback1:function():void{}
+//			});
+//
+// **************************************************************
+			
+			protected function errorpanel1_creationCompleteHandler(event:FlexEvent):void {
+				var data:* = this.data;
+				try {
+					var currentState:String = this.data['currentState'];
+					if (currentState is String) {
+						this.currentState = currentState;
+					}
+				} catch (err:Error) {}
+				try {
+					var _title:String = this.data['title'];
+					if (_title is String) {
+						this.title = _title;
+					}
+				} catch (err:Error) {}
+				try {
+					var _info:String = this.data['info'];
+					if (_info is String) {
+						this.errorText.text = _info;
+					}
+				} catch (err:Error) {}
+				try {
+					var _callback1:Function = this.data['callback1'];
+					if (_callback1 is Function) {
+						this._callback1 = this.data['callback1'];
+					}
+				} catch (err:Error) {}
+				try {
+					var _callback2:Function = this.data['callback2'];
+					if (_callback2 is Function) {
+						this._callback2 = this.data['callback2'];
+					}
+				} catch (err:Error) {}
+			}
+
+			private function handle_btn1_event():void {
+				if (this.callback1 is Function) {
+					try {
+						this.callback1();
+					} catch (err:Error) {}
+				}
+			}
+			
+			protected function btn1_clickHandler(event:MouseEvent):void {
+				this.handle_btn1_event();
+			}
+
+			protected function btn1_touchTapHandler(event:TouchEvent):void {
+				this.handle_btn1_event();
+			}
+
+			private function handle_btn2_event():void {
+				if (this.callback2 is Function) {
+					try {
+						this.callback2();
+					} catch (err:Error) {}
+				}
+			}
+			
+			protected function btn2_clickHandler(event:MouseEvent):void {
+				this.handle_btn2_event();
+			}
+			
+			protected function btn2_touchTapHandler(event:TouchEvent):void {
+				this.handle_btn2_event();
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup width="100%" horizontalAlign="left">
+			<s:HGroup width="50%" horizontalAlign="center">
+				<s:Button id="btn1" label="Ok" click="btn1_clickHandler(event)" touchTap="btn1_touchTapHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup width="50%" horizontalAlign="center">
+				<s:Button id="btn2" label="Cancel" click="btn2_clickHandler(event)" touchTap="btn2_touchTapHandler(event)"/>
+			</s:HGroup>
+		</s:HGroup>
+	</s:VGroup>
+</controls:ErrorPanel>

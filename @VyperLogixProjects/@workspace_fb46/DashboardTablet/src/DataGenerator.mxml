@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   creationComplete="generateData()">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			public static var clientList:Array=["Genentech", "Valero", "Griffin", "Whole Foods", "Edward Jones", "Starbucks", "Amgen", "Comcast", "Eli Lilly", "FedEx"];
+
+			public static var userList:Array=["Napoleon Zuggun", "Cordelia Weertlaw", "Stella Tilphill"];
+
+			public static var openStatusList:Array=["Prospect", "Qualify", "Closing"];
+
+			public function generateData():void
+			{
+
+
+				var sales:String="";
+				var i:int=0;
+				var j:int=0;
+
+				while (j < 7)
+				{
+
+					while (i < 366)
+					{
+						sales+=buildSale(i, 2005 + j);
+						i=i + 3;
+					}
+
+
+					i=0;
+					j++;
+
+				}
+
+				trace(sales);
+
+
+
+			}
+
+			public function buildSale(id:int, year:int):String
+			{
+				var unitCount:int=Math.random() * 10;
+				var unitPrice:int=Math.random() * 1000;
+				var gross:int=unitCount * unitPrice;
+				var net:int=gross * 0.33;
+				var s:String="";
+				var clientIndex:int=Math.random() * 10;
+				var client:String=clientList[clientIndex];
+				var userIndex:int=(Math.random() * (1 + 2 - 0)) + 0;
+				var userName:String=userList[userIndex];
+
+				var date1:Date=new Date(year, 0, id);
+				var openDate:String=date1.fullYear + "/" + Number(date1.month + 1) + "/" + date1.date;
+
+				var date2:Date=new Date(year, 3, id); // 3 months away from date1
+				var closeDate:String=date2.fullYear + "/" + Number(date2.month + 1) + "/" + date2.date;
+				var futureMonth:int=Math.ceil(Math.random() * 10);
+				var projectedCloseDate:String=date2.fullYear + "/" + Number(date1.month + futureMonth) + "/" + date2.date;
+
+				var now:Date=new Date();
+				var status:String="Closed";
+				if (date2 > now)
+				{
+					var statusIndex:int=(Math.random() * (1 + 2 - 0)) + 0;
+					status=openStatusList[statusIndex];
+
+					closeDate=null; // not closed yet
+				}
+
+
+				s+="<sale>";
+				s+="<id>" + year + "" + id + "</id>";
+				s+="<client>" + client + "</client>";
+				s+="<clientContact>" + 'Sam Smith' + "</clientContact>";
+				s+="<gross>" + gross + "</gross>";
+				s+="<net>" + net + "</net>";
+				s+="<unitCount>" + unitCount + "</unitCount>";
+				s+="<unitPrice>" + unitPrice + "</unitPrice>";
+				s+="<openDate>" + openDate + "</openDate>";
+				s+="<projectedCloseDate>" + projectedCloseDate + "</projectedCloseDate>";
+				s+="<saleCloseDate>" + closeDate + "</saleCloseDate>";
+				s+="<productTitle>" + 'Product Title' + "</productTitle>";
+				s+="<productDescription>" + 'Product Description' + "</productDescription>";
+				s+="<productType>" + 'Product Type' + "</productType>";
+				s+="<leadSalesPerson>" + userName + "</leadSalesPerson>";
+				s+="<status>" + status + "</status>";
+				s+="</sale>";
+				s+="\r\n";
+
+				return s;
+			}
+		]]>
+	</fx:Script>
+</s:Application>

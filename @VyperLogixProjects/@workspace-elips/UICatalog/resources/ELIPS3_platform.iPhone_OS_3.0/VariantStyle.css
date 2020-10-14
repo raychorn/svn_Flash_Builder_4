@@ -1,0 +1,47 @@
+/* CSS file for iPhone */
+Button
+{
+	fontSize: 10;
+}
+
+Label
+{
+	fontSize: 14;
+}
+
+TextArea
+{
+	fontSize: 12;
+}
+
+TextInput
+{
+	fontSize: 12;
+}
+
+.lstStyle
+{
+	selectionColor: blue;
+	fontWeight: bold;
+}
+
+.comments
+{
+	color: blue;
+	fontSize:10;
+	fontWeight: bold;
+	fontStyle: italic;
+}
+
+/*
+.MainButton
+{
+	upSkin: Embed("button_up.png", scaleGridTop="15", scaleGridBottom="29", scaleGridLeft="15", scaleGridRight="164");
+	downSkin: Embed("button_down.png", scaleGridTop="15", scaleGridBottom="29", scaleGridLeft="15", scaleGridRight="164");
+	color: blue;
+	paddingTop: 0;
+	paddingBottom: 2;
+	paddingLeft: 0;
+	paddingRight: 0;
+} 
+*/

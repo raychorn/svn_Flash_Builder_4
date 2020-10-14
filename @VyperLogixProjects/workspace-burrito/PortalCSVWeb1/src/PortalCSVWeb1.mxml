@@ -1,0 +1,654 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:controls="controls.*" 
+			   resize="application1_resizeHandler(event)"
+			   creationComplete="application1_creationCompleteHandler(event)"
+			   initialize="application1_initializeHandler(event)">
+	<fx:Style source="styles.css"/>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:NumberFormatter id="list_key_formatter" fractionalDigits="0" leadingZero="true"/>
+		<mx:Sequence id="openingEffect">
+			<mx:Pause duration="400"/>
+			<mx:Resize id="expand" widthTo="500" duration="300" easingFunction="Circular.easeOut"/>
+			<mx:Pause duration="300"/>
+			<mx:Resize id="expand2" heightTo="450" duration="300" easingFunction="Circular.easeInOut"/>
+		</mx:Sequence>
+		<s:RadioButtonGroup id="radiogroup1"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ArrayUtils;
+			import com.DateUtils;
+			import com.DebuggerUtils;
+			import com.ObjectUtils;
+			import com.StringUtils;
+			import com.URLUtils;
+			import com.adobe.serialization.json.JSON;
+			import com.adobe.serialization.json.JSONDecoder;
+			import com.adobe.utils.DateUtil;
+			import com.vyperlogix.AdHocOperation;
+			import com.vyperlogix.AdHocService;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.activity.Preloader;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.ByteArrayAsset;
+			import mx.core.FlexGlobals;
+			import mx.effects.easing.*;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.events.ResizeEvent;
+			import mx.managers.CursorManager;
+			import mx.managers.PopUpManager;
+			import mx.utils.URLUtil;
+			
+			import spark.collections.Sort;
+			import spark.collections.SortField;
+			import spark.events.IndexChangeEvent;
+			
+			// import views.SystemStatusPopUp;
+			
+			[Bindable]
+			private var __version__:String = '09-27-2011@19:30PDT';
+
+			private var _this:PortalCSVWeb1;
+			
+			private var busy:Preloader;
+
+			// private var statusPopUp:SystemStatusPopUp;
+			
+			[Bindable]
+			private var label_btn_choose_right:String = '--->';
+
+			[Bindable]
+			private var label_btn_choose_left:String = '<---';
+			
+			[Bindable]
+			[Embed(source="data/DataDictionaryDB.json", mimeType="application/octet-stream")]
+			private var dataJSONClass:Class;
+			
+			private const template_url_part:String = '{{url}}';
+			private const template_start_date_part:String = '{{start_date}}';
+			private const template_end_date_part:String = '{{end_date}}';
+			private const template_email_part:String = '{{email}}';
+			private const template_title_part:String = '{{title}}';
+			private const template_description_part:String = '{{description}}';
+			private const template_columns_part:String = '{{columns}}';
+			
+			private var __timeout__:Number = 120;
+			
+			private var url_template:String = template_url_part + '?start_date=' + template_start_date_part + '&end_date=' + template_end_date_part + '&email=' + template_email_part + '&title=' + template_title_part + '&description=' + template_description_part + '&columns=' + template_columns_part + '&c_2=SPRINT,ATT&c_48=SPRINT';
+			
+			private var template_parts:Object = {
+				url:template_url_part,
+				start_date:template_start_date_part,
+				end_date:template_end_date_part,
+				email:template_email_part,
+				title:template_title_part,
+				description:template_description_part,
+				columns:template_columns_part
+			};
+			
+			private var _cmbo_report_names:ArrayCollection = new ArrayCollection(
+				[
+					{'label':'Custom','data':'Custom'},
+					{'label':'Report 1','data':'Report 1'},
+					{'label':'Report 2','data':'Report 2'}
+				]
+			);
+			
+			private const address_port_symbol:String = "xxx";
+			private const address_port_default:String = "192.168.1.5:3000";
+
+			[Bindable]
+			private var _url:String = (DebuggerUtils.isDebugging) ? "http://172.16.10.87:8080/admin/data" : "";
+
+			private const sample_json:String = 'sample_json';
+			private const dorequest_json:String = 'dorequest_json';
+			
+			private var default_urls:Object = {
+				sample_json : "http://"+address_port_symbol+"/csv_reports/sample.json",
+				dorequest_json : "http://"+address_port_symbol+"/csv_reports/dorequest.json"
+			};
+			
+			[Bindable]
+			private var _default_email:String = (DebuggerUtils.isDebugging) ? "rhorn@smithmicro.com" : "";
+			
+			[Bindable]
+			private var _data_from_source:*;
+			
+			public static var GET_end_point_method:String = 'GET';
+			public static var POST_end_point_method:String = 'POST';
+			
+			public static var AGGREGATION_ON:Boolean = true;
+			public static var AGGREGATION_OFF:Boolean = false;
+			
+			private var _end_point_method:String = POST_end_point_method;
+			private var _aggregation_boolean:Boolean = AGGREGATION_OFF;
+
+			public function hide_busy_spinner():void {
+				if (this.busy is Preloader) {
+					PopUpManager.removePopUp(this.busy);
+					this.busy = null;
+				}
+			}
+			
+			public function show_busy_spinner():void {
+				if (!this.busy) {
+					this.busy = PopUpManager.createPopUp(this,Preloader,true) as Preloader;
+					this.openingEffect.target = this.busy;
+					this.openingEffect.duration = 1000;
+					this.openingEffect.end();
+					PopUpManager.centerPopUp(this.busy);
+					this.openingEffect.play();
+				}
+			}
+			
+			private function get data_source_from_source():* {
+				var aByteArray:ByteArrayAsset = ByteArrayAsset(new dataJSONClass());
+				var json:String = aByteArray.readUTFBytes(aByteArray.length);
+				return json;
+			}
+			
+			private function get data_from_source():* {
+				var json:String = this.data_source_from_source;
+				var data:*;
+				try {
+					this._data_from_source = data = JSON.decode(json);
+					this.lbl_c_2.text = this.c_2_label;
+					this.lbl_c_48.text = this.c_48_label;
+				} catch (err:Error) {}
+				return data;
+			}
+
+			private function get_from_data_source(target:Object):String {
+				var aLabel:String = '*MISSING*';
+				if (this._data_from_source) {
+					var dataProvider:ArrayCollection = this.grid_data_elements_selections.dataProvider as ArrayCollection;
+					var dp:* = (dataProvider) ? dataProvider : this._data_from_source;
+					var i:int = ObjectUtils.indexOf(dp,target,true);
+					if (i > -1) {
+						aLabel = dp[i]['display_name'];
+					}
+				}
+				return aLabel;
+			}
+			
+			private function get c_2_label():String {
+				return this.get_from_data_source({integer_key:"2"});
+			}
+			
+			private function get c_48_label():String {
+				return this.get_from_data_source({integer_key:"48"});
+			}
+			
+			private function sort_the_collection(ac:*,fieldName:String):void {
+				var alphaSortField:SortField = new SortField();
+				alphaSortField.name = fieldName;
+				alphaSortField.numeric = false;
+				var alphaDataSort:Sort = new Sort();
+				alphaDataSort.fields = [alphaSortField];
+				ac.sort = alphaDataSort;
+				ac.refresh();
+			}
+			
+			protected function grid_data_elements_source_changeHandler(event:*):void {
+				var aList:AdvancedDataGrid = event.currentTarget as AdvancedDataGrid;
+				if (this.grid_data_elements_selections.dataProvider == null) {
+					this.grid_data_elements_selections.dataProvider = new ArrayCollection();
+				}
+				this.grid_data_elements_selections.dataProvider.addItem(aList.selectedItem);
+				aList.dataProvider.removeItemAt(aList.selectedIndex);
+			}
+			
+			protected function grid_data_elements_selections_changeHandler(event:*):void {
+				var aList:AdvancedDataGrid = event.currentTarget as AdvancedDataGrid;
+				if (this.grid_data_elements_source.dataProvider == null) {
+					this.grid_data_elements_source.dataProvider = new ArrayCollection();
+				}
+				this.grid_data_elements_source.dataProvider.addItem(aList.selectedItem);
+				aList.dataProvider.removeItemAt(aList.selectedIndex);
+			}
+			
+			protected function txt_email_focusInHandler(event:FocusEvent):void {
+				var aTextInput:TextInput = event.currentTarget as TextInput;
+				aTextInput.text = (aTextInput.text == this._default_email) ? '' : aTextInput.text;
+			}
+
+			private function handle_template_parts(spec:Object):String {
+				var aTemplatePart:String;
+				var toks1:Array;
+				var toks2:Array;
+				var toks:Array;
+				var _f:int;
+				var the_url:String = this.url_template.replace()
+				toks1 = the_url.split('?');
+				toks2 = toks1[toks1.length-1].split('&');
+				for (var i:String in this.template_parts) {
+					aTemplatePart = this.template_parts[i];
+					_f = ArrayUtils.indexOf(toks2,
+						function (item:*, i:int, source:*, selector:*, aValue:*):Boolean {
+							return String(item).indexOf(aValue) > -1;
+						},
+						null,aTemplatePart);
+					if (_f > -1) {
+						toks = toks2[_f].split('=');
+						toks[toks.length-1] = toks[toks.length-1].replace(aTemplatePart,(i != 'url') ? StringUtils.urlEncode(spec[i]) : spec[i]);
+						toks2[_f] = toks.join('=');
+					}
+				}
+				toks1[0] = toks1[0].replace(this.template_parts['url'],spec['url']);
+				var result:String = toks1[0]+((this._end_point_method == GET_end_point_method) ? '?'+toks2.join(String.fromCharCode(38)) : '');
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> result='+result);
+				return result;
+			}
+			
+			private function Item_Collector(source:Array,is_func:Function,do_func:Function):Array {
+				var collection:Array = [];
+				if (source is Array) {
+					var anItem:*;
+					for (var i:String in source) {
+						anItem = source[i];
+						if ( (is_func is Function) && (is_func(anItem)) ) {
+							collection.push((do_func is Function) ? do_func(anItem) : anItem);
+						}
+					}
+				}
+				return collection;
+			}
+			
+			public function setBusyCursor(aParent:*):void {
+				CursorManager.setBusyCursor();
+				if (aParent) {
+					aParent.enabled = false;
+				}
+			}
+			
+			public function removeBusyCursor(aParent:*):void {
+				CursorManager.removeBusyCursor();
+				if (aParent) {
+					aParent.enabled = true;
+				}
+			}
+			
+			private function get explain_end_point_method():String {
+				return ((this._end_point_method == POST_end_point_method) ? 'POST' : ((this._end_point_method == GET_end_point_method) ? 'GET' : 'UNDEFINED'));
+			}
+			
+			private function get explain_aggregation_boolean():String {
+				return ((this._aggregation_boolean == AGGREGATION_ON) ? 'True' : ((this._aggregation_boolean == AGGREGATION_OFF) ? 'False' : 'UNDEFINED'));
+			}
+			
+			private function explain_params(params:Object):String {
+				var resp:String = '';
+				var a:Array = [];
+				for (var i:String in params) {
+					a.push(i+' is "'+params[i]+'"');
+				}
+				return a.join('\n');
+			}
+			
+			public function issue_report_request(url:String,params:Object):void {
+				var _this:PortalCSVWeb1 = this;
+				var _url_:String = this.default_urls[dorequest_json];
+				try {
+					var svc:AdHocService = new AdHocService();
+					if (this._end_point_method == GET_end_point_method) {
+						params = {};
+					} else {
+						params['__url__'] = url;
+					}
+					AlertPopUp.infoNoOkay('The Proxy URL is "'+_url_+'"\n'+this.explain_params(params),'INFORMATION');
+					var op:AdHocOperation = svc.custom_with_params(_url_,params);
+					op.timeout = this.__timeout__;
+					op.addEventListener(Event.COMPLETE,
+						function (event:Event):void {
+							_this.hide_busy_spinner();
+							AlertPopUp.infoNoOkay('Your Request was received and processed with the following status; your report should be on its way assuming your email address was correct and the server reported success as follows:\n'+DebuggerUtils.explainThis(event.currentTarget.data,'\n','\n',''),'INFO');
+						}
+					);
+					op.addEventListener(ErrorEvent.ERROR,
+						function (event:ErrorEvent):void {
+							_this.hide_busy_spinner();
+							AlertPopUp.surpriseNoOkay('Are you sure your URL is actually working for the "'+_this.explain_end_point_method+'" request type ?\n\nAre you sure you can reach the end-point ("'+url+'") you are using ? There might be Firewall issues. Please verify by using a Port Scanner - Ping cannot reach the port number you are using.','Please Double-Check your inputs !!!');
+						}
+					);
+					this.show_busy_spinner();
+					op.execute();
+				} catch (err:Error) {
+					AlertPopUp.surpriseNoOkay(+err.toString()+'\n\n'+err.getStackTrace().substr(0,512)+'\n','WARNING.101');
+				}
+			}
+			
+			protected function btn_submit_clickHandler(event:MouseEvent):void {
+				var c_2:String = this.txt_c_2.text;
+				var c_48:String = this.txt_c_48.text;
+				var title:String = this.txt_title.text;
+				var desc:String = this.txt_description.text;
+				var url:String = this.txt_url.text;
+				var email:String = this.txt_email.text;
+				var start_dateTime:Date = this.dateTime_from.dateTime;
+				var end_dateTime:Date = this.dateTime_to.dateTime;
+				var aggregation:String = this.explain_aggregation_boolean;
+				var report_name:String;
+				try {
+					report_name = this.cmbo_reportName.selectedItem['data'];
+				} catch (err:Error) {
+					report_name = this.cmbo_reportName.textInput.text;
+				}
+				var cols:String = (this.grid_data_elements_selections.dataProvider is ArrayCollection) ? Item_Collector(ArrayCollection(this.grid_data_elements_selections.dataProvider).source,
+					function (item:*):Boolean {
+						try {
+							return item['integer_key'] is String;
+						} catch (err:Error) {}
+						return false;
+					},
+					function (item:*):* {
+						try {
+							return item['integer_key'];
+						} catch (err:Error) {}
+						return -1;
+					}
+				).join(',') : '';
+				var spec:Object = {title:title,description:desc,email:email,start_date:DateUtils.toShortDateString(start_dateTime),end_date:DateUtils.toShortDateString(end_dateTime),columns:cols,c_2:c_2,c_48:c_48,aggregation:aggregation,report_name:report_name};
+				var rspec:Object = ObjectUtils.cloneIfNecessary(spec,true);
+				rspec['url'] = url;
+				var the_url:String = this.handle_template_parts(rspec);
+				/*
+				if (DebuggerUtils.isDebugging) {
+					AlertPopUp.surpriseNoOkay(
+						DebuggerUtils.explainThis(
+							spec
+						)+'\n'+the_url,
+						'DEBUG');
+				}
+				*/
+				this.issue_report_request(the_url,spec);
+			}
+			
+			private function ListLabelFunction(item:Object):String {
+				var value:String = '';
+				try {
+					value = this.list_key_formatter.format(Number(item['integer_key'])) + ',' + item['column_name'] + ', ' + item['display_name'];
+				} catch (err:Error) {}
+				return value;
+			}
+			
+			private function GridLabelFunction(item:Object,column:AdvancedDataGridColumn):String {
+				var value:String = '';
+				try {
+					value = item[column.dataField];
+				} catch (err:Error) {}
+				return value;
+			}
+			
+			protected function application1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				var url:String = FlexGlobals.topLevelApplication.url;
+				var address:String = URLUtil.getServerNameWithPort(url);
+				var _address:String = null;
+				if (address.length == 0) {
+					_address = this.address_port_default;
+				} else {
+					_address = address;
+				}
+				for (var i:String in this.default_urls) {
+					this.default_urls[i] = this.default_urls[i].replace(this.address_port_symbol,_address);
+				}
+			}
+			
+			protected function application1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:PortalCSVWeb1 = this;
+/* 				this.statusPopUp = PopUpManager.createPopUp(this,SystemStatusPopUp,true) as SystemStatusPopUp;
+				this.statusPopUp.width = 700;
+				this.statusPopUp.height = 500;
+				this.statusPopUp.url = this.default_urls[sample_json];
+				this.openingEffect.target = this.statusPopUp;
+				this.openingEffect.duration = 1000;
+				this.openingEffect.end();
+				this.statusPopUp.addEventListener(CloseEvent.CLOSE, 
+					function (event:CloseEvent):void {
+						_this.statusPopUp = null;
+					}
+				);
+				PopUpManager.centerPopUp(this.statusPopUp);
+ */			}
+			
+			protected function grid_data_elements_source_creationCompleteHandler(event:FlexEvent):void {
+				var ac:ArrayCollection;
+				var data:* = this.data_from_source;
+				try {
+					ac = new ArrayCollection(data);
+				} catch (err:Error) {
+					ac = new ArrayCollection();
+					for (var i:* in data) {
+						ac.addItem(data[i]);
+					}
+				}
+				var target:AdvancedDataGrid = event.currentTarget as AdvancedDataGrid;
+				target.dataProvider = ac;
+				this._data_from_source = ac;
+				this.callLater(this.set_label_text_with,[this.lbl_c_2,this.c_2_label]);
+				this.callLater(this.set_label_text_with,[this.lbl_c_48,this.c_48_label]);
+			}
+			
+			private function set_rb_value_with(rb:RadioButton,value:Boolean):void {
+				rb.value = value;
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> ('+rb.id+')='+rb.value);
+			}
+			
+			private function set_label_text_with(lbl:Label,value:String):void {
+				lbl.text = value;
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> ('+lbl.id+')='+lbl.text);
+			}
+			
+			protected function rb_method_GET_creationCompleteHandler(event:FlexEvent):void {
+				var rb:RadioButton = event.currentTarget as RadioButton;
+				this.callLater(this.set_rb_value_with,[rb,this._end_point_method == GET_end_point_method]);
+			}
+			
+			protected function rb_method_POST_creationCompleteHandler(event:FlexEvent):void {
+				var rb:RadioButton = event.currentTarget as RadioButton;
+				this.callLater(this.set_rb_value_with,[rb,this._end_point_method == POST_end_point_method]);
+			}
+			
+			protected function rb_aggregation_on_creationCompleteHandler(event:FlexEvent):void {
+				var rb:RadioButton = event.currentTarget as RadioButton;
+				this.callLater(this.set_rb_value_with,[rb,this._aggregation_boolean == AGGREGATION_ON]);
+			}
+			
+			protected function rb_aggregation_off_creationCompleteHandler(event:FlexEvent):void {
+				var rb:RadioButton = event.currentTarget as RadioButton;
+				this.callLater(this.set_rb_value_with,[rb,this._aggregation_boolean == AGGREGATION_OFF]);
+			}
+			
+			protected function rb_method_GET_changeHandler(event:Event):void {
+				var rb:RadioButton = event.currentTarget as RadioButton;
+				this._end_point_method = GET_end_point_method;
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> ('+rb.id+')='+rb.value);
+			}
+			
+			protected function rb_method_POST_changeHandler(event:Event):void {
+				var rb:RadioButton = event.currentTarget as RadioButton;
+				this._end_point_method = POST_end_point_method;
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> ('+rb.id+')='+rb.value);
+			}
+			
+			protected function rb_aggregation_on_changeHandler(event:Event):void {
+				var rb:RadioButton = event.currentTarget as RadioButton;
+				this._aggregation_boolean = rb.value == false;
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> ('+rb.id+')='+rb.value);
+			}
+			
+			protected function rb_aggregation_off_changeHandler(event:Event):void {
+				var rb:RadioButton = event.currentTarget as RadioButton;
+				this._aggregation_boolean = rb.value == false;
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> ('+rb.id+')='+rb.value);
+			}
+			
+			protected function cmbo_reportName_creationCompleteHandler(event:FlexEvent):void {
+				var cmbo:ComboBox = event.currentTarget as ComboBox;
+				cmbo.dataProvider = this._cmbo_report_names;
+				try {
+					cmbo.prompt = 'Choose...';
+				} catch (err:Error) {}
+				cmbo.selectedIndex = 0;
+			}
+			
+			protected function application1_resizeHandler(event:ResizeEvent):void {
+				var w:Number = this.width - 30;
+				if ( (this.hbox_lists) && (this.vbox_top) && (this.hbox_dates) ) {
+					this.hbox_lists.width = this.vbox_top.width = (w > this.hbox_lists.minWidth) ? w : this.hbox_lists.minWidth;
+					this.hbox_dates.width = w * 0.7; 
+				}
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> w='+w+', this.hbox_lists.width='+((this.hbox_lists) ? this.hbox_lists.width : -1)+', event='+event.toString());
+			}
+			
+			protected function panel_left_resizeHandler(event:ResizeEvent):void {
+				var p:Panel = event.currentTarget as Panel;
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> p.width='+p.width+', p.minWidth='+p.minWidth+', p.height='+p.height+', event='+event.toString());
+			}
+			
+			protected function panel_right_resizeHandler(event:ResizeEvent):void {
+				var p:Panel = event.currentTarget as Panel;
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> p.width='+p.width+', p.minWidth='+p.minWidth+', p.height='+p.height+', event='+event.toString());
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup x="5" y="5" width="100%" height="100%">
+		<s:VGroup id="vbox_top" width="100%" minWidth="500" paddingRight="5">
+			<s:HGroup width="100%">
+				<s:HGroup width="100%">
+					<s:HGroup paddingTop="5">
+						<s:Label id="lbl_c_48" text="{this.c_48_label}:"/>
+					</s:HGroup>
+					<s:TextInput id="txt_c_48" text="SPRINT" width="100%"/>
+				</s:HGroup>
+				<s:HGroup width="100%">
+					<s:HGroup paddingTop="5">
+						<s:Label id="lbl_c_2" text="{this.c_2_label}:"/>
+					</s:HGroup>
+					<s:TextInput id="txt_c_2" text="SPRINT" width="100%"/>
+				</s:HGroup>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:HGroup width="100%">
+					<s:HGroup paddingTop="5">
+						<s:Label text="Title:"/>
+					</s:HGroup>
+					<s:TextInput id="txt_title" text="Test Title" width="100%"/>
+				</s:HGroup>
+				<s:HGroup width="100%">
+					<s:HGroup paddingTop="5">
+						<s:Label text="Description:"/>
+					</s:HGroup>
+					<s:TextInput id="txt_description" text="This is a test..." width="100%"/>
+				</s:HGroup>
+				<s:HGroup width="100%">
+					<s:HGroup paddingTop="5">
+						<s:Label text="Report Name:"/>
+					</s:HGroup>
+					<s:ComboBox id="cmbo_reportName" creationComplete="cmbo_reportName_creationCompleteHandler(event)"/>
+				</s:HGroup>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:HGroup paddingTop="5">
+					<s:Label text="URL:"/>
+				</s:HGroup>
+				<s:TextInput id="txt_url" text="{this._url}" width="100%"/>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:HGroup paddingTop="5">
+					<s:Label text="Email Address:"/>
+				</s:HGroup>
+				<s:TextInput id="txt_email" text="{this._default_email}" width="100%" focusIn="txt_email_focusInHandler(event)"/>
+			</s:HGroup>
+			<s:VGroup id="hbox_dates" width="100%" paddingRight="15">
+				<s:HGroup id="hbox_dates1" width="70%" paddingRight="15">
+					<s:HGroup width="40%">
+						<s:HGroup paddingTop="5">
+							<s:Label text="Start Date/Time:"/>
+						</s:HGroup>
+						<controls:DateFieldTimeChooserComponent id="dateTime_from" dateTimeRFC822="{DateUtil.toRFC822(new Date())}"/>
+					</s:HGroup>
+				</s:HGroup>
+				<s:HGroup id="hbox_dates2" width="70%" paddingRight="15">
+					<s:HGroup width="40%">
+						<s:HGroup paddingTop="5">
+							<s:Label text="End Date/Time:"/>
+						</s:HGroup>
+						<controls:DateFieldTimeChooserComponent id="dateTime_to" dateTimeRFC822="{DateUtil.toRFC822(new Date())}"/>
+					</s:HGroup>
+				</s:HGroup>
+			</s:VGroup>
+			<s:HGroup id="hbox_options" width="100%" paddingRight="15">
+				<s:HGroup width="40%" paddingLeft="15">
+					<s:HGroup paddingTop="5">
+						<s:Label text="Aggregation:"/>
+					</s:HGroup>
+					<s:RadioButton id="rb_aggregation_on" label="ON" groupName="rb_aggregation" change="rb_aggregation_on_changeHandler(event)" creationComplete="rb_aggregation_on_creationCompleteHandler(event)"/>
+					<s:RadioButton id="rb_aggregation_off" label="OFF" groupName="rb_aggregation" change="rb_aggregation_off_changeHandler(event)" creationComplete="rb_aggregation_off_creationCompleteHandler(event)"/>
+				</s:HGroup>
+				<s:HGroup id="hgroup_request_method" width="20%" paddingLeft="15" visible="{false}" includeInLayout="{this.hgroup_request_method.visible}">
+					<s:RadioButton id="rb_method_GET" label="GET" groupName="rb_group_method" change="rb_method_GET_changeHandler(event)" creationComplete="rb_method_GET_creationCompleteHandler(event)"/>
+					<s:RadioButton id="rb_method_POST" label="POST" groupName="rb_group_method" change="rb_method_POST_changeHandler(event)" creationComplete="rb_method_POST_creationCompleteHandler(event)"/>
+				</s:HGroup>
+			</s:HGroup>
+			<s:HGroup id="hbox_submit_button" width="100%">
+				<s:Button id="btn_submit" width="100%" label="Request the EMail"
+						  click="btn_submit_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+		<s:HGroup id="hbox_lists" width="100%" height="{this.height-this.vbox_top.height-this.hbox_version.height-20}" minWidth="500" minHeight="400" paddingLeft="5" paddingRight="10" paddingTop="5" paddingBottom="5">
+			<s:Panel id="panel_left" width="{(this.hbox_lists.width/2)-10}" height="{this.hbox_lists.height}" minWidth="{this.hbox_lists.minWidth/2}" title="Data Elements (Source)" resize="panel_left_resizeHandler(event)">
+				<s:VGroup width="100%" height="100%">
+					<mx:AdvancedDataGrid 
+						id="grid_data_elements_source" 
+						width="100%" height="100%" 
+						labelFunction="GridLabelFunction" 
+						change="grid_data_elements_source_changeHandler(event)" 
+						creationComplete="grid_data_elements_source_creationCompleteHandler(event)">
+						<mx:columns>
+							<mx:AdvancedDataGridColumn dataField="display_name" editable="false" headerText="Name" width="{this.grid_data_elements_source.width*0.65}" textAlign="left"/>
+							<mx:AdvancedDataGridColumn dataField="column_name" editable="false" headerText="Column" width="{this.grid_data_elements_source.width*0.20}" textAlign="center"/>
+							<mx:AdvancedDataGridColumn dataField="integer_key" editable="false" headerText="Id" width="{this.grid_data_elements_source.width*0.15}" textAlign="center"/>
+						</mx:columns>
+					</mx:AdvancedDataGrid>
+				</s:VGroup>
+			</s:Panel>
+			<s:VGroup height="100%" verticalAlign="top" visible="false" includeInLayout="false">
+				<s:HGroup>
+					<s:Button id="btn_choose_right" label="{this.label_btn_choose_right}"/>
+				</s:HGroup>
+				<s:HGroup>
+					<s:Button id="btn_choose_left" label="{this.label_btn_choose_left}"/>
+				</s:HGroup>
+			</s:VGroup>
+			<s:Panel id="panel_right" width="{(this.hbox_lists.width/2)-10}" minWidth="{this.hbox_lists.minWidth/2}" height="{this.hbox_lists.height}" title="Data Elements (Selections)" resize="panel_right_resizeHandler(event)">
+				<s:VGroup width="100%" height="100%">
+					<mx:AdvancedDataGrid 
+						id="grid_data_elements_selections" 
+						width="100%" height="100%" 
+						labelFunction="GridLabelFunction" 
+						change="grid_data_elements_selections_changeHandler(event)">
+						<mx:columns>
+							<mx:AdvancedDataGridColumn dataField="display_name" editable="false" headerText="Name" width="{this.grid_data_elements_selections.width*0.65}" textAlign="left"/>
+							<mx:AdvancedDataGridColumn dataField="column_name" editable="false" headerText="Column" width="{this.grid_data_elements_selections.width*0.20}" textAlign="center"/>
+							<mx:AdvancedDataGridColumn dataField="integer_key" editable="false" headerText="Id" width="{this.grid_data_elements_selections.width*0.15}" textAlign="center"/>
+						</mx:columns>
+					</mx:AdvancedDataGrid>
+				</s:VGroup>
+			</s:Panel>
+		</s:HGroup>
+		<s:HGroup id="hbox_version" width="100%" paddingLeft="5" paddingTop="5" paddingBottom="5">
+			<s:Label styleName="VersionLabel" text="{this.__version__}"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Application>

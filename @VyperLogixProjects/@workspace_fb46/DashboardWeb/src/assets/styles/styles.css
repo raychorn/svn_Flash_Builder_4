@@ -1,0 +1,63 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+@font-face
+{
+	fontFamily: "MyriadPro Regular";
+	unicode-range: U+0021-U+007B;
+	src: url("/assets/fonts/MyriadPro-Regular.otf");
+	embedAsCFF: true;
+}
+
+global
+{
+	chartCornerRadius: 8;
+	chartPaddingTop: 4;
+	chartPaddingBottom: 4;
+	chartPaddingRight: 4;
+	chartPaddingLeft: 4;
+}
+
+
+
+s|Label.headerOrangeText
+{
+	color: #FFC066;
+	font-size: 19;
+	font-family: "MyriadPro Regular";
+}
+
+s|Label.headerGrayText
+{
+	color: #1A1A1A;
+	font-size: 19;
+	font-family: "MyriadPro Regular";
+}
+
+s|Label.labelStyle
+{
+	color: #FFC066;
+	font-size: 15;
+	font-family: "MyriadPro Regular";
+}
+
+s|Label.chartLabelStyle
+{
+	color: #B3B3B3;
+	font-size: 12;
+	font-family: "MyriadPro Regular";
+}
+
+s|Label.chartTitleText
+{
+	color: #CCCCCC;
+	font-size: 16;
+	font-family: "MyriadPro Regular";
+}
+
+s|Label.historyTextStyle
+{
+	color: #FFBF66;
+	font-size: 16;
+	font-family: "MyriadPro Regular";
+}

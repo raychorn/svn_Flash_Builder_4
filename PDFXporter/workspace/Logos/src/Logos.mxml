@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark"  
+					   xmlns:mx="library://ns.adobe.com/flex/mx" showStatusBar="false" 
+					   initialize="windowedapplication1_initializeHandler(event)" 
+					   xmlns:nativeApplicationUpdater="com.riaspace.nativeApplicationUpdater.*" xmlns:application="application.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:states>
+		<s:State name="mainView"/>
+		<s:State name="updaterView"/>
+	</s:states>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel.ttf");
+			fontFamily: NeoSansIntel;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Light.ttf");
+			fontFamily: NeoSansIntelLight;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium2;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/CALIBRI.TTF");
+			fontFamily: Calibri;
+			embedAsCFF: false;
+		}
+		
+		.splash_movie_canvas {
+			backgroundColor: #ffffff;
+		}
+		
+		.LoginPanel {
+			borderStyle: none;
+			borderColor: #3300ff;
+			borderThickness: 3;
+			roundedBottomCorners: true;
+			cornerRadius: 8;
+			headerHeight: 31;
+			headerColors: #0033ff, #330099;
+			backgroundColor: #ffffff;
+			backgroundAlpha: 0.3;
+			shadowDistance: 6;
+			shadowDirection: right;
+			titleStyleName: "LoginPanelTitle";
+		}
+		
+		.LoginPanelTitle {
+			fontFamily: Calibri;
+			fontSize: 16;
+		}
+		
+		.ErrorMessages {
+			fontFamily: Calibri;
+			fontSize: 14;
+			fontWeight: bold;
+			color: red;
+		}
+		
+		.NormalMessages {
+			fontFamily: Calibri;
+			fontSize: 14;
+			color: black;
+		}
+		
+		.ImportantMessage {
+			fontFamily: Calibri;
+			fontSize: 14;
+			fontWeight: bold;
+			color: blue;
+		}
+		
+		.TermsAndConditionsHTML {
+			fontFamily: NeoSansIntelLight;
+			fontSize: 10;
+			color: black;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import controls.AppIcon;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import splash.SplashMovie;
+			
+			public var icon:Loader = new Loader();
+
+			public var __local_domain__:String = 'http://localhost:9000';
+			public var __public_domain__:String = 'https://vyperlogos.appspot.com';
+			
+			public var splashPopUp:SplashMovie;
+			
+			public var app_icon_url:String = 'assets/icons/icons/app_icon_16.png';
+			public var app_icon128_url:String = 'assets/icons/icons/app_icon_128.png';
+			public var _icon:AppIcon = new AppIcon([app_icon_url,'assets/icons/icons/app_icon_32.png','assets/icons/icons/app_icon_48.png',app_icon128_url]);
+			
+			public function get domain():String {
+				var d:String = (this.appProxy.__is_localhost__) ? this.__local_domain__ : this.__public_domain__;
+				trace(this.className+'.domain --> this.is_debugging='+this.appProxy.is_debugging+', d='+d);
+				return d;
+			}
+			
+			public function popUpSplashMovie():void {
+				this.splashPopUp = PopUpManager.createPopUp(this, SplashMovie, true) as SplashMovie;
+				this.splashPopUp.x = 0;
+				this.splashPopUp.y = 0;
+				this.splashPopUp.styleName = 'splash_movie_canvas';
+				this.splashPopUp.width = this.nativeWindow.width;
+				this.splashPopUp.height = this.nativeWindow.height;
+			}
+			
+			protected function windowedapplication1_initializeHandler(event:FlexEvent):void {
+				trace(this.className+'.windowedapplication1_initializeHandler().1 !');
+			}
+			
+			private function onCreationComplete_appProxy():void {
+				trace(this.className+'.onCreationComplete_appProxy().1 !');
+				this.appProxy._onCreationComplete_appProxy(null);
+			}
+			
+		]]>
+	</fx:Script>
+	<application:ApplicatonProxy id="appProxy" x="0" y="0" width="100%" height="100%" creationComplete="onCreationComplete_appProxy()"/>
+</s:WindowedApplication>

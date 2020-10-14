@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox 
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="100%" 
+	xmlns:sbistram="com.de.sbistram.controls.*"
+	xmlns:controls="vzw.controls.*" 
+	xmlns:controls2="vzw.controls.BrowserBarTextField.*">
+	<mx:states>
+		<mx:State name="services">
+			<mx:AddChild relativeTo="{this.hbox21}" position="lastChild">
+				<mx:HBox id="hbox_services">
+					<mx:CheckBox id="cb_TV" label="TV" styleName="SmartPanelLabelText" creationComplete="onCreationComplete_cb_TV()"/>
+					<mx:CheckBox id="cb_HomePhone" label="Home Phone" styleName="SmartPanelLabelText" creationComplete="onCreationComplete_cb_HomePhone()"/>
+					<mx:CheckBox id="cb_Internet" label="Internet" styleName="SmartPanelLabelText" creationComplete="onCreationComplete_cb_Internet()"/>
+				</mx:HBox>
+			</mx:AddChild>
+		</mx:State>
+	</mx:states>
+	<mx:Script>
+		<![CDATA[
+			import mx.messaging.AbstractConsumer;
+			import vzw.utils.ArrayCollectionUtils;
+			import mx.events.ListEvent;
+			import mx.controls.ComboBase;
+			import mx.events.FlexEvent;
+			import vzw.utils.ObjectExplainer;
+			import vzw.utils.StringUtils;
+			import vzw.utils.ObjectUtils;
+			import mx.collections.ArrayCollection;
+			import vzw.menu.builder.MenuController;
+			
+			public static const removeItem:Object = {'label':'Remove...', 'value':'', 'sequence':'-1', 'exclusive':false};
+
+			[Bindable]
+			private var _dataProvider:Object;
+
+			private var _dataSelectors:Array;
+			
+			[Bindable]
+			private var _combo_domain_dataProvider:ArrayCollection;
+
+			private var _combo_domain_Cache:Object = {};
+
+			private var _mode:int = 0; // default is of course the default... what else would it be... ?!?
+
+			public var styleCallback:Function = MenuController.dummy;
+
+			[Bindable]
+			private var _onChangeCallback_combo_domain:Function = MenuController.dummy;
+
+			[Bindable]
+			private var _validate_valueCallback:Function = MenuController.dummy;
+			
+			[Bindable]
+			private var _onChangeCallback_url_edit:Function = MenuController.dummy;
+			
+			[Bindable]
+			private var _relax_validations:Boolean = true;
+
+			private var _timer:Timer;
+
+			private var isEnabledCallback_btn_save:Function = MenuController.dummy;
+			private var dump_dataProviderCallback:Function = MenuController.dummy;
+			private var currentFuncCallback:Function = MenuController.dummy;
+			private var iKeyCallback:Function = MenuController.dummy;
+			private var onClickCallback_deleteIcon:Function = MenuController.dummy;
+			
+			private function get _isEnabled_btn_save():Boolean {
+				var aBool:Boolean = true;
+				if (this.isEnabledCallback_btn_save is Function) {
+					try {aBool = this.isEnabledCallback_btn_save()} 
+						catch (err:Error) {trace(this.className+'.dataProvider (setter) ERROR='+err.toString()+'\n'+err.getStackTrace());}
+				}
+				return aBool;
+			}
+			
+			public function set dataProvider(dataProvider:Object):void {
+				if ( (this._dataProvider != dataProvider) && (dataProvider != null) ) {
+					this._dataProvider = dataProvider;
+					//trace(this.className+'.dataProvider().1 !');
+
+					this.onCreationComplete_menu_id();
+					this.onCreationComplete_url_edit();
+					this.onCreationComplete_cb_newWindow();
+					this.onCreationComplete_cb_cdsso();
+					this.onCreationComplete_cb_TV();
+					this.onCreationComplete_cb_HomePhone();
+					this.onCreationComplete_cb_Internet();
+
+					var bool:Boolean = this._isEnabled_btn_save;
+					var item:* = this._dataProvider[this.combo_domain.id];
+					//trace(this.className+'.dataProvider().2 --> wait_for_combo_domain_data !');
+					this.wait_for_combo_domain_data(item);
+				}
+			}
+			
+			public function get dataProvider():Object {
+				return (this._dataProvider) ? this._dataProvider : {};
+			}
+			
+			private function populate_combo_domain_Cache():void {
+				var anItem:*;
+				this._combo_domain_Cache = {};
+				for (var i:String in this._combo_domain_dataProvider) {
+					anItem = this._combo_domain_dataProvider[i];
+					if (anItem.iDomain != null) {
+						this._combo_domain_Cache[anItem.iDomain] = int(i);
+					} 
+				}
+				//trace(this.className+'.populate_combo_domain_Cache().1 this._combo_domain_Cache='+(new ObjectExplainer(this._combo_domain_Cache)).explainThisWay('\n'));
+			}
+			
+			public function set combo_domain_dataProvider(dataProvider:ArrayCollection):void {
+				if ( (this._combo_domain_dataProvider != dataProvider) && (dataProvider is ArrayCollection) && (dataProvider.length > 0) ) {
+					this._combo_domain_dataProvider = ArrayCollectionUtils.clone(dataProvider);
+					this.populate_combo_domain_Cache();
+					this.onCreationComplete_combo_domain();
+					//trace(this.className+'.combo_domain_dataProvider().1 !');
+					var bool:Boolean = this._isEnabled_btn_save;
+					if ( (dataProvider is ArrayCollection) && (dataProvider.length > 0) ) {
+						try {
+							var item:* = this._dataProvider[this.combo_domain.id];
+							//trace(this.className+'.combo_domain_dataProvider().2 --> wait_for_combo_domain_data !');
+							this.wait_for_combo_domain_data(item);
+						} catch (err:Error) {}
+					}
+				}
+			}
+			
+			[Bindable]
+			public function get combo_domain_dataProvider():ArrayCollection {
+				return (this._combo_domain_dataProvider) ? this._combo_domain_dataProvider : (new ArrayCollection());
+			}
+			
+			public function set onChangeCallback_combo_domain(onChangeCallback_combo_domain:Function):void {
+				if (this._onChangeCallback_combo_domain != onChangeCallback_combo_domain) {
+					this._onChangeCallback_combo_domain = onChangeCallback_combo_domain;
+				}
+			}
+			
+			public function get onChangeCallback_combo_domain():Function {
+				return (this._onChangeCallback_combo_domain is Function) ? this._onChangeCallback_combo_domain : MenuController.dummy;
+			}
+			
+			public function set onValidate_valueCallback(onValidate_valueCallback:Function):void {
+				if (this._validate_valueCallback != onValidate_valueCallback) {
+					var isDummyFunction:Boolean = MenuController.isDummyFunction(this._validate_valueCallback);
+					//trace(this.className+'.onValidate_valueCallback().1 ### --> onValidate_valueCallback is MenuController.dummy='+isDummyFunction);
+					this._validate_valueCallback = onValidate_valueCallback;
+				}
+			}
+			
+			public function get onValidate_valueCallback():Function {
+				return (this._validate_valueCallback is Function) ? this._validate_valueCallback : MenuController.dummy;
+			}
+			
+			public function set onChangeCallback_url_edit(onChangeCallback_url_edit:Function):void {
+				if (this._onChangeCallback_url_edit != onChangeCallback_url_edit) {
+					var isDummyFunction:Boolean = MenuController.isDummyFunction(this._onChangeCallback_url_edit);
+					//trace(this.className+'.onChangeCallback_url_edit().1 ### --> isDummyFunction='+isDummyFunction);
+					this._onChangeCallback_url_edit = onChangeCallback_url_edit;
+				}
+			}
+			
+			public function get onChangeCallback_url_edit():Function {
+				return (this._onChangeCallback_url_edit is Function) ? this._onChangeCallback_url_edit : MenuController.dummy;
+			}
+			
+			public function set relax_validations(relax_validations:Boolean):void {
+				if (this._relax_validations != relax_validations) {
+					this._relax_validations = relax_validations;
+				}
+			}
+			
+			public function get relax_validations():Boolean {
+				return (this._relax_validations is Boolean) ? this._relax_validations : false;
+			}
+			
+			public function set dataSelectors(dataSelectors:Array):void {
+				if (this._dataSelectors != dataSelectors) {
+					this._dataSelectors = dataSelectors;
+				}
+			}
+			
+			public function get dataSelectors():Array {
+				return (this._dataSelectors) ? this._dataSelectors : [];
+			}
+			
+			public function set mode(mode:int):void {
+				if (this._mode != mode) {
+					this._mode = mode;
+				}
+			}
+			
+			public function get mode():int {
+				return this._mode;
+			}
+
+			private function dump_dataProvider(source:*,data:*):void {
+				if (this.dump_dataProviderCallback is Function) {
+					try { this.dump_dataProviderCallback(source,data) } 
+						catch (err:Error) {trace(this.className+'.dump_dataProvider() ERROR='+err.toString()+'\n'+err.getStackTrace());}
+				}
+			}
+			
+			public function validate_value(value:*,target:*):Boolean {
+				//trace(this.className+'.validate_value().1 --> this._relax_validations='+this._relax_validations);
+				var aBool:Boolean = false;
+				if ( (!this._relax_validations) && (this._validate_valueCallback is Function) ) {
+					var isDummyFunction:Boolean = MenuController.isDummyFunction(this._validate_valueCallback);
+					//trace(this.className+'.validate_value().2 --> this._validate_valueCallback is MenuController.dummy='+(isDummyFunction));
+					try { aBool = this._validate_valueCallback(value,target) } 
+						catch (err:Error) {trace(this.className+'.validate_value() ERROR='+err.toString()+'\n'+err.getStackTrace());}
+				}
+				this.dump_dataProvider(this,this.dataProvider);
+				return aBool;
+			}
+			
+			public function refresh_combo_domain_styleName():void {
+				this.combo_domain.styleName = (this.styleCallback()) ? 'REQUIRED' : '';
+			}
+
+			private function onChange_combo_domain(event:ListEvent):void {
+				this.refresh_combo_domain_styleName();
+				if ( (!this._relax_validations) && (this.onChangeCallback_combo_domain is Function) ) {
+					try {this.onChangeCallback_combo_domain(event)} 
+						catch (err:Error) {trace(this.className+'.onChange_combo_domain().ERROR err='+err.toString()+'\n'+err.getStackTrace());}
+				}
+			}
+			
+			public function refresh_url_edit_styleName():void {
+				this.url_edit.styleName = (this.styleCallback()) ? 'REQUIREDComplete' : '';
+			}
+			
+			private function onChange_url_edit(event:*):void {
+				this.refresh_url_edit_styleName();
+				if ( (!this._relax_validations) && (this.onChangeCallback_url_edit is Function) ) {
+					try {this.onChangeCallback_url_edit(event)} 
+						catch (err:Error) {trace(this.className+'.onChange_url_edit().ERROR err='+err.toString()+'\n'+err.getStackTrace());}
+				}
+				this.shove_data_into_model(event.currentTarget.id,event.currentTarget.text);
+			}
+			
+			public function shove_data_into_model(id:String,data:*):void {
+				try {
+					var selectors:Array = this._dataSelectors[this._mode][id];
+					var aSelector:Object = selectors[0];
+					var x:String = aSelector.x;
+					this.dataProvider[x] = data;
+				} catch (err:Error) {}
+			}
+						
+			public function get isEnabled_btn_save():Boolean {
+				var aBoolean:Boolean = true;
+
+				var test2:Boolean = this.validate_value(this.url_edit.text,this.url_edit);
+				var test3:Boolean = this.validate_value((this.combo_domain.selectedIndex > -1) ? this.combo_domain.dataProvider[this.combo_domain.selectedIndex] : {},this.combo_domain);
+
+				if ( (aBoolean) && (!test2) ) {
+					aBoolean = test2;
+				}
+				if ( (aBoolean) && (!test3) ) {
+					aBoolean = test3;
+				}
+				return aBoolean;
+			}
+			
+			private function revalidate_combo_domain():void {
+				var value:* = this.combo_domain.selectedItem;
+				//trace(this.className+'.revalidate_combo_domain().1 --> value='+(new ObjectExplainer(value)).explainThisWay());
+				this.validate_value(value,this.combo_domain);
+			}
+
+			private function revalidate_url_edit():void {
+				var value:* = this.url_edit.text;
+				//trace(this.className+'.revalidate_url_edit().1 --> value='+value);
+				this.validate_value(value,this.url_edit);
+			}
+
+			public function revalidate():void {
+				this.revalidate_combo_domain();
+				this.revalidate_url_edit();
+			}
+
+			public function get asObject():Object {
+				var sources:Array = [
+										this.menu_id,
+										this.combo_domain,
+										this.url_edit,
+										this.cb_newWindow,
+										this.cb_cdsso
+									];
+				if (this.currentState == 'services') {
+					sources.push(this.cb_TV);
+					sources.push(this.cb_HomePhone);
+					sources.push(this.cb_Internet);
+				}
+				var obj:Object = {};
+				var aSource:*;
+				for (var i:String in sources) {
+					aSource = sources[i];
+					obj[aSource.id] = ((aSource is MatchComboBox) ? ObjectUtils.cloneWithoutThese(aSource.selectedItem,'mx_internal_uid') : ((aSource is BrowserBarTextField) ? aSource.text : ((aSource is CheckBox) ? aSource.selected : aSource.asObject)));
+				}
+				return obj;
+			}
+			
+			private function wait_for_combo_domain_data(item:*):void {
+				var _this:* = this;
+				if (this._timer == null) {
+					this._timer = new Timer(250,10*4);
+					this._timer.addEventListener(TimerEvent.TIMER,function (event:TimerEvent):void {
+						var t:Timer = event.currentTarget as Timer;
+						//trace(_this.className+'.wait_for_combo_domain_data().TimerEvent.TIMER ! t.currentCount='+t.currentCount);
+						var i:int = _this.domain_index();
+						if (i > -1) {
+							_this.combo_domain.selectedIndex = i;
+							//trace(_this.className+'.wait_for_combo_domain_data().TimerEvent.TIMER --> STOPPED ! (i='+i+')');
+							t.stop();
+						}
+						
+					});
+					this._timer.addEventListener(TimerEvent.TIMER_COMPLETE,function (event:TimerEvent):void {
+						var t:Timer = event.currentTarget as Timer;
+						//trace(_this.className+'.wait_for_combo_domain_data().TimerEvent.TIMER_COMPLETE ! t.currentCount='+t.currentCount);
+						var i:int = _this.domain_index();
+						if (i > -1) {
+							_this.combo_domain.selectedIndex = i;
+							//trace(_this.className+'.wait_for_combo_domain_data().TimerEvent.TIMER --> STOPPED ! (i='+i+')');
+						}
+						t.stop();
+					});
+					//trace(_this.className+'.wait_for_combo_domain_data().1 --> item='+String(item));
+					if (item != null) {
+						//trace(_this.className+'.wait_for_combo_domain_data().2 --> item='+(new ObjectExplainer(item)).explainThisWay());
+						this._timer.start();
+					}
+				}
+			}
+			
+			private function domain_index():int {
+				var item:* = this._dataProvider[this.combo_domain.id];
+				//trace(this.className+'.domain_index().1 --> item='+(new ObjectExplainer(item)).explainThisWay());
+				var items:* = this.combo_domain.dataProvider;
+				//trace(this.className+'.domain_index().2 --> items='+String(items));
+				var i:int; // = ObjectUtils.indexOf(items,item);
+				i = this._combo_domain_Cache[item.iDomain];
+				//trace(this.className+'.domain_index().3 --> i='+i);
+				return i;
+			}
+
+			private function dataProvider_for(name:String):* {
+				return (this._dataProvider != null) ? this._dataProvider[name] : null;
+			}
+
+			private function onCreationComplete_menu_id():void {
+				var item:* = this.dataProvider_for('menu_id');
+				try { this.menu_id.menu_id.text = (item != null) ? item.menu_id : ''; } 
+					catch (err:Error) {}
+			}
+			
+			private function onCreationComplete_combo_domain():void {
+				if (this._combo_domain_dataProvider != null) {
+					this.combo_domain.dataProvider = this._combo_domain_dataProvider;
+				}
+			}
+			
+			private function onCreationComplete_url_edit():void {
+				this.url_edit.text = this.dataProvider_for('url_edit');
+			}
+			
+			private function onCreationComplete_cb_newWindow():void {
+				this.cb_newWindow.selected = StringUtils.toBoolean(this.dataProvider_for('cb_newWindow'));
+			}
+			
+			private function onCreationComplete_cb_cdsso():void {
+				this.cb_cdsso.selected = StringUtils.toBoolean(this.dataProvider_for('cb_cdsso'));
+			}
+		
+			private function onCreationComplete_cb_TV():void {
+				try {
+					this.cb_TV.selected = StringUtils.toBoolean(this.dataProvider_for('cb_TV'));
+				} catch (err:Error) {}
+			}
+			
+			private function onCreationComplete_cb_HomePhone():void {
+				try {
+					this.cb_HomePhone.selected = StringUtils.toBoolean(this.dataProvider_for('cb_HomePhone'));
+				} catch (err:Error) {}
+			}
+			
+			private function onCreationComplete_cb_Internet():void {
+				try {
+					this.cb_Internet.selected = StringUtils.toBoolean(this.dataProvider_for('cb_Internet'));
+				} catch (err:Error) {}
+			}
+  
+		]]>
+	</mx:Script>
+	<mx:VBox id="vbox1" width="100%">
+		<controls:MenuId id="menu_id" creationComplete="onCreationComplete_menu_id()"/>
+		<mx:HBox id="hbox1" width="100%">
+			<mx:Label text="URL:" id="label1" styleName="SmartPanelLabelText"/>
+			<mx:Spacer width="1"/>
+			<sbistram:MatchComboBox id="combo_domain" selectedIndex="{this.domain_index()}" toolTip="REQUIRED FIELD: This is the domain for the URL." labelField="label" change="onChange_combo_domain(event)" creationComplete="onCreationComplete_combo_domain()"/>
+			<controls2:BrowserBarTextField id="url_edit" width="100%" height="100%" toolTip="REQUIRED FIELD: This is the part of the URL that does not have the HTTP:// init however this value MUST begin with a slash." change="onChange_url_edit(event)" creationComplete="onCreationComplete_url_edit()"/>
+			<mx:Spacer id="spacer1" width="5"/>
+		</mx:HBox>
+		<mx:HBox id="hbox2" width="100%">
+			<mx:HBox id="hbox21" width="50%" horizontalAlign="left">
+			</mx:HBox>
+			<mx:HBox id="hbox22" width="50%" horizontalAlign="right">
+				<mx:CheckBox id="cb_newWindow" label="New Window" toolTip="This checkbox tells the URL to open in a New Window rather than opening in the current window of the browser." styleName="SmartPanelLabelText" creationComplete="onCreationComplete_cb_newWindow()"/>
+				<mx:CheckBox id="cb_cdsso" label="CDSSO" styleName="SmartPanelLabelText" creationComplete="onCreationComplete_cb_cdsso()"/>
+			</mx:HBox>
+		</mx:HBox>
+	</mx:VBox>
+</mx:HBox>

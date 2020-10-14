@@ -1,0 +1,607 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+	 Copyright (c) 2009 Taras Novak (www.randomfractals.com)
+
+	 Permission is hereby granted, free of charge, to any person
+	 obtaining a copy of this software and associated documentation
+	 files (the "Software"), to deal in the Software without
+	 restriction, including without limitation the rights to use,
+	 copy, modify, merge, publish, distribute, sublicense, and/or sell
+	 copies of the Software, and to permit persons to whom the
+	 Software is furnished to do so, subject to the following
+	 conditions:
+
+	 The above copyright notice and this permission notice shall be
+	 included in all copies or substantial portions of the Software.
+
+	 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+	 EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+	 OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+	 NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+	 HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+	 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+	 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+	 OTHER DEALINGS IN THE SOFTWARE.
+-->
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+		   xmlns:controls="nl.fxc.controls.*"
+		   xmlns:fus="com.fusiox.ui.*"
+		   creationComplete="initPlayer(event)"
+		   width="420"
+		   minWidth="420"
+		   minHeight="110"
+		   horizontalScrollPolicy="off"
+		   verticalScrollPolicy="off"
+		   backgroundAlpha="0"
+		   color="#FFFFFF">
+
+
+	<mx:Script>
+		<![CDATA[
+			import caurina.transitions.Tweener;
+			
+			import com.nocreativity.playr.*;
+			
+			import flash.events.TimerEvent;
+			import flash.utils.Timer;
+			
+			import mx.collections.XMLListCollection;
+			import mx.controls.Alert;
+			import mx.controls.Menu;
+			import mx.controls.sliderClasses.Slider;
+			import mx.core.IFlexDisplayObject;
+			import mx.events.MenuEvent;
+			import mx.events.SliderEvent;
+			import mx.events.StyleEvent;
+			import mx.managers.PopUpManager;
+			import mx.styles.IStyleManager2;
+			import mx.styles.StyleManager;
+
+			public const NORMAL_VIEW:String="normalView";
+			public const LARGE_VIEW:String="largeView";
+			public const FULL_SCREEN:String="fullScreen";
+
+			[Embed(source="assets/images/play.png")]
+			[Bindable]
+			public var playIconCls:Class;
+
+			[Embed(source="assets/images/pause.png")]
+			[Bindable]
+			public var pauseIconCls:Class;
+
+			[Embed(source="assets/images/sound.png")]
+			[Bindable]
+			public var soundIconCls:Class;
+
+			[Embed(source="assets/images/mute.png")]
+			[Bindable]
+			public var muteIconCls:Class;
+
+			private var _skin:String;
+			private var _skinMenu:Menu;
+
+			private var _viewMode:String=NORMAL_VIEW;
+
+			private var _timer:Timer;
+
+			[Bindable]
+			private var _scrubbing:Boolean=false;
+
+			private var _currentPosition:int=-1;
+
+			[Bindable]
+			private var _menuXML:XMLList=
+				<>
+					<menuitem label="Skin" data="top">
+						<menuitem label="Obsidian" data="assets/skins/obsidian.css"
+							groupName="skin" type="radio"/>
+						<menuitem label="Jukebox" data="assets/skins/jukebox.css"
+							groupName="skin" type="radio"/>
+					</menuitem>
+				</>;
+
+			[Bindable]
+			private var player:Playr=new Playr();
+
+			/**
+			 * Initializes music player and playback control bar.
+			 */
+			private function initPlayer(event:Event):void {
+				// create skin menu
+				var menuCollection:XMLListCollection=new XMLListCollection(_menuXML);
+				_skinMenu=Menu.createMenu(null, menuCollection, false);
+				_skinMenu.labelField="@label";
+				_skinMenu.addEventListener("itemClick", changeSkin);
+				_skinMenu.selectedIndex=0;
+
+				// todo: expose player repeat options				
+				player.repeat=PlayrRepeat.REPEAT_NONE;
+
+				// register buttons
+				player.registerStopButton(stopButton);
+				player.registerMuteButton(muteButton);
+
+				// add event listeners
+				player.addEventListener(PlayrEvent.PLAYLIST_UPDATED, onTrackLoad);
+				player.addEventListener(PlayrEvent.PLAYRSTATE_CHANGED, onTrackLoad);
+				player.addEventListener(PlayrEvent.SONGINFO, onTrackLoad);
+				player.addEventListener(PlayrEvent.TRACK_PROGRESS, updateTrackProgress);
+				player.addEventListener(PlayrEvent.PLAYR_SCROBBLED, onScrubbed);
+				player.addEventListener(PlayrErrorEvent.SOUND_STREAM_ERROR, soundStreamErrorHandler);
+				// todo: add playr error handlers
+
+				if (autoPlay) {
+					play();
+				}
+			}
+
+			/**
+			 * Displays error message in title bar on sound stream error.
+			 */
+			private function soundStreamErrorHandler(event:PlayrErrorEvent):void {
+				playerPanel.title="Error loading track";
+			}
+
+			/**
+			 * Updates track info display.
+			 */
+			private function onTrackLoad(event:PlayrEvent=null):void {
+				try {
+					playerPanel.title=player.title;
+					trackSlider.maximum=player.totalSeconds;
+					lengthLabel.text=player.totalTime;
+					trace(this.className+'.onTrackLoad().1 --> player.totalSeconds='+player.totalSeconds);
+				} catch (error:Error) {}
+
+				if (_timer == null){
+					_timer=new Timer(3000);
+					_timer.addEventListener(TimerEvent.TIMER, updateTitle);
+					_timer.start();
+				}
+			}
+
+			/**
+			 * Changes player panel title to display artist name, album and title.
+			 */
+			private function updateTitle(timerEvent:TimerEvent):void {
+				var title:String=player.title;
+				switch (_timer.currentCount % 3) {
+					case 1:
+						title=player.artist;
+						break;
+					case 2:
+						title=player.album;
+						break;
+				}
+				playerPanel.title=title;
+			}
+
+			/**
+			 * Updates track position UI.
+			 */
+			private function updateTrackProgress(event:PlayrEvent):void {
+				trackSlider.value=player.currentSeconds;
+				trackSlider.toolTip=player.currentTime;
+				positionLabel.text=player.currentTime;
+				_currentPosition=player.currentSeconds;
+				this.lengthLabel.text = this.player.totalTime;
+				trackSlider.maximum=player.totalSeconds;
+				trace(this.className+'.updateTrackProgress().1 --> trackSlider.value='+trackSlider.value);
+				if (_currentPosition >= player.totalSeconds) {
+					// hack: playr gets stuck at the end of the track
+					// just replay current track for now when it happens
+					_currentPosition=-1;
+					stop();
+//					if (repeatButton.selected) {
+//						player.scrobbleTo(0);
+//					} else {
+//						// todo: see why palyer.next() doesn't work here properly
+//						// and remove stop call
+//						stop();
+//					}
+				}
+			}
+
+			/**
+			 * Changes track position.
+			 */
+			private function changeTrackPosition(sliderEvent:SliderEvent):void {
+				_scrubbing=true;
+
+				player.fadeOut(2);
+
+				if (!this.isPlaying) {
+					play();
+				}
+				player.scrobbleTo(sliderEvent.value * 1000); // need millis for this one!
+			}
+
+			/**
+			 * Track scrubbing complete event handler.
+			 */
+			private function onScrubbed(event:PlayrEvent):void {
+				_scrubbing=false;
+				player.fadeIn(2, volumeSlider.value);
+			}
+
+			/**
+			 * Changes music volume.
+			 */
+			private function changeVolume(event:SliderEvent):void {
+				player.volume=event.value / 100; // volume range is 0-1
+			}
+
+
+			/**
+			 * Toggles music vis display based on track playback and volume selection.
+			 */
+			private function updateMusicVis():void {
+				if (player.playrState != PlayrStates.PLAYING || player.volume == 0 || player.currentSeconds == player.totalSeconds) {
+					musicVis.visible=false;
+				} else {
+					// show if not muted
+					musicVis.visible=!muteButton.selected;
+				}
+			}
+
+			/**
+			 * Shows player skins menu.
+			 */
+			private function showSkins():void {
+				_skinMenu.show(this.parent.x + this.width - 110, this.parent.y + this.y + 20);
+			}
+
+			/**
+			 * Changes player UI skin.
+			 */
+			private function changeSkin(event:MenuEvent):void {
+				var skinUrl:String=event.item.@data;
+				var immediateUpdate:Boolean=true;
+				if (_skin != null) {
+					StyleManager.unloadStyleDeclarations(_skin, immediateUpdate);
+				}
+				_skin=skinUrl;
+				var styleEvent:IEventDispatcher=StyleManager.loadStyleDeclarations(_skin, immediateUpdate);
+			}
+
+
+			//------------- Public Methods -------------------------
+
+			/**
+			 * Plays the next track.
+			 */
+			public function nextTrack():void {
+				//stop();
+				//player.next();
+				play();
+			}
+
+			/**
+			 * Plays the previous track.
+			 */
+			public function previousTrack():void {
+				//stop();
+				//player.previous();
+				play();
+			}
+
+			/**
+			 * Returns music playback status.
+			 */
+			public function get isPlaying():Boolean {
+				return (player.playrState == PlayrStates.PLAYING);
+			}
+
+			/**
+			 * Toggles music playback.
+			 */
+			public function togglePlay():void {
+				if (!this.isPlaying) {
+					play();
+				} else {
+					pause();
+				}
+			}
+
+			/**
+			 * Plays the current track.
+			 */
+			public function play(position:Number=-1):void {
+				// play current track
+				if (!this.isPlaying) {
+					player.play();
+				}
+
+				// enable Pause mode
+				enablePause();
+			}
+
+			/**
+			 * Enables Pause mode.
+			 */
+			public function enablePause():void {
+				playPauseButton.selected=true;
+				playPauseButton.toolTip="Pause";
+				playPauseButton.setStyle("icon", pauseIconCls);
+				if (!muteButton.selected) {
+					musicVis.visible=true;
+				}
+			}
+
+			/**
+			 * Pauses music playback.
+			 */
+			public function pause():void {
+				if (this.isPlaying) {
+					player.pause();
+				}
+				enablePlay();
+			}
+
+			/**
+			 * Enables Play mode.
+			 */
+			public function enablePlay():void {
+				playPauseButton.toolTip="Play";
+				playPauseButton.setStyle("icon", playIconCls);
+				musicVis.visible=false;
+			}
+
+			/**
+			 * Stops music playback.
+			 */
+			public function stop():void {
+				if (this.isPlaying) {
+					player.stop();
+				}
+
+				positionLabel.text="0:00";
+				trackSlider.value=0;
+				enablePlay();
+			}
+
+			/**
+			 * Updates player controls to loop.
+			 */
+			public function toggleRepeat():void {
+				player.repeat=repeatButton.selected ? PlayrRepeat.REPEAT_SINGLE : PlayrRepeat.REPEAT_NONE;
+				repeatButton.toolTip=repeatButton.selected ? "Turn repeat off" : "Turn repeat on";
+				if (player.currentSeconds == player.totalSeconds && player.repeat != PlayrRepeat.REPEAT_SINGLE) {
+					stop();
+				}
+			}
+
+			/**
+			 * Sound/mute mode update handler.
+			 */
+			public function toggleSound():void {
+				player.volume=muteButton.selected ? 0 : (volumeSlider.value / 100);
+				muteButton.toolTip=muteButton.selected ? "Sound" : "Mute";
+				muteButton.setStyle("icon", muteButton.selected ? muteIconCls : soundIconCls);
+				updateMusicVis();
+			}
+
+			/**
+			 * Track position for the track slider tooltip display.
+			 */
+			public function trackPosition(value:uint):String {
+				return player.currentTime;
+			}
+
+			/**
+			 * Changes music visualization type.
+			 */
+			public function toggleMusicVis():void {
+				if (musicVis.type == "line") {
+					musicVis.type="wave";
+				} else if (musicVis.type == "wave") {
+					musicVis.type="bars";
+				} else {
+					musicVis.type="line";
+				}
+				musicVis.invalidateDisplayList();
+			}
+
+			/**
+			 * Changes player view mode.
+			 */
+			public function toggleViewMode():void {
+				if (viewMode == NORMAL_VIEW) {
+					viewMode=LARGE_VIEW;
+				} else {
+					viewMode=NORMAL_VIEW;
+				}
+			}
+
+			// ---------------- Properties -------------------------------
+
+			[Bindable]
+			public function get playlist():PlaylistManager {
+				return player.playlist;
+			}
+
+			public function set playlist(list:PlaylistManager):void {
+				if (list != null && list.length > 0) {
+					player.playlist=list;
+				}
+			}
+
+			[Bindable]
+			public function get autoPlay():Boolean {
+				return player.autoPlay;
+			}
+
+			public function set autoPlay(auto:Boolean):void {
+				player.autoPlay=auto;
+			}
+
+			[Bindable]
+			public function get viewMode():String {
+				return _viewMode;
+			}
+
+			public function set viewMode(mode:String):void {
+				var playerWidth:uint=playerPanel.width;
+				switch (mode) {
+					case LARGE_VIEW:
+						_viewMode=LARGE_VIEW;
+						playerWidth*=2;
+						break;
+					/* TODO:
+					   case FULL_SREEN:
+					   _viewMode = FULL_SCREEN;
+					 break;*/
+					default:
+						_viewMode=NORMAL_VIEW;
+						playerWidth/=2;
+						break;
+				}
+
+				Tweener.addTween(this, {width: playerWidth, time: 3});
+				Tweener.addTween(this.playerPanel, {width: playerWidth, time: 3});
+			}
+		]]>
+	</mx:Script>
+
+	<mx:Panel id="playerPanel" styleName="MusicPlayerPanel"
+			  layout="vertical"
+			  title="{player.title}"
+			  width="100%"
+			  height="110"
+			  headerHeight="30"
+			  verticalGap="0"
+			  horizontalGap="0"
+			  verticalScrollPolicy="off"
+			  horizontalScrollPolicy="off"
+			  horizontalAlign="center">
+
+		<mx:Spacer height="5"/>
+
+		<mx:HBox width="100%"
+				 height="30"
+				 paddingLeft="10"
+				 paddingRight="10">
+
+			<mx:Label id="positionLabel"
+					  text="0:00"/>
+
+			<mx:HSlider id="trackSlider"
+						width="100%"
+						allowTrackClick="true"
+						useHandCursor="true"
+						buttonMode="true"
+						liveDragging="false"
+						snapInterval="1"
+						tickInterval="60"
+						showTrackHighlight="true"
+						dataTipPlacement="top"
+						dataTipOffset="2"
+						dataTipFormatFunction="trackPosition"
+						minimum="0"
+						change="changeTrackPosition(event)"/>
+
+			<mx:Label id="lengthLabel"/>
+
+		</mx:HBox>
+
+		<mx:HBox width="100%"
+				 verticalAlign="middle"
+				 paddingLeft="10"
+				 paddingRight="10"
+				 horizontalAlign="center">
+
+			<fus:Visualization id="musicVis"
+							   width="88"
+							   height="36"
+							   useHandCursor="true"
+							   buttonMode="true"
+							   audioLineColor="#00A9FF"
+							   audioFillColor="#0066CC"
+							   type="wave"
+							   bars="24"
+							   channel="stereo"
+							   click="toggleMusicVis()"
+							   toolTip="Change Visualization"
+							   visible="false"/>
+
+			<mx:Spacer width="40%"/>
+
+			<mx:Button id="stopButton"
+					   click="stop()"
+					   width="16"
+					   height="16"
+					   icon="@Embed(source='assets/images/stop.png')"
+					   toolTip="Stop"/>
+
+			<mx:Button id="previousButton"
+					   click="previousTrack()"
+					   toolTip="Previous"
+					   width="16"
+					   height="16"
+					   icon="@Embed(source='assets/images/prev16.png')"/>
+
+			<mx:Button id="playPauseButton"
+					   click="togglePlay()"
+					   toggle="true"
+					   width="24"
+					   height="24"
+					   icon="@Embed(source='assets/images/play.png')"
+					   toolTip="Play"/>
+
+			<mx:Button id="nextButton"
+					   click="nextTrack()"
+					   toolTip="Next"
+					   width="16"
+					   height="16"
+					   icon="@Embed(source='assets/images/next16.png')"/>
+
+			<mx:Button id="repeatButton"
+					   click="toggleRepeat()"
+					   toggle="true"
+					   width="16"
+					   height="16"
+					   icon="@Embed(source='assets/images/repeat.png')"
+					   toolTip="Turn repeat on"/>
+
+			<mx:Spacer width="30%"/>
+
+			<mx:Button id="muteButton"
+					   click="toggleSound()"
+					   toggle="true"
+					   width="16"
+					   height="16"
+					   icon="@Embed(source='assets/images/sound.png')"
+					   toolTip="Mute"/>
+
+			<mx:HSlider id="volumeSlider"
+						change="changeVolume(event); updateMusicVis();"
+						width="80"
+						height="30"
+						liveDragging="true"
+						dataTipPrecision="0"
+						tickOffset="10"
+						dataTipOffset="2"
+						minimum="0"
+						maximum="100"
+						value="80"/>
+
+			<mx:Button id="skinButton" visible="false" includeInLayout="false"
+					   click="showSkins()"
+					   toolTip="Change Skin"
+					   width="16"
+					   height="16"
+					   icon="@Embed(source='assets/images/up16.png')"/>
+
+			<mx:Button id="viewModeButton"
+					   click="toggleViewMode()"
+					   toggle="true"
+					   toolTip="Resize"
+					   width="16"
+					   height="16"
+					   icon="@Embed(source='assets/images/view.png')"/>
+
+		</mx:HBox>
+
+	</mx:Panel>
+
+</mx:Canvas>

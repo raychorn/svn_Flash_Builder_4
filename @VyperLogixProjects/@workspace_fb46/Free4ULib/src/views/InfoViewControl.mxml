@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:states>
+		<s:State name="not_logged_in"/>
+		<s:State name="logged_in"/>
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var _info:String;
+			
+			protected function view1_creationCompleteHandler(event:FlexEvent):void {
+				var source:String = FlexGlobals.topLevelApplication['info_info'];
+				if (source is String) {
+					this._info = source.replace('{{ version }}',FlexGlobals.topLevelApplication.appNamespace.versionNumber);
+				}
+			}
+			
+			
+			protected function txt_output_creationCompleteHandler(event:FlexEvent):void {
+				FlexGlobals.topLevelApplication.determine_view_debugger_for(this,event.currentTarget as TextArea);
+				FlexGlobals.topLevelApplication.handle_get_gps_location_updates();
+			}
+			
+			
+			protected function panel1_gestureZoomHandler(event:TransformGestureEvent):void {
+				var ii:int = -1;
+			}
+			
+			private function get isDebugger():Boolean {
+				return FlexGlobals.topLevelApplication.isDebugger;
+			}
+		]]>
+	</fx:Script>
+	<s:Panel width="100%" height="100%" styleName="Panels" title="Copyright and Privacy Policy" gestureZoom="panel1_gestureZoomHandler(event)">
+		<s:VGroup width="100%" height="100%">
+			<s:Scroller width="100%" height="100%">
+				<s:Group> 
+					<s:VGroup width="100%">
+						<s:TextArea id="txt_info" editable="false" styleName="INFO" text="{this._info}" selectable="false" width="100%" height="100%" verticalScrollPolicy="auto"/>
+					</s:VGroup>
+				</s:Group>        
+			</s:Scroller>  
+			<s:HGroup width="100%" height="20%" visible="{this.isDebugger}" includeInLayout="{this.isDebugger}">
+				<s:TextArea id="txt_output" styleName="Debugger" width="100%" height="100" editable="false" selectable="false" creationComplete="txt_output_creationCompleteHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Panel>
+</s:Group>

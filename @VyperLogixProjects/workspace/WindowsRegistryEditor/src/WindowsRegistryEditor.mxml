@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark"  
+					   xmlns:mx="library://ns.adobe.com/flex/mx" showStatusBar="false" 
+					   xmlns:application="application.*" 
+					   creationComplete="windowedapplication1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:states>
+		<s:State name="mainView"/>
+		<s:State name="updaterView"/>
+	</s:states>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel.ttf");
+			fontFamily: NeoSansIntel;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Light.ttf");
+			fontFamily: NeoSansIntelLight;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium2;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/CALIBRI.TTF");
+			fontFamily: Calibri;
+			embedAsCFF: false;
+		}
+		
+		.splash_movie_canvas {
+			backgroundColor: #ffffff;
+		}
+		
+		.LoginPanel {
+			borderStyle: none;
+			borderColor: #3300ff;
+			borderThickness: 3;
+			roundedBottomCorners: true;
+			cornerRadius: 8;
+			headerHeight: 31;
+			headerColors: #0033ff, #330099;
+			backgroundColor: #ffffff;
+			backgroundAlpha: 0.3;
+			shadowDistance: 6;
+			shadowDirection: right;
+			titleStyleName: "LoginPanelTitle";
+		}
+		
+		.LoginPanelTitle {
+			fontFamily: Calibri;
+			fontSize: 16;
+		}
+		
+		.TreeNodeWithChildren {
+			fontFamily: Calibri;
+			fontSize: 11;
+			fontWeight: bold;
+			color: blue;
+		}
+		
+		.TreeNodeWithNoChildren {
+			fontFamily: Calibri;
+			fontSize: 11;
+			fontWeight: normal;
+			color: black;
+		}
+		
+		.ErrorMessages {
+			fontFamily: Calibri;
+			fontSize: 14;
+			fontWeight: bold;
+			color: red;
+		}
+		
+		.NormalMessages {
+			fontFamily: Calibri;
+			fontSize: 14;
+			color: black;
+		}
+		
+		.ImportantMessage {
+			fontFamily: Calibri;
+			fontSize: 14;
+			fontWeight: bold;
+			color: blue;
+		}
+		
+		.TermsAndConditionsHTML {
+			fontFamily: NeoSansIntelLight;
+			fontSize: 10;
+			color: black;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import application.NativeApplicationUpdater;
+			
+			import com.CapabilitiesUtils;
+			import com.EzHTTPService;
+			import com.StringUtils;
+			import com.adobe.serialization.json.JSON;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.AppIcon;
+			import controls.crm.ReportProblems;
+			import controls.forms.FormViewer;
+			
+			import flash.net.SharedObject;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Menu;
+			import mx.core.FlexGlobals;
+			import mx.events.AIREvent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			import mx.events.ResizeEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.components.VideoDisplay;
+			
+			import utils.APIHelper;
+			
+			import views.SampleTreeView;
+			
+			import vyperlogix.FileIO.FileUpload;
+			import vyperlogix.FileIO.events.*;
+			import vyperlogix.views.events.*;
+			
+			public static var force_localHost:Boolean = true;
+			
+			[Bindable]
+			public var __utility__:String = 'J:\\@Vyper Logix Corp\\@Projects\\python\\windows_reg_exporter\\dist\\winregdump.exe';
+			
+			[Bindable]
+			public var is_debugging:Boolean = false;
+			
+			[Bindable]
+			public var is_logoVisible:Boolean = false;
+			
+			public var __is_localhost__:Boolean = false;
+			
+			public static var problems:ReportProblems;
+			
+			public static var uploader:FileUpload;
+			
+			public var splashPopUp:*;
+
+			public var _copyrightMessage:String;
+
+			[Embed(source="assets/icons/icons/app_icon_128.png")]
+			[Bindable]
+			public var appLogoCls:Class;
+
+			[Embed(source="assets/docs/terms/TermsAndConditions.html",mimeType="application/octet-stream")]
+			[Bindable]
+			public var TermsAndConditionsClass:Class;
+			
+/* 			[Bindable]
+			public var how_to_video_id:String = "WNyi0ER8pHc";
+			public var how_to_video_url:String = "http://www.youtube-nocookie.com/v/'+how_to_video_id+'?fs=1&hl=en_US&hd=1";
+ */			
+			public var Languages:Object = {
+				'English':'',
+				'Spanish':'Spanish'
+			};
+			
+			public static var const_view_fullscreen:String = 'view.fullscreen';
+			public static var const_view_cloud:String = 'view.cloud';
+			public static var const_application_exit:String = 'application.exit';
+			public static var const_actions_sample:String = 'actions.sample';
+			public static var const_help_report_problem:String = 'help.report_problem';
+			public static var const_actions_getForm:String = 'actions.get.form';
+			
+			public static var aViewer:SampleTreeView;
+
+			[Bindable]
+			private var appMenu:Array = [
+				{
+					'label':'Windows Registry Editor', 'name':'application', 'children':[
+						{	'label':'Sample Tree...', 
+							'name':WindowsRegistryEditor.const_actions_sample,
+							'enabled':false,
+							'doFunc': function(event:MenuEvent):void {
+								if (!FlexGlobals.topLevelApplication.appProxy.isLoggedIn) {
+									AlertPopUp.surpriseNoOkay('You MUST Login to use this part of the application.','WARNING !!!');
+								} else {
+									if (!WindowsRegistryEditor.aViewer) {
+										WindowsRegistryEditor.aViewer = PopUpManager.createPopUp(FlexGlobals.topLevelApplication.appProxy.splashPopUp, SampleTreeView, true) as SampleTreeView;
+										WindowsRegistryEditor.aViewer.x = 10;
+										WindowsRegistryEditor.aViewer.y = 10;
+										WindowsRegistryEditor.aViewer.width = FlexGlobals.topLevelApplication.appProxy.splashPopUp.width - 50;
+										WindowsRegistryEditor.aViewer.title = 'Sample Tree';
+										WindowsRegistryEditor.aViewer.utility = __utility__;
+										SampleTreeView._this = WindowsRegistryEditor.aViewer;
+										WindowsRegistryEditor.aViewer.height = FlexGlobals.topLevelApplication.appProxy.splashPopUp.height- FlexGlobals.topLevelApplication.appProxy.splashPopUp.menuBar.height - 50;
+										WindowsRegistryEditor.aViewer.addEventListener(CloseEvent.CLOSE, 
+											function (event:CloseEvent):void {
+												PopUpManager.removePopUp(WindowsRegistryEditor.aViewer);
+												SampleTreeView._this = null;
+											}
+										);
+									} else {
+										PopUpManager.addPopUp(WindowsRegistryEditor.aViewer, FlexGlobals.topLevelApplication.appProxy.splashPopUp, true);
+									}
+								}
+							}
+						},
+						{	'label':'Exit', 
+							'name':WindowsRegistryEditor.const_application_exit,
+							'doFunc': function(event:MenuEvent):void {
+								FlexGlobals.topLevelApplication.closeApplicaton();
+							}
+						},
+					]
+				},
+				{
+					'label':'Help', 'name':'help', 'children':[
+						{	'label':'Report a Problem...', 
+							'name':WindowsRegistryEditor.const_help_report_problem,
+							'enabled':false,
+							'doFunc': function(event:MenuEvent):void {
+								if ((WindowsRegistryEditor.problems is ReportProblems) == false) {
+									WindowsRegistryEditor.problems = PopUpManager.createPopUp(FlexGlobals.topLevelApplication.appProxy.splashPopUp, ReportProblems, true) as ReportProblems;
+									WindowsRegistryEditor.problems.title = 'Report Problems with this Application.';
+									WindowsRegistryEditor.problems.x = 10;
+									WindowsRegistryEditor.problems.y = 10;
+									WindowsRegistryEditor.problems.width = 700;
+									WindowsRegistryEditor.problems.height = 500;
+									WindowsRegistryEditor.problems.showCloseButton = true;
+									WindowsRegistryEditor.problems.addEventListener(CloseEvent.CLOSE, 
+										function (event:CloseEvent):void {
+											PopUpManager.removePopUp(WindowsRegistryEditor.problems);
+											WindowsRegistryEditor.problems = null;
+										}
+									);
+									WindowsRegistryEditor.problems.btn_send.addEventListener(MouseEvent.CLICK, 
+										function (event:MouseEvent):void {
+											var toks:Array = FlexGlobals.topLevelApplication.AppNameSpace.app_title.split(' :: ');
+											var title:String = toks[0];
+											FlexGlobals.topLevelApplication.title = title+' :: Sending your Email...'
+											var url:String = FlexGlobals.topLevelApplication.domain+APIHelper.send_email_endpoint;
+											var ezREST:EzHTTPService = new EzHTTPService(false,false);
+											ezREST.post(url,{'fromName':WindowsRegistryEditor.problems.fromName.text,'email':WindowsRegistryEditor.problems.email.text,'msg':WindowsRegistryEditor.problems.msg.text}, 
+												function (event:ResultEvent):void {
+													var response:*;
+													try {
+														response = (event.result is String) ? event.result : event.result.getItemAt(0);
+														
+														var errorMsg:String = response['error'];
+														WindowsRegistryEditor.problems.errorString = (errorMsg is String) && (errorMsg.length > 0) ? errorMsg : '';
+														
+														if ( (errorMsg is String) && (errorMsg.length > 0) ) {
+															AlertPopUp.surpriseNoOkay('Your Email was not sent due to some kind of system error.  Try again later in the day.','WARNING');
+														} else {
+															AlertPopUp.surpriseNoOkay('Your Email was successfully sent and your issue will be resolved shortly','INFO');
+														}
+														PopUpManager.removePopUp(WindowsRegistryEditor.problems);
+														WindowsRegistryEditor.problems = null;
+													} catch (e:Error) {
+														var stackTrace:String = e.getStackTrace();
+														AlertPopUp.errorNoOkay(WindowsRegistryEditor.problems.className+'.btn_send().ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR');
+													}
+												}, ezREST.jsonResultType);
+										}
+									);
+									WindowsRegistryEditor.problems.btn_dismiss.addEventListener(MouseEvent.CLICK, 
+										function (event:MouseEvent):void {
+											PopUpManager.removePopUp(WindowsRegistryEditor.problems);
+											WindowsRegistryEditor.problems = null;
+										}
+									);
+									PopUpManager.centerPopUp(WindowsRegistryEditor.problems);
+								} else {
+									WindowsRegistryEditor.problems.visible = WindowsRegistryEditor.problems.enabled = true;
+								}
+							}
+						},
+					]
+				},
+				{
+					'label':'View', 'name':'view', 'children':[
+						{	'label':'Full Screen', 
+							'name':WindowsRegistryEditor.const_view_fullscreen, 
+							'type':"check", 
+							'toggled':false, 
+							'toggledFunc':function ():Boolean {return (FlexGlobals.topLevelApplication.nativeWindow.stage.displayState != StageDisplayState.NORMAL) ? true : false}, 
+							'doFunc': function(event:MenuEvent):void {
+								var menu:Menu = Menu(event.menu);
+								if (event.item.toggled) {
+									FlexGlobals.topLevelApplication.do_fullScreen();
+								} else {
+									FlexGlobals.topLevelApplication.do_windowed();
+								}
+								menu.toolTip = FlexGlobals.topLevelApplication.nativeWindow.stage.displayState;
+							}
+						},
+					]
+				},
+				{'label':'Domain', 'name':'debug.status',
+					'children':[
+						{	'label':'appspot.com', 
+							'name':WindowsRegistryEditor.const_view_cloud, 
+							'type':"check", 
+							'toggled':false, 
+							'toggledFunc':function ():Boolean {return (FlexGlobals.topLevelApplication.is_localHost) ? false : true},
+							'doFunc': function(event:MenuEvent):void {
+								var menu:Menu = Menu(event.menu);
+								if (event.item.toggled) {
+									FlexGlobals.topLevelApplication.is_localHost = false;
+								} else {
+									FlexGlobals.topLevelApplication.is_localHost = true;
+								}
+								menu.toolTip = (this.is_localHost) ? 'LocalHost' : this.domain;
+								}
+						},
+					]
+				}
+			];
+			
+			public var __local_domain__:String = 'http://localhost:9000';
+			public var __public_domain__:String = 'https://vyperlogixcorp.appspot.com';
+			
+			public var icon:Loader = new Loader();
+			
+			public var app_icon_url:String = 'assets/icons/icons/app_icon_16.png';
+			public var app_icon128_url:String = 'assets/icons/icons/app_icon_128.png';
+			public var _icon:AppIcon = new AppIcon([app_icon_url,'assets/icons/icons/app_icon_32.png','assets/icons/icons/app_icon_48.png',app_icon128_url]);
+
+			public function get domain():String {
+				var domain:String = (this.appProxy.is_debugging) ? this.__local_domain__ : this.__public_domain__;
+				trace(this.className+'.domain --> this.is_debugging='+this.appProxy.is_debugging+', domain='+domain);
+				return domain;
+			}
+			
+			public function get insecure_public_domain():String {
+				return this.__public_domain__.replace('https://','http://');
+			}
+			
+			public function get is_localHost():Boolean {
+				return this.domain == this.__local_domain__;
+			}
+			
+			public function set is_localHost(is_localHost:Boolean):void {
+				this.__is_localhost__ = is_localHost;
+			}
+			
+			private function onCreationComplete_appProxy():void {
+				var _this:WindowsRegistryEditor = this;
+				trace(this.className+'.onCreationComplete_appProxy().1 !');
+				this.appProxy.addEventListener(TermsAndConditionsAgreementEvent.TYPE_TERMSANDCONDITIONS_AGREEMENT,
+					function(event:TermsAndConditionsAgreementEvent):void {
+						if (_this['uploader'] is FileUpload) {
+							_this['uploader']['refresh_terms_and_conditions_checkbox_selection']();
+						}
+					}
+				);
+				this.appProxy.addEventListener(TermsAndConditionsNoAgreementEvent.TYPE_TERMSANDCONDITIONS_NO_AGREEMENT,
+					function(event:TermsAndConditionsNoAgreementEvent):void {
+						if (_this['uploader'] is FileUpload) {
+							_this['uploader']['refresh_terms_and_conditions_checkbox_selection']();
+						}
+					}
+				);
+				this.appProxy.TermsAndConditionsClass = this.TermsAndConditionsClass;
+				this.appProxy['_onCreationComplete_appProxy'](this.appMenu);
+			}
+			
+			private function onCreationComplete_AppNameSpace():void {
+				this._copyrightMessage = this.AppNameSpace._copyrightMessage;
+			}
+
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void {
+				this.splashPopUp = this;
+			}
+
+		]]>
+	</fx:Script>
+	<application:ApplicationNamespace id="AppNameSpace" x="0" y="0" width="0" height="0" creationComplete="onCreationComplete_AppNameSpace()"/>
+	<application:ApplicatonProxy id="appProxy" NativeApplicationUpdater="{NativeApplicationUpdater}" no_choice="true" AppNameSpace="{this.AppNameSpace}" x="0" y="0" width="100%" height="100%" creationComplete="onCreationComplete_appProxy()"/>
+</s:WindowedApplication>

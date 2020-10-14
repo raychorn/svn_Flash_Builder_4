@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" implements="mx.controls.listClasses.IListItemRenderer">
+	<mx:HBox width="100%" verticalCenter="0">
+		<mx:Label width="35%" text="{data.text}" textAlign="left"/>
+		<mx:Text width="65%" text="{data.desc}" textAlign="right"/>
+	</mx:HBox>
+</mx:Canvas>

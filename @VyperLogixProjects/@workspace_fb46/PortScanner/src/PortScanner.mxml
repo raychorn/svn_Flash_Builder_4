@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			
+			import flash.net.*;
+			import flash.events.*;
+			
+			private var socket:Socket;
+			private var currentPort:uint;
+			private var toPort:uint;
+			
+			
+			private function createSocket():void {
+				socket = new Socket();
+				socket.addEventListener("connect", socket_connect);
+				socket.addEventListener("ioError", socket_ioError);
+				
+			}
+			
+			private function deleteSocket():void {
+				socket.removeEventListener("connect",socket_connect);
+				socket.removeEventListener("ioError", socket_ioError);
+				socket.close ();
+			}
+			
+			private function startScanning():void {
+				createSocket();
+				currentPort = uint(fromPort_ti.text);
+				toPort = uint(toPort_ti.text);
+				scanPort(currentPort);	
+			}
+			
+			private function scanPort(port:uint):void {
+				if(port <= toPort) {
+					lbl_status.text = "Scanning port:" + port + "\n";
+					socket.connect(host.text, port);
+					enableControls(false);
+				} else {
+					enableControls(true);
+					deleteSocket();
+					lbl_status.text = "Scanning complete..";
+				}
+			}
+			
+			private function socket_connect(event:Event):void {
+				openPorts_ta.text += currentPort + "\n";
+				currentPort++;
+				socket.close();
+				scanPort(currentPort);
+			}
+			
+			private function socket_ioError(event:IOErrorEvent):void {
+				/* 
+				Not sure, when there is ioError I am not able to reuse same socket object.
+				So deleting current socket object and recreating another socket object...
+				*/
+				deleteSocket();
+				createSocket();
+				scanPort(++currentPort);
+			}
+			
+			private function enableControls(bEnable:Boolean):void {
+				host.enabled = bEnable;
+				toPort_ti.enabled  = bEnable;
+				fromPort_ti.enabled = bEnable;
+				scanButton.enabled = bEnable;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<mx:Form>
+			<mx:FormItem label="Host:"><mx:TextInput id="host" text="127.0.0.1"/></mx:FormItem>
+			<mx:FormItem label="Start port:"><mx:TextInput id="fromPort_ti" text="1"/></mx:FormItem>
+			<mx:FormItem label="To port:"><mx:TextInput id="toPort_ti" text="65535"/></mx:FormItem>	
+			<mx:FormItem><mx:Button id="scanButton" label="Start Scannning" click="startScanning()"/></mx:FormItem>
+		</mx:Form>
+		<mx:VBox>
+			<mx:Label text="Open Ports:"/>
+			<mx:TextArea id="openPorts_ta" width="400" height="250"/>
+			<mx:Label id="lbl_status"/>
+		</mx:VBox>
+	</s:VGroup>
+</s:WindowedApplication>

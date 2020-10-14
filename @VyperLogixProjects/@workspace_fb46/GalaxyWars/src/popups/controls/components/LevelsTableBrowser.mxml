@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ObjectUtils;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var _grid_dataProvider:ArrayCollection = new ArrayCollection();
+
+			private var _grid:DataGrid;
+			
+			[Bindable]
+			private var _deferredGridActions:Array = [];
+			
+			[Bindable]
+			private var _grid_columns_dataProvider:Object;
+			
+			public function get deferredGridActions():Array {
+				return this._deferredGridActions;
+			}
+			
+			public function set deferredGridAction(action:Function):void {
+				if (action != null) {
+					this._deferredGridActions.push(action);
+				}
+			}
+			
+			public function get grid_dataProvider():ArrayCollection {
+				if (this.grid) {
+					return ArrayCollection(this.grid.dataProvider);
+				}
+				return this._grid_dataProvider;
+			}
+			
+			public function set grid_dataProvider(dp:ArrayCollection):void {
+				this._grid_dataProvider = dp;
+				if (this.grid) {
+					this.grid.dataProvider = dp;
+				}
+			}
+			
+			public function get grid_columns_dataProvider():Object {
+				return this._grid_columns_dataProvider;
+			}
+			
+			public function set grid_columns_dataProvider(dp:Object):void {
+				if (this._grid_columns_dataProvider != dp) {
+					this._grid_columns_dataProvider = dp;
+				}
+			}
+			
+			public function resizeColumns(grid:DataGrid):void {
+				grid.validateNow ();
+				var aColumn:GridColumn;
+				for (var i:int = 0; i < grid.columns.length; i++) {
+					aColumn = grid.columns.getItemAt(i) as GridColumn;
+					aColumn.width = aColumn.width;
+				}
+			}			
+			
+			private function onCreationCompleteGridWidget(event:FlexEvent):void {
+				this._grid = DataGrid(event.currentTarget);
+				if (this._grid_dataProvider) {
+					this.grid.dataProvider = this._grid_dataProvider;
+				}
+				var i:int;
+				var actions:Array = this.deferredGridActions;
+				for (i = 0; i < actions.length; i++) {
+					this.grid.callLater(actions[i]);
+				}
+				var j:int;
+				var column:GridColumn;
+				var keys:Array = ObjectUtils.keys(this._grid_columns_dataProvider);
+				var keys2:Array;
+				for (i = 0; i < keys.length; i++) {
+					if (this._grid_columns_dataProvider[keys[i]]) {
+						column = this[keys[i]] as GridColumn;
+						if (column) {
+							keys2 = ObjectUtils.keys(this._grid_columns_dataProvider[keys[i]]);
+							for (j = 0; j < keys2.length; j++) {
+								column[keys2[j]] = this._grid_columns_dataProvider[keys[i]][keys2[j]];
+							}
+						}
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:DataGrid id="grid" width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto" creationComplete="onCreationCompleteGridWidget(event)">
+			<s:columns>
+				<mx:ArrayList>
+					<s:GridColumn id="col1" dataField="level" headerText="Level" resizable="false" minWidth="20" width="50" />
+					<s:GridColumn id="col2" dataField="resources" headerText="Required Resources" resizable="false" minWidth="50" width="{(this.grid.width-col1.width)/3}" itemRenderer="popups.controls.components.renderers.LevelsTableBrowserGridColumnRenderer"/>
+					<s:GridColumn id="col3" dataField="time" headerText="Build Time" resizable="false" minWidth="50" width="{(this.grid.width-col1.width)/3}" />
+					<s:GridColumn id="col4" dataField="production" headerText="Production/Hour" resizable="false" minWidth="50" width="{(this.grid.width-col1.width)/3}" />
+				</mx:ArrayList>
+			</s:columns>
+		</s:DataGrid>
+	</s:VGroup>
+</s:TitleWindow>

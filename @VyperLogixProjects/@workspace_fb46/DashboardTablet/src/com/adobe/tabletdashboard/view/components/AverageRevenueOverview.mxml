@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group add="addHandler()"
+		 preinitialize="preinitializeHandler()"
+		 removedFromStage="removeHandler()"
+		 xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:charts="com.adobe.tabletdashboard.view.charts.*"
+		 xmlns:images="assets.images.*"
+		 xmlns:components="com.adobe.tabletdashboard.view.components.*">
+
+	<fx:Metadata>
+		[Style(name="chartCornerRadius", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="chartPaddingTop", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="chartPaddingBottom", type="Number", format="Length", inherit="no",  minValue="0.0")]
+		[Style(name="chartPaddingLeft", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="chartPaddingRight", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="paddingLeft", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="paddingRight", type="Number", format="Length", inherit="no", minValue="0.0")]
+	</fx:Metadata>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:CurrencyFormatter id="currencyFormatter"
+							 currencySymbol="$"
+							 fractionalDigits="0"
+							 useCurrencySymbol="true"/>
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.dashboard.model.AppModel;
+			import com.adobe.dashboard.model.chart.CostProfitModel;
+			import com.adobe.dashboard.presenter.AverageRevenuePresenter;
+
+			import mx.core.IVisualElement;
+
+			[Bindable]
+			private var presenter:AverageRevenuePresenter;
+
+			[Bindable]
+			public var barHeight:int=80;
+
+			[Bindable]
+			public var vPadding:int=10;
+
+
+			//
+			// Private Methods
+			//
+
+			private function addListeners():void
+			{
+				removeListeners();
+
+				presenter.chartOverviewPresenter.addEventListener(Event.CHANGE, chartOverviewChangeHandler, false, 0, true);
+			}
+
+			private function removeListeners():void
+			{
+				if (presenter && presenter.chartOverviewPresenter && presenter.chartOverviewPresenter.hasEventListener(Event.CHANGE))
+				{
+					presenter.chartOverviewPresenter.removeEventListener(Event.CHANGE, chartOverviewChangeHandler);
+				}
+			}
+
+
+			//
+			// Public functions
+			//
+
+			public function loadData():void
+			{
+				presenter.getMyCostVsProfitChartData(true);
+			}
+
+			private var _nextIcon:Class;
+
+			//
+			// Public functions
+			//
+
+			public function get nextIcon():Class
+			{
+				return _nextIcon;
+			}
+
+			public function set nextIcon(value:Class):void
+			{
+				_nextIcon=value;
+				var icon:IVisualElement=addElement(new value());
+				icon.right=15;
+				icon.verticalCenter=0;
+			}
+
+			//
+			// Event Handlers
+			//
+
+			protected function preinitializeHandler():void
+			{
+				presenter=AppModel.getInstance().averageRevenuePresenter;
+			}
+
+			protected function addHandler():void
+			{
+				addListeners();
+			}
+
+			protected function removeHandler():void
+			{
+				removeListeners();
+			}
+
+			protected function chartOverviewChangeHandler(event:Event):void
+			{
+				var model:CostProfitModel=CostProfitModel(presenter.chartOverviewPresenter.dataModel);
+				yearToDateGrossDisplay.text=currencyFormatter.format(model.profit / 1000) + "K";
+
+				averageRevenueChart.section1Label=model.costLabel;
+				averageRevenueChart.section1Percent=model.cost / (model.cost + model.profit);
+
+				averageRevenueChart.section2Label=model.profitLabel;
+				averageRevenueChart.section2Percent=model.profit / (model.cost + model.profit);
+			}
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="selected"/>
+	</s:states>
+
+	<!-- background -->
+	<s:Rect radiusX="2"
+			radiusY="2"
+			width="100%"
+			height="100%"
+			alpha.normal="0"
+			alpha.selected="1">
+		<s:fill>
+			<s:SolidColor color="0x2E2E2E"/>
+		</s:fill>
+	</s:Rect>
+	<s:Line width="100%"
+			top="0">
+		<s:stroke>
+			<s:SolidColorStroke color="0x262626"/>
+		</s:stroke>
+	</s:Line>
+	<s:Line width="100%"
+			bottom="0">
+		<s:stroke>
+			<s:SolidColorStroke color="0x262626"/>
+		</s:stroke>
+	</s:Line>
+	<s:Line height="100%"
+			right="0">
+		<s:stroke>
+			<s:SolidColorStroke color="0x262626"/>
+		</s:stroke>
+	</s:Line>
+	<!-- progress chart -->
+	<s:VGroup left="{getStyle('paddingLeft')}"
+			  right="{getStyle('paddingRight')}"
+			  top="16"
+			  bottom="0"
+			  gap="8">
+
+		<s:HGroup width="100%">
+			<s:Label styleName="labelStyle"
+					 text="Avg Revenue per Sale"/>
+			<s:Rect width="100%"/>
+			<s:Label id="yearToDateGrossDisplay"
+					 textAlign="right"
+					 styleName="labelStyle"/>
+		</s:HGroup>
+		<components:TabletHorizontalRule width="100%"/>
+
+		<charts:ProgressChart id="averageRevenueChart"
+							  width="100%"
+							  height="{barHeight}"
+							  cornerRadius="{getStyle('chartCornerRadius')}"
+							  paddingBottom="{getStyle('chartPaddingBottom')}"
+							  paddingLeft="{getStyle('chartPaddingLeft')}"
+							  paddingRight="{getStyle('chartPaddingRight')}"
+							  paddingTop="{getStyle('chartPaddingTop')}"
+							  section1ColorList="{ [ 0x2A65C7, 0x2853A2, 0x243D76 ] }"
+							  section2ColorList="{ [ 0x4E7221, 0x3C5919, 0x293E10 ] }"
+							  skipAnimation="@{presenter.skipAnimation}"/>
+
+	</s:VGroup>
+
+
+</s:Group>

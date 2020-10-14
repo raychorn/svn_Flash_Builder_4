@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mob:ScreenStackApplication xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" 
+							navBarStyleName="styleBlue" isCreatingAllChildren="false"
+							xmlns:mob="openplug.elips.controls.*" 
+							xmlns:scr="openplug.elips.controls.screenClasses.*" 
+							creationComplete="screenstackapplication1_creationCompleteHandler(event)" 
+							xmlns:local="*" 
+							xmlns:views="views.*">
+	<!-- UI Catalog Platform Variant Cascading Style Sheet -->
+	<mx:Style source="VariantStyle.css"/>
+	
+	<mx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			import openplug.elips.controls.Alert;
+
+			public const domain_name:String = 'free-4u';
+			public const sub_domain_name:String = 'starbucks';
+			
+			[Bindable] 
+			[Embed(source = 'GPS-Icon_64x64.png')]
+			public var notificationIcon:Class;
+			
+			[Bindable] 
+			[Embed(source = 'person_author_64x64.png')]
+			public var creditsIcon:Class;
+			
+//			[Bindable]
+//			public var isDebugger:Boolean = flash.system.Capabilities.isDebugger;
+
+			[Bindable]
+			public var is_logged_in:Boolean = false;
+			
+			private function refresh_currentState():void {
+				this.currentState = ((this.is_logged_in) ? 'logged_in' : 'not_logged_in');
+				trace('this.currentState='+this.currentState);
+			}
+			
+			protected function screenstackapplication1_creationCompleteHandler(event:FlexEvent):void {
+				this.refresh_currentState();
+				this.stage.addEventListener(KeyboardEvent.KEY_DOWN, 
+					function (event:KeyboardEvent):void {
+						trace(event.toString());
+					}
+				);
+			}
+
+			protected function btn_login_touchTapHandler(event:TouchEvent):void {
+				this.is_logged_in = true;
+				this.refresh_currentState();
+			}
+
+
+			protected function credits_menuItem_actionClickHandler(event:Event):void {
+				Alert.show('\nAuthor: Ray C Horn for Vyper Logix Corp.', 'Credits', Alert.CANCEL, this, null, this.creditsIcon);
+			}
+
+			private function handle_checkin(detail:int):void {
+				if (detail == Alert.OK) {
+					Alert.show('Check-In has been handled.', 'INFO', Alert.CANCEL, this);
+					this.is_logged_in = true;
+				}
+			}
+		]]>
+	</mx:Script>
+	<mob:states>
+		<mx:State name="logged_in">
+			<mx:SetProperty target="{this.vbox_main_logged_in}" name="visible" value="true"/>
+			<mx:SetProperty target="{this.vbox_main_logged_in}" name="includeInLayout" value="true"/>
+			<mx:SetProperty target="{this.vbox_main_not_logged_in}" name="visible" value="false"/>
+			<mx:SetProperty target="{this.vbox_main_not_logged_in}" name="includeInLayout" value="false"/>
+		</mx:State>
+		<mx:State name="not_logged_in">
+			<mx:SetProperty target="{this.vbox_main_logged_in}" name="visible" value="false"/>
+			<mx:SetProperty target="{this.vbox_main_logged_in}" name="includeInLayout" value="false"/>
+			<mx:SetProperty target="{this.vbox_main_not_logged_in}" name="visible" value="true"/>
+			<mx:SetProperty target="{this.vbox_main_not_logged_in}" name="includeInLayout" value="true"/>
+		</mx:State>
+	</mob:states>
+
+	<!-- Main Menu Item Collection-->
+	<mx:ArrayCollection id="widgetsCollection">
+		<mx:Object id="firstObj" label="Text Fields and Keys" data="Text"/>
+		<mx:Object label="Text Style" data="TextStyle"/>
+	</mx:ArrayCollection>
+
+	<mx:ArrayCollection id="menu1">
+		<scr:MenuItem actionClick="Alert.show('(c). Copyright 2011 Vyper Logix Corp.', 'About Free Starbucks');" label="About" icon="@Embed('info.png')"/>
+		<scr:MenuItem id="credits_menuItem" actionClick="credits_menuItem_actionClickHandler(event)" label="Credits" icon="{this.creditsIcon}"/>
+	</mx:ArrayCollection>
+	
+	<!-- iPhone Top Navigation Bar -->
+	<scr:NavigationBarDescriptor title="UICatalog" id="baseNavBar" styleName="styleBlue"/>
+
+	<mob:ScreenView id="Base" softKeyBarStatus="none" navBarDescriptor="{baseNavBar}" menuProvider="{menu1}" backgroundColor="#ffffff" clipContent="true" verticalScrollPolicy="auto">
+		<mob:TabNavigator id="mainTab" width="100%" height="100%">
+			<mx:VBox id="vbox_main" width="100%" height="100%" horizontalGap="0" verticalGap="0" label="Main" icon="@Embed('main.png')">
+				<mx:VBox id="vbox_main_not_logged_in" width="100%" height="100%">
+					<mx:HBox width="100%" height="100%" paddingLeft="5" paddingRight="5">
+						<views:HomeView id="homeView" width="100%" height="100%" callback="{this.handle_checkin}"/>
+					</mx:HBox>
+					<mx:HBox width="100%" visible="false" includeInLayout="false">
+						<mx:Button id="btn_login" label="Login" touchTap="btn_login_touchTapHandler(event)"/>
+					</mx:HBox>
+				</mx:VBox>
+				<mx:VBox id="vbox_main_logged_in" width="100%" height="100%">
+					<mob:List id="widgetsList" showSelection="true" dataProvider="{widgetsCollection}" 
+							  rowHeight="50" itemRenderer="com.renderers.WidgetsListRenderer" width="100%" height="100%" 
+							  itemTouchTap="Alert.show('Not Yet Implemented!');" styleName="lstStyle"/>
+				</mx:VBox>
+				<mx:VBox width="100%">
+					<views:AdMobView id="admobView" width="100%" height="50"/>
+				</mx:VBox>
+			</mx:VBox>
+			<mx:VBox id="helpBox" width="100%" height="100%" horizontalGap="0" verticalGap="0" horizontalAlign="center" label="Info" icon="@Embed('info.png')" backgroundColor="white">
+				<mx:HBox id="helpTitle" excludeFromPlatform="iPhone OS 3.0,Android 1.6" horizontalAlign="center" verticalAlign="middle" horizontalGap="0" width="100%" height="{height/10}" backgroundImage="header.gif">
+					<mx:Label width="10%" text=" " fontSize="17" color="white"/>
+					<mx:Label text="Info" width="80%" textAlign="center" fontSize="17" color="white"/>
+					<mx:Label width="10%" text="x" fontSize="20" color="white" touchTap="exit()"/>
+				</mx:HBox>
+				<mx:Canvas height="100%" width="100%" clipContent="true" verticalScrollPolicy="auto">
+					<mx:VBox width="100%" height="100%" horizontalGap="0" verticalGap="0" horizontalAlign="center">
+						<mx:HBox  width="95%" horizontalAlign="center" verticalAlign="middle" horizontalGap="5" verticalGap="5">
+							<mx:Text fontWeight="bold" color="black" text="{'Free Starbucks for '}"/> 
+							<mx:Image source="platform.png"/>
+						</mx:HBox>	    		
+						<mx:Text width="95%" textAlign="center" styleName="Text" text="{'\nFreeStarbucks (c). 2011, Vyper Logix Corp., allows you to Check-In to Win your FREE Starbucks fix online !\n\nThis is hows it works. Register as many times as you wish using this App. One (1) Winner will be chosen at random on Sunday at 12:00am PT (GMT-8). Winners will be notified via email and within this App upon login.  Prizes will be determined each week however the minimum guaranteed prize is one (1) Starbucks Card with a balance of $5.00 to $25.00, sponsors are gratefully accepted.\n\nVyper Logix Corp Employees and direct family members of same are not elligible to win.\n\nPrivacy Policy:\n\nYour privacy is of the utmost importance.  Nothing is more important that the privacy of your information.  Your Information may be used for marketing purposes and will always be protected by SSL Encryption.\n\n'}"/>
+					</mx:VBox>
+				</mx:Canvas>
+			</mx:VBox>
+		</mob:TabNavigator>
+	</mob:ScreenView>
+	
+</mob:ScreenStackApplication>

@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<view:FlexpadView xmlns:fx="http://ns.adobe.com/mxml/2009"
+    xmlns:s="library://ns.adobe.com/flex/spark"
+    xmlns:mx="library://ns.adobe.com/flex/mx"
+    xmlns:flexpad="http://code.google.com/p/flexpad/"
+    xmlns:view="com.flexpad.view.*"
+    xmlns:path="com.flexpad.path.*">
+
+	<fx:Script>
+		<![CDATA[
+			import spark.events.IndexChangeEvent;
+			protected function backClickHandler(event:Event):void
+			{
+				viewStackHolder.popView();
+				splitViewRightHeader.label = splitViewLeftDP.getItemAt(splitViewLeftList.selectedIndex).label;
+			}
+
+			protected function listChangeHandler(event:IndexChangeEvent):void
+			{
+				viewStackHolder.resetView(firstView);
+				splitViewRightHeader.label = splitViewLeftDP.getItemAt(splitViewLeftList.selectedIndex).label;
+			}
+
+			protected function arrowClickHandler(event:MouseEvent):void
+			{
+				viewStackHolder.pushView(nestedView);
+				splitViewRightHeader.label = "Nested View";
+			}
+
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:VGroup id="firstView" width="100%" height="100%" paddingLeft="30" paddingRight="30" paddingTop="30" paddingBottom="30">
+			<flexpad:Table width="100%">
+				<flexpad:TableRow>
+					<s:HGroup width="100%">
+						<s:Label 
+							styleName="listItemRendererLabel"
+							text="Label One"/>
+						<s:Spacer width="100%" />
+						<flexpad:ArrowButton click="arrowClickHandler(event)" />
+					</s:HGroup>
+				</flexpad:TableRow>
+				<flexpad:TableRow>
+					<s:HGroup width="100%">
+						<s:Label 
+							styleName="listItemRendererLabel"
+							text="Label Two"/>
+						<s:Spacer width="100%" />
+						<s:HGroup verticalAlign="middle">
+							<flexpad:ListItemRendererHintLabel text="Two" />
+							<path:ArrowPath>
+								<path:fill>
+									<s:SolidColor color="0x919191" />
+								</path:fill>
+							</path:ArrowPath>
+						</s:HGroup>
+					</s:HGroup>
+				</flexpad:TableRow>
+				<flexpad:TableRow>
+					<s:HGroup width="100%">
+						<s:Label 
+							styleName="listItemRendererLabel"
+							text="Label Three"/>
+					</s:HGroup>
+				</flexpad:TableRow>
+			</flexpad:Table>
+		</s:VGroup>
+		
+		<s:VGroup id="nestedView" width="100%" height="100%" paddingLeft="30" paddingRight="30" paddingTop="30" paddingBottom="30">
+			<flexpad:Table width="100%">
+				<flexpad:TableRow>
+					<s:HGroup width="100%">
+						<s:Label 
+							styleName="listItemRendererLabel"
+							text="Label Four"/>
+						<s:Spacer width="100%" />
+						<flexpad:ArrowButton />
+					</s:HGroup>
+				</flexpad:TableRow>
+				<flexpad:TableRow>
+					<s:HGroup width="100%">
+						<s:Label 
+							styleName="listItemRendererLabel"
+							text="Label Five"/>
+						<s:Spacer width="100%" />
+						<s:HGroup verticalAlign="middle">
+							<flexpad:ListItemRendererHintLabel text="Five" />
+							<path:ArrowPath>
+								<path:fill>
+									<s:SolidColor color="0x919191" />
+								</path:fill>
+							</path:ArrowPath>
+						</s:HGroup>
+					</s:HGroup>
+				</flexpad:TableRow>
+				<flexpad:TableRow>
+					<s:HGroup width="100%">
+						<s:Label 
+							styleName="listItemRendererLabel"
+							text="Label Six"/>
+					</s:HGroup>
+				</flexpad:TableRow>
+			</flexpad:Table>
+		</s:VGroup>
+	</fx:Declarations>
+
+    <view:layout>
+        <s:VerticalLayout/>
+    </view:layout>
+
+    <s:HGroup 
+        width="100%" height="450"
+        gap="1">
+        <s:VGroup 
+            width="300" height="100%"
+            gap="0">
+            <flexpad:SplitViewHeader 
+                width="100%"
+                label="Label"/>
+            <flexpad:SplitViewLeft 
+                width="100%" height="100%">
+                <flexpad:List id="splitViewLeftList"
+                    width="300" height="100%"
+                    backgroundAlpha="0"
+					change="listChangeHandler(event)">
+                    <s:ArrayCollection id="splitViewLeftDP">
+						<fx:Object label="Label One" icon="@Embed(source='/asset/icon/sampleIcon.png')"></fx:Object>
+						<fx:Object label="Label Two" icon="@Embed(source='/asset/icon/sampleIcon.png')" hint="Two"></fx:Object>
+						<fx:Object label="Label Three" icon="@Embed(source='/asset/icon/sampleIcon.png')" hint="Three"></fx:Object>
+						<fx:Object label="Label Four" icon="@Embed(source='/asset/icon/sampleIcon.png')"></fx:Object>
+						<fx:Object label="Label Five" icon="@Embed(source='/asset/icon/sampleIcon.png')"></fx:Object>
+						<fx:Object label="Label Six" icon="@Embed(source='/asset/icon/sampleIcon.png')"></fx:Object>
+						<fx:Object label="Label Seven" icon="@Embed(source='/asset/icon/sampleIcon.png')"></fx:Object>
+                    </s:ArrayCollection>
+                </flexpad:List>
+            </flexpad:SplitViewLeft>
+        </s:VGroup>
+        <s:VGroup 
+            width="100%" height="100%"
+            gap="0">
+            <flexpad:SplitViewHeader id="splitViewRightHeader" 
+                width="100%"
+                label=""
+                backEnable="{viewStackHolder.selectedIndex>0}"
+				backClick="backClickHandler(event)"/>
+            <flexpad:SplitViewRight 
+                width="100%" height="100%">
+
+                <flexpad:ViewStack id="viewStackHolder"
+                    width="100%" height="100%">
+
+                </flexpad:ViewStack>
+            </flexpad:SplitViewRight>
+        </s:VGroup>
+    </s:HGroup>
+
+</view:FlexpadView>

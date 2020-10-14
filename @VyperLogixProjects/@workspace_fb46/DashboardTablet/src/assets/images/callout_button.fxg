@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Graphic version="2.0" viewHeight="30" viewWidth="30" xmlns="http://ns.adobe.com/fxg/2008" >
+  <Library/>
+  <Group>
+			<mask>
+				<Group x="0.464" y="0.485" >
+					<Rect width="32.2686" height="27.4624">
+						<fill>
+							<SolidColor color="#FFFFFF"/>
+						</fill>
+					</Rect>
+				</Group>
+			</mask>
+			<Path x="23.155" y="18.01" winding="nonZero" data="M 0 0 L 0 0.605 L 4.849 6.663 L 9.692 0.605 L 9.692 0 L 0 0 Z">
+				<fill>
+					<SolidColor color="#B2B2B2"/>
+				</fill>
+			</Path>
+			<Path x="0.54" y="0.714" winding="nonZero" data="M 3.433 24.029 L 10.298 24.029 L 10.298 20.597 L 3.433 20.597 L 3.433 24.029 Z M 3.433 17.164 L 17.163 17.164 L 17.163 13.731 L 3.433 13.731 L 3.433 17.164 Z M 3.433 10.298 L 24.029 10.298 L 24.029 6.866 L 3.433 6.866 L 3.433 10.298 Z M 3.433 4.119 L 27.461 4.119 L 27.461 0.687 L 3.433 0.687 L 3.433 4.119 Z M 0 0 L 0 27.462 L 27.462 27.462 L 27.462 26.089 L 1.373 26.089 L 1.373 0 L 0 0 Z">
+				<fill>
+					<SolidColor color="#B2B2B2"/>
+				</fill>
+			</Path>
+		</Group>
+  <Private/>
+</Graphic>

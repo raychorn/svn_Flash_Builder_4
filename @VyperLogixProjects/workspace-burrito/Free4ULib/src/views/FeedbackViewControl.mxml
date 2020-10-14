@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:widgets="controls.forms.widgets.*" 
+		 width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.vyperlogix.GoogleCloudOperation;
+			import com.vyperlogix.GoogleCloudService;
+			
+			import controls.Alert.AlertAlternative;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			protected function txt_output_creationCompleteHandler(event:FlexEvent):void {
+				FlexGlobals.topLevelApplication.determine_view_debugger_for(this,event.currentTarget as TextArea);
+				FlexGlobals.topLevelApplication.handle_get_gps_location_updates();
+			}
+			
+			protected function handle_sendMessage_action():void {
+				var _this:FeedbackViewControl = this;
+				var user_data:Object = FlexGlobals.topLevelApplication.user_data;
+				var svc:GoogleCloudService = new GoogleCloudService();
+				var op:GoogleCloudOperation = svc.send_email(FlexGlobals.topLevelApplication.user_data.user.username,FlexGlobals.topLevelApplication.feedback_email_address);
+				op.addEventListener(Event.COMPLETE,
+					function (event:Event):void {
+						FlexGlobals.topLevelApplication.removeBusyCursor(_this);
+						try {
+							FlexGlobals.topLevelApplication.user_data = event.target.data;
+							if (event.target.data['error'] is String) {
+								FlexGlobals.topLevelApplication.app.error(event.target.data['error']);
+							}
+						} catch (err:Error) {}
+						_this.parentDocument.navigator.popToFirstView();
+					}
+				);
+				op.addEventListener(ErrorEvent.ERROR,
+					function (event:ErrorEvent):void {
+						FlexGlobals.topLevelApplication.removeBusyCursor(_this);
+						var msg:String = 'ERROR: ' + event.toString();
+						FlexGlobals.topLevelApplication.app.error('ERROR.301: <p>Cannot process your request at this time.</p><p>Please try back later.</p>');
+					}
+				);
+				if (FlexGlobals.topLevelApplication.user_data) {
+					FlexGlobals.topLevelApplication.setBusyCursor(this);
+					op.timeout = FlexGlobals.topLevelApplication.google_cloud_timeout;
+					op.execute();
+				} else {
+					FlexGlobals.topLevelApplication.app.error('WARNING:<p>You cannot give feedback unless you have a valid user account with this Application.</p>');
+				}
+			}
+			
+			protected function btn_send_clickHandler(event:MouseEvent):void {
+				this.handle_sendMessage_action();
+			}
+			
+			protected function btn_send_touchTapHandler(event:TouchEvent):void {
+				this.handle_sendMessage_action();
+			}
+			
+			private function get isDebugger():Boolean {
+				return FlexGlobals.topLevelApplication.isDebugger;
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:Scroller width="100%" height="100%">
+			<s:Group width="100%" height="100%">
+				<s:Panel width="100%" title="Type Your Message Here...">
+					<s:VGroup width="1005" height="100%">
+						<s:TextArea id="message" width="100%" height="{this.height-200}" editable="true" selectable="true" styleName="FeedbackInputs"/>
+						<s:HGroup width="45%" horizontalAlign="center" paddingBottom="5">
+							<s:Button id="btn_send" label="Send Message" width="300" height="40" enabled="true" click="btn_send_clickHandler(event)" touchTap="btn_send_touchTapHandler(event)"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:Panel>
+			</s:Group>        
+		</s:Scroller>  
+		<s:HGroup width="100%" height="20%" visible="{this.isDebugger}" includeInLayout="{this.isDebugger}">
+			<s:TextArea id="txt_output" styleName="Debugger" width="100%" height="100" editable="false" selectable="false" creationComplete="txt_output_creationCompleteHandler(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Group>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel 
+    horizontalAlign="center"
+    verticalAlign="middle"
+    xmlns:mx="http://www.adobe.com/2006/mxml"
+    title="Calendar">
+
+    <mx:DateChooser 
+        width="243" height="147"/>
+
+</mx:Panel>

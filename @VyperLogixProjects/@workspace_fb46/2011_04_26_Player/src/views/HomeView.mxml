@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" title="AIR for Android YouTube Player">
+	
+	<fx:Script>
+		<![CDATA[
+			
+			/**
+			 * Play a video
+			 */
+			protected function playVideo(id:String):void
+			{
+				// Open the YouTube Player view passing the video id
+				navigator.pushView(views.YouTubePlayer, id);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" verticalAlign="middle" />
+	</s:layout>
+	
+	
+	<s:Button label="View Video 1" click="playVideo('IytNBm8WA1c')" />
+	<s:Button label="View Video 2" click="playVideo('nTasT5h0LEg')" />
+	
+</s:View>

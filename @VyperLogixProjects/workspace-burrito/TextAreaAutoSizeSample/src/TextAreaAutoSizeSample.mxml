@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx">
+	<s:layout>
+		<s:VerticalLayout paddingLeft="10" paddingRight="10" paddingTop="8" paddingBottom="8"/>
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			import mx.core.mx_internal;
+			
+			protected function changeTextArea():void
+			{
+				textArea.heightInLines = NaN;
+				this.lineCount();
+			}
+			
+			protected function lineCount():void
+			{
+				label.text = textArea.textFlow.flowComposer.numLines.toString();
+			}
+		]]>
+	</fx:Script>
+	<s:TextArea id="textArea"
+				heightInLines="1"
+				horizontalCenter="0" verticalCenter="0" verticalScrollPolicy="off" horizontalScrollPolicy="off"
+				change="changeTextArea()" focusOut="lineCount()"/>
+	<s:Label id="label"/>
+	<s:Button/>
+</s:WindowedApplication>

@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.MathUtils;
+			import com.StringUtils;
+			
+			import controls.Alert.AlertPopUp;
+			
+			import flash.events.Event;
+			import flash.events.ProgressEvent;
+			import flash.events.ServerSocketConnectEvent;
+			import flash.filesystem.File;
+			import flash.net.ServerSocket;
+			import flash.net.Socket;
+			import flash.utils.ByteArray;
+			
+			import mx.controls.Alert;
+			
+			private var serverSocket:ServerSocket;
+			
+			public static var ipAddress:String = '127.0.0.1';
+			public static var portNumber:Number = MathUtils.randRange(49152,65535);  // Dynamic, private or ephemeral ports: 49152–65535
+			
+			private var _ipAddress:String = MiniAIRWebServer.ipAddress;
+			private var _portNumber:Number = MiniAIRWebServer.portNumber;
+			
+			private var _webroot_file:File;
+			
+			private var mimeTypes:Object = {
+				".css": "text/css",
+				".gif": "image/gif",
+				".htm": "text/html",
+				".html": "text/html",
+				".ico": "image/x-icon",
+				".jpg": "image/jpeg",
+				".js": "application/x-javascript",
+				".png": "image/png",
+				".pdf": "application/pdf",
+				".swf": "application/x-shockwave-flash",
+				".xml": "text/xml",
+				".mp3": "audio/mpeg",
+				".mp4":	"video/mp4",
+				".mpe":	"video/mpeg",
+				".mpeg": "video/mpeg",
+				".mpg":	"video/mpeg"
+			};
+			
+			public function url_from_file(file:File):String {
+				return this.url_from_nativePath(file.nativePath);
+			}
+			
+			public function url_from_nativePath(nativePath:String):String {
+				return nativePath.replace(this.webroot.nativePath+File.separator,'http://127.0.0.1:'+this._portNumber+'/').replace(File.separator,'/');
+			}
+			
+			public function set webroot(webroot:File):void {
+				if (this._webroot_file != webroot) {
+					this._webroot_file = webroot;
+					if (!this._webroot_file.exists) {
+						AlertPopUp.surpriseNoOkay('Technical problem. You may not be able to use this product at this time...','WARNING');
+					}
+				}
+			}
+			
+			public function get webroot():File {
+				return this._webroot_file;
+			}
+			
+			public function get portNumber():Number {
+				return this._portNumber;
+			}
+			
+			public function listen(portNumber:Number,webroot:File):void {
+				this._portNumber = portNumber;
+				this.webroot = webroot;
+				try {
+					serverSocket=new ServerSocket();
+					serverSocket.addEventListener(Event.CONNECT, socketConnectHandler);
+					serverSocket.bind(this._portNumber,this._ipAddress);
+					serverSocket.listen();
+				} catch (error:Error) {
+					Alert.show("Port " + this._portNumber + " may be in use. Enter another port number and try again.\n(" + error.message + ")", "Error");
+				}
+			}
+			
+			private function socketConnectHandler(event:ServerSocketConnectEvent):void {
+				var socket:Socket=event.socket;
+				socket.addEventListener(ProgressEvent.SOCKET_DATA, socketDataHandler);
+			}
+			
+			private function socketDataHandler(event:ProgressEvent):void {
+				try {
+					var socket:Socket=event.target as Socket;
+					var bytes:ByteArray=new ByteArray();
+					socket.readBytes(bytes);
+					var request:String="" + bytes;
+					var ar:Array = request.split('\r\n');
+					var filePath:String=request.substring(4, request.indexOf("HTTP/") - 1);
+					var f:String = StringUtils.urlDecode(filePath.replace('/',File.separator));
+					ar = f.split(File.separator);
+					if ( (ar.length > 0) && (ar[0] == '') ) {
+						ar.splice(0,1);
+					}
+					f = ar.join(File.separator);
+					var file:File = this._webroot_file.resolvePath(f);
+					if (file.exists && !file.isDirectory) {
+						var stream:FileStream=new FileStream();
+						stream.open(file, FileMode.READ);
+						var content:ByteArray=new ByteArray();
+						stream.readBytes(content);
+						stream.close();
+						socket.writeUTFBytes("HTTP/1.1 200 OK\n");
+						socket.writeUTFBytes("Content-Type: " + getMimeType(filePath) + "\n\n");
+						socket.writeBytes(content);
+					} else {
+						socket.writeUTFBytes("HTTP/1.1 404 Not Found\n");
+						socket.writeUTFBytes("Content-Type: text/html\n\n");
+						socket.writeUTFBytes("<html><body><h2>Page Not Found</h2></body></html>");
+					}
+					socket.flush();
+					socket.close();
+				} catch (error:Error) {
+					Alert.show(error.message, "Error");
+				}
+			}
+			
+			private function getMimeType(path:String):String {
+				var mimeType:String;
+				var index:int=path.lastIndexOf(".");
+				if (index > -1) {
+					mimeType=mimeTypes[path.substring(index)];
+				}
+				return mimeType == null ? "text/html" : mimeType; // default to text/html for unknown mime types
+			}
+		]]>
+	</fx:Script>
+</mx:Canvas>

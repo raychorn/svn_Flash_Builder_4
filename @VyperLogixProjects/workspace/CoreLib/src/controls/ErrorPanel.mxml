@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Panel xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:controls="controls.*"
+		 width="100%" height="100%" styleName="ErrorPanel">
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace controls "controls.*";
+		
+		.ErrorPanel {
+			backgroundAlpha: 0.2;
+			backgroundColor: #B46767;
+			borderAlpha: 1.0;
+			borderColor: #FD0303;
+			chromeColor: #E59191;
+			color: #FCF6F6;
+			cornerRadius: 20;
+			fontFamily: Verdana;
+			skinClass: ClassReference("spark.skins.spark.PanelSkin");
+		}
+	</fx:Style>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			[Bindable]
+			public var text:String = '';
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%">
+		<s:HGroup width="100%" paddingTop="5" paddingLeft="5" paddingRight="5" paddingBottom="5">
+			<controls:UITextField id="errorText" text="{this.text}" width="100%"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Panel>

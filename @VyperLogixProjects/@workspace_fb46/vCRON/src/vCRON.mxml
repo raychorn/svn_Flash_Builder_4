@@ -1,0 +1,1273 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   initialize="windowedapplication1_initializeHandler(event)" 
+					   applicationDeactivate="windowedapplication1_applicationDeactivateHandler(event)"
+					   creationComplete="windowedapplication1_creationCompleteHandler(event)" 
+					   xmlns:application="application.*" currentState="mainView" 
+					   stateChangeComplete="windowedapplication1_stateChangeCompleteHandler(event)"
+					   width="0" height="0" visible="false" includeInLayout="false" xmlns:navigators="controls.navigators.*" xmlns:controls="controls.*" xmlns:views="views.*"
+					   >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:states>
+		<mx:State name="noView"/>
+		<mx:State name="mainView"/>
+		<mx:State name="addressView" basedOn="mainView"/>
+		<mx:State name="debugView" basedOn="mainView"/>
+		<mx:State name="cronConfigView" basedOn="mainView"/>
+		<mx:State name="crontabView" basedOn="mainView"/>
+	</s:states>
+		<fx:Style>
+		@namespace application "application.*";
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel.ttf");
+			fontFamily: NeoSansIntel;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Light.ttf");
+			fontFamily: NeoSansIntelLight;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium2;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/CALIBRI.TTF");
+			fontFamily: Calibri;
+			embedAsCFF: false;
+		}
+		
+		s|Application {
+			backgroundColor: silver;
+			color: #000000;
+			fontFamily: Calibri;
+			fontSize: 16;
+		}
+			
+		.Program_Description {
+			fontFamily: Calibri;
+			fontSize: 12;
+		}
+			
+		.ButtonToolTip {
+			borderColor: green;
+			color: white;
+		}
+		
+		.ButtonReadOnlyToolTip {
+			borderColor: blue;
+			color: white;
+		}
+			
+		.ButtonErrorToolTip {
+			borderColor: red;
+			color: white;
+		}
+			
+		.ButtonRetryToolTip {
+			borderColor: blue;
+			color: white;
+		}
+			
+		.WebServiceStatusLabel_GOOD {
+			color: green;
+			fontFamily: Calibri;
+			fontSize: 14;
+		}
+			
+		.WebServiceStatusLabel_BAD {
+			color: red;
+			fontFamily: Calibri;
+			fontSize: 14;
+		}
+			
+		.Highlight {
+			borderColor: blue;
+			color: black;
+			backgroundColor: silver;
+		}
+			
+		.READONLY {
+			borderColor: blue;
+		}
+			
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.ArrayCollectionUtils;
+			import com.CustomErrorTips;
+			import com.DebuggerUtils;
+			import com.DisplayObjectUtils;
+			import com.EzHTTPService;
+			import com.StringUtils;
+			import com.adobe.serialization.json.JSON;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.ToolTip;
+			import mx.core.FlexGlobals;
+			import mx.events.AIREvent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			import mx.managers.ToolTipManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.components.TextInput;
+			import spark.effects.Resize;
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			
+			import assets.resources.Resources;
+			
+			import controls.ActivityIndicator2;
+			import controls.AppIcon;
+			import controls.Alert.AlertPopUp;
+			import controls.events.tips.CustomErrorTipsChangedEvent;
+			
+			[Bindable]
+			private var _this:vCRON;
+			
+			[Bindable]
+			private var __menubar__:ArrayCollection = new ArrayCollection();
+
+			[Bindable]
+			public var _copyrightMessage:String;
+
+			[Bindable]
+			private var _creditsMessage:String = Resources._creditsMessage;
+
+			private var icon:Loader = new Loader();
+			private var systray:SystemTrayIcon;
+			private var dock:DockIcon;
+
+			private var copyrightCommand:NativeMenuItem = new NativeMenuItem(_copyrightMessage);
+			private var creditsCommand:NativeMenuItem = new NativeMenuItem("Credits");
+			private var exitCommand:NativeMenuItem = new NativeMenuItem("Exit");
+
+			private var _icon:AppIcon = new AppIcon(['assets/icons/app_icon_16.png','assets/icons/app_icon_32.png','assets/icons/app_icon_48.png','assets/icons/app_icon_128.png']);
+
+			[Bindable]
+			public var baseState:String = 'mainView';
+			
+			private var __timer_webservice_editor__:Timer = new Timer(5000);
+			
+			private var __state_stack__:Array = [];
+			
+			private var ezREST:EzHTTPService = new EzHTTPService(false,false);
+
+			private const PROTOCOL:String = 'http://';
+			public var WEBSERVICE_VERSION_URL:String = PROTOCOL+'127.0.0.1:9100/version';
+			private var __is__webservice_alive__:Boolean = false;
+			public var WEBSERVICE_GET_CONFIG_URL:String = PROTOCOL+'127.0.0.1:9100/rest/get/config';
+			public var WEBSERVICE_SET_CONFIG_URL:String = PROTOCOL+'127.0.0.1:9100/rest/set/config';
+			
+			private var __tooltips__:Object = {};
+			
+			[Bindable]
+			private var colors_dataProvider:ArrayCollection = new ArrayCollection(CustomErrorTips.colors);
+			
+			[Bindable]
+			public var __data__:Object = {};
+			
+			[Bindable]
+			public var __scheduleFile__:File;
+			
+			[Bindable]
+			private var __txt_config_crontab__:String = '';
+			
+			[Bindable]
+			private var __cb_config_verbose__:Boolean = false;
+			
+			[Bindable]
+			private var __cb_config_dryrun__:Boolean = false;
+			
+			[Bindable]
+			private var __num_config_resolution__:int = 10;
+			
+			[Bindable]
+			private var __selected_config_resolution_index__:int = 0;
+			
+			[Bindable]
+			private var __config_timer_resolutions__:ArrayCollection;
+			
+			[Bindable]
+			private var __txt_config_webservice_address__:String = '';
+
+			private const CHECK_THE_VCRON_SERVICE:String = Resources.CHECK_THE_VCRON_SERVICE;
+			private const GOOD_VCRON_SERVICE:String = Resources.GOOD_VCRON_SERVICE;
+			
+			private function handle_errorTipsChangedEvent(event:CustomErrorTipsChangedEvent):void {
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 (+++ #2) --> event='+event.toString());
+			}
+			
+			private function remove_tooltip(tooltip:*,callback:Function=null):void {
+				if (tooltip) {
+					var tip:ToolTip;
+					try {
+						tip = tooltip['tip'] as ToolTip;
+					} catch (err:Error) {
+						tip = tooltip as ToolTip;
+					}
+					if (tip is ToolTip) {
+						ToolTipManager.destroyToolTip(tip);
+						if (callback is Function) {
+							try {
+								callback(tooltip);
+							} catch (err:Error) {}
+						}
+					}
+				}
+			}
+			
+			private function remove_tooltips_for(target:*):void {
+				this.remove_tooltip(this.__tooltips__[target],
+					function (tip:*):void {
+						delete _this.__tooltips__[target];
+					}
+				);
+			}
+
+			public static const CustomToolTipRight:String = CustomErrorTips.ERROR_TIP_RIGHT;
+			public static const CustomToolTipAbove:String = CustomErrorTips.ERROR_TIP_ABOVE;
+			public static const CustomToolTipBelow:String = CustomErrorTips.ERROR_TIP_BELOW;
+			
+			public function createCustomToolTip_for(target:*,msg:String,orientation:String,delay:int=0,deltaX:int=0,deltaY:int=0):ToolTip{
+				var aToolTip:ToolTip;
+				var _x:Number =  target.x;
+				var _y:Number = target.y;
+				var pt:Point = new Point(_x+target.width+deltaX,_y+deltaY);
+				var ptG:Point = target.contentToGlobal(pt);
+				//var pt:Point = target.contentToLocal(_pt);
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 (+++) --> event.target='+target.toString());
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 (+++) --> x,y='+pt);
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.3 (+++) --> pt='+pt);
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.4 (+++) --> ptG='+ptG);
+				target.removeEventListener(CustomErrorTipsChangedEvent.TYPE_CUSTOM_ERROR_TIPS_CHANGED_EVENT, this.handle_errorTipsChangedEvent);
+				target.addEventListener(CustomErrorTipsChangedEvent.TYPE_CUSTOM_ERROR_TIPS_CHANGED_EVENT, this.handle_errorTipsChangedEvent);
+				var tip_orientation:String = ( (orientation == CustomToolTipRight) || (orientation == CustomToolTipAbove) || (orientation == CustomToolTipBelow) ) ? orientation : CustomToolTipRight;
+				aToolTip = CustomErrorTips.createToolTip(msg,target,ptG,tip_orientation);
+				this.remove_tooltips_for(target);
+				this.__tooltips__[target] = {'tip':aToolTip,'target':target};
+				if (delay > 0) {
+					var timer:Timer = new Timer(delay);
+					timer.addEventListener(TimerEvent.TIMER, 
+						function (event:TimerEvent):void {
+							timer.stop();
+							_this.remove_tooltips_for(target);
+						}
+					);
+					timer.start();
+				}
+				return aToolTip;
+			}
+			
+			private function handle_vcron_service_status_tooltip(target:*):void {
+				var tooltip2:ToolTip;
+				if (target) {
+					var msg:String = (!this.has_config) ? CHECK_THE_VCRON_SERVICE : GOOD_VCRON_SERVICE;
+					var styleName:String = (!this.has_config) ? 'ButtonErrorToolTip' : 'ButtonToolTip';
+					tooltip2 = this.createCustomToolTip_for(target,msg,CustomToolTipRight);
+					tooltip2.styleName = styleName;
+				}
+			}
+			
+			private var __activity__:ActivityIndicator2;
+			
+			private function show_activity_indicator():void {
+				this.__activity__ = new ActivityIndicator2();
+				this.hg_activity_indicator.addElement(this.__activity__);
+			}
+			
+			private function hide_activity_indicator():void {
+				if (this.__activity__) {
+					this.hg_activity_indicator.removeElement(this.__activity__);
+					this.__activity__ = null;
+				}
+			}
+			
+			private function get_version(callback:Function,faultCallBack:Function=null):void {
+				this.show_activity_indicator();
+				this.ezREST.concurrency = this.ezREST.CONCURRENCY_LAST;
+				this.ezREST.contentType = this.ezREST.CONTENT_TYPE_JSON;
+				this.ezREST.errorHandler = function (err:Error):void {
+					var stackTrace:String = err.getStackTrace();
+					trace(_this.className+'.'+DebuggerUtils.getFunctionName(err)+'.ERROR\n' + err.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024));
+					_this.hide_activity_indicator();
+				};
+				this.ezREST.faultCallBack = function (event:FaultEvent):void {
+					if (faultCallBack is Function) {
+						try {
+							faultCallBack(event);
+						} catch (err:Error) {}
+					} else {
+						var reason:String = event.toString();
+						trace('Reason:\n\n'+reason,'WARNING ('+_this.ezREST.srvc.url+')');
+					}
+					_this.hide_activity_indicator();
+				}
+				this.ezREST.get(WEBSERVICE_VERSION_URL, 
+					function (event:ResultEvent):void {
+						var response:*;
+						try {
+							var item:String;
+							var results:ArrayCollection = event.result as ArrayCollection;
+							var status:String = results.getItemAt(0)['status'];
+							var data:* = results.getItemAt(0)['data'];
+							_this.__data__[WEBSERVICE_VERSION_URL] = results.getItemAt(0);
+							if (callback is Function) {
+								try {
+									callback(status,data);
+								} catch (err:Error) {
+									AlertPopUp.errorNoOkay(err.message,'ERROR');
+								}
+							}
+							
+						} catch (e:Error) {
+							var stackTrace:String = e.getStackTrace();
+							trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024));
+						}
+						_this.hide_activity_indicator();
+					}, this.ezREST.jsonResultType);
+			}
+
+			private function get_config(callback:Function,faultCallBack:Function=null):void {
+				this.show_activity_indicator();
+				this.ezREST.concurrency = this.ezREST.CONCURRENCY_LAST;
+				this.ezREST.contentType = this.ezREST.CONTENT_TYPE_JSON;
+				this.ezREST.errorHandler = function (err:Error):void {
+					var stackTrace:String = err.getStackTrace();
+					trace(_this.className+'.'+DebuggerUtils.getFunctionName(err)+'.ERROR\n' + err.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024));
+					_this.hide_activity_indicator();
+				};
+				this.ezREST.faultCallBack = function (event:FaultEvent):void {
+					if (faultCallBack is Function) {
+						try {
+							faultCallBack(event);
+						} catch (err:Error) {}
+					} else {
+						var reason:String = event.toString();
+						trace('Reason:\n\n'+reason,'WARNING ('+_this.ezREST.srvc.url+')');
+					}
+					_this.hide_activity_indicator();
+				}
+				this.ezREST.get(WEBSERVICE_GET_CONFIG_URL, 
+					function (event:ResultEvent):void {
+						var response:*;
+						try {
+							var item:String;
+							var results:ArrayCollection = event.result as ArrayCollection;
+							var status:String = results.getItemAt(0)['status'];
+							var data:* = results.getItemAt(0)['data'];
+							var json:String = data['json'];
+							if ( (json is String) && (json.length > 0) ) {
+								data['__data__'] = com.adobe.serialization.json.JSON.decode(json);
+							}
+							_this.__data__[WEBSERVICE_GET_CONFIG_URL] = results.getItemAt(0);
+							if (callback is Function) {
+								try {
+									callback(status,data);
+								} catch (err:Error) {
+									AlertPopUp.errorNoOkay(err.message,'ERROR');
+								}
+							}
+							
+						} catch (e:Error) {
+							var stackTrace:String = e.getStackTrace();
+							trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024));
+						}
+						_this.hide_activity_indicator();
+					}, this.ezREST.jsonResultType);
+			}
+			
+			private function set_config(payload:*,callback:Function,faultCallBack:Function=null):void {
+				this.show_activity_indicator();
+				this.ezREST.concurrency = this.ezREST.CONCURRENCY_LAST;
+				this.ezREST.contentType = this.ezREST.CONTENT_TYPE_JSON;
+				this.ezREST.errorHandler = function (err:Error):void {
+					var stackTrace:String = err.getStackTrace();
+					trace(_this.className+'.'+DebuggerUtils.getFunctionName(err)+'.ERROR\n' + err.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024));
+					_this.hide_activity_indicator();
+				};
+				this.ezREST.faultCallBack = function (event:FaultEvent):void {
+					if (faultCallBack is Function) {
+						try {
+							faultCallBack(event);
+						} catch (err:Error) {}
+					} else {
+						var reason:String = event.toString();
+						trace('Reason:\n\n'+reason,'WARNING ('+_this.ezREST.srvc.url+')');
+					}
+					_this.hide_activity_indicator();
+				}
+				this.ezREST.post(WEBSERVICE_SET_CONFIG_URL,payload, 
+					function (event:ResultEvent):void {
+						var response:*;
+						try {
+							var item:String;
+							var results:ArrayCollection = event.result as ArrayCollection;
+							var status:String = results.getItemAt(0)['status'];
+							var data:* = results.getItemAt(0)['data'];
+							var json:String = data['json'];
+							if ( (json is String) && (json.length > 0) ) {
+								data['__data__'] = com.adobe.serialization.json.JSON.decode(json);
+							}
+							_this.__data__[WEBSERVICE_GET_CONFIG_URL] = results.getItemAt(0);
+							if (callback is Function) {
+								try {
+									callback(status,data);
+								} catch (err:Error) {
+									AlertPopUp.errorNoOkay(err.message,'ERROR');
+								}
+							}
+							
+						} catch (e:Error) {
+							var stackTrace:String = e.getStackTrace();
+							trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024));
+						}
+						_this.hide_activity_indicator();
+					}, this.ezREST.jsonResultType);
+			}
+
+			private function iconLoadComplete(e:Event):void {
+				NativeApplication.nativeApplication.icon.bitmaps=[e.target.content.bitmapData];
+			}
+			
+			private function undock(e:Event):void {
+				this.stage.nativeWindow.restore();
+			}
+			
+			private function closeApp(e:Event):void {
+				this.exit_app();
+			}
+			
+			private function createIconMenu(_sysTray:Boolean):NativeMenu {
+				var _this:* = this;
+				var iconMenu:NativeMenu = new NativeMenu();
+				iconMenu.addItem(copyrightCommand);
+				iconMenu.addItem(new NativeMenuItem("", true));
+				iconMenu.addItem(creditsCommand);
+				creditsCommand.addEventListener(Event.SELECT, function (event:Event):void {
+					AlertPopUp.infoNoOkay(_this._creditsMessage,'Credits');
+				});
+				if (_sysTray) {
+					iconMenu.addItem(new NativeMenuItem("", true));
+					iconMenu.addItem(exitCommand);
+					exitCommand.addEventListener(Event.SELECT, this.closeApp);
+				}
+				return iconMenu;
+			}
+			
+			private function trayIcon(_sysTray:Boolean, _dock:Boolean):void {
+				if (_sysTray) {
+					icon.contentLoaderInfo.addEventListener(Event.COMPLETE, this.iconLoadComplete);
+					icon.load(new URLRequest("assets/icons/app_icon_16.png"));
+					systray=NativeApplication.nativeApplication.icon as SystemTrayIcon;
+					systray.tooltip=this._copyrightMessage;
+					systray.menu=this.createIconMenu(_sysTray);
+				}
+				if (_dock) {
+					icon.contentLoaderInfo.addEventListener(Event.COMPLETE, this.iconLoadComplete);
+					icon.load(new URLRequest("assets/icons/app_icon_128.png"));
+					NativeApplication.nativeApplication.addEventListener(InvokeEvent.INVOKE, undock);
+					dock=NativeApplication.nativeApplication.icon as DockIcon;
+					dock.menu=this.createIconMenu(_sysTray);
+				}
+			}
+			
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void {
+				trace(this.className+'.windowedapplication1_creationCompleteHandler().1 !');
+				
+				trace(this.className+'.windowedapplication1_creationCompleteHandler().2 --> Capabilities.screenResolutionX='+Capabilities.screenResolutionX);
+				trace(this.className+'.windowedapplication1_creationCompleteHandler().3 --> Capabilities.screenResolutionY='+Capabilities.screenResolutionY);
+				
+				this.nativeWindow.x = 50;
+				this.nativeWindow.y = 25;
+				
+				var timer:Timer = new Timer(500);
+				timer.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						_this.visible = _this.includeInLayout = true;
+						_this.includeInLayout = true;
+						timer.stop();
+					}
+				);
+				timer.start();
+
+				this.__timer_webservice_editor__.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						var address:String = _this.txt_address.text;
+						if (_this.__state_stack__.length == 0) {
+							_this.__state_stack__.push('addressView');
+						}
+						_this.handle_webservice_change(address,
+							function (data:*):Boolean {
+								var tooltip:ToolTip = _this.createCustomToolTip_for(_this.btn_saveAddress,data['version'],CustomToolTipRight);
+								tooltip.styleName = 'ButtonToolTip';
+								_this.lbl_webservice_status.text = (data['has_config'] == true) ? 'HAS_CONFIG' : 'NO_CONFIG';
+								_this.handle_vcron_service_status_tooltip(_this.hg_webservice_status);
+								return false;
+							}
+						);
+						trace('(__timer_webservice_editor__).1 --> address='+address);
+						_this.__timer_webservice_editor__.stop();
+					}
+				);
+				
+				var e:Resize = new Resize();
+				e.heightTo = Capabilities.screenResolutionY - ((DebuggerUtils.isDebugging) ? 50 : 50);
+				e.widthTo = Capabilities.screenResolutionX - 100;
+				e.duration = 500;
+				e.target = this.nativeWindow;
+				e.play();
+				
+				this.title = this.AppNameSpace.app_name + ' v' + this.AppNameSpace.versionNumber + ' ' + this.AppNameSpace.copyrightMessage;
+
+				this.trayIcon(NativeApplication.supportsSystemTrayIcon, NativeApplication.supportsDockIcon);
+				
+				this._icon.addEventListener(Event.COMPLETE,function():void {
+					trace(_this.className+'.windowedapplication1_creationCompleteHandler.1 --> _this._icon.bitmaps.length='+_this._icon.bitmaps.length);
+					NativeApplication.nativeApplication.icon.bitmaps = _this._icon.bitmaps;
+				});
+				this._icon.loadImages();
+			}
+			
+			private function pop_state_from_stack():void {
+				var state:String = this.baseState;
+				try {
+					state = this.__state_stack__.pop();
+				} catch (err:Error) {}
+				this.currentState = state;
+			}
+			
+			private function remove_status_tooltips():void {
+				if (this.currentState == 'mainView') {
+					this.remove_tooltips_for(this.mainCanvas_status1);
+					this.remove_tooltips_for(this.mainCanvas_status2);
+					this.remove_tooltips_for(this.mainCanvas_status3);
+				}
+			}
+			
+			private function file_open_action():void {
+				this.__state_stack__.push(this.currentState);
+				this.remove_status_tooltips();
+				this.currentState = 'addressView';
+			}
+			
+			private function file_edit_action():void {
+				this.__state_stack__.push(this.currentState);
+				this.remove_status_tooltips();
+				this.currentState = 'cronConfigView';
+				this.callLater(setup_config_editor,[this.lbl_config_data_status,this.txt_config_webservice_address,this.btn_saveAddress]);
+			}
+			
+			private function file_edit_crontab_action():void {
+				this.__state_stack__.push(this.currentState);
+				this.remove_status_tooltips();
+				this.currentState = 'crontabView';
+			}
+
+			/*
+			private function file_delete_action():void {
+				AlertPopUp.infoNoOkay('file_delete_action()', 'Not Yet Implemented !!!');
+			}
+			*/
+			
+			protected function menubar_initializeHandler():void {
+				var item:Object;
+				var children:ArrayCollection = new ArrayCollection();
+				var child:Object;
+
+				item = {'label':'File','enabled':true};
+				
+				child = {'label':'Open...','enabled':true,'action':this.file_open_action};
+				children.addItem(child);
+				child = {'label':'Edit Config...','enabled':false,'action':this.file_edit_action};
+				children.addItem(child);
+				child = {'label':'Edit Crontab...','enabled':false,'action':this.file_edit_crontab_action};
+				children.addItem(child);
+				/*
+				child = {'label':'Delete...','enabled':true,'action':this.file_delete_action};
+				children.addItem(child);
+				*/
+				child = {'label':'Exit','enabled':true,'action':exit_app};
+				children.addItem(child);
+				
+				item['children'] = children;
+				this.__menubar__.addItem(item);
+				
+				/*
+				item = {'label':'Options','enabled':true};
+				children = new ArrayCollection();
+				child = {'label':'Edit','enabled':true};
+				children.addItem(child);
+				item['children'] = children;
+
+				this.__menubar__.addItem(item);
+				*/
+			}
+			
+			protected function windowedapplication1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				this.menubar_initializeHandler();
+				trace(this.className+'.windowedapplication1_initializeHandler().1 !');
+			}
+
+			private function _closeApplicaton():void {
+				trace(this.className+'._closeApplicaton().1 --> Deactivation Event !');
+			}
+			
+			private function exit_app():void {
+				var popup:Alert = AlertPopUp.confirm(Resources.are_you_sure_you_want_to_exit,Resources.CONFIRMATION,
+					function (event:CloseEvent):void {
+						if (event.detail == Alert.OK) {
+							_this.exit();
+						}
+					},Resources.OK,Resources.CANCEL);
+			}
+			
+			protected function windowedapplication1_applicationDeactivateHandler(event:AIREvent):void {
+				this._closeApplicaton();
+			}
+			
+			private function __hide_nativeWindow__():void {
+				FlexGlobals.topLevelApplication.nativeWindow.minSize = new Point(0,0);
+				FlexGlobals.topLevelApplication.nativeWindow.height = 0;
+				FlexGlobals.topLevelApplication.nativeWindow.width = 0;
+				FlexGlobals.topLevelApplication.nativeWindow.visible = false;
+			}
+			
+			private function __show_nativeWindow__(width:Number,height:Number):void {
+				FlexGlobals.topLevelApplication.nativeWindow.minSize = new Point(width,height);
+				FlexGlobals.topLevelApplication.nativeWindow.height = height;
+				FlexGlobals.topLevelApplication.nativeWindow.width = width;
+				FlexGlobals.topLevelApplication.nativeWindow.visible = true;
+			}
+			
+			private function OnSysTrayMenuInit(menu:NativeMenu):void {
+				var testCommand:NativeMenuItem = new NativeMenuItem("Testing...");
+				testCommand.addEventListener(Event.SELECT, function (event:Event):void {
+					_this.__show_nativeWindow__(600,400);
+					/*
+					var popup:Alert = AlertPopUp.infoNoOkay('+++','DEBUG',
+					function (event:CloseEvent):void {
+					_this.__hide_nativeWindow__();
+					}
+					);
+					*/
+					//popup.width = 550;
+					//popup.height = 350;
+				});
+				for (var i:String in menu.items) {
+					var anItem:NativeMenuItem = menu.items[i] as NativeMenuItem;
+					if (anItem.label.indexOf('Vyper Logix Corp') > -1) {
+						var _creditsMessage:String;
+						try {_creditsMessage = FlexGlobals.topLevelApplication.AppNameSpace._creditsMessage;} catch (err:Error) {}
+						anItem.addEventListener(Event.SELECT,
+							function (event:*):void {
+								_this.__show_nativeWindow__(600,400);
+								/*
+								var popup:Alert = AlertPopUp.infoNoOkay('(c). Copyright, Vyper Logix Corp., All Rights Reserved...\nhttp://www.VyperLogixCorp.Com\n'+_creditsMessage,anItem.label,
+								function (event:CloseEvent):void {
+								_this.__hide_nativeWindow__();
+								}
+								);
+								*/
+								//popup.width = 550;
+								//popup.height = 350;
+							}
+						);
+						break;
+					}
+				}
+				menu.addItem(testCommand);
+				var exitCommand:NativeMenuItem = new NativeMenuItem("Exit");
+				exitCommand.addEventListener(Event.SELECT, function (event:Event):void {
+					setTimeout(FlexGlobals.topLevelApplication.closeApplicaton,100);
+				});
+				menu.addItem(exitCommand);
+			}
+			
+			protected function appProxy_creationCompleteHandler(event:FlexEvent):void {
+				this.appProxy.OnSysTrayMenuInit = this.OnSysTrayMenuInit;
+				trace(this.className+'.onCreationComplete_appProxy().1 !');
+			}
+			
+			protected function menuBar_itemClickHandler(event:MenuEvent):void {
+				var item:Object = event.item;
+				var action:Function = item['action'] as Function;
+				if (action is Function) {
+					try {
+						action();
+					} catch (err:Error) {
+						var stack:String = err.getStackTrace();
+						AlertPopUp.errorNoOkay(err.message, 'ERROR from menu item "'+item['label']+'".');
+					}
+				}
+			}
+			
+			private function onCreationComplete_AppNameSpace():void {
+				this._copyrightMessage = this.AppNameSpace._copyrightMessage;
+				trace(this.className+'.onCreationComplete_AppNameSpace().1 --> this._copyrightMessage='+this._copyrightMessage);
+			}
+			
+			private function adjust_url_address(addr:String,url:String):String {
+				var _toks:Array = url.split('//');
+				var _toks2:Array = _toks[_toks.length-1].split('/');
+				
+				return _toks[0] + '//' + addr + '/' + _toks2.slice(1,_toks2.length).join('/');
+			}
+			
+			private function get_url_address(url:String):String {
+				var _toks:Array = url.split('//');
+				var _toks2:Array = _toks[_toks.length-1].split('/');
+				
+				return _toks2[0];
+			}
+			
+			private function handle_webservice_change(address:String,callback:Function=null):void {
+				var toks:Array = address.split('//');
+				var toks2:Array = toks[toks.length-1].split('/');
+				var addr:String = toks2[0];
+				
+				this.WEBSERVICE_VERSION_URL = this.adjust_url_address(addr,this.WEBSERVICE_VERSION_URL);
+				this.WEBSERVICE_GET_CONFIG_URL = this.adjust_url_address(addr,this.WEBSERVICE_GET_CONFIG_URL);
+				this.WEBSERVICE_SET_CONFIG_URL = this.adjust_url_address(addr,this.WEBSERVICE_SET_CONFIG_URL);
+				
+				var tooltip:ToolTip;
+				
+				this.get_version(function (status:String,data:*):void {
+					_this.__is__webservice_alive__ = (status.toUpperCase() == 'SUCCESS');
+					var use_timer:Boolean = true;
+					if (callback is Function) {
+						try {
+							use_timer = callback(data);
+						} catch (err:Error) {}
+					}
+					if (use_timer) {
+						_this.lbl_webservice_version.text = data['version'];
+						var timer:Timer = new Timer(1500);
+						timer.addEventListener(TimerEvent.TIMER, 
+							function (event:TimerEvent):void {
+								timer.stop();
+								_this.lbl_title_ws_version.text = _this.lbl_webservice_version.text;
+								_this.hg_addressView.enabled = true;
+								_this.pop_state_from_stack();
+							}
+						);
+						timer.start();
+					}
+				},
+				function (event:FaultEvent):void {
+					tooltip = _this.createCustomToolTip_for(_this.btn_saveAddress,Resources.cannot_access_webservice,CustomToolTipRight);
+					tooltip.styleName = 'ButtonErrorToolTip';
+				});
+			}
+			
+			protected function events_creationCompleteHandler(event:FlexEvent):void {
+			}
+			
+			protected function btn_saveAddress_clickHandler(event:MouseEvent):void {
+				this.hg_addressView.enabled = false;
+				this.handle_webservice_change(this.txt_address.text, 
+					function (data:*):Boolean {
+						var tooltip:ToolTip = _this.createCustomToolTip_for(_this.btn_saveAddress,data['version'],CustomToolTipRight);
+						tooltip.styleName = 'ButtonToolTip';
+						_this.lbl_webservice_status.text = (data['has_config'] == true) ? 'HAS_CONFIG' : 'NO_CONFIG';
+						_this.handle_vcron_service_status_tooltip(_this.hg_webservice_status);
+						return true;
+					}
+				);
+			}
+			
+			protected function txt_address_changeHandler(event:TextOperationEvent):void {
+				var address:String = this.txt_address.text;
+				if (this.__timer_webservice_editor__.running) {
+					this.__timer_webservice_editor__.reset();
+					this.__timer_webservice_editor__.start();
+				} else {
+					this.__timer_webservice_editor__.start();
+				}
+				trace('(txt_address_changeHandler).1 --> address='+address);
+			}
+			
+			protected function txt_address_creationCompleteHandler(event:FlexEvent):void {
+			}
+			
+			private function get has_config():Boolean {
+				var data:* = (this.__data__[WEBSERVICE_VERSION_URL]) ? this.__data__[WEBSERVICE_VERSION_URL] : null;
+				return ((data) && (data['data']) && (data['data']['has_config'])) && (data['data']['has_config'] == true);
+			}
+			
+			private function get_menuBar_item_named(name:String):* {
+				var mb:ArrayCollection = __menubar__;
+				name = name.toLowerCase();
+				var item:*;
+				if (mb.length > 0) {
+					item = mb.getItemAt(0);
+					if (item && (item['children'] is ArrayCollection)) {
+						var children:ArrayCollection = item['children'] as ArrayCollection;
+						if (children) {
+							var i:int = ArrayCollectionUtils.findIndexOfItemCaseless(children,'label',
+								function (selector:String,obj:*):Boolean {
+									return selector.toLowerCase().indexOf(name) > -1;
+								}
+							);
+							if (i > -1) {
+								item = children.getItemAt(i);
+							}
+						}
+					}
+				}
+				return item;
+			}
+			
+			protected function handle_vcron_webservice_functionality_test(target:*,target1:*=null):void {
+				var toks:Array = this.WEBSERVICE_VERSION_URL.split('//');
+				var toks2:Array = toks[toks.length-1].split('/');
+				var address:String = toks2[0];
+				if (this.txt_address) {
+					this.txt_address.text = address;
+				}
+				if (this.txt_address) {
+					this.txt_address.prompt = address;
+				}
+				
+				var tooltip:ToolTip;
+				var tooltip2:ToolTip;
+				var timer:Timer = new Timer(1000);
+				timer.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						timer.stop();
+						_this.remove_tooltip(tooltip2);
+						_this.get_version(
+							function (status:String,data:*):void {
+								_this.__is__webservice_alive__ = (status.toUpperCase() == 'SUCCESS');
+								if (_this.lbl_webservice_status) {
+									_this.lbl_webservice_status.text = ((data['has_config'] != null) && (data['has_config'] == true)) ? 'HAS_CONFIG' : 'NO_CONFIG';
+								}
+								var item:* = _this.get_menuBar_item_named('Edit Config');
+								if (item) {
+									if (item['enabled'] != null) {
+										item['enabled'] = (data['has_config'] != null) ? data['has_config'] : item['enabled'];
+									}
+								}
+								_this.remove_tooltips_for(target);
+								tooltip = _this.createCustomToolTip_for(target,data['version'],CustomToolTipRight);
+								tooltip.styleName = 'ButtonToolTip';
+								_this.handle_vcron_service_status_tooltip((target1) ? target1 : target);
+								_this.callLater(setup_config_editor,[_this.mainCanvas_status1,_this.mainCanvas_status2,_this.mainCanvas_status3]);
+							},
+							function (event:FaultEvent):void {
+								_this.remove_tooltips_for(target);
+								tooltip = _this.createCustomToolTip_for(target,Resources.cannot_access_webservice,CustomToolTipRight);
+								tooltip.styleName = 'ButtonErrorToolTip';
+								_this.handle_vcron_service_status_tooltip(_this.hg_webservice_status);
+								timer.reset();
+								timer.delay = 2000;
+								timer.start();
+								tooltip2 = _this.createCustomToolTip_for(tooltip,'Retrying every '+(timer.delay/1000)+' seconds until a connection with the vCron Windows Service has been restored.',CustomToolTipRight,0,-tooltip.x);
+								tooltip2.styleName = 'ButtonRetryToolTip';
+							}
+						);
+					}
+				);
+				timer.start();
+			}
+			
+			protected function btn_saveAddress_creationCompleteHandler(event:FlexEvent):void {
+				this.callLater(this.handle_vcron_webservice_functionality_test,[this.btn_saveAddress]);
+			}
+			
+			protected function menuBar_creationCompleteHandler(event:FlexEvent):void {
+				this.callLater(this.handle_vcron_webservice_functionality_test,[this.menuBar,this.hg_right_of_menubar1]);
+			}
+			
+			protected function hg_addressView_closeHandler(event:CloseEvent):void {
+				this.remove_tooltips_for(this.btn_saveAddress);
+				this.pop_state_from_stack();
+			}
+			
+			protected function general_titlewindow_closeHandler(titlewindow:TitleWindow):void {
+				var tip:ToolTip;
+				var sel:String;
+				var toks:Array;
+				var target:*;
+				var vector:*;
+				for (var i:* in this.__tooltips__) {
+					vector = this.__tooltips__[i];
+					if (vector['tip']) {
+						tip = vector['tip'] as ToolTip;
+					}
+					if (vector['target']) {
+						target = vector['target'];
+					}
+					if (target) {
+						var __is__:Boolean = DisplayObjectUtils.walk_parents_until(target,titlewindow);
+						if (__is__) {
+							ToolTipManager.destroyToolTip(tip);
+							delete this.__tooltips__[i];
+						}
+					} else {
+						AlertPopUp.errorNoOkay('Cannot locate the display object for "'+target+'" ('+i+')','ERROR');
+					}
+				}
+				this.pop_state_from_stack();
+				this.callLater(setup_config_editor,[this.mainCanvas_status1,this.mainCanvas_status2,this.mainCanvas_status3]);
+			}
+			
+			protected function titlewindow1_closeHandler(event:CloseEvent):void {
+				var titlewindow:TitleWindow = event.currentTarget as TitleWindow;
+				this.general_titlewindow_closeHandler(titlewindow);
+			}
+			
+			private function get_config_timer_resolutions():ArrayCollection {
+				var ac:ArrayCollection = new ArrayCollection();
+				
+				ac.addItem({'label':'5','value':5});
+				ac.addItem({'label':'10','value':10});
+				ac.addItem({'label':'15','value':15});
+				ac.addItem({'label':'20','value':20});
+				ac.addItem({'label':'30','value':30});
+				ac.addItem({'label':'60','value':60});
+				
+				return ac;
+			}
+			
+			private function setup_config_editor(target1:*,target2:*,target3:*):void {
+				var tooltip:ToolTip;
+				
+				var __is__:Boolean = false;
+				
+				if (target1 && target2 && target3) {
+					if ( (target1.parent == _this.mainCanvas_statusContainer) && (target2.parent == _this.mainCanvas_statusContainer) && (target3.parent == _this.mainCanvas_statusContainer) ) {
+						__is__ = true;
+					}
+				}
+				
+				var __i__:int = 0;
+				var targets:Array = [target1,target2,target3];
+				
+				function next_target():* {
+					var t:* = targets[__i__];
+					__i__++;
+					var n:int = targets.length-1;
+					if (__i__ > n) {
+						__i__ = 0;
+					}
+					return t;
+				}
+				
+				this.get_config(
+					function (status:String,data:*):void {
+						var schedulefpath:String = ((data) && (data['__data__']) && (data['__data__']['schedulefpath'])) ? data['__data__']['schedulefpath'] : _this.__txt_config_crontab__;
+						trace('(+++) schedulefpath='+schedulefpath);
+
+						tooltip = _this.createCustomToolTip_for((__is__) ? next_target() : target1,Resources.vcron_config_data_status_is+status,CustomToolTipRight,0);
+
+						if ( (schedulefpath is String) && (schedulefpath.length > 0) ) {
+							_this.__scheduleFile__ = new File(schedulefpath);
+						}
+
+						tooltip.styleName = ( (_this.__scheduleFile__ is File) && (_this.__scheduleFile__.exists) && (status.toUpperCase() == 'SUCCESS') ) ? 'ButtonToolTip' : 'ButtonErrorToolTip';
+						
+						_this.__txt_config_crontab__ = schedulefpath;
+
+						var item:*;
+
+						if ( (_this.__txt_config_crontab__ is String) && (_this.__txt_config_crontab__.length > 0) ) {
+							var file:File = new File(_this.__txt_config_crontab__);
+							if (file.exists) {
+								item = _this.get_menuBar_item_named('Edit Crontab');
+								if (item) {
+									if (item['enabled'] != null) {
+										item['enabled'] = true;
+									}
+								}
+							} else if (__is__) {
+								tooltip = _this.createCustomToolTip_for(next_target(),Resources.crontab_file_is_inaccessible,CustomToolTipRight,0);
+								tooltip.styleName = 'ButtonErrorToolTip';
+							}
+						} else if (__is__) {
+							tooltip = _this.createCustomToolTip_for(next_target(),Resources.crontab_file_is_not_defined,CustomToolTipRight,0);
+							tooltip.styleName = 'ButtonErrorToolTip';
+						}
+						
+						_this.__cb_config_verbose__ = ((data) && (data['__data__']) && (data['__data__']['verbose'])) ? data['__data__']['verbose'] : _this.__cb_config_verbose__;
+						_this.__cb_config_dryrun__ = ((data) && (data['__data__']) && (data['__data__']['dryrun'])) ? data['__data__']['dryrun'] : _this.__cb_config_dryrun__;
+						_this.__num_config_resolution__ = ((data) && (data['__data__']) && (data['__data__']['resolution'])) ? data['__data__']['resolution'] : _this.__num_config_resolution__;
+						
+						_this.__config_timer_resolutions__ = _this.get_config_timer_resolutions();
+						
+						for (var i:int = 0; i < _this.__config_timer_resolutions__.length; i++) {
+							item = _this.__config_timer_resolutions__.getItemAt(i);
+							if (item['value'] == _this.__num_config_resolution__) {
+								_this.__selected_config_resolution_index__ = i;
+								if (_this.dropdown_config_resolution) {
+									_this.dropdown_config_resolution.selectedIndex = i;
+								}
+								break;
+							}
+						}
+						
+						var addr:String = ((data) && (data['__data__']) && (data['__data__']['webservice'])) ? data['__data__']['webservice'] : '';
+						
+						var address:String = _this.get_url_address(_this.WEBSERVICE_VERSION_URL);
+						_this.__txt_config_webservice_address__ = addr;
+						if (addr != address) {
+							tooltip = _this.createCustomToolTip_for((__is__) ? next_target() : target2,Resources.crontab_config_is_wrong,CustomToolTipRight,0);
+							tooltip.styleName = 'ButtonErrorToolTip';
+						}
+					},
+					function (event:FaultEvent):void {
+						tooltip = _this.createCustomToolTip_for((__is__) ? next_target() : target3,Resources.cannot_access_config_data,CustomToolTipRight,0);
+						tooltip.styleName = 'ButtonErrorToolTip';
+					}
+				);
+			}
+			
+			protected function cb_config_verbose_changeHandler(event:Event):void {
+				var cb:CheckBox = event.currentTarget as CheckBox;
+				var __is__:Boolean = cb.selected;
+				var tooltip:ToolTip;
+
+				this.remove_tooltips_for(this.cb_config_verbose);
+				this.remove_tooltips_for(this.cb_config_dryrun);
+				this.remove_tooltips_for(this.dropdown_config_resolution);
+				
+				this.set_config({'verbose':__is__},
+					function (status:String,data:*):void {
+						tooltip = _this.createCustomToolTip_for(cb,Resources.vcron_config_update_status_is+status,CustomToolTipRight,0);
+						tooltip.styleName = (status.toUpperCase() == 'SUCCESS') ? 'ButtonToolTip' : 'ButtonErrorToolTip';
+					},
+					function (event:FaultEvent):void {
+						tooltip = _this.createCustomToolTip_for(cb,Resources.cannot_access_config_data,CustomToolTipRight,0);
+						tooltip.styleName = 'ButtonErrorToolTip';
+					}
+				);
+			}
+			
+			protected function cb_config_dryrun_changeHandler(event:Event):void {
+				var cb:CheckBox = event.currentTarget as CheckBox;
+				var __is__:Boolean = cb.selected;
+				var tooltip:ToolTip;
+				
+				this.remove_tooltips_for(this.cb_config_verbose);
+				this.remove_tooltips_for(this.cb_config_dryrun);
+				this.remove_tooltips_for(this.dropdown_config_resolution);
+				
+				this.set_config({'dryrun':__is__},
+					function (status:String,data:*):void {
+						tooltip = _this.createCustomToolTip_for(cb,Resources.vcron_config_update_status_is+status,CustomToolTipRight,0);
+						tooltip.styleName = (status.toUpperCase() == 'SUCCESS') ? 'ButtonToolTip' : 'ButtonErrorToolTip';
+					},
+					function (event:FaultEvent):void {
+						tooltip = _this.createCustomToolTip_for(cb,Resources.cannot_access_config_data,CustomToolTipRight,0);
+						tooltip.styleName = 'ButtonErrorToolTip';
+					}
+				);
+			}
+			
+			protected function dropdown_config_resolution_changeHandler(event:IndexChangeEvent):void {
+				var dropdown:DropDownList = event.currentTarget as DropDownList;
+				var item:* = dropdown.dataProvider.getItemAt(event.newIndex);
+				var resolution:int = item['value'];
+
+				var tooltip:ToolTip;
+				
+				this.remove_tooltips_for(this.cb_config_verbose);
+				this.remove_tooltips_for(this.cb_config_dryrun);
+				this.remove_tooltips_for(this.dropdown_config_resolution);
+				
+				this.set_config({'resolution':resolution},
+					function (status:String,data:*):void {
+						tooltip = _this.createCustomToolTip_for(dropdown,Resources.vcron_config_update_status_is+status,CustomToolTipRight,0);
+						tooltip.styleName = (status.toUpperCase() == 'SUCCESS') ? 'ButtonToolTip' : 'ButtonErrorToolTip';
+					},
+					function (event:FaultEvent):void {
+						tooltip = _this.createCustomToolTip_for(dropdown,Resources.cannot_access_config_data,CustomToolTipRight,0);
+						tooltip.styleName = 'ButtonErrorToolTip';
+					}
+				);
+			}
+			
+			protected function titlewindow2_closeHandler(event:CloseEvent):void {
+				//this.remove_tooltips_for(this.btn_saveAddress);
+				//this.pop_state_from_stack();
+				var titlewindow:TitleWindow = event.currentTarget as TitleWindow;
+				this.general_titlewindow_closeHandler(titlewindow);
+			}
+			
+			private function txt_config_crontab_tips(target:TextInput):void {
+				var tooltip2:ToolTip;
+				tooltip2 = this.createCustomToolTip_for(target,'Read-Only',CustomToolTipRight,0);
+				tooltip2.styleName = 'ButtonReadOnlyToolTip';
+			}
+			
+			private function txt_config_webservice_address_tips(target:TextInput):void {
+				var tooltip2:ToolTip;
+				tooltip2 = this.createCustomToolTip_for(target,'Read-Only',CustomToolTipRight,0);
+				tooltip2.styleName = 'ButtonReadOnlyToolTip';
+			}
+			
+			protected function txt_config_crontab_creationCompleteHandler(event:FlexEvent):void {
+				var target:TextInput = event.currentTarget as TextInput;
+				this.txt_config_crontab_tips(target);
+			}
+			
+			protected function txt_config_webservice_address_creationCompleteHandler(event:FlexEvent):void {
+				var target:TextInput = event.currentTarget as TextInput;
+				this.txt_config_webservice_address_tips(target);
+			}
+			
+			protected function windowedapplication1_stateChangeCompleteHandler(event:FlexEvent):void {
+				if (this.currentState == 'cronConfigView') {
+					if (this.txt_config_crontab) {
+						this.remove_tooltips_for(this.txt_config_crontab);
+						this.txt_config_crontab_tips(this.txt_config_crontab);
+					}
+					if (this.txt_config_webservice_address) {
+						this.remove_tooltips_for(this.txt_config_webservice_address);
+						this.txt_config_webservice_address_tips(this.txt_config_webservice_address);
+					}
+				} else if (this.currentState == 'crontabView') {
+					this.callLater(this.crontab_editor.initialize_config_crontab_status,[this.crontab_editor.hgroup_config_crontab_status]);
+				}
+			}
+		]]>
+	</fx:Script>
+	<application:ApplicationNamespace id="AppNameSpace" x="0" y="0" width="0" height="0" creationComplete="onCreationComplete_AppNameSpace()"/>
+	<application:ApplicatonProxy id="appProxy" creationComplete="appProxy_creationCompleteHandler(event)"/>
+	<mx:ApplicationControlBar id="appBar" width="100%">
+		<s:HGroup>
+			<mx:MenuBar id="menuBar" dataProvider="{this.__menubar__}" itemClick="menuBar_itemClickHandler(event)" includeIn="mainView" creationComplete="menuBar_creationCompleteHandler(event)"/>
+			<s:HGroup id="hg_right_of_menubar1" width="225">
+			</s:HGroup>
+			<s:HGroup id="hg_right_of_menubar2" width="225">
+			</s:HGroup>
+			<s:HGroup id="hg_right_of_menubar3" width="225">
+			</s:HGroup>
+		</s:HGroup>
+		<s:HGroup>
+			<s:HGroup width="100%" horizontalAlign="right">
+				<s:Label text="{this.AppNameSpace.description}" styleName="Program_Description"/>
+				<s:Label id="lbl_title_ws_version" text="" styleName="Program_Description"/>
+			</s:HGroup>
+		</s:HGroup>
+		<s:HGroup id="hg_activity_indicator" width="100%" horizontalAlign="right">
+		</s:HGroup>
+	</mx:ApplicationControlBar>
+	<s:VGroup id="mainCanvas" width="100%" height="100%" paddingTop="30" verticalAlign="top" horizontalAlign="left">
+		<s:VGroup id="mainCanvas_statusContainer" width="10%" horizontalAlign="right" paddingLeft="{this.menuBar.width+50}" paddingTop="20" includeIn="mainView">
+			<s:HGroup id="mainCanvas_status1" height="40">
+				<s:Label id="mainCanvas_status_label1" text=""/>
+			</s:HGroup>
+			<s:HGroup id="mainCanvas_status2" height="40">
+				<s:Label id="mainCanvas_status_label2" text=""/>
+			</s:HGroup>
+			<s:HGroup id="mainCanvas_status3" height="40">
+				<s:Label id="mainCanvas_status_label3" text=""/>
+			</s:HGroup>
+		</s:VGroup>
+		<s:VGroup id="hg_addressView" width="100%" paddingLeft="30" paddingTop="30" includeIn="addressView">
+			<s:TitleWindow title="WebService Editor" width="90%" close="hg_addressView_closeHandler(event)">
+				<s:VGroup width="100%" paddingLeft="20" paddingTop="20" paddingRight="20" paddingBottom="20">
+					<s:HGroup width="100%">
+						<s:HGroup paddingTop="5">
+							<s:Label text="WebService Address:"/>
+						</s:HGroup>
+						<s:HGroup>
+							<s:TextInput id="txt_address" restrict="0-9 . :" text="127.0.0.1:9100" widthInChars="21" change="txt_address_changeHandler(event)" prompt="127.0.0.1:9100" creationComplete="txt_address_creationCompleteHandler(event)"/>
+						</s:HGroup>
+						<s:HGroup paddingTop="2">
+							<s:Button id="btn_saveAddress" label="Save" click="btn_saveAddress_clickHandler(event)" creationComplete="btn_saveAddress_creationCompleteHandler(event)"/>
+						</s:HGroup>
+						<s:HGroup paddingTop="5">
+							<s:Label id="lbl_webservice_version" text=""/>
+						</s:HGroup>
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<s:HGroup paddingTop="0">
+							<s:Label text="Status:"/>
+						</s:HGroup>
+						<s:HGroup id="hg_webservice_status" width="100" styleName="Highlight">
+							<s:Label id="lbl_webservice_status" text=""/>
+						</s:HGroup>
+					</s:HGroup>
+				</s:VGroup>
+			</s:TitleWindow>
+		</s:VGroup>
+		<s:VGroup id="hg_cronConfigView" width="100%" paddingLeft="30" paddingTop="30" includeIn="cronConfigView">
+			<s:TitleWindow title="vCron Configuration Editor" width="90%" close="titlewindow1_closeHandler(event)">
+				<s:VGroup width="100%" paddingLeft="20" paddingTop="20" paddingRight="20" paddingBottom="20">
+					<s:HGroup width="100%">
+						<s:Label id="lbl_config_data_status" text="Configuration Data Status: "/>
+					</s:HGroup>
+					<s:HGroup width="100%" paddingTop="20">
+						<s:HGroup paddingTop="5">
+							<s:Label id="lbl_config_crontab" text="Crontab File: "/>
+						</s:HGroup>
+						<s:HGroup width="100%">
+							<s:TextInput id="txt_config_crontab" text="{this.__txt_config_crontab__}" width="80%" styleName="READONLY" editable="false" creationComplete="txt_config_crontab_creationCompleteHandler(event)"/>
+						</s:HGroup>
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<s:HGroup paddingTop="5">
+							<s:Label id="lbl_config_verbose" text="Verbose: "/>
+						</s:HGroup>
+						<s:HGroup>
+							<s:CheckBox id="cb_config_verbose" selected="{this.__cb_config_verbose__}" change="cb_config_verbose_changeHandler(event)"/>
+						</s:HGroup>
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<s:HGroup paddingTop="5">
+							<s:Label id="lbl_config_dryrun" text="Dryrun: "/>
+						</s:HGroup>
+						<s:HGroup>
+							<s:CheckBox id="cb_config_dryrun" selected="{this.__cb_config_dryrun__}" change="cb_config_dryrun_changeHandler(event)"/>
+						</s:HGroup>
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<s:HGroup paddingTop="5">
+							<s:Label id="lbl_config_resolution" text="Timer Resolution: "/>
+						</s:HGroup>
+						<s:HGroup>
+							<s:DropDownList id="dropdown_config_resolution" dataProvider="{this.__config_timer_resolutions__}" selectedIndex="{this.__selected_config_resolution_index__}" change="dropdown_config_resolution_changeHandler(event)"/>
+						</s:HGroup>
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<s:HGroup paddingTop="5">
+							<s:Label id="lbl_config_webservice" text="Webservice Address: "/>
+						</s:HGroup>
+						<s:HGroup>
+							<s:TextInput id="txt_config_webservice_address" text="{this.__txt_config_webservice_address__}" styleName="READONLY" editable="false" width="250" creationComplete="txt_config_webservice_address_creationCompleteHandler(event)"/>
+						</s:HGroup>
+					</s:HGroup>
+				</s:VGroup>
+			</s:TitleWindow>
+		</s:VGroup>
+		<s:VGroup id="hg_crontabView" width="100%" paddingLeft="30" paddingTop="30" includeIn="crontabView">
+			<views:CrontabEditor id="crontab_editor" title="vCron Crontab Editor" width="90%" close="titlewindow2_closeHandler(event)"/>
+		</s:VGroup>
+		<navigators:EventViewer id="events" title="Events" width="100%" height.mainView="100%" height="250" includeIn="debugView" creationComplete="events_creationCompleteHandler(event)"/>
+	</s:VGroup>
+</s:WindowedApplication>

@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" creationComplete="creationCompleteHandler();" 
+	xmlns:ns1="utils.window.effects.*">
+    <mx:Script>
+        <![CDATA[
+            import mx.managers.DragManager;
+            import mx.core.DragSource;
+            import mx.events.DragEvent;
+            import flash.events.MouseEvent;
+            import mx.containers.Canvas;
+            import mx.containers.Panel;
+			import utils.window.effects.DragPanel;
+			import libs.vo.GlobalsVO;
+			
+			
+			[Bindable]
+			private var _stageWidth:Number;
+			
+			[Bindable]
+			private var _stageHeight:Number;
+			
+			[Bindable]
+			private var _windowMsg:String =  new String();
+			
+			[Bindable]
+			private var _windowX:Number;
+			
+			[Bindable]
+			private var _windowY:Number;
+			
+			// Save panel being resized.
+			protected var resizingPanel:Panel;
+			// Global coordinates of lower left corner of panel.
+			protected var initX:Number;
+			protected var initY:Number;
+			
+			// Define static constant for event type.
+			public static const RESIZE_CLICK:String = "resizeClick";
+
+
+			public function setDimentions(w:Number,h:Number):void {
+				_stageWidth = w;
+				_stageHeight= h;
+			}
+			
+			
+			public function clear():void {
+				this._windowMsg = new String();
+			}
+			
+			public function msg(str:String):void {
+				this._windowMsg += str+"\n";
+			}
+
+			// Creation complete event handler adds the resizing event. 
+			// resizeButtonClicked is a custom event type for this application.
+			protected function creationCompleteHandler():void {
+				_windowX = GlobalsVO.DIAG_WINDOW_X;
+				_windowY = GlobalsVO.DIAG_WINDOW_Y;
+				addEventListener(RESIZE_CLICK, resizeHandler);
+			}
+
+			
+
+            // Creation complete handler for each panel to add the 
+            // mouseMove event handler to the title bar. 
+            // Clicking the mouse button, then moving the mouse on the title bar
+            // initiates the d&d operation. 
+            private function myPanelCCHandler(event:Event):void {
+            	event.currentTarget.myTitleBar.addEventListener(MouseEvent.MOUSE_DOWN, tbMouseMoveHandler);
+            }
+
+            // Variables used to hold the mouse pointer's location in the title bar.
+            // Since the mouse pointer can be anywhere in the title bar, you have to 
+            // compensate for it when you drop the panel. 
+            public var xOff:Number;
+            public var yOff:Number;
+            
+            // Function called by the canvas dragEnter event; enables dropping
+            private function doDragEnter(event:DragEvent):void 
+            {
+                DragManager.acceptDragDrop(Canvas(event.target));
+            }
+
+            // Drag initiator event handler for
+            // the title bar's mouseMove event.
+            private function tbMouseMoveHandler(event:MouseEvent):void 
+            {
+                var dragInitiator:Panel=Panel(event.currentTarget.parent);
+                var ds:DragSource = new DragSource();
+                ds.addData(event.currentTarget.parent, 'panel'); 
+                
+        	    // Update the xOff and yOff variables to show the
+            	// current mouse location in the Panel.  
+                xOff = event.currentTarget.mouseX;
+                yOff = event.currentTarget.mouseY;
+                
+                // Initiate d&d. 
+                DragManager.doDrag(dragInitiator, ds, event);                    
+            }            
+
+            // Function called by the Canvas dragDrop event; 
+            // Sets the panel's position, 
+            // "dropping" it in its new location.
+            private function doDragDrop(event:DragEvent):void 
+            {
+				// Compensate for the mouse pointer's location in the title bar.
+				var tempX:int = event.currentTarget.mouseX - xOff;
+				event.dragInitiator.x = tempX;
+				
+				var tempY:int = event.currentTarget.mouseY - yOff;
+				event.dragInitiator.y = tempY;
+				
+				// Put the dragged panel on top of all other components.
+				v1.setChildIndex(Panel(event.dragInitiator), v1.numChildren-1);			
+            }
+
+			//
+			// Resizing event handlers.
+			//
+
+			
+
+			// Resize area of panel clicked.
+			protected function resizeHandler(event:MouseEvent):void
+			{
+				resizingPanel = Panel(event.target);
+				initX = event.localX;
+				initY = event.localY;
+				
+				// Place the rubber band over the panel. 
+				rbComp.x = event.target.x;
+				rbComp.y = event.target.y;
+				rbComp.height = event.target.height;
+				rbComp.width = event.target.width;
+				
+				// Make sure rubber band is on top of all other components.
+				v1.setChildIndex(rbComp, v1.numChildren-1);
+				rbComp.visible=true;
+				
+				// Add event handlers so that the SystemManager handles 
+				// the mouseMove and mouseUp events. 
+				// Set useCapure flag to true to handle these events 
+				// during the capture phase so no other component tries to handle them.
+				systemManager.addEventListener(MouseEvent.MOUSE_MOVE, mouseMoveHandler, true);
+				systemManager.addEventListener(MouseEvent.MOUSE_UP, mouseUpHandler, true);
+			}
+			
+			// Resizes the rubber band as the user moves the cursor 
+			// with the mouse key down.
+			protected function mouseMoveHandler(event:MouseEvent):void
+			{
+					event.stopImmediatePropagation();		
+						
+					rbComp.height = rbComp.height + event.stageY - initY;  
+					rbComp.width = rbComp.width + event.stageX - initX;
+					
+					initX = event.stageX;
+					initY = event.stageY;						
+			}
+			
+			// Sizes the panel to the size of the rubber band when the 
+			// user releases the mouse key. 
+			// Also removes the event handlers from the SystemManager.
+			protected function mouseUpHandler(event:MouseEvent):void
+			{
+				event.stopImmediatePropagation();		
+
+				// Use a minimum panel size of 150 x 50.
+				if (rbComp.height <= 50)
+				{
+					resizingPanel.height = 50;  
+				}
+				else
+				{
+					resizingPanel.height = rbComp.height;  				
+				}				
+				
+				if (rbComp.width <= 150)
+				{
+					resizingPanel.width = 150;				
+				}
+				else
+				{
+					resizingPanel.width = rbComp.width;				
+				}				
+
+				// Put the resized panel on top of all other components.
+				v1.setChildIndex(resizingPanel, v1.numChildren-1);
+
+				// Hide the rubber band until next time.
+				rbComp.x = 0;
+				rbComp.y = 0;
+				rbComp.height = 0;
+				rbComp.width = 0;
+				rbComp.visible = false;
+				
+				systemManager.removeEventListener(MouseEvent.MOUSE_MOVE, mouseMoveHandler, true);
+				systemManager.removeEventListener(MouseEvent.MOUSE_UP, mouseUpHandler, true	);
+			}
+        ]]>
+    </mx:Script>
+    
+    <!-- The Canvas is the drag target --> 
+    <mx:Canvas id="v1" 
+        width="{_stageWidth}" height="{_stageHeight}"
+        backgroundAlpha="0"
+        backgroundColor="#AAAAAA"  
+        dragEnter="doDragEnter(event);" 
+        dragDrop="doDragDrop(event);">
+   
+    <ns1:DragPanel id="dp1"  visible="false" x="0" y="0" title="Diagnostics" paddingLeft="0" paddingRight="0" paddingTop="0" paddingBottom="0"
+    	creationComplete="myPanelCCHandler(event);" left="0" top="0" width="350" height="200" verticalScrollPolicy="off">
+    	<mx:TextArea text="{_windowMsg}" id="txtField" valueCommit="txtField.verticalScrollPosition=txtField.maxVerticalScrollPosition" width="100%" height="100%" wordWrap="true" editable="true" enabled="true" color="#000000" fontFamily="Courier New" fontSize="12" fontWeight="normal" fontStyle="normal" textDecoration="none"/>
+    </ns1:DragPanel>
+    <ns1:RubberBandComp id="rbComp" x="0" y="0" height="0" width="0" visible="false"/>
+    <ns1:DragPanel id="dp0" title="Diagnostics" paddingLeft="0" paddingRight="0" paddingTop="0" paddingBottom="0"
+    	creationComplete="myPanelCCHandler(event);" width="700" height="250" verticalScrollPolicy="off" x="{_windowX}" y="{_windowY}">
+    	<mx:TextArea text="{_windowMsg}" id="txtField0" valueCommit="txtField0.verticalScrollPosition=txtField0.maxVerticalScrollPosition" width="100%" height="100%" wordWrap="true" editable="true" enabled="true" color="#000000" fontFamily="Courier New" fontSize="12" fontWeight="normal" fontStyle="normal" textDecoration="none" liveScrolling="true"/>
+    	<mx:Button label="Clear" click="clear();"/>
+    </ns1:DragPanel>
+    </mx:Canvas>
+</mx:Canvas>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ViewNavigatorApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							xmlns:s="library://ns.adobe.com/flex/spark" 
+							firstView="views.CiscoAmazonDemo1HomeView" 
+							applicationDPI="160">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			
+			public static var root_file_name_xml:String = null; //'app:/data/data.xml';
+			public static var default_root_file_name_xml:String = '/mnt/sdcard/com.Cisco.Amazon.Kindle.Fire/root.xml';
+
+			public static var __root__:* = null;
+			public static var __data__:* = null;
+			
+		]]>
+	</fx:Script>
+</s:ViewNavigatorApplication>

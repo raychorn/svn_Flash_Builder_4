@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   width="100%" height="100%" minWidth="700" minHeight="500" 
+					   creationComplete="windowedapplication1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.CustomErrorTips;
+			import com.DebuggerUtils;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.ToolTip;
+			import mx.events.FlexEvent;
+			import mx.managers.ToolTipManager;
+			
+			import controls.ToolTips.HTMLToolTip;
+			import controls.events.tips.CustomErrorTipsChangedEvent;
+			
+			private var toolTips:Array = [];
+			
+			private var types:Array = ['','errorTipRight','errorTipAbove','errorTipBelow'];
+			
+			[Bindable]
+			private var types_dataProvider:ArrayCollection = new ArrayCollection(types);
+
+			[Bindable]
+			private var colors_dataProvider:ArrayCollection = new ArrayCollection(CustomErrorTips.colors);
+			
+			private var all_buttons:Array = [];
+			
+			private function handle_errorTipsChangedEvent(event:CustomErrorTipsChangedEvent):void {
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 (+++ #2) --> event='+event.toString());
+			}
+			
+			private function createToolTip( event:MouseEvent ):void{
+				var aToolTip:ToolTip;
+				var _x:uint =  event.target.x + ((1) ? event.target.width : 0);
+				var _y:uint = event.target.y;
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 (+++) --> event.target='+event.target.toString());
+				event.target.removeEventListener(CustomErrorTipsChangedEvent.TYPE_CUSTOM_ERROR_TIPS_CHANGED_EVENT, this.handle_errorTipsChangedEvent);
+				event.target.addEventListener(CustomErrorTipsChangedEvent.TYPE_CUSTOM_ERROR_TIPS_CHANGED_EVENT, this.handle_errorTipsChangedEvent);
+				var tip_orientation:String = 'errorTipRight';
+				if (this.cb.selectedItem) {
+					tip_orientation = String(this.cb.selectedItem);
+				}
+				aToolTip = CustomErrorTips.createToolTip('Once upon a time there were three little pigs...',event.target,new Point(_x,_y),tip_orientation);
+				this.toolTips.push(aToolTip);
+			}
+			
+			private function createToolTip_for(target:spark.components.Button):void{
+				var aToolTip:ToolTip;
+				var _x:uint =  target.contentMouseX;
+				var _y:uint = target.contentMouseY;
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 (+++) --> event.target='+target.toString());
+				target.removeEventListener(CustomErrorTipsChangedEvent.TYPE_CUSTOM_ERROR_TIPS_CHANGED_EVENT, this.handle_errorTipsChangedEvent);
+				target.addEventListener(CustomErrorTipsChangedEvent.TYPE_CUSTOM_ERROR_TIPS_CHANGED_EVENT, this.handle_errorTipsChangedEvent);
+				var tip_orientation:String = 'errorTipRight';
+				if (this.cb.selectedItem) {
+					tip_orientation = String(this.cb.selectedItem);
+				}
+				aToolTip = CustomErrorTips.createToolTip('Once upon a time there was '+target.toString(),target,new Point(_x,_y),tip_orientation);
+				this.toolTips.push(aToolTip);
+			}
+			
+			private function delayed_action(action:Function,delay:int):void {
+				var timer:Timer = new Timer(delay);
+				timer.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						timer.stop();
+						if (action is Function) {
+							try {
+								action();
+							} catch (err:Error) {}
+						}
+					}
+				);
+				timer.start();
+			}
+			
+			private function destroyToolTip( event:MouseEvent ):void{
+				var aToolTip:ToolTip;
+				var __is__:Boolean = this.cb_destroy_as_required.selected;
+				while (this.toolTips.length > 0) {
+					aToolTip = this.toolTips.pop();
+					if (__is__) {
+						ToolTipManager.destroyToolTip( aToolTip);
+					} else {
+						this.delayed_action(function ():void {ToolTipManager.destroyToolTip( aToolTip);}, 5000);
+					}
+				}
+			}
+
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:CustomErrorTipsSample = this;
+				ToolTipManager.toolTipClass = HTMLToolTip;
+			}
+
+
+			protected function cb_color_valueCommitHandler(event:FlexEvent):void {
+				if (this.cb_color.selectedIndex > -1) {
+					var value:String = this.cb_color.selectedItem.data;
+					CustomErrorTips.set_tips_color(value);
+				}
+			}
+
+
+			protected function btn_test_all_clickHandler(event:MouseEvent):void {
+				var aBtn:spark.components.Button;
+				var i:int = 1;
+				for (i=0; i < this.all_buttons.length; i++) {
+					aBtn = this.all_buttons[i];
+					this.createToolTip_for(aBtn);
+				}
+				CustomErrorTips.check_for_overlaps();
+			}
+
+			protected function button_creationCompleteHandler(event:FlexEvent):void {
+				this.all_buttons.push(event.currentTarget);
+			}
+			
+			protected function btn_remove_all_clickHandler():void {
+				CustomErrorTips.destroyToolTips();
+			}
+		]]>
+	</fx:Script>
+	
+	<mx:Panel title="Test Bed" width="100%">
+		<mx:ApplicationControlBar dock="true" width="100%">
+			<s:VGroup width="100%">
+				<s:HGroup width="100%" paddingLeft="0" paddingRight="20">
+					<s:HGroup paddingTop="5">
+						<s:Label text="Select Error Tip pos:" />
+					</s:HGroup>
+					<s:ComboBox id="cb" dataProvider="{this.types_dataProvider}"/>
+					<mx:Spacer width="1"/>
+					<s:HGroup paddingTop="5">
+						<s:Label text="Color:" />
+					</s:HGroup>
+					<s:ComboBox id="cb_color" dataProvider="{this.colors_dataProvider}" valueCommit="cb_color_valueCommitHandler(event)"/> 
+					<mx:Spacer width="1"/>
+					<s:Button id="btn_test_all" label="Test All Tips" click="btn_test_all_clickHandler(event)"/>
+					<mx:Spacer width="1"/>
+					<s:Button id="btn_remove_all" label="Remove All Tips" click="btn_remove_all_clickHandler()"/>
+				</s:HGroup>
+				<s:HGroup width="100%">
+					<s:CheckBox id="cb_destroy_as_required" label="Destroy" toolTip="Destroy tips automatically." selected="true"/>
+				</s:HGroup>
+			</s:VGroup>
+		</mx:ApplicationControlBar>
+		<mx:HBox id="container" width="100%" height="200" backgroundColor="#0000ff" backgroundAlpha="0.25">
+			<mx:VBox width="100%" height="100%">
+				<mx:Spacer height="20%"/>
+				<mx:HBox width="100%">
+					<mx:Label text="Move the mouse over the button for more info" />
+					<s:Button name="btn1" label="Custom tool tip" creationComplete="button_creationCompleteHandler(event)"
+							   rollOver="createToolTip( event )"
+							   rollOut="destroyToolTip( event )"/>
+				</mx:HBox>
+				<mx:HBox width="100%">
+					<mx:Label text="Move the mouse over the button for more info" />
+					<s:Button name="btn2" label="Custom tool tip" creationComplete="button_creationCompleteHandler(event)"
+							   rollOver="createToolTip( event )"
+							   rollOut="destroyToolTip( event )"/>
+				</mx:HBox>
+				<mx:HBox width="100%">
+					<mx:Label text="Move the mouse over the button for more info" />
+					<s:Button name="btn3" label="Custom tool tip" creationComplete="button_creationCompleteHandler(event)"
+							   rollOver="createToolTip( event )"
+							   rollOut="destroyToolTip( event )"/>
+				</mx:HBox>
+				<mx:HBox width="100%">
+					<mx:Label text="Move the mouse over the button for more info" />
+					<s:Button name="btn4" label="Custom tool tip" creationComplete="button_creationCompleteHandler(event)"
+							   rollOver="createToolTip( event )"
+							   rollOut="destroyToolTip( event )"/>
+				</mx:HBox>
+			</mx:VBox>
+		</mx:HBox>
+	</mx:Panel>
+</s:WindowedApplication>

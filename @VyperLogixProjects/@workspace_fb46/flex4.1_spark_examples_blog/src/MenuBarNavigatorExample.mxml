@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:st="library://ns.tink.ws/flex/spark"
+			   xmlns:menubar="spark.menubar.*"
+			   >
+	<fx:Library>
+		<fx:Definition name="Divider">
+			<s:Graphic width="15" height="18">
+				<s:Rect width="15" height="18">
+					<s:fill>
+						<mx:SolidColor alpha="0"/>
+					</s:fill>
+				</s:Rect>
+				<st:Line height="18" horizontalCenter="0">
+					<st:stroke>
+						<st:SolidColorDash weight="2" color="0x000000" dash="2" gap="2" caps="none"/>
+					</st:stroke>
+				</st:Line>
+			</s:Graphic> 
+		</fx:Definition>
+	</fx:Library>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace st "library://ns.tink.ws/flex/spark";
+		@namespace menubar "spark.menubar.*";
+		
+		.BorderContainerRed {
+			backgroundColor: #FF00F0;
+		}
+
+		.BorderContainerGreen {
+			backgroundColor: #00FF00;
+		}
+
+		.BorderContainerBlue {
+			backgroundColor: #0000FF;
+		}
+
+		.BorderContainerYellow {
+			backgroundColor: #FFFF00;
+		}
+
+		.BorderContainerCyan {
+			backgroundColor: #00FFFF;
+		}
+
+		.BorderContainerPurple {
+			backgroundColor: #FF00FF;
+		}
+
+		.BorderContainerBlack {
+			backgroundColor: #000000;
+		}
+
+		.BorderContainerGrey {
+			backgroundColor: #CCCCCC;
+		}
+
+		.BorderContainerWhite {
+			backgroundColor: #FFFFFF;
+		}
+
+		.BorderContainerRed3 {
+			backgroundColor: #330000;
+		}
+		
+		.BorderContainerRed6 {
+			backgroundColor: #660000;
+		}
+		
+		.BorderContainerRed9 {
+			backgroundColor: #990000;
+		}
+		
+		.BorderContainerGrey3 {
+			backgroundColor: #333333;
+		}
+		
+		.BorderContainerGrey6 {
+			backgroundColor: #666666;
+		}
+		
+		.BorderContainerGrey9 {
+			backgroundColor: #999999;
+		}
+		
+		.BorderContainerYellowL3 {
+			backgroundColor: #FFFF00;
+		}
+		
+	</fx:Style>
+	
+	<s:layout>
+		<s:VerticalLayout paddingLeft="30" horizontalAlign="center"/>
+	</s:layout>
+	
+	<menubar:SparkMenuBar id="menuBar" dataProvider="{navigator}" labelField="id"
+						  >
+		<!--
+		allowBranchSelection="{allowBranchSelection.selected}"
+		closeOnSelection="{closeOnSelection.selected}"
+		-->
+	</menubar:SparkMenuBar>
+	
+	<st:NavigatorGroup id="navigator" width="380" height="100">
+		<st:NavigatorGroup id="level_0" width="380" height="100">
+			<st:NavigatorGroup id="level_0_0" width="380" height="100">
+				<s:BorderContainer id="level_0_0_0_red" styleName="BorderContainerRed"/>
+				<s:BorderContainer id="level_0_0_1_green" styleName="BorderContainerGreen"/>
+				<s:BorderContainer id="level_0_0_2_blue" styleName="BorderContainerBlue"/>
+			</st:NavigatorGroup>
+			<st:NavigatorGroup id="level_0_1" width="380" height="100">
+				<s:BorderContainer id="level_0_1_0_yellow" styleName="BorderContainerYellow"/>
+				<s:BorderContainer id="level_0_1_1_cyan" styleName="BorderContainerCyan"/>
+				<s:BorderContainer id="level_0_1_2_purple" styleName="BorderContainerPurple"/>
+			</st:NavigatorGroup>
+		</st:NavigatorGroup>
+		
+		<st:NavigatorGroup id="level_1" width="380" height="100">
+			<st:NavigatorGroup id="level_1_0" width="380" height="100">
+				<s:BorderContainer id="level_1_0_0_black" styleName="BorderContainerBlack"/>
+				<s:BorderContainer id="level_1_0_1_grey" styleName="BorderContainerGrey"/>
+				<s:BorderContainer id="level_1_0_2_white" styleName="BorderContainerWhite"/>
+			</st:NavigatorGroup>
+			<st:NavigatorGroup id="level_1_1" width="380" height="100">
+				<s:BorderContainer id="level_1_1_0_red3s" styleName="BorderContainerRed3"/>
+				<s:BorderContainer id="level_1_1_1_red6s" styleName="BorderContainerRed6"/>
+				<s:BorderContainer id="level_1_1_2_red9s" styleName="BorderContainerRed9"/>
+			</st:NavigatorGroup>
+		</st:NavigatorGroup>
+			
+		<st:NavigatorGroup id="level_2" width="380" height="100">
+			<s:BorderContainer id="level_2_0_grey3s" styleName="BorderContainerGrey3"/>
+			<s:BorderContainer id="level_2_1_grey6s" styleName="BorderContainerGrey6"/>
+			<s:BorderContainer id="level_2_2_grey9s" styleName="BorderContainerGrey9"/>
+		</st:NavigatorGroup>
+		
+		<s:BorderContainer id="level_3_yellow" styleName="BorderContainerYellowL3"/>
+		
+	</st:NavigatorGroup>
+	
+	<!--
+	<s:Label text="selectedLabels: {menuBar.selectedLabels.toString()}"/>
+	-->
+	
+	
+	<s:Label text="MenuBar Properties" fontWeight="bold" fontSize="13" height="30" verticalAlign="bottom"/>
+	
+	<s:HGroup width="100%" horizontalAlign="center" gap="0">
+		<s:CheckBox id="allowBranchSelection" label="allowBranchSelection:" fontWeight="bold" fontSize="8"/>
+		<fx:Divider/>
+		<s:CheckBox id="closeOnSelection" label="closeOnSelection:" fontWeight="bold" fontSize="8"/>
+	</s:HGroup>
+	
+</s:Application>

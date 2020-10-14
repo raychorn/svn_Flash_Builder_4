@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application 
+	backgroundColor="#424242"
+	minHeight="100"
+	minWidth="100"
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:s="library://ns.adobe.com/flex/spark" 
+	applicationDPI="160"
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	skinClass="com.flexpad.skin.AppSkin"
+	xmlns:icon="com.flexpad.icon.*"
+	xmlns:flexpad="http://code.google.com/p/flexpad/"
+	xmlns:view="com.flexpad.view.*">
+	<fx:Script>
+		<![CDATA[
+			import flash.filters.DropShadowFilter;
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:VerticalLayout gap="10"/>
+	</s:layout>
+	
+	<flexpad:BarGrey 
+		width="100%" height="45">
+		<flexpad:layout>
+			<s:HorizontalLayout 
+				paddingLeft="10"
+				paddingRight="10"
+				verticalAlign="middle"/>
+		</flexpad:layout>
+		<flexpad:ButtonBarGrey id="viewSwitcher"
+							   selectedIndex="0"
+							   requireSelection="true">
+			<flexpad:dataProvider>
+				<s:ArrayCollection>
+					<fx:String>Button</fx:String>
+					<fx:String>Text</fx:String>
+					<fx:String>Bar</fx:String>
+					<fx:String>List</fx:String>
+					<fx:String>Panel</fx:String>
+					<fx:String>Table</fx:String>
+					<fx:String>Popover</fx:String>
+					<fx:String>Splitview</fx:String>
+				</s:ArrayCollection>
+			</flexpad:dataProvider>
+		</flexpad:ButtonBarGrey>
+	</flexpad:BarGrey>
+	<flexpad:ViewStack 
+		width="100%" height="100%"
+		selectedIndex="{viewSwitcher.selectedIndex}">
+		<view:ButtonView/>
+		<view:TextView/>
+		<view:BarView/>
+		<view:ListView/>
+		<view:PanelView/>
+		<view:TableView/>
+		<view:PopoverView/>
+		<view:SplitViewView/>
+	</flexpad:ViewStack>
+	
+</s:Application>

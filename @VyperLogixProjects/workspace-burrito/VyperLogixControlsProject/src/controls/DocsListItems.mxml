@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+
+			private var _dataProvider:ArrayCollection;
+			
+			public function get dataProvider():ArrayCollection {
+				return this._dataProvider;
+			}
+			
+			public function set dataProvider(dataProvider:ArrayCollection):void {
+				if (this._dataProvider != dataProvider) {
+					this._dataProvider = dataProvider;
+				}
+			}
+			
+			protected function docsList_changeHandler(event:IndexChangeEvent):void {
+				//var item:Object = List(event.target).selectedItem;
+				//var ac:ArrayCollection = item.item as ArrayCollection;
+				//var i:int = 0;
+			}
+
+			protected function docsList_creationCompleteHandler(event:FlexEvent):void {
+				this.items.dataProvider = this._dataProvider;
+				var i:int = 0;
+			}
+		]]>
+	</fx:Script>
+	<s:List id="items" styleName="docs_listbox" width="100%" height="100%" labelField="title" change="docsList_changeHandler(event)" creationComplete="docsList_creationCompleteHandler(event)"/>
+</mx:Canvas>

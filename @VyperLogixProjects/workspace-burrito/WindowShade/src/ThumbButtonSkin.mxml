@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009" 
+             xmlns:s="library://ns.adobe.com/flex/spark" 
+             minWidth="21" minHeight="21" 
+             alpha.disabled="0.5">
+     
+    <fx:Metadata>
+		[HostComponent("spark.components.Button")]
+    </fx:Metadata>
+    
+    <s:states>
+        <s:State name="up" />
+        <s:State name="over" />
+        <s:State name="down" />
+        <s:State name="disabled" />
+    </s:states>
+    
+	<s:Rect id="fill" left="0" right="0" top="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="0xCCCCCC" />
+		</s:fill>
+	</s:Rect>
+	
+	<s:Rect id="highlight" width="100%" height="50%">
+		<s:fill>
+			<s:SolidColor color="0xE6E6E6" />
+		</s:fill>
+	</s:Rect>
+	
+	<s:Ellipse width="20" height="20" horizontalCenter="0" verticalCenter="0">
+		<s:fill>
+			<s:LinearGradient rotation="-137">
+				<s:GradientEntry color="#999999" />
+				<s:GradientEntry color="#ffffff" />
+			</s:LinearGradient>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="0xCCCCCC" />
+		</s:stroke>
+	</s:Ellipse>
+	
+	<s:Rect id="borderTop" left="0" right="0" top="0" height="1">
+		<s:fill>
+			<s:SolidColor color="0x666666" />
+		</s:fill>
+	</s:Rect>
+	
+	<s:Rect id="borderBottom" left="0" right="0" bottom="0" height="1">
+		<s:fill>
+			<s:SolidColor color="0x666666" />
+		</s:fill>
+	</s:Rect>
+    
+    <s:Label id="labelDisplay"
+             textAlign="center"
+             maxDisplayedLines="1"
+             horizontalCenter="0" verticalCenter="1" verticalAlign="middle"
+             left="10" right="10" top="2" bottom="2">
+    </s:Label>
+    
+</s:SparkSkin>

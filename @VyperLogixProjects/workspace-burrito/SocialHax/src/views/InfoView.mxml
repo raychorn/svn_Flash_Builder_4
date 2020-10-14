@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		title="Information" 
+		creationComplete="view1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			[Bindable]
+			private var _info:String = 'SocialHax (c). 2011, Vyper Logix Corp., allows you to do things with FourSquare.Com you would not be allowed to do otherwise. Additional Social Networking sites will be added based on user feedback.  One thing you can do with SocialHax you cannot do with FourSquare is repeated checkins while you are nowhere near the venue of choice. This allows you to become the mayor of any venue with minimal effort.\n\nPrivacy Policy:\n\nYour privacy is of the utmost importance.  Nothing is more important that the privacy of your information.  Your FourSquare.Com Credentials will NEVER be shared with anyone and will always be protected by SSL Encryption.  No changes will be made to your FourSquare.Com Account unless you authorize it.  You can take this to the bank.';
+			
+
+			protected function view1_creationCompleteHandler(event:FlexEvent):void {
+				this.parentApplication.handle_get_gps_location_updates();
+			}
+
+
+			protected function txt_info_creationCompleteHandler(event:FlexEvent):void {
+				this.parentApplication.determine_view_debugger_for(this,event.currentTarget as TextArea);
+			}
+
+		]]>
+	</fx:Script>
+	<s:Panel width="100%" height="100%" styleName="Panels" title="Copyright and Privacy Policy">
+		<s:VGroup width="100%" height="100%">
+			<s:TextArea id="txt_info" editable="false" styleName="INFO" text="{this._info}" width="100%" height="100%" verticalScrollPolicy="auto" creationComplete="txt_info_creationCompleteHandler(event)"/>
+		</s:VGroup>
+	</s:Panel>
+</s:View>

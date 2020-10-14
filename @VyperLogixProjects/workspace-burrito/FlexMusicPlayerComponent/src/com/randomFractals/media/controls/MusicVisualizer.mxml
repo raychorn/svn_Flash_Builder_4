@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" height="100%"
+		 xmlns:vis="com.nocreativity.soundCoolness.*"
+		 xmlns:wave="org.bytearray.spectrums.*"	
+		 toolTip="Change Visualization"
+		 initialize="initMusicVis()"
+		 click="nextMusicVis();" 
+		 resize="nextMusicVis(0);">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.core.IUIComponent;
+			
+			private var _selectedMusicVis:IUIComponent;
+			
+			private var selectedIndex:int;
+			
+			/**
+			 * Initializes music visualizer.
+			 */
+			private function initMusicVis():void
+			{
+				// set current vis.
+				this.selectedIndex = 0;
+				_selectedMusicVis = visualizr;
+			}
+			
+			//----------- Public Methods ------------------------
+			
+			/**
+			 * Loads the next music visualizer.
+			 */
+			public function nextMusicVis(index:int = -1):void
+			{				
+				if (index >= 0 && index < this.numChildren - 1)
+				{
+					// select the specivied music vis
+					this.selectedIndex = index;
+				}
+				else if (this.selectedIndex < this.numChildren -1)
+				{
+					// select the next music visualizer					
+					this.selectedIndex++;
+				}
+				else	
+				{
+					// show the first music vis
+					this.selectedIndex = 0;
+				}
+				
+				// determine the next music visualizer
+				var nextVisualizer:IUIComponent;				
+				switch (this.selectedIndex)
+				{
+					case 0:
+						nextVisualizer = visualizr;
+						break;											
+					case 1:
+						nextVisualizer = smoothSpectrum;
+						break;
+					// Note: add a case for the other music visualizers here
+				}
+				
+				if (nextVisualizer != _selectedMusicVis)
+				{
+					// NOTE: make sure rendering is disabled in your music vis.,
+					// when your visualizer is not enabled
+					// to save those preciouse CPU cycles 
+					// and skip all the bitmapdata and 
+					// blur filter changes that nobody will see :)
+					
+					// change selected visualizer					
+					nextVisualizer.enabled = true;
+					_selectedMusicVis.enabled = false;
+					_selectedMusicVis = nextVisualizer;
+				}
+			}
+			
+			/**
+			 * Returns the selected music visualization.
+			 */
+			public function get selectedMusicVis():IUIComponent
+			{
+				return _selectedMusicVis;
+			}			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle">
+		<s:VGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle">
+			<vis:Visualizr id="visualizr" width="100%" height="100%" />				
+		</s:VGroup>
+
+		<s:VGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle">
+			<wave:SmoothSpectrum id="smoothSpectrum" enabled="false" width="100%" height="100%" />
+		</s:VGroup>
+	</s:VGroup>
+</s:Group>

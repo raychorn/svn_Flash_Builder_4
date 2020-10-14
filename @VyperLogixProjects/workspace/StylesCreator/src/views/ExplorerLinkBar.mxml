@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+	<mx:VBox width="100%" height="100%" xmlns:mx="http://www.adobe.com/2006/mxml" verticalScrollPolicy="off" xmlns:views="views.*">
+	
+	<mx:HBox width="100%" height="100%">
+
+
+
+	<mx:VBox height="100%"  styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="STYLE CONTROLS"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+			<mx:TabNavigator width="100%" id="controlNavigator" styleName="styleControlTabNavigator" tabWidth="150">
+			<mx:Box label="LinkBar" >
+				<mx:Form styleName="noPadding">
+				<!-- LINKBAR -->
+
+				
+			<mx:FormItem label="Horizontal Gap">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="8"
+						id="myHorizontalGaplinkBar"
+						
+						snapInterval="1"
+						change="setValue('horizontalGap', event.target.value, 'number', 'linkBar');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Separator Width">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="1"
+						id="mySeparatorWidthlinkBar"
+						
+						snapInterval="1"
+						change="setValue('separatorWidth', event.target.value, 'number', 'linkBar');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Border Style">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBBorderStyleLinkBar" label="none" selected="true"  id="myBorderStylelinkBar" 
+								labelPlacement="right" click="myLinkBar.setStyle('borderStyle', 'none');
+								setCSS('borderStyle', 0, 'none', 'linkBar');"/>
+							<mx:RadioButton groupName="SBBorderStyleLinkBar" label="solid" 
+								labelPlacement="right" click="myLinkBar.setStyle('borderStyle', 'solid');
+								setCSS('borderStyle', 0, 'solid', 'linkBar');"/>
+						</mx:HBox>
+					</mx:FormItem>
+				<mx:FormItem label="Border Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xB7BABC" id="myBorderColorlinkBar"
+								close="setValue('borderColor', event.target.selectedColor, 'color', 'linkBar')"/>
+				</mx:FormItem>	
+					<mx:FormItem label="Border Thickness">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="1"
+						id="myBorderThicknesslinkBar"
+						
+						snapInterval="1"
+						change="setValue('borderThickness', event.target.value, 'number', 'linkBar');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Corner Radius">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="0"
+						id="myCornerRadiuslinkBar"
+						
+						snapInterval="1"
+						change="setValue('cornerRadius', event.target.value, 'number', 'linkBar');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+					
+<mx:FormItem label="Drop Shadow Enabled">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBDropShadowEnabledlinkbar" label="true"  labelPlacement="right"
+								click="myLinkBar.setStyle('dropShadowEnabled', true); enableShadowItemsLinkBar();
+									   setCSS('dropShadowEnabled', 0, 'true', 'linkBar');"
+									   />
+							<mx:RadioButton groupName="SBDropShadowEnabledlinkbar" label="false" labelPlacement="right" selected="true"  id="myDropShadowEnabledlinkBar" 
+								click="myLinkBar.setStyle('dropShadowEnabled', false); enableShadowItemsLinkBar();
+								 setCSS('dropShadowEnabled', 0, 'false', 'linkBar');"/>
+						</mx:HBox>
+					</mx:FormItem>
+					<mx:Box styleName="conditionalBox">			
+				<mx:Form styleName="conditionalForm" >
+					<mx:FormItem label="Shadow Distance">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="2"
+						enabled="false"
+						id="myShadowDistancelinkBar"
+						
+						snapInterval="1"
+						change="setValue('shadowDistance', event.target.value, 'number', 'linkBar');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				</mx:FormItem>
+			<mx:FormItem label="Shadow Direction">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBShadowDirectionlinkBar" label="left"  id="myShadowDirection2linkBar" enabled="false"
+								labelPlacement="right" click="myLinkBar.setStyle('shadowDirection', 'left'); setCSS('shadowDirection', 0, 'left', 'linkBar');"/>
+							<mx:RadioButton groupName="SBShadowDirectionlinkBar" label="center" id="myShadowDirectionlinkBar" enabled="false"
+								selected="true" labelPlacement="right" click="myLinkBar.setStyle('shadowDirection', 'center'); setCSS('shadowDirection', 0, 'center', 'linkBar');"/>
+							<mx:RadioButton groupName="SBShadowDirectionlinkBar" label="right" id="myShadowDirection3linkBar" enabled="false"
+								selected="true" labelPlacement="right" click="myLinkBar.setStyle('shadowDirection', 'right'); setCSS('shadowDirection', 0, 'right', 'linkBar');"/>
+						</mx:HBox>
+					</mx:FormItem>
+					<mx:FormItem label="Drop Shadow Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x000000" id="myDropShadowColorlinkBar" enabled="false"
+								close="setValue('dropShadowColor', event.target.selectedColor, 'color', 'linkBar')"/>
+				</mx:FormItem>
+			</mx:Form></mx:Box>
+
+				<mx:FormItem label="Background Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xFFFFFF" id="myBackgroundColorlinkBar"
+								close="setValue('backgroundColor', event.target.selectedColor, 'color', 'linkBar')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Background Alpha">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="1"
+						id="myBackgroundAlphalinkBar"
+						
+						snapInterval=".01"
+						change="setValue('backgroundAlpha', event.target.value, 'number', 'linkBar');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				</mx:FormItem>
+				
+				<mx:FormItem label="Separator Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xC4CCCC" id="mySeparatorColorlinkBar"
+								close="setValue('separatorColor', event.target.selectedColor, 'color', 'linkBar')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Roll Over Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xAADEFF" id="myRollOverColorlinkBar"
+								close="setValue('rollOverColor', event.target.selectedColor, 'color', 'linkBar')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Selection Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x7FCDFE" id="mySelectionColorlinkBar"
+								close="setValue('selectionColor', event.target.selectedColor, 'color', 'linkBar')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x2B333C" id="myColorlinkBar"
+								close="setValue('color', event.target.selectedColor, 'color', 'linkBar')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Text Roll Over Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x2B333C" id="myTextRollOverColorlinkBar"
+								close="setValue('textRollOverColor', event.target.selectedColor, 'color', 'linkBar')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Text Selected Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x2B333C" id="myTextSelectedColorlinkBar"
+								close="setValue('textSelectedColor', event.target.selectedColor, 'color', 'linkBar')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Disabled Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xAAB3B3" id="myDisabledColorlinkBar"
+								close="setValue('disabledColor', event.target.selectedColor, 'color', 'linkBar')"/>
+				</mx:FormItem>
+					
+				
+			
+				</mx:Form>
+			</mx:Box>
+			<mx:Box label="ApplicationControlBar">
+				<mx:Form paddingLeft="0" paddingRight="0" paddingTop="0" paddingBottom="0">
+				
+				
+				
+				<!-- APPLICATION CONTROL BAR -->
+					<mx:FormItem label="Corner Radius">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="5"
+						id="myCornerRadiusapplicationControlBar"
+						
+						snapInterval="1"
+						change="setValue('cornerRadius', event.target.value, 'number', 'applicationControlBar');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+					<mx:FormItem label="Drop Shadow Enabled">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBDropShadowEnabledapplicationControlBar" label="true"  labelPlacement="right" selected="true"   id="myDropShadowEnabledApplicationControlBar" 
+								click="myApplicationControlBar.setStyle('dropShadowEnabled', true); enableShadowItemsApplicationControlBar();
+									   setCSS('dropShadowEnabled', 0, 'true', 'applicationControlBar');"
+									   />
+							<mx:RadioButton groupName="SBDropShadowEnabledapplicationControlBar" label="false" labelPlacement="right" 
+								click="myApplicationControlBar.setStyle('dropShadowEnabled', false); enableShadowItemsApplicationControlBar();
+								 setCSS('dropShadowEnabled', 0, 'false', 'applicationControlBar');"/>
+						</mx:HBox>
+					</mx:FormItem>
+					<mx:Box styleName="conditionalBox">			
+				<mx:Form styleName="conditionalForm"  >
+					<mx:FormItem label="Shadow Distance">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="5"
+						
+						id="myShadowDistanceapplicationControlBar"
+						
+						snapInterval="1"
+						change="setValue('shadowDistance', event.target.value, 'number', 'applicationControlBar');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				</mx:FormItem>
+			<mx:FormItem label="Shadow Direction">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBShadowDirectionapplicationControlBar" label="left"  id="myShadowDirection2applicationControlBar" 
+								labelPlacement="right" click="myApplicationControlBar.setStyle('shadowDirection', 'left'); setCSS('shadowDirection', 0, 'left', 'applicationControlBar');"/>
+							<mx:RadioButton groupName="SBShadowDirectionapplicationControlBar" label="center" id="myShadowDirectionapplicationControlBar"
+								selected="true" labelPlacement="right" click="myApplicationControlBar.setStyle('shadowDirection', 'center'); setCSS('shadowDirection', 0, 'center', 'applicationControlBar');"/>
+							<mx:RadioButton groupName="SBShadowDirectionapplicationControlBar" label="right" id="myShadowDirection3applicationControlBar" 
+								selected="true" labelPlacement="right" click="myApplicationControlBar.setStyle('shadowDirection', 'right'); setCSS('shadowDirection', 0, 'right', 'applicationControlBar');"/>
+						</mx:HBox>
+					</mx:FormItem>
+					<mx:FormItem label="Drop Shadow Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x000000" id="myDropShadowColorapplicationControlBar"
+								close="setValue('dropShadowColor', event.target.selectedColor, 'color', 'applicationControlBar')"/>
+				</mx:FormItem>
+			</mx:Form></mx:Box>
+					
+					<mx:FormItem label="Border Style">
+						<mx:RadioButton groupName="SBBorderStyleApplicationControlBar" label="default" selected="true" id="myBorderStyleapplicationControlBar" 
+								labelPlacement="right" click="myApplicationControlBar.clearStyle('borderStyle'); 
+								enableBorderItemsApplicationControlBar();
+								setCSS('borderStyle', 0, 'default', 'applicationControlBar');"/>
+						<mx:HBox>
+							<mx:RadioButton groupName="SBBorderStyleApplicationControlBar" label="none"
+								labelPlacement="right" click="myApplicationControlBar.setStyle('borderStyle', 'none');
+								enableBorderItemsApplicationControlBar();
+								setCSS('borderStyle', 0, 'none', 'applicationControlBar');"/>
+							<mx:RadioButton groupName="SBBorderStyleApplicationControlBar" label="solid" id="myBorderStyle3applicationControlBar"  
+								labelPlacement="right" click="myApplicationControlBar.setStyle('borderStyle', 'solid');
+								enableBorderItemsApplicationControlBar();
+								setCSS('borderStyle', 0, 'solid', 'applicationControlBar');"/>
+						</mx:HBox>
+						
+					</mx:FormItem>
+					<mx:Box styleName="conditionalBox">			
+						<mx:Form styleName="conditionalForm" >
+			
+							<mx:FormItem label="Border Color">
+								<mx:ColorPicker height="23" width="70" selectedColor="0xB7BABC" id="myBorderColorapplicationControlBar" enabled="false"
+									close="setValue('borderColor', event.target.selectedColor, 'color', 'applicationControlBar')"/>
+							</mx:FormItem>
+					
+							<mx:FormItem label="Border Thickness">
+								<mx:HSlider
+									width="150"
+									thumbCount="1"
+									minimum="0"
+									maximum="20"
+									value="1"
+									id="myBorderThicknessapplicationControlBar"
+										enabled="false"
+									snapInterval="1"
+									change="setValue('borderThickness', event.target.value, 'number', 'applicationControlBar');"
+									dataTipPlacement="right"
+									liveDragging="true"/>
+							</mx:FormItem>
+						</mx:Form>
+					</mx:Box>
+					<mx:FormItem label="Background Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xFFFFFF" id="myBackgroundColorapplicationControlBar"
+								close="setValue('backgroundColor', event.target.selectedColor, 'color', 'applicationControlBar')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Background Alpha">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="1"
+						id="myBackgroundAlphaapplicationControlBar"
+						snapInterval=".01"
+						change="setValue('backgroundAlpha', event.target.value, 'number', 'applicationControlBar');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+						<mx:FormItem label="Highlight Alphas">
+				<mx:HBox>
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value=".30"
+						id="highlightAlpha1"
+						
+						snapInterval=".01"
+						change="myApplicationControlBar.setStyle('highlightAlphas',[highlightAlpha1.value , highlightAlpha2.value ]);
+						setArrayCSS('highlightAlphas', highlightAlpha1.value , highlightAlpha2.value , false, 'applicationControlBar')"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="0"
+						id="highlightAlpha2"
+						
+						snapInterval=".01"
+						change="myApplicationControlBar.setStyle('highlightAlphas',[highlightAlpha1.value, highlightAlpha2.value]);
+						setArrayCSS('highlightAlphas', highlightAlpha1.value, highlightAlpha2.value, false, 'applicationControlBar')"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+					</mx:HBox>
+				</mx:FormItem>
+						<mx:FormItem label="Fill Alphas">
+				<mx:HBox>
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="0"
+						id="fillAlpha1"
+						
+						snapInterval=".01"
+						change="myApplicationControlBar.setStyle('fillAlphas',[fillAlpha1.value, fillAlpha2.value]);
+						setArrayCSS('fillAlphas', fillAlpha1.value, fillAlpha2.value, false, 'applicationControlBar')"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="0"
+						id="fillAlpha2"
+						
+						snapInterval=".01"
+						change="myApplicationControlBar.setStyle('fillAlphas',[fillAlpha1.value, fillAlpha2.value]);
+						setArrayCSS('fillAlphas', fillAlpha1.value, fillAlpha2.value, false, 'applicationControlBar')"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+					</mx:HBox>
+				</mx:FormItem>
+<mx:FormItem label="Fill Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="Fill1" height="23" width="70" selectedColor="0xFFFFFF"
+								close="myApplicationControlBar.setStyle('fillColors', [Fill1.selectedColor, Fill2.selectedColor]);
+								setArrayCSS('fillColors', Fill1.selectedColor, Fill2.selectedColor, true, 'applicationControlBar');
+								"/>
+								<mx:ColorPicker id="Fill2" height="23" width="70" selectedColor="0xFFFFFF"
+								close="myApplicationControlBar.setStyle('fillColors', [Fill1.selectedColor, Fill2.selectedColor]);
+								setArrayCSS('fillColors', Fill1.selectedColor, Fill2.selectedColor, true, 'applicationControlBar');"/>
+							</mx:HBox>
+						</mx:FormItem>
+					
+
+				
+				
+				
+			
+				</mx:Form>
+			</mx:Box></mx:TabNavigator>
+		</mx:Box>
+		<mx:Box width="100%" paddingRight="5" paddingBottom="5" horizontalAlign="right">
+			<mx:LinkButton label="Restore Defaults" click="restoreDefaults()" styleName="undoLink" />
+		</mx:Box>
+	</mx:VBox>
+
+
+<!-- Sandbox -->
+<mx:VBox height="100%" width="100%" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="SANDBOX" />
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+				<mx:LinkBar id="myLinkBar" dataProvider="{linkbarProvider}" />
+				<mx:ViewStack id="linkbarProvider">
+        			<mx:Box label="Link 1" />
+        			<mx:Box label="Link 2" />
+        			<mx:Box label="Link 3" />
+        		</mx:ViewStack>
+        		<mx:ApplicationControlBar id="myApplicationControlBar" width="90%" height="35"/>
+		</mx:Box>
+	</mx:VBox>
+
+
+<!-- CSS -->
+<mx:VBox height="100%" width="315" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="CSS"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+		
+			<mx:TextArea id="myCSS" width="100%" height="100%" styleName="cssTextArea"	/>
+		</mx:Box>
+</mx:VBox>
+
+	<mx:Script source="as/linkBar.as" />
+	</mx:HBox>
+</mx:VBox>
+
+
+
+

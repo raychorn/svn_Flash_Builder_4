@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" height="100%"
+		 initialize="mobileapplication_initializeHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:DateFormatter id="fmt_date" formatString="MMDDYYYYJNN"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.ObjectUtils;
+			import com.vyperlogix.GoogleCloudOperation;
+			import com.vyperlogix.GoogleCloudService;
+			
+			import controls.Alert.AlertAlternative;
+			import controls.ToolTips.HTMLToolTip;
+			
+			import flash.desktop.NativeApplication;
+			
+			import free4u.events.ApplicationProxyReadyEvent;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.managers.ToolTipManager;
+			
+			import spark.components.TextArea;
+			
+			import views.MenuPanel;
+			
+			[Event(name="applicationProxyReady", type="free4u.events.ApplicationProxyReadyEvent")]		
+
+			[Bindable]
+			public var mySO:SharedObject;
+			
+			[Bindable]
+			public var user_data:Object;
+			
+			[Bindable]
+			public var _navigator:*;
+			
+			[Bindable]
+			public var txt_status:TextArea;
+			
+			[Bindable]
+			public var isScreenHD:Boolean = Capabilities.screenResolutionX > 1000;
+			
+			[Bindable]
+			public var isDebugger:Boolean = false; //Capabilities.isDebugger;
+			
+			[Bindable]
+			public var menuPanel:MenuPanel;
+			
+			[Bindable]
+			public var nativeApplication:NativeApplication = NativeApplication.nativeApplication;
+			
+			public function get is_menu_shown():Boolean {
+				return (this.menuPanel is MenuPanel);
+			}
+			
+			public function get is_loggedin():Boolean {
+				var is_loggedin:Boolean = false;
+				try {
+					if (this.parentDocument['is_loggedin'] is Function) {
+						is_loggedin = this.parentDocument['is_loggedin'];
+					} else {
+						AlertAlternative.error('WARNING: <p>Cannot locate the "is_loggedin" getter function.</p>');
+					}
+				} catch (err:Error) {
+					AlertAlternative.error('ERROR: <p>Cannot locate the "is_loggedin" getter function.</p><p>'+err.toString()+'</p><p>'+err.getStackTrace().substr(0,250)+'</p>');
+				}
+				return is_loggedin;
+			}
+			
+			public function popUp_menuPanel():void {
+				this.menuPanel = PopUpManager.createPopUp(this.parentDocument as DisplayObject,MenuPanel,true) as MenuPanel;
+				this.menuPanel.x = 0;
+				this.menuPanel.y = this.height - this.menuPanel.height + ((!this.is_loggedin) ? 10 : 55);
+			}
+			
+			public function dismiss_menuPanel():void {
+				if (this.is_menu_shown) {
+					PopUpManager.removePopUp(this.menuPanel);
+					this.menuPanel = null;
+				}
+			}
+			
+			public function show(msg:String,options:Object=null):void {
+				var current_options:Object = {colour:0x0000ff,textColour:0xffffff,textSize:10,background:'blur'};
+				var keys:Array = ObjectUtils.keys(options);
+				if (keys is Array) {
+					for (var i:String in keys) {
+						current_options[keys[i]] = options[keys[i]];
+					}
+				}
+				AlertAlternative.show(msg,current_options);
+			}
+			
+			public function error(msg:String,options:Object=null):void {
+				var current_options:Object = {colour:0xff0000,textColour:0xffffff,textSize:10,background:'blur'};
+				if (options) {
+					var keys:Array = ObjectUtils.keys(current_options);
+					if (keys is Array) {
+						for (var i:String in keys) {
+							current_options[keys[i]] = options[keys[i]];
+						}
+					}
+				}
+				AlertAlternative.error(msg,current_options);
+			}
+			
+			protected function mobileapplication_initializeHandler(event:FlexEvent):void {
+				this.name = 'application';
+				if (FlexGlobals.topLevelApplication['domain_name'] is String) {
+					GoogleCloudService.domain = GoogleCloudService.air_id = FlexGlobals.topLevelApplication.domain_name;
+				} else {
+					trace(DebuggerUtils.getFunctionName(new Error())+'.1 WARNING: Missing the "domain_name" variable definition in the Top-Level Application.');
+				}
+				if (FlexGlobals.topLevelApplication['sub_domain_name'] is String) {
+					GoogleCloudService.sub_domain = FlexGlobals.topLevelApplication.sub_domain_name;
+				} else {
+					trace(DebuggerUtils.getFunctionName(new Error())+'.1 WARNING: Missing the "sub_domain_name" variable definition in the Top-Level Application.');
+				}
+				var now:Date = new Date();
+				var name:String = '/local/vyperlogix/'+this.fmt_date.format(now)+'/data/';
+				this.mySO = SharedObject.getLocal(name);
+				Multitouch.inputMode = MultitouchInputMode.GESTURE;
+				ToolTipManager.toolTipClass = HTMLToolTip;
+				this.dispatchEvent(new ApplicationProxyReadyEvent(ApplicationProxyReadyEvent.APPLICATION_PROXY_READY));
+			}
+		]]>
+	</fx:Script>
+</s:Group>

@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group width="400"
+		 height="300"
+		 currentState="{chartPresenter.chartModel.chartType}"
+		 xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:charts="mx.charts.*"
+		 xmlns:series="mx.charts.series.*"
+		 xmlns:charts1="com.adobe.dashboard.view.charts.*">
+
+	<fx:Metadata>
+		[Event (name="itemClick", type="mx.charts.events.ChartItemEvent")]
+	</fx:Metadata>
+
+	<fx:Declarations>
+		<mx:SeriesInterpolate id="seriesInterpolate"
+							  duration="1000"
+							  minimumElementDuration="100"
+							  elementOffset="30"/>
+
+		<s:SolidColorStroke id="defaultStroke"
+							color="0x000000"
+							weight="2"/>
+
+		<s:SolidColor id="defaultFill"
+					  color="0xCCCCCC"/>
+
+		<s:SolidColorStroke id="profitStroke"
+							color="0x869938"
+							weight="2"/>
+
+		<s:LinearGradient id="profitFill"
+						  rotation="90">
+			<s:GradientEntry color="0xD6CE6B"/>
+			<s:GradientEntry color="0xB2CC4A"/>
+			<s:GradientEntry color="0x869938"/>
+		</s:LinearGradient>
+
+		<s:SolidColorStroke id="costStroke"
+							color="0x8A155F"
+							weight="2"/>
+
+		<s:LinearGradient id="costFill"
+						  rotation="90">
+			<s:GradientEntry color="0xE067B4"/>
+			<s:GradientEntry color="0xC81E89"/>
+			<s:GradientEntry color="0x8A155F"/>
+		</s:LinearGradient>
+
+		<s:CurrencyFormatter id="currencyFormatter"
+							 useCurrencySymbol="true"
+							 currencySymbol="$"/>
+
+		<s:VerticalLayout id="verticalLayout"
+						  horizontalAlign="center"
+						  verticalAlign="middle"/>
+		<s:HorizontalLayout id="horizontalLayout"
+							horizontalAlign="center"
+							verticalAlign="middle"/>
+
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.dashboard.model.SeriesModel;
+			import com.adobe.dashboard.presenter.ChartPresenter;
+
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.series.items.PieSeriesItem;
+			import mx.collections.ArrayCollection;
+			import mx.graphics.IFill;
+			import mx.graphics.IStroke;
+
+			import spark.layouts.supportClasses.LayoutBase;
+
+			protected const pieColors:Array=[0xFFC066, 0xD97621, 0xC81E89, 0xB2CC4A, 0x1E84CC, 0x66CCCC];
+
+			[Bindable]
+			public var pieDisplayLayout:LayoutBase=verticalLayout;
+
+			[Bindable]
+			public var pieChartTop:int=70;
+
+			[Bindable]
+			public var pieChartBottom:int=0;
+
+
+
+			[Bindable]
+			private var barFill:IFill;
+
+			[Bindable]
+			private var barStroke:IStroke;
+
+
+			protected var colorCounter:int=0;
+
+			protected var legendItemCounter:int=0;
+
+
+			private var _chartPresenter:ChartPresenter;
+
+			[Bindable(event="presenterChanged")]
+			public function get chartPresenter():ChartPresenter
+			{
+				return _chartPresenter;
+			}
+
+			public function set chartPresenter(value:ChartPresenter):void
+			{
+				_chartPresenter=value;
+				dispatchEvent(new Event("presenterChanged"));
+				_chartPresenter.addEventListener("dataProviderChange", onChartPresenterDataProviderChanged);
+				if (_chartPresenter.dataProvider.length)
+				{
+					styleChart();
+				}
+			}
+
+
+			//
+			// Public Methods
+			//
+
+			public function playAnimation():void
+			{
+				var dataCache:ArrayCollection=chartPresenter.dataProvider;
+				chartPresenter.dataProvider=new ArrayCollection([]);
+
+				// Set the dataProvider on the next frame to force animation to play
+				callLater(function():void
+				{
+					chartPresenter.dataProvider=dataCache;
+				});
+			}
+
+			/**
+			 * when ever currentState changes play the chart animation
+			 */
+			override public function setCurrentState(stateName:String, playTransition:Boolean=true):void
+			{
+				super.setCurrentState(stateName, playTransition);
+
+				playAnimation();
+			}
+
+			public function styleChart():void
+			{
+				if (chartPresenter.seriesList && chartPresenter.seriesList.length > 0)
+				{
+					var series1:SeriesModel=SeriesModel(chartPresenter.seriesList.getItemAt(0));
+
+					if (series1.name == "cost")
+					{
+						barFill=costFill;
+					}
+					else if (series1.name == "profit")
+					{
+						barFill=profitFill;
+					}
+				}
+				else
+				{
+					barFill=defaultFill;
+				}
+				if (barChart)
+				{
+					barChart.invalidateSeriesStyles();
+					barChart.invalidateDisplayList();
+				}
+			}
+
+
+			private function currencyParseFunction(labelValue:Object, previousValue:Object, axis:IAxis):String
+			{
+				return Number(labelValue) / 1000 + "k";
+			}
+
+			protected function dataTipFunction(hitData:HitData):String
+			{
+				return hitData.item.clientName + ": " + currencyFormatter.format(hitData.item.value);
+			}
+
+			protected function onChartPresenterDataProviderChanged(event:Event):void
+			{
+				styleChart();
+			}
+
+			protected function pieChartFillFunction(seriesItem:PieSeriesItem, index:int):SolidColor
+			{
+				if (colorCounter > pieColors.length - 1 || legendItemCounter > chartPresenter.dataProvider.length - 1)
+				{
+					colorCounter=0;
+				}
+
+				if (legendItemCounter > chartPresenter.dataProvider.length - 1)
+				{
+					legendItemCounter=0;
+					colorCounter=0;
+				}
+
+				var color:SolidColor=new SolidColor(pieColors[colorCounter]);
+
+				legendItemCounter++;
+				colorCounter++;
+
+				return color;
+			}
+
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void
+			{
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+
+				if (barChart)
+				{
+					if (barChartSeries.xField == null || barChartSeries.xField != chartPresenter.seriesList.getItemAt(0).axis)
+					{
+						barChartSeries.xField=chartPresenter.seriesList.getItemAt(0).axis;
+					}
+					if (barChartCategoryAxis.categoryField == null || barChartCategoryAxis.categoryField != chartPresenter.seriesList.getItemAt(0).field)
+					{
+						barChartCategoryAxis.categoryField=chartPresenter.seriesList.getItemAt(0).field;
+					}
+				}
+
+				if (pieChartSeries)
+				{
+					if (pieChartSeries.field == null || pieChartSeries.field != chartPresenter.seriesList.getItemAt(0).axis)
+					{
+						pieChartSeries.field=chartPresenter.seriesList.getItemAt(0).axis;
+					}
+					if (pieChartSeries.displayName == null || pieChartSeries.displayName != chartPresenter.seriesList.getItemAt(0).field)
+					{
+						pieChartSeries.displayName=chartPresenter.seriesList.getItemAt(0).field;
+					}
+				}
+
+				styleChart();
+
+				// Layout pie chart legend maually  
+				if (currentState == "pieChart" && pieChartDisplay)
+				{
+					if (pieDisplayLayout == horizontalLayout)
+					{
+						pieChartDisplay.width=width * 0.7;
+						pieChartDisplay.height=height - pieChartTop - pieChartBottom;
+						pieChartDisplay.x=0;
+						pieChartDisplay.y=0;
+
+						pieChartLegend.width=width * 0.3;
+						pieChartLegend.height=height - pieChartTop - pieChartBottom;
+						pieChartLegend.x=pieChartDisplay.width;
+						pieChartLegend.y=10 + (height / 2) - (pieChartLegend.height / 2);
+					}
+					else if (pieDisplayLayout == verticalLayout)
+					{
+						pieChartDisplay.width=width;
+						pieChartDisplay.height=height * 0.7;
+						pieChartDisplay.x=(width / 2) - (pieChartDisplay.width / 2);
+						pieChartDisplay.y=0;
+
+						pieChartLegend.width=width;
+						pieChartLegend.height=height * 0.3;
+						pieChartLegend.y=pieChartDisplay.height;
+						pieChartLegend.x=0;
+					}
+				}
+			}
+		]]>
+	</fx:Script>
+
+	<!-- currentState bound to chartPresenter.chartModel.chartType -->
+	<s:states>
+		<s:State name="columnChart"/>
+		<s:State name="pieChart"/>
+	</s:states>
+
+	<!-- bar chart -->
+	<charts:BarChart id="barChart"
+					 width="100%"
+					 height="100%"
+					 dataProvider="{chartPresenter.dataProvider}"
+					 includeIn="columnChart"
+					 showDataTips="true"
+					 dataTipFunction="dataTipFunction">
+
+		<!-- hide grid lines -->
+		<charts:backgroundElements>
+			<mx:GridLines gridDirection="both"
+						  alpha="0"/>
+		</charts:backgroundElements>
+		<charts:series>
+			<series:BarSeries id="barChartSeries"
+							  fill="{barFill}"
+							  stroke="{barStroke}"
+							  showDataEffect="{seriesInterpolate}"/>
+		</charts:series>
+
+		<charts:verticalAxis>
+			<charts:CategoryAxis id="barChartCategoryAxis"/>
+		</charts:verticalAxis>
+
+		<charts:horizontalAxis>
+			<mx:LinearAxis labelFunction="currencyParseFunction"/>
+		</charts:horizontalAxis>
+
+	</charts:BarChart>
+
+	<!-- contains pie chart and custom legend -->
+	<s:Group id="pieGroup"
+			 width="100%"
+			 top="{pieChartTop}"
+			 bottom="{pieChartBottom}">
+
+		<!-- pie chart -->
+		<charts:PieChart id="pieChartDisplay"
+						 dataProvider="{chartPresenter.dataProvider}"
+						 includeIn="pieChart"
+						 showDataTips="true"
+						 dataTipFunction="dataTipFunction">
+
+			<charts:series>
+				<series:PieSeries id="pieChartSeries"
+								  fillFunction="pieChartFillFunction">
+					<series:showDataEffect>
+						<mx:SeriesInterpolate duration="1000"/>
+					</series:showDataEffect>
+				</series:PieSeries>
+			</charts:series>
+
+		</charts:PieChart>
+
+		<!-- pie chart legend -->
+		<charts1:CustomLegend id="pieChartLegend"
+							  dataProvider="{chartPresenter.dataProvider}"
+							  includeIn="pieChart"
+							  legendFontSize="{getStyle('fontSize')}"
+							  colorList="{pieColors}"/>
+
+	</s:Group>
+
+</s:Group>

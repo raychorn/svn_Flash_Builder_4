@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<componentPackage>
+	<!-- Button -->
+	<component id="ButtonGrey" class="com.flexpad.ButtonGrey" />
+	<component id="ButtonBlack" class="com.flexpad.ButtonBlack" />
+	<component id="ButtonBlue" class="com.flexpad.ButtonBlue" />
+	<component id="ButtonGreyBlue" class="com.flexpad.ButtonGreyBlue" />
+	<component id="ButtonRed" class="com.flexpad.ButtonRed" />
+	<component id="BackButtonGrey" class="com.flexpad.BackButtonGrey" />
+	<component id="BackButtonBlack" class="com.flexpad.BackButtonBlack" />
+	<component id="Switch" class="com.flexpad.Switch" />
+	<component id="CheckBox" class="com.flexpad.CheckBox" />
+	<component id="RadioButton" class="com.flexpad.RadioButton" />
+	<component id="ArrowButton" class="com.flexpad.ArrowButton" />
+	<component id="AddBlueButton" class="com.flexpad.AddBlueButton" />
+	<component id="AddGreenButton" class="com.flexpad.AddGreenButton" />
+	<component id="RemoveButton" class="com.flexpad.RemoveButton" />
+	<!-- Text -->
+	<component id="HintTextInput" class="com.flexpad.HintTextInput" />
+	<component id="SearchTextInput" class="com.flexpad.SearchTextInput" />
+	<component id="ButtonLabel" class="com.flexpad.ButtonLabel" />
+	<!-- Bar -->
+	<component id="BarGrey" class="com.flexpad.BarGrey" />
+	<component id="BarBlack" class="com.flexpad.BarBlack" />
+	<component id="BarBlackSemiTrans" class="com.flexpad.BarBlackSemiTrans" />
+	<component id="TabBarBlack" class="com.flexpad.TabBarBlack" />
+	<component id="ButtonBarGrey" class="com.flexpad.ButtonBarGrey" />
+	<component id="ButtonBarBlack" class="com.flexpad.ButtonBarBlack" />
+	<component id="LargeButtonBarGrey" class="com.flexpad.LargeButtonBarGrey" />
+	<component id="BarBlackLabel" class="com.flexpad.BarBlackLabel" />
+	<component id="BarGreyLabel" class="com.flexpad.BarGreyLabel" />
+	<!-- List -->
+	<component id="List" class="com.flexpad.List" />
+	<component id="ListItemRendererHintLabel" class="com.flexpad.ListItemRendererHintLabel" />
+	<!-- Panel -->
+	<component id="AlertPanel" class="com.flexpad.AlertPanel" />
+	<!-- Table -->
+	<component id="Table" class="com.flexpad.Table" />
+	<component id="TableRow" class="com.flexpad.TableRow" />
+	<!-- Popover -->
+	<!-- SplitView -->
+	<component id="SplitViewHeader" class="com.flexpad.SplitViewHeader" />
+	<component id="SplitViewLeft" class="com.flexpad.SplitViewLeft" />
+	<component id="SplitViewRight" class="com.flexpad.SplitViewRight" />
+	<component id="ViewStack" class="com.flexpad.ViewStack" />
+	<!-- Other -->
+	<component id="Scroller" class="com.flexpad.Scroller" />
+	<component id="VSlider" class="com.flexpad.VSlider" />
+	<component id="HSlider" class="com.flexpad.HSlider" />
+</componentPackage>

@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.CapabilitiesUtils;
+			import com.URLUtils;
+			
+			import controls.Alert.AlertPopUp;
+			
+			import flash.html.HTMLLoader;
+			
+			import mx.core.FlexGlobals;
+			
+			import utils.AIRHelper;
+
+			[Bindable]
+			private var _currentLocation:String = '';
+			
+			private var _onComplete:Function;
+			
+			private var _onDOMInitialize:Function;
+			
+			private var _onLocationComplete:Function;
+			
+			private var _onLocationChange:Function;
+
+			private var _onMissingDocument:Function;
+
+			public function set onMissingDocument(onMissingDocument:Function):void {
+				if (this._onMissingDocument != onMissingDocument) {
+					this._onMissingDocument = onMissingDocument;
+				}
+			}
+			
+			public function get onMissingDocument():Function {
+				return this._onMissingDocument;
+			}
+			
+			public function set onComplete(onComplete:Function):void {
+				if (this._onComplete != onComplete) {
+					this._onComplete = onComplete;
+				}
+			}
+			
+			public function get onComplete():Function {
+				return this._onComplete;
+			}
+			
+			public function set onDOMInitialize(onDOMInitialize:Function):void {
+				if (this._onDOMInitialize != onDOMInitialize) {
+					this._onDOMInitialize = onDOMInitialize;
+				}
+			}
+			
+			public function get onDOMInitialize():Function {
+				return this._onDOMInitialize;
+			}
+			
+			public function set onLocationComplete(onLocationComplete:Function):void {
+				if (this._onLocationComplete != onLocationComplete) {
+					this._onLocationComplete = onLocationComplete;
+				}
+			}
+			
+			public function get onLocationComplete():Function {
+				return this._onLocationComplete;
+			}
+			
+			public function set onLocationChange(onLocationChange:Function):void {
+				if (this._onLocationChange != onLocationChange) {
+					this._onLocationChange = onLocationChange;
+				}
+			}
+			
+			public function get onLocationChange():Function {
+				return this._onLocationChange;
+			}
+			
+			/**
+			 * Sets a busy cursor when a new page is loading
+			 **/
+			public function htmlLocationChange():void {
+				//trace(this.className+'.(htmlLocationChange).1 --> '+this.html.location);
+				if (this._onLocationChange is Function) {
+					try {
+						this._onLocationChange(this);
+					} catch (err:Error) {AlertPopUp.surpriseNoOkay('An error has been recorded by the system. Please contact Customer Support if this error persists.\n'+err.toString(),'WARNING #1')}
+				}
+			}
+			
+			/**
+			 * Removes a busy cursor when a page is done loading
+			 */
+			public function htmlLocationComplete(event:*):void {
+				trace(this.className+'.(htmlLocationComplete).1 --> '+this.html.location);
+				if (this._onLocationComplete is Function) {
+					try {
+						this._onLocationComplete(this);
+					} catch (err:Error) {AlertPopUp.surpriseNoOkay('An error has been recorded by the system. Please contact Customer Support if this error persists.\n'+err.toString(),'WARNING #2')}
+				}
+			}
+			
+			public function onComplete_html(event:*):void {
+				trace(this.className+'.(onComplete_html).1 --> '+this.html.location);
+				if (this._onComplete is Function) {
+					try {
+						this._onComplete(this);
+					} catch (err:Error) {AlertPopUp.surpriseNoOkay('An error has been recorded by the system. Please contact Customer Support if this error persists.\n'+err.toString(),'WARNING #3')}
+				}
+			}
+			
+			public function onHtmlDOMInitialize(event:*):void {
+				trace(this.className+'.(onHtmlDOMInitialize).1 --> '+this.html.location);
+				if (this._onDOMInitialize is Function) {
+					try {
+						this._onDOMInitialize(this);
+					} catch (err:Error) {AlertPopUp.surpriseNoOkay('An error has been recorded by the system. Please contact Customer Support if this error persists.\n'+err.toString(),'WARNING #4')}
+				}
+			}
+			
+//			private function url_validator(url:String):void {
+//				var _this:* = this;
+//				
+//				var urlReq:URLRequest;
+//				var urlLdr:URLLoader;
+//
+//				urlReq = new URLRequest(url);
+//				
+//				urlLdr = new URLLoader();
+//				urlLdr.addEventListener(Event.COMPLETE, function (event:Event):void {
+//					//trace(_this.className+'.(url_validator).Event.COMPLETE.1 --> event='+event.toString());
+//				});
+//				urlLdr.addEventListener(Event.OPEN, function (event:Event):void {
+//					//trace(_this.className+'.(url_validator).Event.OPEN.1 --> event='+event.toString());
+//				});
+//				urlLdr.addEventListener(HTTPStatusEvent.HTTP_STATUS, function (event:HTTPStatusEvent):void {
+//					//trace(_this.className+'.(url_validator).HTTPStatusEvent.HTTP_STATUS.1 --> event='+event.toString());
+//				});
+//				urlLdr.addEventListener(IOErrorEvent.IO_ERROR, function (event:IOErrorEvent):void {
+//					//trace(_this.className+'.(url_validator).IOErrorEvent.IO_ERROR.1 --> event='+event.toString());
+//				});
+//				urlLdr.addEventListener(ProgressEvent.PROGRESS, function (event:ProgressEvent):void {
+//					//trace(_this.className+'.(url_validator).ProgressEvent.PROGRESS.1 --> event='+event.toString());
+//				});
+//				urlLdr.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function (event:SecurityErrorEvent):void {
+//					//trace(_this.className+'.(url_validator).SecurityErrorEvent.SECURITY_ERROR.1 --> event='+event.toString());
+//				});
+//				urlLdr.load(urlReq);
+//			}
+			
+			public function set currentLocation(url:String):void {
+				var _this:HTMLViewer = this;
+				function show_content(url:String):void {
+					_this._currentLocation = url;
+					trace(_this.className+'.(currentLocation).4 --> this._currentLocation='+_this._currentLocation);
+					if ( (_this.html is HTML) && (_this._currentLocation is String) ) {
+						_this.html.location = _this._currentLocation;
+					}
+				}
+				if (this._currentLocation != url) {
+					trace(_this.className+'.(currentLocation).1 --> this._currentLocation='+_this._currentLocation);
+					if (url.toLowerCase().indexOf('.pdf') > -1) {
+						if (HTMLLoader.pdfCapability == HTMLPDFCapability.STATUS_OK) {
+							show_content(url);
+							trace(_this.className+".(currentLocation).2 --> PDF content can be displayed");
+						} else {
+							FlexGlobals.topLevelApplication.mainCanvas.docsList.currentState = 'details';
+							//AIRHelper.navigate_to_url(AIRHelper.normalize_url(url),'_blank');
+							AIRHelper.navigate_to_url((url.indexOf('http://') > -1) ? url : AIRHelper.normalize_url(url),'_blank');
+							trace(_this.className+".(currentLocation).3 --> PDF cannot be displayed. Error code:", HTMLLoader.pdfCapability);
+						}
+					} else {
+						show_content(url);
+					}
+				}
+			}
+			
+			public function get currentLocation():String {
+				return this._currentLocation;
+			}
+
+			private function onCreationComplete_html():void {
+				trace(this.className+'.(onCreationComplete_html).1 --> this.currentLocation='+this.currentLocation);
+				if ( (this.html is HTML) && (this.currentLocation is String) ) {
+					var isValid:Boolean =  URLUtils.isURLValid(this.currentLocation);
+					trace(this.className+'.(onCreationComplete_html).2 --> isValid='+isValid);
+					if (isValid) {
+						this.html.location = this.currentLocation;
+						trace(this.className+'.(onCreationComplete_html).3 --> isValid='+isValid);
+					} else {
+						this.html.location = '';
+//						if (this._onMissingDocument is Function) {
+//							try {
+//								this._onMissingDocument(this);
+//							} catch (err:Error) {AlertPopUp.errorNoOkay('An error has been recorded by the system. Please contact Customer Support if this error persists.','WARNING #6')}
+//						}
+						AlertPopUp.surpriseNoOkay('Missing Document...\nThe selected document is not present or inaccessible.','INFO');
+					}
+				}
+				//trace(this.className+'.(onCreationComplete_html).4 --> '+this.currentState);
+				//trace(this.className+'.(onCreationComplete_html).5 --> this.width,this.height='+this.width+', '+this.height);
+				//trace(this.className+'.(onCreationComplete_html).6 --> this.parentDocument.width,this.parentDocument.height='+this.parentDocument.width+', '+this.parentDocument.height);
+				//trace(this.className+'.(onCreationComplete_html).7 --> '+this.html.location);
+				//trace(this.className+'.(onCreationComplete_html).8 --> width,height='+this.width+', '+this.height);
+				//trace(this.className+'.(onCreationComplete_html).9 --> this.html.width,this.html.height='+this.html.width+', '+this.html.height);
+				//trace(this.className+'.(onCreationComplete_html).10 --> visible,includeInLayout='+this.visible+', '+this.includeInLayout);
+			}
+			
+			protected function html_uncaughtScriptExceptionHandler(event:HTMLUncaughtScriptExceptionEvent):void {
+				trace(this.className+'.(html_uncaughtScriptExceptionHandler).1 --> '+this.html.location+', event='+event.toString());
+				//CursorManager.removeBusyCursor();
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:HTML id="html" x="0" y="0" styleName="main_html" 
+			 locationChange="htmlLocationChange()" htmlRender="htmlLocationComplete(event)" complete="onComplete_html(event)" htmlDOMInitialize="onHtmlDOMInitialize(event)" uncaughtScriptException="html_uncaughtScriptExceptionHandler(event)"
+			 width="{this.parentApplication.width-325}" height="{this.parentApplication.height-185}" creationComplete="onCreationComplete_html()" />
+</mx:Canvas>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			public function get text():String {
+				return this.lbl.text;
+			}
+			
+			public function set text(text:String):void {
+				if (this.lbl.text != text) {
+					this.lbl.text = text;
+				}
+			}
+
+			public function get label_text():String {
+				return this.label.text;
+			}
+			
+			public function set label_text(text:String):void {
+				if (this.label.text != text) {
+					this.label.text = text;
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:Label id="label"/>
+	<s:Label id="lbl"/>
+</s:VGroup>

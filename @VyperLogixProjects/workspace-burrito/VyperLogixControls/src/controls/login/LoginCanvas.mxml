@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas 
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="100%" height="100%" 
+	verticalScrollPolicy="off" horizontalScrollPolicy="off"
+	resize="onResize()"
+	creationComplete="onCreationComplete()" 
+	xmlns:widgets="controls.forms.widgets.*" 
+	xmlns:s="library://ns.adobe.com/flex/spark" 
+	xmlns:controls="controls.login.widgets.*"
+	>
+	<mx:Style>
+		.Labels {
+			color: #0000ff;
+			fontFamily: Verdana;
+			fontSize: 11;
+			fontWeight: bold;
+		}
+	</mx:Style>
+	<mx:Script>
+		<![CDATA[
+			import com.CustomErrorTips;
+			import com.DebuggerUtils;
+			import com.ErrorTipManager;
+			import com.Generator;
+			import com.URLUtils;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.events.tips.CustomErrorTipsChangedEvent;
+			import controls.forms.widgets.events.ValidationResultsChangedEvent;
+			import controls.login.events.ActivationCompletedEvent;
+			import controls.login.events.ChangePasswordEvent;
+			import controls.login.events.LoginCompletedEvent;
+			import controls.login.events.LoginRequestedEvent;
+			import controls.login.events.RegisterCompletedEvent;
+			import controls.login.events.RegisterRequestedEvent;
+			import controls.login.events.ResendActivationEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.ButtonBar;
+			import mx.controls.CheckBox;
+			import mx.controls.TextInput;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.ItemClickEvent;
+			import mx.events.StateChangeEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.managers.FocusManager;
+			
+			[Event(name="loginRequested",type="vyperlogix.controls.login.events.LoginRequestedEvent")]
+			[Event(name="registerRequested",type="vyperlogix.controls.login.events.RegisterRequestedEvent")]
+			[Event(name="registerCompleted",type="vyperlogix.controls.login.events.RegisterCompletedEvent")]
+			[Event(name="loginCompleted",type="vyperlogix.controls.login.events.LoginCompletedEvent")]
+			[Event(name="activationCompleted",type="vyperlogix.controls.login.events.ActivationCompletedEvent")]
+			[Event(name="resendActivation",type="vyperlogix.controls.login.events.ResendActivationEvent")]
+			[Event(name="changePassword",type="vyperlogix.controls.login.events.ChangePasswordEvent")]
+			
+			private var _this:LoginCanvas;
+
+			[Bindable]
+			private var __isRegisterState:Boolean = false;
+
+			private var __isNewlyRegisterState:Object = {};
+			
+			[Bindable]
+			public var buttonIcon:Class;
+
+			[Bindable]
+			public var _buttonIcon:Class;
+
+			[Bindable]
+			private var _url:String;
+			
+			[Bindable]
+			private var _domainMinLength:int = 1;
+			
+			[Bindable]
+			private var _domainMaxLength:int = 128;
+			
+			[Bindable]
+			private var _domainRequiredFieldError:String = "This is a Required Field that cannot be left blank or have less than 1 nor more than 128 characters.";
+			
+			[Bindable]
+			private var _domainTooLongErrorMessage:String = "This string is longer than the maximum allowed length of 128.";
+			
+			[Bindable]
+			private var _domainTooShortErrorMessage:String = "This string is shorter than the minimum allowed length of 1.";
+			
+			[Bindable]
+			private var _isUseInternalRegisterForm:Boolean = true;
+			
+			[Bindable]
+			private var _lbl_Domain_text:String = '';
+			
+			[Bindable]
+			private var _title_panel:String = '';
+			
+			private var stackWindowMetrics:Array = new Array();
+			
+			private var _original_width:Number;
+			private var _original_height:Number;
+			
+			[Bindable]
+			private var __text_width:Number = 0;
+			
+			private const __text_width_multiplier:Number = 0.9;
+			
+			private var controls:Array = [];
+			
+			private function setFocus_on(target:*):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> target='+target.toString());
+				this.focusManager.setFocus(target);
+			}
+			
+			private function onCreationComplete():void {
+				_this = this;
+				this.__text_width = ( (this.__text_width_multiplier > 0.0) && (this.__text_width_multiplier < 1.0) ) ? this.width*this.__text_width_multiplier : this.width;
+
+//				this.widget_emailAddress.txt_emailAddress.setFocus();
+//				
+//				this.addEventListener(StateChangeEvent.CURRENT_STATE_CHANGE, 
+//					function (event:StateChangeEvent):void {
+//						//trace(_this.className+'.onCreationComplete().1 --> event.oldState='+event.oldState+', event.newState='+event.newState);
+//						_this.callLater(_this.setFocus_on,[_this.widget_emailAddress.txt_emailAddress]);
+//					}
+//				);
+//				this.addEventListener(StateChangeEvent.CURRENT_STATE_CHANGING, 
+//					function (event:StateChangeEvent):void {
+//						//trace(_this.className+'.onCreationComplete().2 --> event.oldState='+event.oldState+', event.newState='+event.newState);
+//					}
+//				);
+//				
+//				this.addEventListener(CustomErrorTipsChangedEvent.TYPE_CUSTOM_ERROR_TIPS_CHANGED_EVENT, 
+//					function (event:CustomErrorTipsChangedEvent):void {
+//						trace(_this.className+'.onCreationComplete().3 --> event.current_target='+event.current_target);
+//					}
+//				);
+				this._original_width = this.width;
+				this._original_height = this.height;
+			}
+			
+			private function set_focus(txt:TextInput):void {
+				if (txt is TextInput) {
+					try {
+						this.focusManager.setFocus(txt);
+					} catch (err:Error) {
+						this.callLater(this.set_focus,[txt]);
+					}
+				} else {
+					FlexGlobals.topLevelApplication.app.error('WARNING: Cannot set focus...');
+				}
+			}
+			
+			private function newWindowMetricsModel():Object {
+				var obj:Object = new Object();
+				obj.state = "";
+				obj.width = -1;
+				obj.height = -1;
+				return obj;
+			}
+			
+			public function set isUseInternalRegisterForm(aBool:Boolean):void {
+				this._isUseInternalRegisterForm = aBool;
+			}
+
+			[Inspectable]
+			public function get isUseInternalRegisterForm():Boolean {
+				return this._isUseInternalRegisterForm;
+			}
+
+			[Inspectable]
+			public function get title_panel():String {
+				var toks:Array = this._title_panel.split(' :: ');
+				//trace(this.className+'.title_panel.1 (get) --> toks[0]='+toks[0]);
+				return toks[0];
+			}
+			
+			public function set title_panel(title_panel:String):void {
+				var toks:Array = this._title_panel.split(' :: ');
+				this._title_panel = title_panel;
+				//trace(this.className+'.title_panel.1 (set) --> this._title_panel='+this._title_panel);
+				this.panel_Login.title = this._title_panel;
+			}
+
+			public function set url(aUrl:String):void {
+				this._url = aUrl;
+			}
+
+			[Inspectable]
+			public function get url():String {
+				return this._url;
+			}
+
+//			private function get current_button():* {
+//				return ((this.currentState == 'SimpleRegisterUserState') ? this.btn_Register : ((this.currentState == 'ActivateUserFromLogin') ? this.btn_Activate : ((this.currentState == 'ResendActivateFromLogin') ? this.btn_ResendActivation : this.btn_Login)));
+//			}
+			
+			[Bindable]
+			private function get __isLoggedIn():Boolean {
+				var isLoggedIn:Boolean = false;
+				try {isLoggedIn = FlexGlobals.topLevelApplication['appProxy']['isLoggedIn'];} catch (err:Error) {}
+				return isLoggedIn;
+			}
+			
+			private function set __isLoggedIn(isLoggedIn:Boolean):void {
+				try {FlexGlobals.topLevelApplication['appProxy']['isLoggedIn'] = isLoggedIn;} catch (err:Error) {}
+			}
+			
+			private function isNotLoggedIn():Boolean {
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> this.__isLoggedIn='+this.__isLoggedIn);
+				return !this.__isLoggedIn;
+			}
+			
+			private function onClickUserName():void {
+				//widget_emailAddress.txt_emailAddress.text = '';
+			}
+			
+//			private function onChangePassword2(event:KeyboardEvent):void {
+//				validatePassword2();
+//				var txt:TextInput = event.currentTarget as TextInput;
+//				if ( (event.keyCode == 13) && (this.widget_emailAddress.txt_emailAddress.errorString.length == 0) && (this.txt_Password2.errorString.length == 0) && (txt.errorString.length == 0) ) {
+//					try {
+//						if (this.currentState == 'SimpleRegisterUserState') {
+//							this.btn_Register.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+//						}
+//					} catch (err:Error) {
+//						//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR --> '+err.toString());
+//					}
+//				}
+//			}
+			
+//			private function clearLoginState():void {
+//				this.widget_emailAddress.txt_emailAddress.text = '';
+//				this.widget_password.txt_Password.text = '';
+//				this.errorString = this.panel_Login.errorString = '';
+//				this.widget_emailAddress.lbl_EmailAddress.visible = this.widget_emailAddress.lbl_EmailAddress.includeInLayout = false;
+//				this.widget_password.lbl_Password.visible = this.widget_password.lbl_Password.includeInLayout = false;
+//				ErrorTipManager.hideErrorTip(this.widget_emailAddress.txt_emailAddress,true);
+//				ErrorTipManager.hideErrorTip(this.widget_password.txt_Password,true);
+//			}
+			
+//			private function onClickActivateButton():void {
+//				//trace(this.className+'.onClickActivateButton().1 !');
+//				var datum:Object = new Object();
+//				datum.username = this.widget_emailAddress.txt_emailAddress.text;
+//				datum.activation_key = this.widget_activationCode.txt_activationCode.text;
+//				//trace(this.className+'.onClickActivateButton().2 --> RegisterCompletedEvent.TYPE_REGISTER_COMPLETED !!');
+//				this.dispatchEvent(new ActivationCompletedEvent(ActivationCompletedEvent.TYPE_ACTIVATION_COMPLETED, datum));
+//			}
+
+//			private function clearRegisterState():void {
+//				this.widget_password2.txt_Password.text = '';
+//				ErrorTipManager.hideErrorTip(this.widget_password2.txt_Password,true);
+//			}
+			
+//			private function onClickCancelRegisterButton():void {
+//				var oModel:Object = this.stackWindowMetrics.pop();
+//				if (oModel is Object) {
+//					this.clearLoginState();
+//					this.clearRegisterState();
+//					this.currentState = oModel.state;
+//					this.__isRegisterState = false;
+//					this.width = oModel.width;
+//					this.height = oModel.height;
+//					this.widget_emailAddress.txt_emailAddress.text = "";
+//					this.widget_password.txt_Password.text = "";
+//	            	try {
+//	            		this.btn_Register.enabled = true;
+//	            	} catch (err:Error) { }
+//				}
+//			}
+			
+			private function onResize():void {
+				if (this.width < 400) {
+					this.width = this._original_width;
+				}
+				if (this.height < 160) {
+					this.height = this._original_height;
+				}
+			}
+
+			protected function txt_Password2_creationCompleteHandler(event:FlexEvent):void {
+				//trace(this.className+'.txt_Password2_creationCompleteHandler().1 --> this.__isNewlyRegisterState['+event.currentTarget.id+']='+this.__isNewlyRegisterState[event.currentTarget.id]);
+				if (this.__isNewlyRegisterState[event.currentTarget.id]) {
+					ErrorTipManager.hideErrorTip(event.currentTarget,true);
+					this.__isNewlyRegisterState[event.currentTarget.id] = false;
+					//trace(this.className+'.txt_Password2_creationCompleteHandler().2 --> this.__isNewlyRegisterState['+event.currentTarget.id+']='+this.__isNewlyRegisterState[event.currentTarget.id]);
+				}
+			}
+
+			private function clear_error_tips():void {
+				//try { this.widget_emailAddress.txt_emailAddress.text = ''; } catch (err:Error) {}
+//				try { ErrorTipManager.hideErrorTip(this.widget_emailAddress.txt_emailAddress,true); } catch (err:Error) {}
+//				try { this.widget_password.txt_Password.text = ''; } catch (err:Error) {}
+//				try { ErrorTipManager.hideErrorTip(this.widget_password.txt_Password,true); } catch (err:Error) {}
+//				try { this.widget_password2.txt_Password.text = ''; } catch (err:Error) {}
+//				try { ErrorTipManager.hideErrorTip(this.widget_password2.txt_Password,true); } catch (err:Error) {}
+//				try { this.widget_activationCode.txt_activationCode.text = ''; } catch (err:Error) {}
+//				try { ErrorTipManager.hideErrorTip(this.widget_activationCode.txt_activationCode,true); } catch (err:Error) {}
+			}
+
+			protected function tabnavigator1_changeHandler(event:IndexChangedEvent):void {
+				var nav:TabNavigator = TabNavigator(event.currentTarget);
+//				var children:Array = nav.getChildren();
+//				var aChildSource:*;
+//				aChildSource = children[event.oldIndex];
+				while (this.controls.length > 0) {
+					this.controls.pop();
+				}
+				if (this.controls.length == 0) {
+					if (this.loginControl_0) {
+						this.controls.push(this.loginControl_0);
+					}
+					if (this.registerControl_1) {
+						this.controls.push(this.registerControl_1);
+					}
+					if (this.reactivateControl_2) {
+						this.controls.push(this.reactivateControl_2);
+					}
+					if (this.changePasswordControl_3) {
+						this.controls.push(this.changePasswordControl_3);
+					}
+				}
+				var c_old:* = this.controls[event.oldIndex];
+				var c_new:* = this.controls[event.newIndex];
+				try {c_new.set_focus();} catch (err:Error) {}
+				trace(this.className+'.tabnavigator1_changeHandler().1 --> oldIndex='+event.oldIndex+', newIndex='+event.newIndex);
+//				var gen:Generator = new Generator(nav,
+//					function (g:Generator,item:*):void {
+//						var _found:Boolean = _this.controls.indexOf(item) > -1;
+//						if (_found) {
+//							var id:String = item.id;
+//							trace('tabnavigator1_changeHandler().1.1 --> id='+id+', item='+item);
+//						}
+//						var ii:int = -1;
+//					},true
+//				);
+//				var i_Login:int = 0;
+//				var i_Register:int = 1;
+//				var i_Activate:int = 2;
+//				var i_ResendActivation:int = 3;
+//				var i_ChangePassword:int = 4;
+//				if (event.newIndex == i_Register) {
+//					copy_children(event.oldIndex,event.newIndex);
+//					this.currentState = 'SimpleRegisterUserState';
+//				} else if (event.newIndex == i_Login) {
+//					copy_children(event.oldIndex,event.newIndex);
+//					this.currentState = null;
+//				} else if (event.newIndex == i_Activate) {
+//					copy_children(event.oldIndex,event.newIndex);
+//					this.currentState = 'ActivateUserFromLogin';
+//					//this.widget_password.parent.removeElement(this.widget_password);
+//					//this.btn_Login.parent.removeElement(this.btn_Login);
+//				} else if (event.newIndex == i_ResendActivation) {
+//					copy_children(event.oldIndex,event.newIndex);
+//					this.currentState = 'ResendActivateFromLogin';
+//				} else if (event.newIndex == i_ChangePassword) {
+//					copy_children(event.oldIndex,event.newIndex);
+//					this.currentState = 'SimplePasswordChangeState';
+//				}
+//				this.widget_emailAddress.txt_emailAddress.setFocus();
+//				this.clear_error_tips();
+//				var btn:* = this.current_button;
+//				btn.enabled = false;
+//				if (event.newIndex == i_ResendActivation) {
+//					//this.validateUserName();
+//				} else if (event.newIndex == i_Activate) {
+//					//this.validateUserName();
+//					//this.validateActivationKey();
+//				} else if ( (event.newIndex == i_Login) || (event.newIndex == i_Register) || (event.newIndex == i_ChangePassword) ) {
+//					//this.validateUserName();
+//					//this.validatePassword();
+//				}
+//				this.errorString = this.panel_Login.errorString = '';
+				this.control_bar_message = '';
+			}
+
+			public function set control_bar_message(message:String):void {
+				if ( (message is String) && (message.length > 0) ) {
+					this.controlBar_messages.text = message;
+					this.controlBar.visible = this.controlBar.includeInLayout = true;
+				} else {
+					this.controlBar.visible = this.controlBar.includeInLayout = false;
+				}
+			} 
+
+
+			protected function loginControl_creationCompleteHandler(event:FlexEvent):void {
+//				if (this.controls.indexOf(event.currentTarget) == -1) {
+//					this.controls.push(event.currentTarget);
+//				}
+			}
+
+
+			protected function registerControl_creationCompleteHandler(event:FlexEvent):void {
+//				if (this.controls.indexOf(event.currentTarget) == -1) {
+//					this.controls.push(event.currentTarget);
+//				}
+			}
+
+
+			protected function reactivateControl_creationCompleteHandler(event:FlexEvent):void {
+//				if (this.controls.indexOf(event.currentTarget) == -1) {
+//					this.controls.push(event.currentTarget);
+//				}
+			}
+
+
+			protected function changePasswordControl_creationCompleteHandler(event:FlexEvent):void {
+//				if (this.controls.indexOf(event.currentTarget) == -1) {
+//					this.controls.push(event.currentTarget);
+//				}
+			}
+
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%" height="100%" horizontalAlign="left" verticalAlign="top">
+		<mx:Panel id="panel_Login" width="100%" height="100%" layout="absolute" title="Login" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+			<mx:TabNavigator width="100%" height="100%" change="tabnavigator1_changeHandler(event)">
+				<mx:Canvas label="Login" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+					<s:HGroup paddingLeft="10" width="100%" height="100%">
+						<controls:LoginControl 
+							id="loginControl_0" 
+							width="100%" height="100%" 
+							is_enabled_callback="{this.isNotLoggedIn}" 
+							creationComplete="loginControl_creationCompleteHandler(event)"/>
+					</s:HGroup>
+				</mx:Canvas>
+				<mx:Canvas label="Register" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+					<s:HGroup paddingLeft="10" width="100%" height="100%">
+						<controls:RegisterControl 
+							id="registerControl_1" 
+							width="100%" height="100%"
+							is_enabled_callback="{this.isNotLoggedIn}" 
+							creationComplete="registerControl_creationCompleteHandler(event)"/>
+					</s:HGroup>
+				</mx:Canvas>
+				<mx:Canvas label="Resend Activation" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+					<s:HGroup paddingLeft="10" width="100%" height="100%">
+						<controls:ReActivateControl 
+							id="reactivateControl_2" 
+							width="100%" height="100%" 
+							is_enabled_callback="{this.isNotLoggedIn}" 
+							creationComplete="reactivateControl_creationCompleteHandler(event)"/>
+					</s:HGroup>
+				</mx:Canvas>
+				<mx:Canvas label="Change Password" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+					<s:HGroup paddingLeft="10" width="100%" height="100%">
+						<controls:ChangePasswordControl 
+							id="changePasswordControl_3" 
+							width="100%" height="100%" 
+							is_enabled_callback="{this.isNotLoggedIn}" 
+							creationComplete="changePasswordControl_creationCompleteHandler(event)"/>
+					</s:HGroup>
+				</mx:Canvas>
+			</mx:TabNavigator>
+			<mx:ControlBar id="controlBar" width="100%" height="100%" visible="false" includeInLayout="false">
+				<mx:TextArea id="controlBar_messages" width="100%" height="100%" minHeight="60" editable="false"/>
+			</mx:ControlBar>
+		</mx:Panel>
+	</mx:VBox>
+</mx:Canvas>

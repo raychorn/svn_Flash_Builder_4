@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:CheckBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			 xmlns:s="library://ns.adobe.com/flex/spark" 
+			 xmlns:mx="library://ns.adobe.com/flex/mx"
+			 creationComplete="onCreationComplete()"
+			 >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			private var _dataProvider:Object = {};
+			
+			private function onCreationComplete():void {
+				this.addEventListener(MouseEvent.CLICK,onClick);
+			}
+			
+			private function onClick(event:MouseEvent):void {
+				var aValue:* = this.dataProvider['exclusive'];
+				var isExclusive:Boolean = (aValue != null) ? aValue : isExclusive;
+				var cb:SmartCheckBox = event.currentTarget as SmartCheckBox;
+				var isSelected:Boolean = cb.selected;
+				var i:String;
+				var aCB:SmartCheckBox;
+				var siblings:Array = [];
+				try {
+					siblings = this.parent['getChildren']() as Array;
+				} catch (e:Error) {trace(this.className + '.onClick().1.ERROR='+e.toString());}
+				if (isExclusive) {
+					for (i in siblings) {
+						aCB = siblings[i] as SmartCheckBox;
+						if ( (aCB is SmartCheckBox) && (isSelected) && (aCB != event.currentTarget) ) {
+							aCB.selected = true;
+						}
+					}
+					cb.selected = false;
+				} else {
+					for (i in siblings) {
+						aCB = siblings[i] as SmartCheckBox;
+						if ( (aCB is SmartCheckBox) && (isSelected) && (aCB.dataProvider['exclusive'] == true) ) {
+							aCB.selected = false;
+						}
+					}
+				}
+			}
+			
+			public function set dataProvider(dataProvider:Object):void {
+				if (this._dataProvider != dataProvider) {
+					this._dataProvider = dataProvider;
+				}
+			}
+			
+			public function get dataProvider():Object {
+				return this._dataProvider;
+			}
+		]]>
+	</fx:Script>
+</mx:CheckBox>

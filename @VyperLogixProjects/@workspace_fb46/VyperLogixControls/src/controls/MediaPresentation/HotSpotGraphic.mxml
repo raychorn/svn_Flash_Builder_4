@@ -1,0 +1,763 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Graphic xmlns:fx="http://ns.adobe.com/mxml/2009"
+		   xmlns:s="library://ns.adobe.com/flex/spark"
+		   width="100" height="100" 
+		   currentState="stationary" 
+		   click="graphic1_clickHandler(event)" touchTap="graphic1_touchTapHandler(event)"
+		   mouseOver="graphic1_mouseOverHandler(event)" 
+		   resize="graphic1_resizeHandler(event)" 
+		   creationComplete="graphic1_creationCompleteHandler(event)" xmlns:mx="library://ns.adobe.com/flex/mx">
+	<s:states>
+		<mx:State name="stationary"/>
+		<mx:State name="moving"/>
+		<mx:State name="placed"/>
+		<mx:State name="sizing"/>
+		<mx:State name="resizingLL"/>
+		<mx:State name="resizingLR"/>
+		<mx:State name="resizingUL"/>
+		<mx:State name="resizingUR"/>
+		<mx:State name="invisible"/>
+	</s:states>
+	<fx:Metadata>
+		[Event(name="clickedHotSpot", type="controls.MediaPresentation.events.ClickedHotSpotEvent")]
+		[Event(name="movingHotSpot", type="controls.MediaPresentation.events.MovingHotSpotEvent")]
+		[Event(name="sizingHotSpot", type="controls.MediaPresentation.events.SizingHotSpotEvent")]
+		[Event(name="modifyCenterHotSpot", type="controls.MediaPresentation.events.ModifyCenterHotSpotCoordEvent")]
+		[Event(name="modifyLowerLeftHotSpot", type="controls.MediaPresentation.events.ModifyLowerLeftHotSpotCoordEvent")]
+		[Event(name="modifyLowerRightHotSpot", type="controls.MediaPresentation.events.ModifyLowerRightHotSpotCoordEvent")]
+		[Event(name="modifyUpperLeftHotSpot", type="controls.MediaPresentation.events.ModifyUpperLeftHotSpotCoordEvent")]
+		[Event(name="modifyUpperRightHotSpot", type="controls.MediaPresentation.events.ModifyUpperRightHotSpotCoordEvent")]
+		[Event(name="modifyUpperLeftLeftHotSpot", type="controls.MediaPresentation.events.ModifyUpperLeftLeftHotSpotCoordEvent")]
+		[Event(name="modifyUpperLeftRightHotSpot", type="controls.MediaPresentation.events.ModifyUpperLeftRightHotSpotCoordEvent")]
+		[Event(name="modifyUpperRightLeftHotSpot", type="controls.MediaPresentation.events.ModifyUpperRightLeftHotSpotCoordEvent")]
+		[Event(name="modifyUpperRightRightHotSpot", type="controls.MediaPresentation.events.ModifyUpperRightRightHotSpotCoordEvent")]
+		[Event(name="modifyLowerLeftLeftHotSpot", type="controls.MediaPresentation.events.ModifyLowerLeftLeftHotSpotCoordEvent")]
+		[Event(name="modifyLowerLeftRightHotSpot", type="controls.MediaPresentation.events.ModifyLowerLeftRightHotSpotCoordEvent")]
+		[Event(name="modifyLowerRightLeftHotSpot", type="controls.MediaPresentation.events.ModifyLowerRightLeftHotSpotCoordEvent")]
+		[Event(name="modifyLowerRightRightHotSpot", type="controls.MediaPresentation.events.ModifyLowerRightRightHotSpotCoordEvent")]
+	</fx:Metadata>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ArrayUtils;
+			import com.DebuggerUtils;
+			import com.DisplayObjectUtils;
+			
+			import controls.MediaPresentation.events.ClickedHotSpotEvent;
+			import controls.MediaPresentation.events.ModifyCenterHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyLowerLeftHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyLowerLeftLeftHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyLowerLeftRightHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyLowerRightHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyLowerRightLeftHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyLowerRightRightHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyUpperLeftHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyUpperLeftLeftHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyUpperLeftRightHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyUpperRightHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyUpperRightLeftHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyUpperRightRightHotSpotCoordEvent;
+			
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			
+			private var __show_editing_images__:Boolean = false;
+
+			private const __minimum_action_time__:Number = 500;
+			
+			private var __last_action_time__:Number = __minimum_action_time__;
+
+			private var __editable__:Boolean = false;
+			
+			private var __delayed_actions__:Array = [];
+			
+			private var __timer__:Timer = new Timer(500);
+			
+			private var __states_stack__:Array = [];
+			
+			[Bindable]
+			private var __target__:Object;
+			
+			public function get params():Object {
+				return {'class':this.className,'x':this.x,'y':this.y,'width':this.width,'height':this.height,'target':this.__target__};
+			}
+
+			public function get target():Object {
+				return this.__target__;
+			}
+			
+			public function set target(target:Object):void {
+				trace('set target.1 --> target='+DebuggerUtils.explainThis(target));
+				if (this.__target__ != target) {
+					this.__target__ = target;
+					if (this.rectCC is Rect) {
+						try {
+							this.rectCC_border.color = uint(this.rectCC_borderColor);
+							this.rectCC_color.color = uint(this.rectCC_fillColor);
+						} catch (err:Error) {
+							trace('set target.2 --> err='+err.toString()+'\n'+err.getStackTrace());
+						}
+					}
+					trace('set target.3 --> __target__='+DebuggerUtils.explainThis(this.__target__));
+				}
+			}
+			
+			public function get last_state():String {
+				return ((this.__states_stack__.length > 0) ? this.__states_stack__[this.__states_stack__.length-1] : '');
+			}
+			
+			public function get invisible():Boolean {
+				return this.currentState == 'invisible';
+			}
+			
+			public function set invisible(invisible:Boolean):void {
+				var __last__:String = this.last_state;
+				var _invisible_:String = ((invisible) ? 'invisible' : __last__);
+				if (this.currentState != _invisible_) {
+					if (_invisible_ == 'invisible') {
+						this.__states_stack__.push(this.currentState);
+					} else {
+						_invisible_ = this.__states_stack__.pop();
+					}
+					this.currentState = _invisible_;
+				}
+			}
+			
+			public function get is_stationary():Boolean {
+				return this.currentState == 'stationary';
+			}
+			
+			public function set is_stationary(is_stationary:Boolean):void {
+				if (!this.is_stationary) {
+					this.currentState = 'stationary';
+				}
+			}
+			
+			public function get is_moving():Boolean {
+				return this.currentState == 'moving';
+			}
+			
+			public function set is_moving(is_moving:Boolean):void {
+				if (!this.is_moving) {
+					this.currentState = 'moving';
+				}
+			}
+			
+			public function get is_placed():Boolean {
+				return this.currentState == 'placed';
+			}
+			
+			public function set is_placed(is_placed:Boolean):void {
+				if (!this.is_placed) {
+					this.currentState = 'placed';
+				}
+			}
+			
+			public function get is_sizing():Boolean {
+				return this.currentState == 'sizing';
+			}
+			
+			public function set is_sizing(is_sizing:Boolean):void {
+				if (!this.is_sizing) {
+					this.currentState = 'sizing';
+				}
+			}
+			
+			public function get is_resizingLL():Boolean {
+				return this.currentState == 'resizingLL';
+			}
+			
+			public function set is_resizingLL(resizingLL:Boolean):void {
+				if ( (resizingLL) && (this.currentState != 'resizingLL') ) {
+					this.currentState = 'resizingLL';
+				}
+			}
+				
+			public function get is_resizingLR():Boolean {
+				return this.currentState == 'resizingLR';
+			}
+				
+			public function set is_resizingLR(resizingLR:Boolean):void {
+				if ( (resizingLR) && (this.currentState != 'resizingLR') ) {
+					this.currentState = 'resizingLR';
+				}
+			}
+			
+			public function get is_resizingUL():Boolean {
+				return this.currentState == 'resizingUL';
+			}
+				
+			public function set is_resizingUL(resizingUL:Boolean):void {
+				if ( (resizingUL) && (this.currentState != 'resizingUL') ) {
+					this.currentState = 'resizingUL';
+				}
+			}
+			
+			public function get is_resizingUR():Boolean {
+				return this.currentState == 'resizingUR';
+			}
+			
+			public function set is_resizingUR(resizingUR:Boolean):void {
+				if ( (resizingUR) && (this.currentState != 'resizingUR') ) {
+					this.currentState = 'resizingUR';
+				}
+			}
+			
+			public function get show_editing_images():Boolean {
+				return this.__show_editing_images__;
+			}
+			
+			public function get is_able_accept_another_action():Boolean {
+				return (this.__last_action_time__ >= this.__minimum_action_time__);
+			}
+			
+			public function get is_editable():Boolean {
+				return this.__editable__;
+			}
+			
+			public function set is_editable(is_editable:Boolean):void {
+				if (this.__editable__ != is_editable) {
+					this.__editable__ = is_editable;
+				}
+			}
+			
+			public function get is_resizing():Boolean {
+				return (this.is_resizingLL || this.is_resizingLR || this.is_resizingUL || this.is_resizingUR);
+			}
+			
+			public function set is_resizing(resizing:Boolean):void {
+				if ( (!resizing) && (this.is_resizing) ) {
+					this.currentState = 'placed';
+				}
+			}
+			
+			public function get editable():Boolean {
+				return (this.is_able_accept_another_action && this.is_editable);
+			}
+			
+			private function enter_editing_mode():void {
+				if (this.is_able_accept_another_action) {
+					this.currentState = (this.is_stationary || this.is_placed) ? 'moving' : 'placed';
+				}
+			}
+			
+			private function is_able_to_be_edited_condition():Boolean {
+				return (this.is_able_accept_another_action);
+			}
+			
+			public function set editable(editable:Boolean):void {
+				if (this.is_editable != editable) {
+					this.is_editable = editable;
+					this.delay_action_until(this.enter_editing_mode,this.is_able_to_be_edited_condition);
+				}
+			}
+			
+			public function delay_action_until(action:Function,condition:Function):void {
+				if (action is Function) {
+					this.__delayed_actions__.push({'action':action,'condition':condition});
+				}
+			}
+			
+			private function editable_handler():void {
+				trace(this.className+'.editable_handler.1 --> this.__editable__='+this.__editable__+', currentState='+this.currentState+', is_able_accept_another_action='+this.is_able_accept_another_action);
+				this.dispatchEvent(new ClickedHotSpotEvent(ClickedHotSpotEvent.TYPE_CLICKED_HOTSPOT));
+			}
+			
+			public function set show_editing_images(show_editing_images:Boolean):void {
+				var timer:Timer;
+				var _this:HotSpotGraphic = this;
+				if (this.__show_editing_images__ != show_editing_images) {
+					if (this.__last_action_time__ >= this.__minimum_action_time__) {
+						var was_true:Boolean = this.__show_editing_images__ == true;
+						this.__show_editing_images__ = show_editing_images;
+						this.currentState = (was_true) ? ((this.show_editing_images) ? 'moving' : 'placed') : ((this.show_editing_images) ? 'moving' : 'stationary');
+						trace(_this.className+'.show_editing_images.1 --> was_true='+was_true+', this.show_editing_images='+_this.show_editing_images+', this.currentState='+_this.currentState);
+						timer = new Timer(1000,1);
+						timer.addEventListener(TimerEvent.TIMER_COMPLETE, 
+							function (event:TimerEvent):void {
+								__last_action_time__ = __minimum_action_time__;
+								timer.stop();
+							}
+						);
+						timer.start();
+						this.__last_action_time__ = 0;
+					}
+				}
+			}
+			
+			private function handle_event(event:*):void {
+				var ptLocal:Point = new Point(event.localX,event.localY);
+				trace(this.className+'.handle_event.1 --> ptLocal='+ptLocal.toString());
+				var ptStage:Point = new Point(event.stageX,event.stageY);
+				trace(this.className+'.handle_event.2 --> ptStage='+ptStage.toString());
+				var objsStage:Array = this.stage.getObjectsUnderPoint(ptStage);
+				var graphic:Graphic = objsStage[objsStage.length-1] as Graphic;
+				if (graphic is Graphic) {
+					var rect:Rect;
+					var _is1_:Boolean;
+					var _is2_:Boolean;
+					var r:Rectangle;
+					var children:Array = DisplayObjectUtils.getChildrenFrom(graphic);
+					var mapEvent:Object = {
+						'rectCC':{
+							'class':ModifyCenterHotSpotCoordEvent,
+							'color':this.rectCC_color,
+							'handler':this.editable_handler,
+							'type':ModifyCenterHotSpotCoordEvent.TYPE_MOFIDY_CENTER_HOTSPOT
+						},
+						'rectUL':{
+							'class':ModifyUpperLeftHotSpotCoordEvent,
+							'color':this.rectUL_color,
+							'type':ModifyUpperLeftHotSpotCoordEvent.TYPE_MOFIDY_UPPER_LEFT_HOTSPOT
+						},
+						'rectULL':{
+							'class':ModifyUpperLeftLeftHotSpotCoordEvent,
+							'color':this.rectULL_color,
+							'type':ModifyUpperLeftLeftHotSpotCoordEvent.TYPE_MOFIDY_UPPER_LEFT_LEFT_HOTSPOT
+						},
+						'rectULR':{
+							'class':ModifyUpperLeftRightHotSpotCoordEvent,
+							'color':this.rectULR_color,
+							'type':ModifyUpperLeftRightHotSpotCoordEvent.TYPE_MOFIDY_UPPER_LEFT_RIGHT_HOTSPOT
+						},
+						'rectUR':{
+							'class':ModifyUpperRightHotSpotCoordEvent,
+							'color':this.rectUR_color,
+							'type':ModifyUpperRightHotSpotCoordEvent.TYPE_MOFIDY_UPPER_RIGHT_HOTSPOT
+						},
+						'rectURL':{
+							'class':ModifyUpperRightLeftHotSpotCoordEvent,
+							'color':this.rectURL_color,
+							'type':ModifyUpperRightLeftHotSpotCoordEvent.TYPE_MOFIDY_UPPER_RIGHT_LEFT_HOTSPOT
+						},
+						'rectURR':{
+							'class':ModifyUpperRightRightHotSpotCoordEvent,
+							'color':this.rectURR_color,
+							'type':ModifyUpperRightRightHotSpotCoordEvent.TYPE_MOFIDY_UPPER_RIGHT_RIGHT_HOTSPOT
+						},
+						'rectLL':{
+							'class':ModifyLowerLeftHotSpotCoordEvent,
+							'color':this.rectLL_color,
+							'type':ModifyLowerLeftHotSpotCoordEvent.TYPE_MOFIDY_LOWER_LEFT_HOTSPOT
+						},
+						'rectLLL':{
+							'class':ModifyLowerLeftLeftHotSpotCoordEvent,
+							'color':this.rectLLL_color,
+							'type':ModifyLowerLeftLeftHotSpotCoordEvent.TYPE_MOFIDY_LOWER_LEFT_LEFT_HOTSPOT
+						},
+						'rectLLR':{
+							'class':ModifyLowerLeftRightHotSpotCoordEvent,
+							'color':this.rectLLR_color,
+							'type':ModifyLowerLeftRightHotSpotCoordEvent.TYPE_MOFIDY_LOWER_LEFT_RIGHT_HOTSPOT
+						},
+						'rectLR':{	
+							'class':ModifyLowerRightHotSpotCoordEvent,
+							'color':this.rectLR_color,
+							'type':ModifyLowerRightHotSpotCoordEvent.TYPE_MOFIDY_LOWER_RIGHT_HOTSPOT
+						},
+						'rectLRL':{	
+							'class':ModifyLowerRightLeftHotSpotCoordEvent,
+							'color':this.rectLR_color,
+							'type':ModifyLowerRightLeftHotSpotCoordEvent.TYPE_MOFIDY_LOWER_RIGHT_LEFT_HOTSPOT
+						},
+						'rectLRR':{	
+							'class':ModifyLowerRightRightHotSpotCoordEvent,
+							'color':this.rectLR_color,
+							'type':ModifyLowerRightRightHotSpotCoordEvent.TYPE_MOFIDY_LOWER_RIGHT_RIGHT_HOTSPOT
+						}
+					};
+					var eventColor:*;
+					var eventVector:Object;
+					var eventClass:Class;
+					var eventType:String;
+					var eventHandler:Function;
+					var _is_handled_:Boolean = false;
+					for (var i:String in children) {
+						rect = children[i] as Rect;
+						r = new Rectangle(rect.x,rect.y,rect.width,rect.height);
+						_is1_ = r.contains(ptLocal.x,ptLocal.y);
+						_is2_ = r.contains(ptStage.x,ptStage.y);
+						eventVector = mapEvent[rect.id];
+						if ( (eventVector) && (eventVector['class']) && (eventVector['type']) && (eventVector['color']) ) {
+							eventClass = eventVector['class'];
+							eventType = eventVector['type'];
+							eventColor = eventVector['color'];
+							if (eventColor) {
+								//eventColor.color = (_is1_) ? 0xCCCCCC : 0x000000;
+							}
+							eventHandler = eventVector['handler'];
+							if ( (eventHandler is Function) && (_is1_ || _is2_) ) {
+								trace('handle_event.3a --> r='+r.toString()+', ptLocal='+ptLocal+', _is1_='+_is1_);
+								trace('handle_event.3b --> r='+r.toString()+', ptStage='+ptStage+', _is2_='+_is2_);
+								trace('handle_event.3c --> eventColor.color='+eventColor.color+', eventHandler='+eventHandler);
+								try {
+									eventHandler();
+									_is_handled_ = true;
+								} catch (err:Error) {
+									trace('handle_event.3d --> err='+err.toString()+', stack='+err.getStackTrace());
+								}
+							} else if (_is1_ || _is2_) {
+								trace(this.className+'.handle_event.4 --> r='+r.toString()+', _is1_='+_is1_+', _is2_='+_is2_+', editable='+this.editable+', is_editable='+this.is_editable+', eventClass='+eventClass+', eventType='+eventType);
+								_is_handled_ = true;
+								if (this.editable) {
+									this.dispatchEvent(new eventClass(eventType,ptLocal));
+								} else {
+									this.editable_handler(); // default action when not the hotspot is not editable...
+								}
+							}
+						}
+					}
+					if (!_is_handled_) {
+						this.editable_handler(); // default action when not clicking on any other object...
+					}
+					trace();
+				}
+				//trace(this.className+'.graphic1_mouseOverHandler.3 --> objsStage='+DebuggerUtils.explainThis(objsStage));
+				//trace(this.className+'.graphic1_mouseOverHandler.4 --> graphics='+DebuggerUtils.explainThis(graphics));
+			}
+			
+			protected function graphic1_clickHandler(event:MouseEvent):void {
+				this.handle_event(event);
+			}
+			
+			protected function graphic1_touchTapHandler(event:TouchEvent):void {
+				this.handle_event(event);
+			}
+			
+			private function is_graphic(item:*, i:int, source:*, selector:*, aValue:*):Boolean {
+				return (item is Graphic);
+			}
+			
+			protected function graphic1_mouseOverHandler(event:MouseEvent):void {
+			}
+			
+			protected function graphic1_resizeHandler(event:ResizeEvent):void {
+				trace('graphic1_resizeHandler.1 --> width='+this.width+', height='+this.height);
+			}
+			
+			protected function graphic1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:HotSpotGraphic = this;
+				var timer:Timer = new Timer(250,1);
+				timer.addEventListener(TimerEvent.TIMER_COMPLETE, 
+					function (event:TimerEvent):void {
+						timer.stop();
+						if (_this.is_stationary) {
+							//_this.currentState = 'placed';
+						}
+					}
+				);
+				timer.start();
+				this.__timer__.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						if (_this.__delayed_actions__.length > 0) {
+							var vector:Object = _this.__delayed_actions__[_this.__delayed_actions__.length-1];
+							var action:Function = vector['action'];
+							var condition:Function = vector['condition'];
+							var __is__:Boolean = true;
+							if (action is Function) {
+								if (condition is Function) {
+									try { __is__ = condition(); } 
+									catch (err:Error) {
+										trace('__delayed_actions__.1 --> err='+err.toString()+'\n'+err.getStackTrace());
+									}
+								}
+								if (__is__) {
+									try { action(); } 
+									catch (err:Error) {
+										trace('__delayed_actions__.2 --> err='+err.toString()+'\n'+err.getStackTrace());
+									}
+									_this.__delayed_actions__.pop();
+								}
+							}
+						}
+					}
+				);
+				this.__timer__.start();
+			}
+			
+			[Bindable]
+			private function get rectCC_borderColor():String {
+				var color:String = ((this.__target__) ? '0x0000ff' : ((this.is_moving || this.is_sizing) ? '0xccccff' : '0xcccccc'));
+				trace('rectCC_borderColor.1 --> __target__='+(this.__target__ != null)+', is_moving='+this.is_moving+', is_sizing='+this.is_sizing+', color='+color);
+				return color;
+			}
+			
+			private function set rectCC_borderColor(color:String):void {
+				var aColor:uint = 0x000000;
+				try {
+					aColor = uint(color);
+				} catch (err:Error) {}
+				if (this.rectCC_border.color != aColor) {
+					this.rectCC_border.color = aColor;
+				}
+			}
+			
+			[Bindable]
+			private function get rectCC_fillColor():String {
+				var color:String = ((this.__target__) ? '0x0000ff' : ((this.is_stationary) ? '0x000000' : ((this.is_placed) ? '0x000000' : ((this.is_placed) ? '0xCCCCCC' : ((this.is_sizing) ? '0xCCCCCC' : '0xffffff')))));
+				trace('rectCC_fillColor.1 --> __target__='+(this.__target__ != null)+', is_moving='+this.is_moving+', is_sizing='+this.is_sizing+', color='+color);
+				return color;
+			}
+			
+			private function set rectCC_fillColor(color:String):void {
+				var aColor:uint = 0xffffff;
+				try {
+					aColor = uint(color);
+				} catch (err:Error) {}
+				if (this.rectCC_color.color != aColor) {
+					this.rectCC_color.color = aColor;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Rect id="rect1" x="0" y="0" width="{this.width}" height="{this.height}">
+		<s:fill>
+			<mx:SolidColor id="sc1" color="0xFFFFCC" alpha.invisible="0.0" alpha.stationary="0.25" alpha.placed="0.25" alpha.moving="0.25" alpha.sizing="0.25"/>
+		</s:fill>
+		<s:stroke>
+			<mx:SolidColorStroke color="0x000000" weight="1" alpha.invisible="0.0" alpha.stationary="1" alpha.placed="5" alpha.moving="1" alpha.sizing="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect id="rectCC" 
+			x="{(this.width/2)-(this.rectCC.width/2)}" y="{(this.height/2)-(this.rectCC.height/2)}" 
+			width="30" height="30"
+			visible.placed="true" includeInLayout.placed="true"
+			visible.moving="true" includeInLayout.moving="true"
+			visible.sizing="true" includeInLayout.sizing="true"
+			visible.invisible="true" includeInLayout.invisible="true"
+			visible.stationary="true" includeInLayout.stationary="true"
+			visible.resizingLL="false" includeInLayout.resizingLL="false"
+			visible.resizingLR="false" includeInLayout.resizingLR="false"
+			visible.resizingUL="false" includeInLayout.resizingUL="false"
+			visible.resizingUR="false" includeInLayout.resizingUR="false"
+			>
+		<s:fill>
+			<mx:SolidColor id="rectCC_color" color="{this.rectCC_fillColor}" alpha.invisible="0.0" alpha.stationary="0.1" alpha.placed="0.5" alpha.moving="0.25" alpha.sizing="0.25"/>
+		</s:fill>
+		<s:stroke>
+			<mx:SolidColorStroke id="rectCC_border" color="{this.rectCC_borderColor}" weight="1" alpha.invisible="0.0" alpha.stationary="1" alpha.placed="5" alpha.moving="1" alpha.sizing="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect id="rectUL" x="0" y="0" width="20" height="20"
+			visible.placed="false" includeInLayout.placed="false"
+			visible.moving="true" includeInLayout.moving="true"
+			visible.sizing="false" includeInLayout.sizing="false"
+			visible.invisible="false" includeInLayout.invisible="false"
+			visible.stationary="false" includeInLayout.stationary="false"
+			visible.resizingLL="false" includeInLayout.resizingLL="false"
+			visible.resizingLR="false" includeInLayout.resizingLR="false"
+			visible.resizingUL="false" includeInLayout.resizingUL="false"
+			visible.resizingUR="false" includeInLayout.resizingUR="false"
+			>
+		<s:fill>
+			<mx:SolidColor id="rectUL_color" color="0x000000" color.moving="0xFFA500" color.sizing="0x00FFFF" alpha="1.0"/>
+		</s:fill>
+		<s:stroke>
+			<mx:SolidColorStroke color="0x000000" weight="1" alpha="1.0"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect id="rectULR" x="25" y="0" width="20" height="20"
+			visible.placed="false" includeInLayout.placed="false"
+			visible.moving="true" includeInLayout.moving="true"
+			visible.sizing="false" includeInLayout.sizing="false"
+			visible.invisible="false" includeInLayout.invisible="false"
+			visible.stationary="false" includeInLayout.stationary="false"
+			visible.resizingLL="false" includeInLayout.resizingLL="false"
+			visible.resizingLR="false" includeInLayout.resizingLR="false"
+			visible.resizingUL="false" includeInLayout.resizingUL="false"
+			visible.resizingUR="false" includeInLayout.resizingUR="false"
+			>
+		<s:fill>
+			<mx:SolidColor id="rectULR_color" color="0x000000" color.moving="0xFFA500" color.sizing="0x00FFFF" alpha="1.0"/>
+		</s:fill>
+		<s:stroke>
+			<mx:SolidColorStroke color="0x000000" weight="1" alpha="1.0"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect id="rectULL" x="0" y="25" width="20" height="20"
+			visible.placed="false" includeInLayout.placed="false"
+			visible.moving="true" includeInLayout.moving="true"
+			visible.sizing="false" includeInLayout.sizing="false"
+			visible.invisible="false" includeInLayout.invisible="false"
+			visible.stationary="false" includeInLayout.stationary="false"
+			visible.resizingLL="false" includeInLayout.resizingLL="false"
+			visible.resizingLR="false" includeInLayout.resizingLR="false"
+			visible.resizingUL="false" includeInLayout.resizingUL="false"
+			visible.resizingUR="false" includeInLayout.resizingUR="false"
+			>
+		<s:fill>
+			<mx:SolidColor id="rectULL_color" color="0x000000" color.moving="0xFFA500" color.sizing="0x00FFFF" alpha="1.0"/>
+		</s:fill>
+		<s:stroke>
+			<mx:SolidColorStroke color="0x000000" weight="1" alpha="1.0"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect id="rectUR" x="{this.rect1.width - this.rectUR.width}" y="0" width="20" height="20"
+			visible.placed="false" includeInLayout.placed="false"
+			visible.moving="true" includeInLayout.moving="true"
+			visible.sizing="false" includeInLayout.sizing="false"
+			visible.invisible="false" includeInLayout.invisible="false"
+			visible.stationary="false" includeInLayout.stationary="false"
+			visible.resizingLL="false" includeInLayout.resizingLL="false"
+			visible.resizingLR="false" includeInLayout.resizingLR="false"
+			visible.resizingUL="false" includeInLayout.resizingUL="false"
+			visible.resizingUR="false" includeInLayout.resizingUR="false"
+			>
+		<s:fill>
+			<mx:SolidColor id="rectUR_color" color="0x000000" color.moving="0xFFA500" color.sizing="0x00FFFF" alpha="1.0"/>
+		</s:fill>
+		<s:stroke>
+			<mx:SolidColorStroke color="0x000000" weight="1" alpha="1.0"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect id="rectURL" x="{this.rectUR.x - 25}" y="0" width="20" height="20"
+			visible.placed="false" includeInLayout.placed="false"
+			visible.moving="true" includeInLayout.moving="true"
+			visible.sizing="true" includeInLayout.sizing="true"
+			visible.invisible="false" includeInLayout.invisible="false"
+			visible.stationary="false" includeInLayout.stationary="false"
+			visible.resizingLL="false" includeInLayout.resizingLL="false"
+			visible.resizingLR="false" includeInLayout.resizingLR="false"
+			visible.resizingUL="false" includeInLayout.resizingUL="false"
+			visible.resizingUR="false" includeInLayout.resizingUR="false"
+			>
+		<s:fill>
+			<mx:SolidColor id="rectURL_color" color="0x000000" color.moving="0xFFA500" color.sizing="0x00FFFF" alpha="1.0"/>
+		</s:fill>
+		<s:stroke>
+			<mx:SolidColorStroke color="0x000000" weight="1" alpha="1.0"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect id="rectURR" x="{this.rectUR.x}" y="{this.rectUR.y + 25}" width="20" height="20"
+			visible.placed="false" includeInLayout.placed="false"
+			visible.moving="true" includeInLayout.moving="true"
+			visible.sizing="true" includeInLayout.sizing="true"
+			visible.invisible="false" includeInLayout.invisible="false"
+			visible.stationary="false" includeInLayout.stationary="false"
+			visible.resizingLL="false" includeInLayout.resizingLL="false"
+			visible.resizingLR="false" includeInLayout.resizingLR="false"
+			visible.resizingUL="false" includeInLayout.resizingUL="false"
+			visible.resizingUR="false" includeInLayout.resizingUR="false"
+			>
+		<s:fill>
+			<mx:SolidColor id="rectURR_color" color="0x000000" color.moving="0xFFA500" color.sizing="0x00FFFF" alpha="1.0"/>
+		</s:fill>
+		<s:stroke>
+			<mx:SolidColorStroke color="0x000000" weight="1" alpha="1.0"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect id="rectLL" x="0" y="{this.rect1.height - this.rectUR.height}" width="20" height="20"
+			visible.placed="false" includeInLayout.placed="false"
+			visible.moving="true" includeInLayout.moving="true"
+			visible.sizing="false" includeInLayout.sizing="false"
+			visible.invisible="false" includeInLayout.invisible="false"
+			visible.stationary="false" includeInLayout.stationary="false"
+			visible.resizingLL="false" includeInLayout.resizingLL="false"
+			visible.resizingLR="false" includeInLayout.resizingLR="false"
+			visible.resizingUL="false" includeInLayout.resizingUL="false"
+			visible.resizingUR="false" includeInLayout.resizingUR="false"
+			>
+		<s:fill>
+			<mx:SolidColor id="rectLL_color" color="0x000000" color.moving="0xFFA500" color.sizing="0x00FFFF" alpha="1.0"/>
+		</s:fill>
+		<s:stroke>
+			<mx:SolidColorStroke color="0x000000" weight="1" alpha="1.0"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect id="rectLLL" x="0" y="{this.rectLL.y - 25}" width="20" height="20"
+			visible.placed="false" includeInLayout.placed="false"
+			visible.moving="true" includeInLayout.moving="true"
+			visible.sizing="true" includeInLayout.sizing="true"
+			visible.invisible="false" includeInLayout.invisible="false"
+			visible.stationary="false" includeInLayout.stationary="false"
+			visible.resizingLL="false" includeInLayout.resizingLL="false"
+			visible.resizingLR="false" includeInLayout.resizingLR="false"
+			visible.resizingUL="false" includeInLayout.resizingUL="false"
+			visible.resizingUR="false" includeInLayout.resizingUR="false"
+			>
+		<s:fill>
+			<mx:SolidColor id="rectLLL_color" color="0x000000" color.moving="0xFFA500" color.sizing="0x00FFFF" alpha="1.0"/>
+		</s:fill>
+		<s:stroke>
+			<mx:SolidColorStroke color="0x000000" weight="1" alpha="1.0"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect id="rectLLR" x="{this.rectLL.x + 25}" y="{this.rectLL.y}" width="20" height="20"
+			visible.placed="false" includeInLayout.placed="false"
+			visible.moving="true" includeInLayout.moving="true"
+			visible.sizing="true" includeInLayout.sizing="true"
+			visible.invisible="false" includeInLayout.invisible="false"
+			visible.stationary="false" includeInLayout.stationary="false"
+			visible.resizingLL="false" includeInLayout.resizingLL="false"
+			visible.resizingLR="false" includeInLayout.resizingLR="false"
+			visible.resizingUL="false" includeInLayout.resizingUL="false"
+			visible.resizingUR="false" includeInLayout.resizingUR="false"
+			>
+		<s:fill>
+			<mx:SolidColor id="rectLLR_color" color="0x000000" color.moving="0xFFA500" color.sizing="0x00FFFF" alpha="1.0"/>
+		</s:fill>
+		<s:stroke>
+			<mx:SolidColorStroke color="0x000000" weight="1" alpha="1.0"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect id="rectLR" x="{this.rect1.width - this.rectUR.width}"
+			y="{this.rect1.height - this.rectUR.height}" width="20" height="20"
+			visible.placed="false" includeInLayout.placed="false"
+			visible.moving="true" includeInLayout.moving="true"
+			visible.sizing="false" includeInLayout.sizing="false"
+			visible.invisible="false" includeInLayout.invisible="false"
+			visible.stationary="false" includeInLayout.stationary="false"
+			visible.resizingLL="false" includeInLayout.resizingLL="false"
+			visible.resizingLR="false" includeInLayout.resizingLR="false"
+			visible.resizingUL="false" includeInLayout.resizingUL="false"
+			visible.resizingUR="false" includeInLayout.resizingUR="false"
+			>
+		<s:fill>
+			<mx:SolidColor id="rectLR_color" color="0x000000" color.moving="0xFFA500" color.sizing="0x00FFFF" alpha="1.0"/>
+		</s:fill>
+		<s:stroke>
+			<mx:SolidColorStroke color="0x000000" weight="1" alpha="1.0"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect id="rectLRL" x="{this.rectLR.x - 25}" y="{this.rectLR.y}" 
+			width="20" height="20"
+			visible.placed="false" includeInLayout.placed="false"
+			visible.moving="true" includeInLayout.moving="true"
+			visible.sizing="true" includeInLayout.sizing="true"
+			visible.invisible="false" includeInLayout.invisible="false"
+			visible.stationary="false" includeInLayout.stationary="false"
+			visible.resizingLL="false" includeInLayout.resizingLL="false"
+			visible.resizingLR="false" includeInLayout.resizingLR="false"
+			visible.resizingUL="false" includeInLayout.resizingUL="false"
+			visible.resizingUR="false" includeInLayout.resizingUR="false"
+			>
+		<s:fill>
+			<mx:SolidColor id="rectLRL_color" color="0x000000" color.moving="0xFFA500" color.sizing="0x00FFFF" alpha="1.0"/>
+		</s:fill>
+		<s:stroke>
+			<mx:SolidColorStroke color="0x000000" weight="1" alpha="1.0"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Rect id="rectLRR" x="{this.rectLR.x}" y="{this.rectLR.y - 25}" 
+			width="20" height="20"
+			visible.placed="false" includeInLayout.placed="false"
+			visible.moving="true" includeInLayout.moving="true"
+			visible.sizing="true" includeInLayout.sizing="true"
+			visible.invisible="false" includeInLayout.invisible="false"
+			visible.stationary="false" includeInLayout.stationary="false"
+			visible.resizingLL="false" includeInLayout.resizingLL="false"
+			visible.resizingLR="false" includeInLayout.resizingLR="false"
+			visible.resizingUL="false" includeInLayout.resizingUL="false"
+			visible.resizingUR="false" includeInLayout.resizingUR="false"
+			>
+		<s:fill>
+			<mx:SolidColor id="rectLRR_color" color="0x000000" color.moving="0xFFA500" color.sizing="0x00FFFF" alpha="1.0"/>
+		</s:fill>
+		<s:stroke>
+			<mx:SolidColorStroke color="0x000000" weight="1" alpha="1.0"/>
+		</s:stroke>
+	</s:Rect>
+</s:Graphic>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true">
+	<fx:Declarations>
+	</fx:Declarations>
+	<s:states>
+		<mx:State name="normal" />
+		<mx:State name="hovered" />
+		<mx:State name="selected" />
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			
+			import mx.core.FlexGlobals;
+			
+			import factories.ResourceFactory;
+			
+			private var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+
+			private var __data__:Object;
+			
+			public override function get data():Object {
+				return this.__data__;
+			}
+			
+			public override function set data(data:Object):void {
+				app.log = this.className+'.(set) data.1 --> data='+DebuggerUtils.explainThis(data);
+				if (this.__data__ != data) {
+					this.__data__ = data;
+					
+					var parts:Array = [];
+					if ( (data['factory']) && (data['factory']['name']) ) {
+						parts.push(ResourceFactory.normalize_factory_name(data['factory']['name']));
+					}
+					
+					if (data['time']) {
+						parts.push(data['time']);
+					}
+					
+					this.factory_name_build_time.text = parts.join(' : ');
+					
+					this.build_cost.text = '';
+					if (data['cost']) {
+						this.build_cost.text = (data['cost'] is String) ? data['cost'] : ResourceFactory.current_level_upgrade_cost_as_string(data['cost'],false);
+					}
+					
+					this.toolTip = this.factory_name_build_time.text + '<BR/>' + this.build_cost.text;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+
+	<s:Rect left="0" right="0" top="0" bottom="0">
+		<s:stroke>
+			<mx:SolidColorStroke color="0xCCCCCC" joints="round" weight="2"/>
+		</s:stroke>
+		<s:fill>
+			<mx:SolidColor color="0x999999" alpha="0" alpha.hovered="0.2"
+						  alpha.selected="0.6" />
+		</s:fill>
+	</s:Rect>
+	<s:VGroup width="100%" paddingLeft="5" paddingTop="5" paddingRight="5" paddingBottom="5">
+		<s:HGroup width="100%">
+			<s:Label id="factory_name_build_time" styleName="OverviewItemLabel" text="?? : ??"/>
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<s:Label id="build_cost" styleName="OverviewItemLabel" text="???"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:ItemRenderer>

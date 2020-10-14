@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%">
+	<mx:Script>
+		<![CDATA[
+			[Bindable]
+			public var text:String;
+		]]>
+	</mx:Script>
+	<mx:Text id="comment" text="{this.text}" width="90%" styleName="comments" explicitMaxHeight="200"/>
+</mx:Canvas>

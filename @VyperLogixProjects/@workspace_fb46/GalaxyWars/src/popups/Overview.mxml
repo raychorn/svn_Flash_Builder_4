@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" 
+			   initialize="titlewindow1_initializeHandler(event)" 
+			   xmlns:gauges="popups.controls.components.gauges.*" xmlns:layouts="org.flexlayouts.layouts.*">
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			
+			import spark.collections.Sort;
+			import spark.collections.SortField;
+
+			[Bindable]
+			private var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+			
+			[Bindable]
+			private var __builds__:ArrayCollection;
+			
+			[Bindable]
+			private var __goals__:ArrayCollection;
+			
+			[Bindable]
+			private var __telemetry__:ArrayCollection;
+			
+			private var resize_vector:Object = {};
+			
+			public function get builds():ArrayCollection {
+				return this.__builds__;
+			}
+			
+			public function set builds(builds:ArrayCollection):void {
+				if (this.__builds__ != builds) {
+					this.__builds__ = builds;
+
+					var sortField:SortField = new SortField();
+					sortField.name = "time";
+					sortField.numeric = false;
+					
+					/* Create the Sort object and add the SortField object created earlier to the array of fields to sort on. */
+					var dataSort:Sort = new Sort();
+					dataSort.fields = [sortField];
+					
+					/* Set the ArrayCollection object's sort property to our custom sort, and refresh the ArrayCollection. */
+					this.__builds__.sort = dataSort;
+					this.__builds__.refresh();
+
+				}
+			}
+			
+			public function get telemetry():ArrayCollection {
+				return this.__telemetry__;
+			}
+			
+			public function set telemetry(telemetry:ArrayCollection):void {
+				if (this.__telemetry__ != telemetry) {
+					this.__telemetry__ = telemetry;
+				}
+			}
+			
+			public function get goals():ArrayCollection {
+				return this.__goals__;
+			}
+			
+			public function set goals(goals:ArrayCollection):void {
+				if (this.__goals__ != goals) {
+					this.__goals__ = goals;
+				}
+			}
+			
+			public function handle_timer_event(event:TimerEvent):void {
+				app.log = '(+++) '+this.className+'-->'+DebuggerUtils.getFunctionName(new Error());
+			}
+			
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void {
+				this.closeButton.visible = this.closeButton.includeInLayout = false;
+			}
+			
+			protected function gauge_creationCompleteHandler(event:FlexEvent):void {
+				var gauge:StorageGauge = event.currentTarget as StorageGauge;
+				var timer:Timer = new Timer(1000);
+				var value:int = 1;
+				var direction:int = 1;
+				timer.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						gauge.value = value;
+						app.log = this.className+'.gauge_creationCompleteHandler().1 --> value='+value;
+						if ( (value == 0) || (value == 100) ) {
+							direction *= -1;
+						}
+						value += direction;
+					}
+				);
+				timer.start();
+			}
+			
+			protected function expected_build_items_resizeHandler(event:ResizeEvent):void {
+				var target:List = event.currentTarget as List;
+				var height:Number = target.height;
+				var other_height:Number = this.build_goals_items.height + this.build_goals_telemetry_items.height;
+				if ((height + other_height) > this.container.height) {
+					var h:Number = this.container.height - height;
+					this.build_goals_items.height = h/2;
+					this.build_goals_telemetry_items.height = h/2;
+				}
+			}
+			
+			protected function build_goals_items_resizeHandler(event:ResizeEvent):void {
+				var target:List = event.currentTarget as List;
+				var height:Number = target.height;
+				var other_height:Number = this.expected_build_items.height + this.build_goals_telemetry_items.height;
+				if ((height + other_height) > this.container.height) {
+					var h:Number = this.container.height - height;
+					this.expected_build_items.height = h/2;
+					this.build_goals_telemetry_items.height = h/2;
+				}
+			}
+			
+			protected function build_goals_telemetry_items_resizeHandler(event:ResizeEvent):void {
+				var target:List = event.currentTarget as List;
+				var height:Number = target.height;
+				var other_height:Number = this.expected_build_items.height + this.build_goals_items.height;
+				if ((height + other_height) > this.container.height) {
+					var h:Number = this.container.height - height;
+					this.expected_build_items.height = h/2;
+					this.build_goals_items.height = h/2;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup id="container" width="100%" height="100%">
+		<s:Panel width="100%" height="150" styleName="buildQueuePanel" title="Expected Builds">
+			<s:VGroup id="expected_builds_container" width="100%" height="100%">
+				<s:List id="expected_build_items" width="100%" height="100%" dataProvider="{this.__builds__}" itemRenderer="popups.renderers.OverviewListItemRenderer" resize="expected_build_items_resizeHandler(event)">
+					<s:layout>
+						<layouts:FlowLayout horizontalGap="5" verticalGap="5"/>
+					</s:layout>
+				</s:List>
+			</s:VGroup>
+		</s:Panel>
+		<s:Panel width="100%" height="80" styleName="buildQueuePanel" title="Build Goals">
+			<s:VGroup id="build_goals_container" width="100%" height="100%">
+				<s:List id="build_goals_items" width="100%" height="100%" dataProvider="{this.__goals__}" itemRenderer="popups.renderers.OverviewGoalsItemRenderer" resize="build_goals_items_resizeHandler(event)">
+					<s:layout>
+						<layouts:FlowLayout horizontalGap="5" verticalGap="5"/>
+					</s:layout>
+				</s:List>
+			</s:VGroup>
+		</s:Panel>
+		<s:Panel width="100%" height="100" styleName="buildQueuePanel" title="Goal Telemetry">
+			<s:VGroup id="build_goals_telemetry_container" width="100%" height="100%">
+				<s:List id="build_goals_telemetry_items" width="100%" height="100%" dataProvider="{this.__telemetry__}" itemRenderer="popups.renderers.OverviewTelemetryItemRenderer" resize="build_goals_telemetry_items_resizeHandler(event)">
+					<s:layout>
+						<layouts:FlowLayout horizontalGap="5" verticalGap="5"/>
+					</s:layout>
+				</s:List>
+			</s:VGroup>
+		</s:Panel>
+		<s:Panel id="gauge_panel" width="10%" height="50" styleName="buildQueuePanel" title="Progress Tester" visible="false" includeInLayout="{this.gauge_panel.visible}">
+			<s:VGroup id="gauge_panel_container" width="100%" height="100%">
+				<gauges:StorageGauge id="gauge" width="{this.gauge_panel.width}" height="{this.gauge_panel.height-32}" color="{0xFF0000}" maximum="100" creationComplete="gauge_creationCompleteHandler(event)"/>
+			</s:VGroup>
+		</s:Panel>
+	</s:VGroup>
+</s:TitleWindow>

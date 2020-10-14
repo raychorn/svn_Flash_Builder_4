@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		title="{this.parentApplication.string1} {this.parentApplication.versionNumber}"
+		>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			
+			protected function btn_newDriver_clickHandler(event:MouseEvent):void {
+				this.navigator.pushView(CargoChiefMobileAppNewDriverView);
+			}
+			
+			protected function btn_turnOff_clickHandler(event:MouseEvent):void {
+				this.parentApplication.popUpHelpWindow(this,0,0,this.width,this.height,'Turn Off function has Not Yet Implemented !!!');
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup width="100%">
+			<s:TextArea text="{this.parentApplication.string6}" width="100%" height="100%" editable="false" selectable="false"/>
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<s:VGroup width="100%">
+				<s:HGroup width="100%" paddingLeft="10" paddingRight="10">
+					<s:Label text="{this.parentApplication.string7}"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingLeft="10" paddingRight="10">
+					<s:TextInput id="last_reported_latitude"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<s:VGroup width="100%">
+				<s:HGroup width="100%" paddingLeft="10" paddingRight="10">
+					<s:Label text="{this.parentApplication.string8}"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingLeft="10" paddingRight="10">
+					<s:TextInput id="last_reported_longitude"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<s:VGroup width="100%">
+				<s:HGroup width="100%" paddingLeft="10" paddingRight="10">
+					<s:Label text="{this.parentApplication.string9}"/>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingLeft="10" paddingRight="10">
+					<s:TextInput id="last_update_sent"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:HGroup>
+		<s:HGroup width="100%" horizontalAlign="center">
+			<s:HGroup width="100%" horizontalAlign="center">
+				<s:Button id="btn_newDriver" label="{this.parentApplication.string10}" click="btn_newDriver_clickHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup width="100%" horizontalAlign="center">
+				<s:Button id="btn_turnOff" label="{this.parentApplication.string11}" click="btn_turnOff_clickHandler(event)"/>
+			</s:HGroup>
+		</s:HGroup>
+	</s:VGroup>
+</s:View>

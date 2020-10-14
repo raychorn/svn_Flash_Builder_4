@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" height="100%" 
+		 borderColor="black" borderStyle="outset" 
+		 initialize="vbox1_initializeHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+
+			private var timer:Timer;
+			
+			private var _timerTick_callback:Function;
+			private var _timerComplete_callback:Function;
+			
+			private const timerDelay:Number = 1000;
+			private const repeatCount:Number = 10;
+			
+			public function get timerTick_callback():Function {
+				return this._timerTick_callback;
+			}
+			
+			public function set timerTick_callback(timerTick_callback:Function):void {
+				this._timerTick_callback = timerTick_callback;
+			}
+			
+			public function get timerComplete_callback():Function {
+				return this._timerComplete_callback;
+			}
+			
+			public function set timerComplete_callback(timerComplete_callback:Function):void {
+				this._timerComplete_callback = timerComplete_callback;
+			}
+			
+			public function get _timerMessage():String {
+				return this.timerMessage.text;
+			}
+			
+			public function set _timerMessage(timerMessage:String):void {
+				this.timerMessage.text = timerMessage;
+			}
+			
+			public function startTimer():void {
+				this.timer.reset();
+				this.timer.start();
+			}
+
+			public function stopTimer():void {
+				this.timer.stop();
+				this.timerDisplay.text = '';
+			}
+			
+			protected function vbox1_initializeHandler(event:FlexEvent):void {
+				var _this:ControlPanel = this;
+				this.timer = new Timer(this.timerDelay,this.repeatCount);
+				this.timer.addEventListener(TimerEvent.TIMER, function (event:TimerEvent):void {
+					var aTimer:Timer = event.currentTarget as Timer;
+					_this.timerDisplay.text = (_this.repeatCount - aTimer.currentCount).toString();
+					if (_this._timerTick_callback is Function) {
+						try { _this._timerTick_callback(event,_this) } catch (err:Error) {};
+					}
+					trace(_this.className+'.timer_tick() --> aTimer.currentCount='+aTimer.currentCount);
+				});
+				this.timer.addEventListener(TimerEvent.TIMER_COMPLETE, function (event:TimerEvent):void {
+					var aTimer:Timer = event.currentTarget as Timer;
+					_this.timerDisplay.text = 'Oops !';
+					if (_this._timerComplete_callback is Function) {
+						try { _this._timerComplete_callback(event,_this) } catch (err:Error) {};
+					}
+					trace(_this.className+'.timer_tick() --> aTimer_Complete.currentCount='+aTimer.currentCount);
+				});
+			}
+
+		]]>
+	</fx:Script>
+	<mx:HBox width="100%">
+		<mx:Label id="timerMessage"/>
+		<mx:Label id="timerDisplay"/>
+	</mx:HBox>
+</mx:VBox>

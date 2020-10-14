@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" height="100%" 
+		 xmlns:widgets="controls.forms.widgets.*" 
+		 initialize="group1_initializeHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.forms.widgets.events.ValidationResultsChangedEvent;
+			import controls.login.events.RegisterCompletedEvent;
+			
+			import mx.events.FlexEvent;
+			import mx.managers.FocusManager;
+			import mx.managers.IFocusManagerComponent;
+			
+			[Bindable]
+			public var is_enabled_callback:Function;
+			
+			[Bindable]
+			public var onClickLoginButton:Function;
+			
+			private var _this:RegisterControl;
+			
+			private function get is_enabled():Boolean {
+				var result:Boolean = false;
+				if (this.is_enabled_callback is Function) {
+					result = this.is_enabled_callback();
+				}
+				return result;
+			}
+			
+			protected function widget_emailAddress_creationCompleteHandler(event:FlexEvent):void {
+				var txt:EMailTextField = event.currentTarget as EMailTextField;
+				txt.enabled = this.is_enabled;
+				event.currentTarget.addEventListener(ValidationResultsChangedEvent.TYPE_VALIDATION_RESULTS_CHANGED, 
+					function (event:ValidationResultsChangedEvent):void {
+						trace(DebuggerUtils.getFunctionName(new Error())+'.ValidationResultsChangedEvent.TYPE_VALIDATION_RESULTS_CHANGED.1 --> event.was_valid='+event.was_valid+', event.is_valid='+event.is_valid);
+					}
+				);
+			}
+			
+			protected function widget_fullName_creationCompleteHandler(event:FlexEvent):void {
+				var txt:FullNameTextField = event.currentTarget as FullNameTextField;
+				txt.enabled = this.is_enabled;
+				event.currentTarget.addEventListener(ValidationResultsChangedEvent.TYPE_VALIDATION_RESULTS_CHANGED, 
+					function (event:ValidationResultsChangedEvent):void {
+						trace(DebuggerUtils.getFunctionName(new Error())+'.ValidationResultsChangedEvent.TYPE_VALIDATION_RESULTS_CHANGED.1 --> event.was_valid='+event.was_valid+', event.is_valid='+event.is_valid);
+					}
+				);
+			}
+			
+			protected function username_validationResultsChangedHandler(event:ValidationResultsChangedEvent):void {
+				trace(DebuggerUtils.getFunctionName(new Error())+' :: '+event.toString());
+			}
+			
+			protected function fullName_validationResultsChangedHandler(event:ValidationResultsChangedEvent):void {
+				trace(DebuggerUtils.getFunctionName(new Error())+' :: '+event.toString());
+			}
+			
+			protected function password_keyUpHandler(event:KeyboardEvent):void {
+				if ( (event.keyCode == Keyboard.TAB) || (event.keyCode == Keyboard.ENTER) ) {
+					if ( (event.currentTarget.text is String) && (event.currentTarget.text.length > 0) ) {
+						this.btn_Register.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+					}
+				}
+			}
+			
+			protected function widget_password_creationCompleteHandler(event:FlexEvent):void {
+				var txt:PasswordTextField = PasswordTextField(event.currentTarget);
+				txt.enabled = this.is_enabled;
+				txt.txt_Password.addEventListener(KeyboardEvent.KEY_UP, this.password_keyUpHandler);
+			}
+			
+			
+			protected function group1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+			}
+			
+
+			protected function btn_Register_clickHandler(event:MouseEvent):void {
+				//AlertPopUp.surpriseNoOkay('Not Yet Implemented !','DEBUG');
+				var datum:Object = new Object();
+				datum.username = this.widget_emailAddress.txt_emailAddress.text;
+				datum.password = this.widget_password.txt_Password.text;
+				datum.password2 = this.widget_password2.txt_Password.text;
+				datum.fullname = this.widget_fullName.txt_fullName.text;
+				this.dispatchEvent(new RegisterCompletedEvent(RegisterCompletedEvent.TYPE_REGISTER_COMPLETED, datum));
+			}
+
+			protected function password2_keyUpHandler(event:KeyboardEvent):void {
+				this.btn_Register.enabled = (this.widget_password.txt_Password.text == this.widget_password2.txt_Password.text);
+				//trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> this.btn_Register.enabled='+this.btn_Register.enabled);
+			}
+			
+			protected function widget_password2_creationCompleteHandler(event:FlexEvent):void {
+				var txt:PasswordTextField = PasswordTextField(event.currentTarget);
+				txt.enabled = this.is_enabled;
+				txt.txt_Password.addEventListener(KeyboardEvent.KEY_UP, this.password2_keyUpHandler);
+			}
+			
+			public function set_focus():void {
+				this.focusManager.setFocus(this.widget_fullName.txt_fullName);
+			}
+
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<widgets:FullNameTextField 
+			id="widget_fullName" ignore_focus="true"
+			txt_fullName_styleName="TextInputs" 
+			lbl_prompt_styleName="Labels"
+			btn_target="{this.btn_Register}" 
+			lbl_prompt_text="Full Name:" 
+			siblings="{[this.widget_fullName.txt_fullName,this.widget_emailAddress.txt_emailAddress,this.widget_password.txt_Password,this.widget_password2.txt_Password]}"
+			width="{this.width-20}" 
+			hbox_lbl_prompt_container_width="{this.widget_emailAddress.hbox_lbl_prompt_container.width}"
+			validationResultsChanged="fullName_validationResultsChangedHandler(event)"
+			creationComplete="widget_fullName_creationCompleteHandler(event)"/>
+		<widgets:EMailTextField 
+			id="widget_emailAddress" ignore_focus="true"
+			txt_emailAddress_styleName="TextInputs" 
+			lbl_prompt_styleName="Labels"
+			btn_target="{this.btn_Register}" 
+			lbl_prompt_text="Internet EMail Address:" 
+			siblings="{[this.widget_fullName.txt_fullName,this.widget_emailAddress.txt_emailAddress,this.widget_password.txt_Password,this.widget_password2.txt_Password]}"
+			width="{this.width-20}" 
+			validationResultsChanged="username_validationResultsChangedHandler(event)"
+			creationComplete="widget_emailAddress_creationCompleteHandler(event)"/>
+		<widgets:PasswordTextField 
+			id="widget_password" 
+			lbl_prompt_text="Password:" 
+			width="{this.width-20}" 
+			btn_target="{this.btn_Register}" 
+			lbl_password_strength_styleName="Labels" 
+			txt_Password_styleName="TextInputs" 
+			lbl_prompt_styleName="Labels" 
+			siblings="{[this.widget_fullName.txt_fullName,this.widget_emailAddress.txt_emailAddress,this.widget_password.txt_Password,this.widget_password2.txt_Password]}"
+			hbox_lbl_prompt_container_width="{this.widget_emailAddress.hbox_lbl_prompt_container.width}"
+			creationComplete="widget_password_creationCompleteHandler(event)"/>
+		<widgets:PasswordTextField 
+			id="widget_password2" 
+			lbl_prompt_text="Repeat Password:" 
+			width="{this.width-20}" 
+			btn_target="{this.btn_Register}" 
+			lbl_password_strength_styleName="Labels" 
+			txt_Password_styleName="TextInputs" 
+			lbl_prompt_styleName="Labels" 
+			siblings="{[this.widget_fullName.txt_fullName,this.widget_emailAddress.txt_emailAddress,this.widget_password.txt_Password,this.widget_password2.txt_Password]}"
+			hbox_lbl_prompt_container_width="{this.widget_emailAddress.hbox_lbl_prompt_container.width}"
+			creationComplete="widget_password2_creationCompleteHandler(event)"/>
+		<mx:VBox width="100%" height="100%" id="hbox2a">
+			<mx:HBox width="100%" id="hbox1">
+				<mx:Spacer width="20" id="spacer1"/>
+				<s:Button label="Register as New User" id="btn_Register" enabled="false" click="btn_Register_clickHandler(event)"/>
+			</mx:HBox>
+		</mx:VBox>
+	</s:VGroup>
+</s:Group>

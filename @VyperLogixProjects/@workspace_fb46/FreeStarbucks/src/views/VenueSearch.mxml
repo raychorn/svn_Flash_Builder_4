@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		title="Venue Search" 
+		creationComplete="view1_creationCompleteHandler(event)" 
+		initialize="view1_initializeHandler(event)">
+	<s:states>
+		<s:State name="address_search"/>
+		<s:State name="search_result"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ObjectExplainer;
+			import com.geolocation.GeolocationUtils;
+			
+			import controls.Alert.AlertAlternative;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+//			[Bindable]
+//			[Embed(source="undo.png")]
+//			private var undoIconClass:Class;
+
+			[Bindable]
+			private var dataProvider_for_city_list:ArrayCollection;
+			
+			protected function handle_get_cities():void {
+//				var _this:VenueSearch = this;
+//				var svc:FoursquareService = new FoursquareService();
+//				var op:FoursquareOperation = svc.getCities();
+//				op.addEventListener(Event.COMPLETE,
+//					function (event:Event):void {
+//						_this.dataProvider_for_city_list.addAll(event.target.data);
+//						FlexGlobals.topLevelApplication.removeBusyCursor(_this);
+//						_this.txt_output.text = 'COMPLETE: ' + event.toString() + '\n' + _this.txt_output.text;
+//						FlexGlobals.topLevelApplication.user_data = event.target.data;
+//						FlexGlobals.topLevelApplication.user_credentials = {'username':_this.foursquare_username.text,'password':_this.foursquare_password.text};
+//						_this.currentState = 'logged_in';
+//						_this.callLater(_this.refresh_user_data,[]);
+//					}
+//				);
+//				op.addEventListener(ErrorEvent.ERROR,
+//					function (event:ErrorEvent):void {
+//						FlexGlobals.topLevelApplication.removeBusyCursor(_this);
+//						var msg:String = 'ERROR: ' + event.toString();
+//						_this.txt_output.text = msg + '\n' + _this.txt_output.text;
+//						trace(msg);
+//						FlexGlobals.topLevelApplication.app.error('ERROR.701: Cannot process your request at this time.  Please try back later.');
+//					}
+//				);
+//				FlexGlobals.topLevelApplication.setBusyCursor(this);
+//				op.execute(FlexGlobals.topLevelApplication.user_credentials.username,FlexGlobals.topLevelApplication.user_credentials.password);
+//				trace(op.url);
+//				this.txt_output.text = 'INFO: ' + 'REQUEST SENT !\n' + _this.txt_output.text;
+			}
+
+			protected function view1_creationCompleteHandler(event:FlexEvent):void {
+			}
+
+
+			protected function view1_initializeHandler(event:FlexEvent):void {
+//				this.handle_get_cities();
+			}
+
+			protected function checkbox1_clickHandler(event:MouseEvent):void {
+				var cb:CheckBox = event.currentTarget as CheckBox;
+			}
+
+			protected function checkbox1_touchTapHandler(event:TouchEvent):void {
+				var cb:CheckBox = event.currentTarget as CheckBox;
+			}
+
+			protected function txt_output_creationCompleteHandler(event:FlexEvent):void {
+				FlexGlobals.topLevelApplication.determine_view_debugger_for(this,event.currentTarget as TextArea);
+				FlexGlobals.topLevelApplication.handle_get_gps_location_updates();
+			}
+			
+			private function get isDebugger():Boolean {
+				return FlexGlobals.topLevelApplication.isDebugger;
+			}
+		]]>
+	</fx:Script>
+	<s:Panel width="100%" height="100%" styleName="Panels" title="Choose your City..."
+			 title.address_search="Choose your location...">
+		<s:VGroup width="100%" height="100%">
+			<s:HGroup width="100%">
+				<s:CheckBox id="cb_use_current_location" includeIn="address_search" label="Use Current Location" selected="false" click="checkbox1_clickHandler(event)" touchTap="checkbox1_touchTapHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup width="100%" visible="false" includeInLayout="false">
+				<s:List id="lst_cities" width="100%" dataProvider="{this.dataProvider_for_city_list}"/>
+			</s:HGroup>
+			<s:HGroup width="100%" height="20%" visible="{this.isDebugger}" includeInLayout="{this.isDebugger}">
+				<s:TextArea id="txt_output" styleName="Debugger" width="100%" height="100" editable="false" selectable="false" creationComplete="txt_output_creationCompleteHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Panel>
+</s:View>

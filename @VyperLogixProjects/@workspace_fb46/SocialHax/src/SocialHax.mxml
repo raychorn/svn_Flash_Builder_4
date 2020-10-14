@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MobileApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					 xmlns:s="library://ns.adobe.com/flex/spark" 
+					 frameRate="24"
+					 splashScreenImage="@Embed('splashscreen2.png')" splashScreenScaleMode="letterbox" splashScreenMinimumDisplayTime="5000"
+					 applicationComplete="mobileapplication1_applicationCompleteHandler(event)" xmlns:mx="library://ns.adobe.com/flex/mx"
+					 >
+	<fx:Style source="styles.css"/>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:DateFormatter id="fmt_date" formatString="MMDDYYYYJNN"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ObjectExplainer;
+			import com.ObjectUtils;
+			import com.geolocation.GeolocationUtils;
+			import com.notifications.Notification;
+			
+			import controls.Alert.AlertAlternative;
+			import controls.activity.FireFoxRollerView;
+			
+			import mx.core.IFlexDisplayObject;
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;
+			import mx.managers.PopUpManager;
+			
+			import spark.components.Button;
+			import spark.components.TextArea;
+			
+			import views.SocialHaxHome;
+			
+			public var txt_status:TextArea;
+			
+			public var user_data:Object;
+			public var user_credentials:Object;
+			
+			public var btn_search:Button;
+			
+			public var current_view:*;
+			
+			private var aFireFoxRoller:*;
+			
+			private var is_alert_shown:Boolean = false;
+			
+			private const so_name_prefix:String = '/local/vyperlogix/';
+
+			[Bindable] 
+			private var notification_PosList:Array = ['topleft', 'topcenter', 'topright',
+				'bottomleft', 'bottomcenter', 'bottomright',
+				'middleleft', 'middleright', 'center'];
+			
+			[Bindable] 
+			[Embed(source = 'GPS-Icon_64x64.png')]
+			private var notificationIcon:Class;
+
+			public var mySO:SharedObject;
+			
+			[Bindable]
+			public var isDebugger:Boolean = Capabilities.isDebugger;
+			
+			public var view_debugger_hash:Object = {};
+
+			public var geo_location_result:Object = {};
+			
+			public function get is_loggedin():Boolean {
+				return ( (this.user_data != null) && (this.user_credentials != null) && (this.user_credentials.username is String) && (this.user_credentials.password is String) );
+			}
+
+			public function determine_view_debugger_for(aView:*,aTxt:TextArea):void {
+				if (this.view_debugger_hash[aView] is TextArea) {
+				} else {
+					this.view_debugger_hash[aView] = aTxt;
+				}
+				this.current_view = aView;
+				this.txt_status = aTxt;
+			}
+
+			public function get full_user_name():String {
+				var full_user_name:String = '';
+				try {full_user_name = this.user_data.user.firstname + ' ' + this.user_data.user.lastname;} catch (err:Error) {}
+				return full_user_name;
+			}
+			
+			public function get user_city():String {
+				var user_city:String = '';
+				try {user_city = this.user_data.user.homecity;} catch (err:Error) {}
+				return user_city;
+			}
+			
+			public function get user_photo_url():String {
+				var user_photo_url:String = '';
+				try {user_photo_url = this.user_data.user.photo;} catch (err:Error) {}
+				return user_photo_url;
+			}
+			
+			public function popUpFireFoxRoller(aParent:*):void {
+				this.aFireFoxRoller = new FireFoxRollerView(); 
+				this.aFireFoxRoller.width = 100;
+				this.aFireFoxRoller.height = 100;
+				PopUpManager.addPopUp(this.aFireFoxRoller,aParent,true);
+			}
+			
+			public function dismissFireFoxRoller():void {
+				if (this.aFireFoxRoller is FireFoxRollerView) {
+					PopUpManager.removePopUp(this.aFireFoxRoller);
+					this.aFireFoxRoller = null;
+				}
+			}
+			
+			public function setBusyCursor(aParent:*):void {
+				CursorManager.setBusyCursor();
+				aParent.enabled = false;
+			}
+			
+			public function removeBusyCursor(aParent:*):void {
+				CursorManager.removeBusyCursor();
+				aParent.enabled = true;
+			}
+			
+			public function show_notification(args:Array):void {
+				var notification:Notification = Notification.show( args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+				notification.notificationTitleLabel.styleName = 'NotificationTitle';
+				notification.width = this.width - 10;
+				notification.y = this.height - notification.height - 10;
+			}
+			
+			public function handle_get_gps_location_updates():void {
+				var _this:SocialHax = this;
+				try {
+					var callback:Function = function (result:*):void {
+						if (_this.isDebugger) {
+							_this.txt_status.text = 'END GEOLOCATION UPDATE: ' + '\n' + _this.txt_status.text;
+						}
+						if (result is Error) {
+							//AlertAlternative.show('WARNING: '+result.toString());
+						} else if (result) {
+							var ex:ObjectExplainer = new ObjectExplainer(result);
+							if (_this.isDebugger) {
+								_this.txt_status.text = 'INFO: ' + ex.explainThisWay() + '\n' + _this.txt_status.text;
+							}
+							_this.geo_location_result = ObjectUtils.cloneIfNecessary(result);
+							_this.callLater(_this.show_notification,[[ex.explainThisWay(), 'GPS Update', 30000, Notification.NOTIFICATION_POSITION_BOTTOM_RIGHT, notificationIcon, true, _this.current_view]]);
+							//AlertAlternative.show('INFO: '+ex.explainThisWay());
+						} else {
+							//AlertAlternative.show('WARNING: Cannot retrieve your current location because there is no GPS device support present.');
+						}
+					};
+					if (_this.isDebugger) {
+						this.txt_status.text = 'BEGIN GEOLOCATION UPDATE: ' + '\n' + this.txt_status.text;
+					}
+					var result:* = GeolocationUtils.GeolocationTest(callback);
+					if ( (!_this.isDebugger) && (result == null) ) {
+						AlertAlternative.show('WARNING: Cannot retrieve your current location because there is no GPS device support present.');
+					}
+				} catch (err:Error) {
+					AlertAlternative.show('ERROR: '+err.toString());
+				}
+			}
+			
+			protected function mobileapplication1_applicationCompleteHandler(event:FlexEvent):void {
+				var app:NativeApplication = NativeApplication.nativeApplication;
+				this.navigator.pushView(SocialHaxHome);
+				var now:Date = new Date();
+				var name:String = '/local/vyperlogix/'+this.fmt_date.format(now)+'/data/';
+				this.mySO = SharedObject.getLocal(name);
+				Multitouch.inputMode = MultitouchInputMode.GESTURE;
+				var aStage:Stage = this.stage;
+				var _this:SocialHax = this;
+				var num:Number;
+				AlertAlternative.init(aStage);
+				this.stage.addEventListener(KeyboardEvent.KEY_DOWN, 
+					function (event:KeyboardEvent):void {
+						if (event.keyCode == Keyboard.BACK) {
+							event.preventDefault();
+							num = _this.navigator.length;
+							if ( (_this.isDebugger) && (_this.txt_status is TextArea) ) {
+								_this.txt_status.text = 'Back Pressed (num='+num+') !\n' + _this.txt_status.text;
+							}
+							var isViewUndone:Boolean = false;
+							if (_this.current_view != null) {
+								try {
+									if (_this.navigator.length == 1) {
+										//_this.navigator.firstView = SocialHaxHome;
+									} else {
+										//_this.current_view.undo_view();
+									}
+									//isViewUndone = true;
+								} catch (err:Error) {isViewUndone = false;}
+							}
+							if (num > 1) {
+								if (!isViewUndone) {
+									if ( (_this.isDebugger) && (_this.navigator.length == 2) ) {
+										_this.navigator.popToFirstView();
+										_this.navigator.pushView(SocialHaxHome);
+									} else {
+										_this.navigator.popView();
+									}
+								}
+							} else {
+								if (!_this.is_alert_shown) {
+									_this.is_alert_shown = true;
+									AlertAlternative.show('Do you want to exit the App ?',
+										{buttons:["Yes", "No"], 
+											callback:function (response:String):void {
+												if (response == "Yes") {
+													app.exit();
+												} else if (_this.isDebugger) {
+													_this.txt_status.text = 'Back Pressed without exit !\n' + _this.txt_status.text;
+												}
+												_this.is_alert_shown = false;
+											}
+										}
+									);
+								}
+							}
+						} else if (event.keyCode == Keyboard.MENU) {
+							event.preventDefault();
+							if ( (_this.isDebugger) && (_this.txt_status is TextArea) ) {
+								_this.txt_status.text = 'Menu Pressed !\n' + _this.txt_status.text;
+							}
+							if (!_this.is_alert_shown) {
+								_this.is_alert_shown = true;
+								AlertAlternative.show('Menu Pressed !',
+									{buttons:["Yes", "No"], 
+										callback:function (response:String):void {
+											_this.is_alert_shown = false;
+										}
+									}
+								);
+							}
+						} else if (event.keyCode == Keyboard.SEARCH) {
+							event.preventDefault();
+							if (_this.is_loggedin) {
+								if (_this.btn_search is Button) {
+									_this.btn_search.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+									if ( (_this.isDebugger) && (_this.txt_status is TextArea) ) {
+										_this.txt_status.text = 'Search Pressed !\n' + _this.txt_status.text;
+									}
+								} else {
+									AlertAlternative.show('WARNING: Cannot perform a search until you Login using your FourSquare.Com Credentials !',{});
+								}
+							}
+						}
+					}
+				);
+			}
+
+		]]>
+	</fx:Script>
+</s:MobileApplication>

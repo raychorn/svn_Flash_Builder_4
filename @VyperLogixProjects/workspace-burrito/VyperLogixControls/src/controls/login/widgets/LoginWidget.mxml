@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   width="100%" height="100%" 
+		   horizontalScrollPolicy="off" verticalScrollPolicy="off">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:StringValidator id="PasswordValidator" 
+							source="{txt_Password}"  
+							property="text"
+							tooShortError="{LoginWidget._passwordTooShortErrorMessage}"
+							tooLongError="{LoginWidget._passwordTooLongErrorMessage}"
+							minLength="{this._passwordMinLength}"
+							maxLength="{this._passwordMaxLength}"
+							requiredFieldError="{LoginWidget._passwordRequiredFieldError}"
+							required="true"
+							trigger="{btn_Login}" 
+							triggerEvent="click" 
+							/>
+		<mx:EmailValidator id="UserNameValidator" 
+						   source="{txt_UserName}" 
+						   property="text"
+						   requiredFieldError="{this._userNameRequiredFieldError}" 
+						   required="true" 
+						   trigger="{btn_Login}" 
+						   triggerEvent="click"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.ErrorTipManager;
+			import com.PasswordChecker;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.login.events.LoginRequestedEvent;
+			
+			import mx.events.FlexEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.validators.StringValidator;
+
+			public static var WEAK_PASSWORD:String = 'Weak';
+			public static var MEDIUM_PASSWORD:String = 'Medium';
+			public static var STRONG_PASSWORD:String = 'Strong';
+			
+			[Bindable]
+			private var _minimum_Password_strength:String = LoginWidget.MEDIUM_PASSWORD;
+			
+			[Bindable]
+			public static var _passwordMatchedFieldError:String = "The Password entered as the Repeated Password does not match the first Password entered.";
+
+			[Bindable]
+			private static var _passwordTooShortErrorMessage:String = "This string is shorter than the minimum allowed length of 4.";
+			
+			[Bindable]
+			private static var _passwordTooLongErrorMessage:String = "This string is longer than the maximum allowed length of 32.";
+			
+			[Bindable]
+			private var _passwordMinLength:int = 4;
+			
+			[Bindable]
+			private var _passwordMaxLength:int = 32;
+			
+			[Bindable]
+			private static var _passwordRequiredFieldError:String = "This is a Required Field that cannot be left blank or have less than 4 nor more than 32 characters.";
+			
+			[Bindable]
+			private var _lbl_Password_text:String = '';
+			
+			[Bindable]
+			private var _prompt_userName_text:String = 'Internet Email Address:';
+			
+			[Bindable]
+			public var _userNameTooShortErrorMessage:String = "This string is shorter than the minimum allowed length of 4.";
+			
+			[Bindable]
+			public var _userNameTooLongErrorMessage:String = "This string is longer than the maximum allowed length of 32.";
+			
+			[Bindable]
+			public var _userNameRequiredFieldError:String = "This is a Required Field that cannot be left blank or have less than 4 nor more than 32 characters.";
+			
+			public function set minimum_Password_strength(minimum_Password_strength:String):void {
+				this._minimum_Password_strength = minimum_Password_strength;
+			}
+			
+			public function get minimum_Password_strength():String {
+				return this._minimum_Password_strength;
+			}
+			
+			public function set passwordMaxLength(maxLength:int):void {
+				this._passwordMaxLength = maxLength;
+			}
+			
+			[Inspectable]
+			public function get passwordMaxLength():int {
+				return this._passwordMaxLength;
+			}
+			
+			public function set passwordMinLength(minLength:int):void {
+				this._passwordMinLength = minLength;
+			}
+			
+			[Inspectable]
+			public function get passwordMinLength():int {
+				return this._passwordMinLength;
+			}
+			
+			public function set lbl_Password_text(lbl_Password_text:String):void {
+				this._lbl_Password_text = lbl_Password_text;
+			}
+			
+			public function get lbl_Password_text():String {
+				return this._lbl_Password_text;
+			}
+			
+			public function set prompt_userName_text(prompt_userName_text:String):void {
+				this._prompt_userName_text = prompt_userName_text;
+			}
+			
+			public function get prompt_userName_text():String {
+				return this._prompt_userName_text;
+			}
+			
+			private function analyzePasswordStrength(sPwd:String):void {
+				var pwdChecker:PasswordChecker = new PasswordChecker();
+				if (pwdChecker.isStrongPassword(sPwd)) {
+					this.label_PasswordStrength.text = LoginWidget.STRONG_PASSWORD;
+				} else if (pwdChecker.isMediumPassword(sPwd)) {
+					this.label_PasswordStrength.text = LoginWidget.MEDIUM_PASSWORD;
+				} else {
+					this.label_PasswordStrength.text = LoginWidget.WEAK_PASSWORD;
+				}
+			}
+			
+			public function validatePassword():void {       
+				var vResult:ValidationResultEvent = PasswordValidator.validate();
+				var btn:Button = this.parentDocument.parentDocument.current_button;
+				if (vResult.type==ValidationResultEvent.INVALID) {
+					btn.enabled = false;
+					return;
+				} else {
+					var isMinPasswordOrBetter:Boolean = (this.label_PasswordStrength.text == this.minimum_Password_strength);
+					var bool:Boolean = isMinPasswordOrBetter;
+					try {
+						if ( (this.currentState == 'SimpleRegisterUserState') || (this.currentState == 'RegisterUserState') ) {
+							bool = (this.txt_Password.text == this.parentDocument.txt_Password2.text) && (isMinPasswordOrBetter);
+						}
+					} catch (err:Error) { }
+					btn.enabled = bool;
+					this.txt_Password.errorString = (isMinPasswordOrBetter) ? ((bool) ? "" : LoginWidget._passwordMatchedFieldError) : 'Your password does not meet the minimum requirement of "'+this._minimum_Password_strength+'".  Please ensure your password meets or beats this minimum requirement.';
+				}
+			}
+			
+			private function onChangePassword(event:KeyboardEvent):void {
+				analyzePasswordStrength(this.txt_Password.text);
+				validatePassword();
+				var txt:TextInput = event.currentTarget as TextInput;
+				if ( (event.keyCode == 13) && (this.txt_UserName.errorString.length == 0) && (txt.errorString.length == 0) ) {
+					try {
+						if ( (this.currentState == 'SimpleRegisterUserState') || (this.currentState == 'SimplePasswordChangeState') ) {
+							this.focusManager.setFocus(this.parentDocument.txt_Password2);
+						} else if (this.currentState == 'ActivateUserFromLogin') {
+							this.parentDocument.btn_Activate.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+						} else if ( (this.currentState == null) || ( (this.currentState is String) && (this.currentState.length == 0) ) ) {
+							this.btn_Login.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+						}
+					} catch (err:Error) {
+						//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR --> '+err.toString());
+					}
+				}
+			}
+			
+			private function onChangeUserName(event:KeyboardEvent):void {
+				this.parentDocument.validateUserName(event);
+				var txt:TextInput = event.currentTarget as TextInput;
+				if ( (event.keyCode == 13) && (txt.errorString.length == 0) ) {
+					try {
+						if (this.currentState == 'ActivateUserFromLogin') {
+							this.focusManager.setFocus(this.parentDocument.txt_activationCode);
+						} else if (this.currentState != 'ResendActivateFromLogin') {
+							this.focusManager.setFocus(this.txt_Password);
+						} else { // (this.currentState === 'ResendActivateFromLogin')
+							this.parentDocument.btn_ResendActivation.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+						}
+					} catch (err:Error) {
+						trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR --> '+err.toString());
+					}
+				}
+			}
+			
+			private function onClickLoginButton():void {
+				this.dispatchEvent(new LoginRequestedEvent(LoginRequestedEvent.TYPE_LOGIN_REQUESTED, '', this.txt_UserName.text, this.txt_Password.text));
+			}
+			
+			private function onCreationCompleteUserName():void {
+				this.txt_UserName.setFocus();
+				if (this.parentDocument.parentDocument.__isNewlyRegisterState[this.txt_UserName.id]) {
+					ErrorTipManager.hideErrorTip(this.txt_UserName,true);
+					this.parentDocument.parentDocument.__isNewlyRegisterState[this.txt_UserName.id] = false;
+				}
+			}
+			
+			private function onFocusInPassword():void {
+				this.lbl_Password.visible = this.lbl_Password.includeInLayout = ( (this._lbl_Password_text is String) && (this._lbl_Password_text.length > 0) );
+			}
+			
+			private function onFocusInUserName():void {
+				this.lbl_UserName.visible = this.lbl_UserName.includeInLayout = true;
+			}
+			
+			private function onFocusOutUserName(event:FocusEvent):void {
+				if (!(event.relatedObject is Button)) {
+					this.lbl_UserName.visible = this.lbl_UserName.includeInLayout = false;
+					validateUserName();
+				}
+			}
+			
+			public function validateUserName(event:Event=null):void {
+				var vResult:ValidationResultEvent = UserNameValidator.validate();
+				var btn:Button = this.parentDocument.parentDocument.current_button;
+				if (vResult.type==ValidationResultEvent.INVALID) {
+					btn.enabled = false;
+					return;
+				} else {
+					btn.enabled = true;
+				}
+			}
+			
+			private function onFocusOutPassword(event:FocusEvent):void {
+				if (!(event.relatedObject is Button)) {
+					this.lbl_Password.visible = this.lbl_Password.includeInLayout = false;
+					this.validatePassword();
+				}
+			}
+			
+			protected function txt_Password_creationCompleteHandler(event:FlexEvent):void {
+				try {
+					if (this.parentDocument.parentDocument.__isNewlyRegisterState[event.currentTarget.id]) {
+						ErrorTipManager.hideErrorTip(event.currentTarget,true);
+						this.parentDocument.parentDocument.__isNewlyRegisterState[event.currentTarget.id] = false;
+					}
+				} catch (err:Error) {
+					trace(DebuggerUtils.getFunctionName(err)+', '+err.getStackTrace());
+					AlertPopUp.surpriseNoOkay('???','DEBUG');
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox id="vbox0" height="100%" width="100%" paddingLeft="10" paddingTop="20" verticalAlign="top">
+		<mx:HBox width="100%">
+			<mx:Label id="prompt_userName" text="{this._prompt_userName_text}" styleName="Labels"/>
+			<mx:VBox width="100%">
+				<mx:HBox width="100%" horizontalAlign="left">
+					<mx:TextInput id="txt_UserName" editable="true" width="80%" creationComplete="onCreationCompleteUserName()" keyUp="onChangeUserName(event)" focusIn="onFocusInUserName()" focusOut="onFocusOutUserName(event)" maxChars="{this.parentDocument._userNameMaxLength}"/>
+				</mx:HBox>
+				<mx:Text id="lbl_UserName" text="{this.parentDocument._lbl_UserName_text}" width="{this.parentDocument.__text_width - 80}" visible="false" includeInLayout="false" selectable="false" styleName="AttentionLabel"/>
+			</mx:VBox>
+		</mx:HBox>
+		<mx:HBox width="100%">
+			<mx:VBox height="100%" id="vbox1">
+				<mx:HBox id="hbox_password1" width="100%">
+					<mx:Label text="Password:" styleName="Labels" id="label1"/>
+					<mx:Spacer width="2" id="spacer2"/>
+					<mx:VBox id="vbox_password1" width="100%">
+						<mx:HBox width="100%">
+							<mx:TextInput id="txt_Password" editable="true" displayAsPassword="true" keyUp="onChangePassword(event)" focusIn="onFocusInPassword()" focusOut="onFocusOutPassword(event)" maxChars="{this._passwordMaxLength}" creationComplete="txt_Password_creationCompleteHandler(event)"/>
+							<mx:Label text="{(this.label_PasswordStrength.text.length > 0) ? 'Your password stength is: ' : ''}" styleName="Labels"/>
+							<mx:Label text="" id="label_PasswordStrength" styleName="Labels"/>
+						</mx:HBox>
+						<mx:Text id="lbl_Password" text="{this._lbl_Password_text}" width="{this.parentDocument.__text_width - 80}" visible="false" includeInLayout="false" selectable="false" styleName="AttentionLabel"/>
+					</mx:VBox>
+				</mx:HBox>
+				<mx:VBox width="100%" height="100%" id="hbox2a">
+				</mx:VBox>
+			</mx:VBox>
+		</mx:HBox>
+		<mx:HBox width="100%" id="hbox1">
+			<mx:Spacer width="20" id="spacer1"/>
+			<mx:Button label="Login" id="btn_Login" enabled="false" click="onClickLoginButton()"/>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Canvas>

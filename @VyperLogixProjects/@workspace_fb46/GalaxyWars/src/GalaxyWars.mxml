@@ -1,0 +1,2412 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   initialize="windowedapplication1_initializeHandler(event)" 
+					   creationComplete="windowedapplication1_creationCompleteHandler(event)"
+					   minWidth="800" minHeight="650" width="800" height="650" 
+					   xmlns:timers="controls.timers.*" xmlns:gauges="popups.controls.components.gauges.*" xmlns:components="com.betterthantomorrow.components.*" xmlns:layouts="org.flexlayouts.layouts.*"
+					   >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:DateTimeFormatter id="time_formatter" dateTimePattern="MM.dd.yyyy h:mm:ss a" useUTC="false"/>
+		<s:DateTimeFormatter id="short_time_formatter" dateTimePattern="hh:mm:ss" useUTC="false"/>
+		<s:CurrencyFormatter id="formatter_currency" 
+							 currencySymbol="$" 
+							 decimalSeparator="." 
+							 useCurrencySymbol="true"/>
+		<s:NumberFormatter id="formatter_volume" 
+						   decimalSeparator="." 
+						   useGrouping="true" 
+						   groupingSeparator="," 
+						   fractionalDigits="0" 
+						   leadingZero="false"/>
+	</fx:Declarations>
+	<fx:Style source="styles.css"/>
+	<fx:Script>
+		<![CDATA[
+			import com.ArrayCollectionUtils;
+			import com.ArrayUtils;
+			import com.DateUtils;
+			import com.DebuggerUtils;
+			import com.DisplayObjectUtils;
+			import com.EzHTTPService;
+			import com.MathUtils;
+			import com.ObjectUtils;
+			import com.StringUtils;
+			import com.TimeUtils;
+			import com.TimeZoneUtils;
+			import com.adobe.crypto.MD5;
+			import com.adobe.serialization.json.JSON;
+			import com.logger.LogFile;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.managers.ToolTipManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import controls.ToolTips.HTMLToolTip;
+			import controls.timers.TimerProcessor;
+			import controls.timers.TimerWidget;
+			import controls.timers.events.TimerCompletedEvent;
+			import controls.timers.events.TimerTickEvent;
+			
+			import factories.CrystalFactory;
+			import factories.CrystalStorageDenFactory;
+			import factories.CrystalStorageFactory;
+			import factories.DeuteriumFactory;
+			import factories.DeuteriumStorageDenFactory;
+			import factories.DeuteriumStorageFactory;
+			import factories.FusionFactory;
+			import factories.MetalFactory;
+			import factories.MetalStorageDenFactory;
+			import factories.MetalStorageFactory;
+			import factories.ResourceFactory;
+			import factories.SolarFactory;
+			import factories.SolarSatelliteFactory;
+			
+			import handlers.ResourcesHandler;
+			
+			import popups.Alliance;
+			import popups.Defense;
+			import popups.Energy;
+			import popups.Facilities;
+			import popups.Fleet;
+			import popups.Galaxy;
+			import popups.Market;
+			import popups.Officers;
+			import popups.Overview;
+			import popups.Research;
+			import popups.Resources;
+			import popups.Shipyard;
+			import popups.Trader;
+			import popups.controls.ResourcesGroup;
+			import popups.controls.components.gauges.StorageGauagePopUp;
+			import popups.loggers.LogViewer;
+			import popups.login.LoginPanel;
+			import popups.market.PurchaseDarkMatter;
+			
+			public const ticks_per_hour:Number = 3600;
+
+			private const default_metal_resource_volume:Number = 30.0;
+			private const default_crystal_resource_volume:Number = 30.0;
+			private const default_deuterium_resource_volume:Number = 0.0;
+			private const default_energy_resource_volume:Number = 0.0;
+			private const default_dark_matter_volume:Number = 0.0;
+
+			private const default_solar_resource_volume:Number = 0.0;
+			private const default_fusion_resource_volume:Number = 0.0;
+			private const default_solarsatellite_resource_volume:Number = 0.0;
+			
+			private var __default_metal_resource_rate__:Number = (300/ticks_per_hour);
+			private var __default_crystal_resource_rate__:Number = (100/ticks_per_hour);
+			private var __default_deuterium_resource_rate__:Number = (20/ticks_per_hour);
+			private var __default_energy_resource_rate__:Number = (0/ticks_per_hour);
+			
+			public var metal_resource_volume:Number = default_metal_resource_volume;
+			public var crystal_resource_volume:Number = default_crystal_resource_volume;
+			public var deuterium_resource_volume:Number = default_deuterium_resource_volume;
+			public var energy_resource_volume:Number = default_energy_resource_volume;
+
+			public var metal_resource_volume_capacity:Number = -1;
+			public var crystal_resource_volume_capacity:Number = -1;
+			public var deuterium_resource_volume_capacity:Number = -1;
+			
+			public var metal_resource_volume_den_capacity:Number = -1;
+			public var crystal_resource_volume_den_capacity:Number = -1;
+			public var deuterium_resource_volume_den_capacity:Number = -1;
+			
+			public var __dark_matter_volume__:Number = default_dark_matter_volume;
+			
+			private var __metal_resource_rate__:Number = __default_metal_resource_rate__;
+			private var __crystal_resource_rate__:Number = __default_crystal_resource_rate__;
+			private var __deuterium_resource_rate__:Number = __default_deuterium_resource_rate__;
+
+			public var solar_resource_volume:Number = default_solar_resource_volume;
+			public var fusion_resource_volume:Number = default_fusion_resource_volume;
+			public var solarsatellite_resource_volume:Number = default_solarsatellite_resource_volume;
+			
+			private var __userid__:String;
+			private var __username__:String;
+			private var __userrole__:String;
+			
+			private const superuser_username:String = 'admin';
+			private const superuser_name:String = 'Super User';
+			private const superuser_role:String = 'superuser';
+			private const superuser_pwd:String = '21232f297a57a5a743894a0e4a801fc3'; // admin
+
+			private const user_username:String = 'raychorn';
+			private const user_name:String = 'Ray Horn';
+			private const user_role:String = 'player';
+			private const user_pwd:String = '103136174d231aabe1de8feaf9afc92f'; // peekab00
+			
+			[Bindable]
+			private var __cannot_use_logger__:Boolean = true;
+			
+			private var ezREST:EzHTTPService = new EzHTTPService(false,false);
+			
+			private const LOGGER_REST_URL:String = 'http://127.0.0.1:9999/logger';
+			
+			private const LOGGER_FOLDER_SPEC:String = 'C:/__TEMP__/galaxywars/logs';
+			
+			private var has_logger_been_initialized:Boolean = false;
+			
+			private var __status__:String = 'DEBUG MODE';
+
+			[Bindable]
+			public var __time_shift_factor__:uint = 1;
+			
+			[Bindable]
+			private var __premium_account__:Boolean;
+			
+			private var _this:GalaxyWars;
+
+			[Bindable]
+			public var mySO:SharedObject;
+			
+			public var appDescriptor:XML = NativeApplication.nativeApplication.applicationDescriptor;
+			public var nsDeclaration:Namespace = appDescriptor.namespace();
+			
+			public var app_id:String = appDescriptor.nsDeclaration::id[ 0 ] ;
+			
+			public var app_name:String = appDescriptor.nsDeclaration::name[ 0 ] ;
+			
+			[Bindable]
+			public var versionNumber:String = appDescriptor.nsDeclaration::versionNumber[ 0 ] ;
+			
+			[Bindable]
+			public var copyright:String = appDescriptor.nsDeclaration::copyright[ 0 ] ;
+			
+			[Bindable]
+			public var description:String = appDescriptor.nsDeclaration::description[ 0 ] ;
+			
+			[Bindable]
+			public var credits:String = 'Credits:\n\nThis Android App was produced by Ray C Horn for Vyper Logix Corp; (c). Copyright 2012, Vyper Logix Corp. (http://www.vyperlogix.com), All Rights Reserved\n\n';
+			
+			[Bindable]
+			private var __timers__:ArrayCollection = new ArrayCollection();
+			
+			private const timer_delay_ms:uint = 1000;
+			
+			private var __timer__:Timer = new Timer(timer_delay_ms);
+
+			private const timer_delay_btns_ms:uint = 5000;
+
+			private var __registered_btnTimer_handlers__:Array = [];
+			
+			private var __btnTimer__:Timer = new Timer(timer_delay_btns_ms);
+			
+			private var __dateTime__:Date;
+			
+			private var __delayed_actions__:Array = [];
+			
+			private var __session_seconds__:Number;
+			
+			private var popUpWindow:*;
+			private var popUpWindows_Class:Class;
+			
+			private var __log__:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var __formatted_time__:String;
+			
+			private var __classes__:Array = [];
+			
+			private var __popUps__:Object = {};
+
+			private var __handlers__:Array = [];
+			
+			[Bindable]
+			private var __aggregated_build__:Object = {};
+			
+			[Bindable]
+			private var __builds__:Object = {};
+			
+			[Bindable]
+			private var __isDebugger__:Boolean = false;
+			
+			[Bindable]
+			private var __choices__:ArrayCollection = new ArrayCollection([{'name':'100 DM', 'value':100},{'name':'200 DM', 'value':200},{'name':'1000 DM', 'value':1000}]);
+			
+			[Bindable]
+			private var __times__:ArrayCollection = new ArrayCollection([{'name':'1x', 'value':1},{'name':'2x', 'value':2},{'name':'3x', 'value':3},{'name':'4x', 'value':4},{'name':'5x', 'value':5},{'name':'6x', 'value':6},{'name':'8x', 'value':8},{'name':'10x', 'value':10}]);
+			
+			[Bindable]
+			private var __resources__:ArrayCollection = new ArrayCollection([
+				{'label':MetalFactory.name, 'name':MetalFactory.name, 'value':MetalFactory},
+				{'label':CrystalFactory.name, 'name':CrystalFactory.name, 'value':CrystalFactory},
+				{'label':DeuteriumFactory.name, 'name':DeuteriumFactory.name, 'value':DeuteriumFactory},
+				{'label':MetalStorageFactory.name, 'name':MetalStorageFactory.name, 'value':MetalStorageFactory},
+				{'label':CrystalStorageFactory.name, 'name':CrystalStorageFactory.name, 'value':CrystalStorageFactory},
+				{'label':DeuteriumStorageFactory.name, 'name':DeuteriumStorageFactory.name, 'value':DeuteriumStorageFactory},
+				{'label':MetalStorageDenFactory.name, 'name':MetalStorageDenFactory.name, 'value':MetalStorageDenFactory},
+				{'label':CrystalStorageDenFactory.name, 'name':CrystalStorageDenFactory.name, 'value':CrystalStorageDenFactory},
+				{'label':DeuteriumStorageDenFactory.name, 'name':DeuteriumStorageDenFactory.name, 'value':DeuteriumStorageDenFactory}
+			]);
+			
+			[Bindable]
+			private var __modes__:ArrayCollection = new ArrayCollection([{'name':'Normal', 'value':false},{'name':'Testing', 'value':true}]);
+			
+			private var __mode__:Boolean = false; // initially this is false until the debugger panel comes alive...
+			
+			private var __goals__:Array = [];
+			
+			private var __telemetry__:Object = {};
+			
+			private var __storage_gauge_popup__:StorageGauagePopUp;
+			
+			public function get builds():ArrayCollection {
+				var ac:ArrayCollection = new ArrayCollection();
+				var keys:Array = ObjectUtils.keys(this.__builds__);
+				var obj:*;
+				var item:*;
+				for (var i:int = 0; i < keys.length; i++) {
+					item = this.__builds__[keys[i]];
+					obj = {'factory':{'name':item['factory']['name']},'time':item['time'],'cost':item['cost'],'__cost__':item['__cost__']};
+					ac.addItem(obj);
+				}
+				ac.source.sortOn('time',Array.DESCENDING);
+				return ac;
+			}
+			
+			public function set telemetry(telemetry:*):void {
+				if (telemetry) {
+					var keys:Array = ObjectUtils.keys(telemetry);
+					for (var i:int = 0; i < keys.length; i++) {
+						this.__telemetry__[keys[i]] = telemetry[keys[i]];
+					}
+					refresh_build_telemetry_in_overview();
+				}
+			}
+			
+			public function set goal(goal:*):void {
+				if ( (goal) && (this.__goals__.indexOf(goal) == -1) ) {
+					this.remove_goals();
+					this.__goals__.push(goal);
+					refresh_build_goals_in_overview();
+				}
+			}
+			
+			public function has_goal(goal:*):Boolean {
+				var f:int = this.__goals__.indexOf(goal);
+				return ( (goal) && (f > -1) );
+			}
+			
+			public function remove_goal(goal:*):void {
+				var f:int = this.__goals__.indexOf(goal);
+				if ( (goal) && (f > -1) ) {
+					this.__goals__.splice(f,1);
+					refresh_build_goals_in_overview();
+				}
+			}
+			
+			public function get num_goals():int {
+				return this.__goals__.length;
+			}
+			
+			public function accomplished_goal(goal:*):void {
+				this.remove_goal(goal);
+			}
+			
+			private function remove_goals():void {
+				while (this.__goals__.length > 0) {
+					this.__goals__.pop();
+				}
+			}
+			
+			public function get has_any_goals():Boolean {
+				return this.__goals__.length > 0;
+			}
+			
+			public function refresh_expecting_builds_in_overview():void {
+				var overview:Overview = this.__popUps__[Overview] as Overview;
+				if (overview) {
+					this.refresh_aggregated_builds();
+					var b:ArrayCollection = this.builds as ArrayCollection;
+					b.addItemAt(this.__aggregated_build__,0);
+					overview.builds = b;
+				}
+			}
+			
+			public function count_of_expected_builds_to_be_realized():int {
+				var keys:Array = ObjectUtils.keys(this.__builds__);
+				var item:*;
+				var count:int = 0;
+				for (var i:int = 0; i < keys.length; i++) {
+					item = this.__builds__[keys[i]];
+					if ( (item['time']) && (TimeUtils.all_zeros(item['time'])) ) {
+						count++;
+					}
+				}
+				return count;
+			}
+			
+			public function get expected_build_method():Boolean {
+				var count:int = this.count_of_expected_builds_to_be_realized();
+				var num:int = this.builds.length;
+				var method:Boolean = false; // take first available or if true take the first non-zero.
+				if (count >= (num/2)) {
+					method = true;
+				}
+				return method;
+			}
+			
+			public function is_expected_build_realizable(factory:Class):Boolean {
+				var keys:Array = ObjectUtils.keys(this.__builds__);
+				var item:*;
+				for (var i:int = 0; i < keys.length; i++) {
+					item = this.__builds__[keys[i]];
+					if ( (item['factory'] == factory) && (item['time']) && (TimeUtils.all_zeros(item['time'])) ) {
+						return true;
+					}
+				}
+				return false;
+			}
+			
+			public function can_expected_build_be_realized(factory:Class):Boolean {
+				var keys:Array = ObjectUtils.keys(this.__builds__);
+				var item:*;
+				var method:Boolean = this.expected_build_method;
+				for (var i:int = 0; i < keys.length; i++) {
+					item = this.__builds__[keys[i]];
+					if (method) {
+						if ( (item['factory'] == factory) && (item['time']) && (!TimeUtils.all_zeros(item['time'])) ) {
+							return true;
+						}
+					} else {
+						if ( (item['factory'] == factory) && (item['time']) && (TimeUtils.all_zeros(item['time'])) ) {
+							return true;
+						}
+					}
+				}
+				if (this.is_expected_build_realizable(factory)) {
+					var volume:Number = factory['current_volume'];
+					var others_volume:Number;
+					if (factory['name'] == MetalFactory.name) {
+						others_volume = CrystalFactory.current_volume + DeuteriumFactory.current_volume;
+						if (volume < others_volume) {
+							return true;
+						}
+					} else if (factory['name'] == CrystalFactory.name) {
+						others_volume = MetalFactory.current_volume + DeuteriumFactory.current_volume;
+						if (volume < others_volume) {
+							return true;
+						}
+					} else if (factory['name'] == DeuteriumFactory.name) {
+						others_volume = MetalFactory.current_volume + CrystalFactory.current_volume;
+						if (volume < others_volume) {
+							return true;
+						}
+					}
+				}
+				return false;
+			}
+			
+			public function refresh_build_telemetry_in_overview():void {
+				var overview:Overview = this.__popUps__[Overview] as Overview;
+				if (overview) {
+					var ac:ArrayCollection = ObjectUtils.intoArrayCollection(this.__telemetry__);
+					overview.telemetry = ac;
+				}
+			}
+			
+			public function refresh_build_goals_in_overview():void {
+				var overview:Overview = this.__popUps__[Overview] as Overview;
+				if (overview) {
+					overview.goals = new ArrayCollection(this.__goals__);
+				}
+			}
+			
+			private function refresh_aggregated_builds():void {
+				this.__aggregated_build__ = {'factory':{'name':'Aggregate'}, 'cost':{}};
+				var builds:ArrayCollection = this.builds;
+				var build:*;
+				var cost:*;
+				for (var n:int = 0; n < builds.length; n++) {
+					build = builds.getItemAt(n);
+					cost = build['__cost__'];
+					if (cost) {
+						var keys:Array = ObjectUtils.keys(cost);
+						for (var i:int = 0; i < keys.length; i++) {
+							if (cost[keys[i]]) {
+								if (isNaN(this.__aggregated_build__['cost'][keys[i]])) {
+									this.__aggregated_build__['cost'][keys[i]] = cost[keys[i]];
+								} else {
+									this.__aggregated_build__['cost'][keys[i]] += cost[keys[i]];
+								}
+							}
+						}
+					}
+				}
+			}
+			
+			public function set expecting_to_build(build:Object):void {
+				if (build) {
+					var factory:Class = build['factory'] as Class;
+					var time:String = build['time'];
+					if ( (factory) && (time) ) {
+						this.__builds__[factory] = build;
+						this.refresh_expecting_builds_in_overview();
+					}
+				}
+			}
+			
+			public function get is_logged_in():Boolean {
+				return ( (this.__userid__) && (this.__userid__.length > 0) );
+			}
+			
+			public function get is_super_user():Boolean {
+				return (this.__userrole__ == this.superuser_role);
+			}
+			
+			public function get isDebugger():Boolean {
+				return this.__isDebugger__;
+			}
+			
+			private function __logMessage__(message:String,level:String=null):void {
+				if (this.ezREST.fault_count > 10) {
+					trace('(!!!) ezREST has been disabled due to the number of faults ('+this.ezREST.fault_count+').');
+					trace(message);
+					return;
+				}
+				this.ezREST.concurrency = this.ezREST.CONCURRENCY_MULTIPLE;
+				this.ezREST.contentType = this.ezREST.CONTENT_TYPE_JSON;
+				this.ezREST.errorHandler = function (err:Error):void {
+					var stackTrace:String = err.getStackTrace();
+					trace(_this.className+'.'+DebuggerUtils.getFunctionName(err)+'.ERROR\n' + err.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024));
+					var i:int = -1;
+				};
+				this.ezREST.faultCallBack = function (event:FaultEvent):void {
+					var reason:String = event.toString();
+					trace('Reason:\n\n'+reason,'WARNING ('+_this.ezREST.srvc.url+')');
+					var i:int = -1;
+				}
+				var payload:* = {'product':'galaxywars','message':message,'level':level};
+				this.ezREST.post(LOGGER_REST_URL,payload, 
+					function (event:ResultEvent):void {
+						var response:*;
+						try {
+							var item:String;
+							var results:ArrayCollection = event.result as ArrayCollection;
+							var status:Array = results.getItemAt(0)['status'];
+							for (var i:int = 0; i < status.length; i++) {
+								item = status[i];
+								trace(item);
+							}
+							
+						} catch (e:Error) {
+							var stackTrace:String = e.getStackTrace();
+							trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024));
+						}
+					}, this.ezREST.jsonResultType);
+			}
+			
+			private function set __log(message:String):void {
+				if (this.__isDebugger__) {
+					var now:Date = new Date();
+					var logs:Array = [];
+					var item:* = 
+						{
+							'time':this.short_time_formatter.format(now),
+								'__time__':now,
+								'Metal-Rate':this.format_volume_values(Math.ceil(this.__metal_resource_rate__*ticks_per_hour)) + ' (' + this.format_volume_values(Math.ceil(this.metal_resource_volume)) + ')',
+								'Crystal-Rate':this.format_volume_values(Math.ceil(this.__crystal_resource_rate__*ticks_per_hour)) + ' (' + this.format_volume_values(Math.ceil(this.crystal_resource_volume)) + ')',
+								'Deuterium-Rate':this.format_volume_values(Math.ceil(this.__deuterium_resource_rate__*ticks_per_hour)) + ' (' + this.format_volume_values(Math.ceil(this.deuterium_resource_volume)) + ')',
+								'Dark-Matter':this.__dark_matter_volume__,
+								'Time-Shift':this.__time_shift_factor__,
+								'Timer-Delay':this.__timer__.delay,
+								'message':message
+						};
+					this.__log__.addItem(item);
+					logs.push(DebuggerUtils.explainThis(item,'\n\t'));
+					var logger:LogFile = new LogFile(File.desktopDirectory.nativePath);
+					logger.write_to_file(File.desktopDirectory.nativePath,logs.join('\n'),
+						function (event:Event):void {
+							now = new Date();
+							item = 
+							{
+								'time':_this.short_time_formatter.format(now),
+								'__time__':now,
+								'message':'(@@@) Event Log has been written or updated.'
+							};
+							//_this.__log__.addItem(item);
+						}, 
+						function ():void {
+							now = new Date();
+							item = 
+							{
+								'time':_this.short_time_formatter.format(now),
+								'__time__':now,
+								'message':'(@@@) Event Log operation is complete.'
+							};
+							//_this.__log__.addItem(item);
+						},
+						function (err:Error):void {
+							now = new Date();
+							item = 
+							{
+								'time':_this.short_time_formatter.format(now),
+								'__time__':now,
+								'message':'(@@@) ERROR --> '+err.getStackTrace()
+							};
+							_this.__log__.addItem(item);
+						}
+					);
+				}
+			}
+			
+			public function set log_info(message:String):void {
+				if (!this.__cannot_use_logger__) {
+					__logMessage__(message,'info');
+				}
+			}
+			
+			public function set log_warning(message:String):void {
+				if (!this.__cannot_use_logger__) {
+					__logMessage__(message,'warning');
+				}
+			}
+			
+			public function set log_fatal(message:String):void {
+				if (!this.__cannot_use_logger__) {
+					__logMessage__(message,'fatal');
+				}
+			}
+			
+			public function set log_error(message:String):void {
+				if (!this.__cannot_use_logger__) {
+					__logMessage__(message,'error');
+				}
+			}
+			
+			public function set log(message:String):void {
+				this.log_info = message;
+			}
+			
+			public function set perform_delayed_action(action:*):void {
+				if (action['func'] is Function) {
+					this.callLater(action['func'],action['args']);
+				}
+			}
+			
+			public function get is_performing_delayed_action():Boolean {
+				return (this.__delayed_actions__.length > 0);
+			}
+			
+			public function format_currency_values(value:Number):String {
+				var price:Number = Number(value);
+				try {
+					return this.formatter_currency.format(price);
+				} catch (err:Error) {}
+				return price.toFixed(2);
+			}
+			
+			private function format_value_special(value:Number):String {
+				var n:int = MathUtils.num_fractional_digits(value);
+				var f:int = formatter_volume.fractionalDigits;
+				var fV:String;
+				formatter_volume.fractionalDigits = n;
+				try {
+					fV = formatter_volume.format(value);
+				} catch (err:Error) {}
+				formatter_volume.fractionalDigits = f;
+				return fV;
+			}
+			
+			public function format_volume_values(value:Number):String {
+				var v:Number;
+				var fV:String;
+				var volume:Number = Number(value);
+				if ( (volume > 800000) && (volume < 1000000) ) {
+					v = volume / 1000;
+					fV = format_value_special(Math.ceil(v));
+					return fV+'K';
+				} else if (volume >= 1000000) {
+					v = volume / 1000000;
+					fV = format_value_special(Math.ceil(v));
+					return fV+'M';
+				}
+				try {
+					fV = format_value_special(volume);
+					return fV;
+				} catch (err:Error) {}
+				return volume.toFixed(2);
+			}
+			
+			public function get timers():ArrayCollection {
+				return this.__timers__;
+			}
+			
+			private function __running_timers_using(timers:*):int {
+				var item:*;
+				var count:int = 0;
+				if ( (timers is Array) || (timers is ArrayCollection) ) {
+					for (var i :int= 0; i < timers.length; i++) {
+						item = (timers is ArrayCollection) ? timers.getItemAt(i) : timers[i];
+						if (item['running']) {
+							count++;
+						}
+					}
+				}
+				return count;
+			}
+			
+			private function get running_timers():int {
+				return this.__running_timers_using(this.__timers__);
+			}
+			
+			public function get is_building_anything():Boolean {
+				return (this.__timers__.length > 0);
+			}
+			
+			private function is_building_by_name(name:String):Boolean {
+				var item:*;
+				for (var i:int = 0; i < this.__timers__.length; i++) {
+					item = this.__timers__.getItemAt(i);
+					if (item['factory']['name'] != name) {
+						return true;
+					}
+				}
+				return false;
+			}
+			
+			public function get current_build_secs_remaining():Number {
+				return (this.__timers__.length > 0) ? TimerProcessor.parse_date_to_milliseconds(this.__timers__.getItemAt(0)['time'])/1000 : 0.0;
+			}
+			
+			public function get is_building_something():Boolean {
+				return this.is_building_anything;
+			}
+			
+			public function get is_building_metal():Boolean {
+				return this.is_building_by_name('metal');
+			}
+			
+			public function get is_building_crystal():Boolean {
+				return this.is_building_by_name('crystal');
+			}
+			
+			public function get is_building_deuterium():Boolean {
+				return this.is_building_by_name('deuterium');
+			}
+			
+			public function get premium_account():Boolean {
+				return this.__premium_account__;
+			}
+			
+			public function get dark_matter_volume():Number {
+				return this.__dark_matter_volume__;
+			}
+			
+			public function set dark_matter_volume(volume:Number):void {
+				if (isNaN(FlexGlobals.topLevelApplication.mySO.data.__dark_matter_volume__)) {
+					FlexGlobals.topLevelApplication.mySO.data.__dark_matter_volume__ = volume;
+					FlexGlobals.topLevelApplication.mySO.flush();
+					this.__dark_matter_volume__ = volume;
+					return;
+				}
+				if (this.__dark_matter_volume__ != volume) {
+					this.__dark_matter_volume__ = volume;
+					this.log = '(1) set dark_matter_volume('+volume+')='+this.__dark_matter_volume__;
+					FlexGlobals.topLevelApplication.mySO.data.__dark_matter_volume__ = this.__dark_matter_volume__;
+					this.log = '(2) FlexGlobals.topLevelApplication.mySO.data.__dark_matter_volume__='+FlexGlobals.topLevelApplication.mySO.data.__dark_matter_volume__;
+					FlexGlobals.topLevelApplication.mySO.flush();
+				}
+				this.__premium_account__ = (this.__dark_matter_volume__ > 0);
+			}
+			
+			public function get metal_resource_rate_per_hour():Number {
+				return this.__metal_resource_rate__ * ticks_per_hour;
+			}
+			
+			public function get metal_resource_rate():Number {
+				return this.__metal_resource_rate__;
+			}
+			
+			public function set metal_resource_rate(rate:Number):void {
+				if (this.__metal_resource_rate__ != rate) {
+					this.__metal_resource_rate__ = rate; 
+				}
+			}
+			
+			public function get crystal_resource_rate_per_hour():Number {
+				return this.__crystal_resource_rate__ * ticks_per_hour;
+			}
+			
+			public function get crystal_resource_rate():Number {
+				return this.__crystal_resource_rate__;
+			}
+			
+			public function set crystal_resource_rate(rate:Number):void {
+				if (this.__crystal_resource_rate__ != rate) {
+					this.__crystal_resource_rate__ = rate;
+				}
+			}
+			
+			public function get deuterium_resource_rate_per_hour():Number {
+				return this.__deuterium_resource_rate__ * ticks_per_hour;
+			}
+			
+			public function get deuterium_resource_rate():Number {
+				return this.__deuterium_resource_rate__;
+			}
+			
+			public function set deuterium_resource_rate(rate:Number):void {
+				if (this.__deuterium_resource_rate__ != rate) {
+					this.__deuterium_resource_rate__ = rate;
+				}
+			}
+			
+			public function set add_timer(timer:*):void {
+				this.log = 'set add_timer --> ' + DebuggerUtils.explainThis(timer);
+				var cost:* = timer['cost'];
+				var factory:* = timer['factory'];
+				if (timer && timer['time'] && cost && timer['uuid'] && timer['aspect'] && factory) {
+					var __can_build__:Boolean = ResourceFactory.has_resources_using(cost);
+					this.log = 'set add_timer --> __can_build__=' + __can_build__;
+					if (__can_build__) {
+						this.log = 'set add_timer --> BEGIN BUILD cost=' + DebuggerUtils.explainThis(cost) + ') !!!';
+						ResourceFactory.spend_resources_using(cost);
+						this.log = 'set add_timer --> BEGIN BUILD TIMER !!!';
+						delete this.__builds__[factory];
+						this.refresh_expecting_builds_in_overview();
+						var current_level:int = factory['current_level'];
+						var t:Number = factory['current_level_upgrade_time'];  // upgrade time is for current level only - oddly enough.
+						timer['__secs__'] = TimeUtils.unConvertTime(timer['time']) as Number;
+						DebuggerUtils.assert(t == timer['__secs__'],'Something wrong with the "time" value !');
+						// +++ Cross-compute number of seconds... adjust timer widget to track number of seconds...
+						this.__timers__.addItem(timer);
+					}
+				} else {
+					this.log = 'set add_timer --> CANNOT BUILD !!!';
+				}
+				var widget:TimerWidget = timer['widget'] as TimerWidget;
+				if (widget) {
+					widget.addEventListener(TimerTickEvent.TYPE_TIMER_TICK, 
+						function (event:TimerTickEvent):void {
+							this.log = 'TimerTickEvent.TYPE_TIMER_TICK --> ' + DebuggerUtils.explainThis(timer);
+						}
+					);
+					widget.addEventListener(TimerCompletedEvent.TYPE_TIMER_COMPLETED, 
+						function (event:TimerCompletedEvent):void {
+							this.log = 'TimerCompletedEvent.TYPE_TIMER_COMPLETED --> ' + DebuggerUtils.explainThis(timer);
+						}
+					);
+				}
+			}
+			
+			public function number_of_builds_like(factory:*):int {
+				var i:int;
+				var count:int = 0;
+				var data:*;
+				for (i = 0; i < this.__timers__.length; i++) {
+					data = this.__timers__.getItemAt(i);
+					if (data['factory']['name'] == factory['name']) {
+						count++;
+					}
+				}
+				return count;
+			}
+			
+			public function total_cost_of_waiting_builds():* {
+				var i:int;
+				var cost:* = {};
+				var data:*;
+				var keys:Array;
+				var j:int;
+				for (i = 1; i < this.__timers__.length; i++) {
+					data = this.__timers__.getItemAt(i)['cost'];
+					ObjectUtils.add(cost,data);
+				}
+				return cost;
+			}
+			
+			private function save_time_stamp():void {
+				var now:Date = new Date();
+				var ms:Number = Date.UTC(now.fullYear, now.month, now.date, now.hours, now.minutes, now.seconds, now.milliseconds);
+				FlexGlobals.topLevelApplication.mySO.data.__time_stamp__ = ms;
+				this.log = '(!!!) FlexGlobals.topLevelApplication.mySO.data.__time_stamp__='+FlexGlobals.topLevelApplication.mySO.data.__time_stamp__;
+			}
+			
+			private function clear_saved_builds():void {
+				if (FlexGlobals.topLevelApplication.mySO.data.__timers__) {
+					delete FlexGlobals.topLevelApplication.mySO.data.__timers__;
+				}
+			}
+			
+			private function save_build_queue():void {
+				if (this.__timers__.length) {
+					var i:int;
+					var timer:*;
+					var clone:*;
+					var clones:Array = [];
+					for (i = 0; i < this.__timers__.length; i++) {
+						timer = this.__timers__.getItemAt(i);
+						clone = ObjectUtils.cloneWithoutThese(timer,['target','image','widget','parent']);
+						clone['factory'] = clone['factory']['name'];
+						clone['__time__'] = DateUtils.toShortUTCDateString(new Date());
+						clones.push(clone);
+					}
+					var json:String = com.adobe.serialization.json.JSON.encode(clones);
+					FlexGlobals.topLevelApplication.mySO.data.__timers__ = json;
+				}
+			}
+			
+			private function restore_build_queue():void {
+				var i:int;
+				var timer:*;
+				var clone:*;
+				var timers:Array = [];
+				var json:String = FlexGlobals.topLevelApplication.mySO.data.__timers__;
+				if (json) {
+					try {
+						timers = com.adobe.serialization.json.JSON.decode(json) as Array;
+						for (i = 0; i < timers.length; i++) {
+							timer = timers[i];
+							var factory:Class = timer['factory'] = ResourceFactory.get_factory_class_from_name(timer['factory']);
+							if (timer['__time__']) {
+								timer['__time__'] = DateUtils.parseUTCDate(timer['__time__']) as Date;
+							}
+							if (timer['__time__'] is Date) {
+								var now:Date = new Date();
+								var secs:Number = 0;
+								var secs_elapsed:Number = Math.ceil(DateUtils.getMilliSecondsBetweenDates(now,timer['__time__']) / 1000);
+								if (timer['time']) {
+									secs = TimeUtils.unConvertTime(timer['time']);
+								}
+								secs -= secs_elapsed;
+								var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+								if (secs <= 0) {
+									app.log = 'Before '+factory['name']+' Upgrade.';
+									ResourceFactory.promote_factory_to_next_level(factory);
+									app.accomplished_goal(factory);
+									app.log = 'After '+factory['name']+' Upgrade.';
+								} else {
+									delete timer['__time__'];
+									timer['image'] = factory['icon'];
+									timer['time'] = TimeUtils.convertTime(secs,false);
+									ResourceFactory.refund_resources_using(timer['cost']); // yes, this has to be done !!!
+									var resources:Resources = this.__popUps__[Resources] as Resources;
+									if (resources) {
+										var __timer__:* = ResourcesHandler.get_building_data_for(factory);
+										__timer__['cost'] = timer['cost'];
+										__timer__['info'] = timer['info'];
+										__timer__['running'] = timer['running'];
+										__timer__['time'] = timer['time'];
+										__timer__['tooltip'] = timer['tooltip'];
+										__timer__['uuid'] = timer['uuid'];
+										delete __timer__['milliseconds'];
+										app.add_timer = __timer__;
+									}
+									// Why not simply create authentic data from the app using the data as a suggestion rather than as the "data" ?!?
+								}
+							}
+						}
+					} catch (err:Error) {
+						this.log_error = 'restore_build_queue.1' + err.message + ', ' + err.getStackTrace();
+					}
+				}
+				if (FlexGlobals.topLevelApplication.mySO.data.__timers__) {
+					delete FlexGlobals.topLevelApplication.mySO.data.__timers__;
+				}
+			}
+			
+			private function refresh_time():void {
+				this.__session_seconds__++;
+
+				this.__dateTime__ = new Date();
+				this.__formatted_time__ = this.time_formatter.format(this.__dateTime__) + ' ' + TimeZoneUtils.getTimeZone();
+				this.title_window.title = this.app_name + ' v' + this.versionNumber + '     ' + this.__formatted_time__;
+				
+				this.log_info = this.title_window.title;
+				
+				if (this.__isDebugger__) {
+					this.title_window.title += ' (' + StringUtils.milliseconds_as_time(this.__session_seconds__*1000) + ')' + ' [' + this.currently_selected_mode_choice['name'] + ']' + ' (' + this.is_mode_testing + ')';
+					this.btn_bump_TIME.label = 'TIME ? ('+this.time_shift_factor_name+')';
+					this.__refresh_TIME__();
+				}
+
+				var color:String;
+				var colorDen:String;
+				
+				var volume:Number = this.metal_resource_volume + this.metal_resource_rate;
+				if (this.metal_resource_volume <= this.metal_resource_volume_capacity) {
+					this.metal_resource_volume = volume;
+				}
+				var pcent:Number = MetalFactory.current_capacity_percent;
+				var pcentDen:Number = MetalFactory.current_den_capacity_percent;
+				this.metal_storage_gauge.value = int(Math.ceil(pcent));
+				this.lbl_resource_metal.styleName = ( (pcent >= 80.0) && (pcent < 100.0) ) ? "resourceVolumeAmberLabel" : (pcent > 100.0) ? "resourceVolumeRedLabel" : "resourceVolumeLabel";
+				color = ( (pcent >= 80.0) && (pcent < 100.0) ) ? "#FF8000" : (pcent > 100.0) ? "#FF0000" : "#FFFFFF";
+				colorDen = ( (pcentDen >= 80.0) && (pcentDen < 100.0) ) ? "#FF8000" : (pcentDen > 100.0) ? "#FF0000" : "#FFFFFF";
+				this.lbl_resource_metal.text = formatter_volume.format(Math.ceil(this.metal_resource_volume));
+				this.lbl_resource_metal_level.text = MetalFactory.current_level.toString();
+				this.lbl_resource_metal_capacity_level.text = MetalStorageFactory.current_level.toString();
+				this.metal_group.toolTip = "Metal " + "<BR/>" + "Volume: " + '<FONT COLOR="'+color+'">' + this.lbl_resource_metal.text + "</FONT>" + "<BR/>" + "Production (L"+this.lbl_resource_metal_level.text+"): " + Math.ceil(this.metal_resource_rate * ticks_per_hour) + " per hour." + "<BR/>" + "Storage (L"+this.lbl_resource_metal_capacity_level.text+"): " + this.format_volume_values(this.metal_resource_volume_capacity) + "<BR/>" + "Den (L"+MetalStorageDenFactory.current_level+"): " + this.format_volume_values(this.metal_resource_volume_den_capacity);
+
+				volume = this.crystal_resource_volume + this.crystal_resource_rate;
+				if (this.crystal_resource_volume <= this.crystal_resource_volume_capacity) {
+					this.crystal_resource_volume = volume;
+				}
+				pcent = CrystalFactory.current_capacity_percent;
+				pcentDen = CrystalFactory.current_den_capacity_percent;
+				this.crystal_storage_gauge.value = int(Math.ceil(pcent));
+				this.lbl_resource_crystal.styleName = ( (pcent >= 80.0) && (pcent < 100.0) ) ? "resourceVolumeAmberLabel" : (pcent > 100.0) ? "resourceVolumeRedLabel" : "resourceVolumeLabel";
+				color = ( (pcent >= 80.0) && (pcent < 100.0) ) ? "#FF8000" : (pcent > 100.0) ? "#FF0000" : "#FFFFFF";
+				colorDen = ( (pcentDen >= 80.0) && (pcentDen < 100.0) ) ? "#FF8000" : (pcentDen > 100.0) ? "#FF0000" : "#FFFFFF";
+				this.lbl_resource_crystal.text = formatter_volume.format(Math.ceil(this.crystal_resource_volume));
+				this.lbl_resource_crystal_level.text = CrystalFactory.current_level.toString();
+				this.lbl_resource_crystal_capacity_level.text = CrystalStorageFactory.current_level.toString();
+				this.crystal_group.toolTip = "Crystal " + "<BR/>" + "Volume: " + '<FONT COLOR="'+color+'">' + this.lbl_resource_crystal.text + "</FONT>" + "<BR/>" + "Production (L"+this.lbl_resource_crystal_level.text+"): " + Math.ceil(this.crystal_resource_rate * ticks_per_hour) + " per hour." + "<BR/>" + "Storage (L"+this.lbl_resource_crystal_capacity_level.text+"): " + this.format_volume_values(this.crystal_resource_volume_capacity) + "<BR/>" + "Den (L"+CrystalStorageDenFactory.current_level+"): " + this.format_volume_values(this.crystal_resource_volume_den_capacity);
+
+				volume = this.deuterium_resource_volume + this.deuterium_resource_rate;
+				if (this.deuterium_resource_volume <= this.deuterium_resource_volume_capacity) {
+					this.deuterium_resource_volume = volume;
+				}
+				pcent = DeuteriumFactory.current_capacity_percent;
+				pcentDen = DeuteriumFactory.current_den_capacity_percent;
+				this.deuterium_storage_gauge.value = int(Math.ceil(pcent));
+				this.lbl_resource_deuterium.styleName = ( (pcent >= 80.0) && (pcent < 100.0) ) ? "resourceVolumeAmberLabel" : (pcent > 100.0) ? "resourceVolumeRedLabel" : "resourceVolumeLabel";
+				color = ( (pcent >= 80.0) && (pcent < 100.0) ) ? "#FF8000" : (pcent > 100.0) ? "#FF0000" : "#FFFFFF";
+				colorDen = ( (pcentDen >= 80.0) && (pcentDen < 100.0) ) ? "#FF8000" : (pcentDen > 100.0) ? "#FF0000" : "#FFFFFF";
+				this.lbl_resource_deuterium.text = formatter_volume.format(Math.ceil(this.deuterium_resource_volume));
+				this.lbl_resource_deuterium_level.text = DeuteriumFactory.current_level.toString();
+				this.lbl_resource_deuterium_capacity_level.text = DeuteriumStorageFactory.current_level.toString();
+				this.deuterium_group.toolTip = "Deuterium " + "<BR/>" + "Volume: " + '<FONT COLOR="'+color+'">' + this.lbl_resource_deuterium.text + "</FONT>" + "<BR/>" + "Production (L"+this.lbl_resource_deuterium_level.text+"): " + Math.ceil(this.deuterium_resource_rate * ticks_per_hour) + " per hour." + "<BR/>" + "Storage (L"+this.lbl_resource_deuterium_capacity_level.text+"): " + this.format_volume_values(this.deuterium_resource_volume_capacity) + "<BR/>" + "Den (L"+DeuteriumStorageDenFactory.current_level+"): " + this.format_volume_values(this.deuterium_resource_volume_den_capacity);
+				
+				this.lbl_resource_energy.text = formatter_volume.format(this.energy_resource_volume);
+				this.energy_group.toolTip = "Energy " + "<BR/>" + this.lbl_resource_energy.text;
+
+				this.lbl_dark_matter.text =  MathUtils.has_fractional_digits(this.dark_matter_volume) ? this.formatter_volume.format(this.dark_matter_volume) : this.format_volume_values(this.dark_matter_volume);
+				this.dark_matter_group.toolTip = "Dark Matter " + "<BR/>" + "Volume: " + this.formatter_volume.format(this.dark_matter_volume); // + ' (' + this.format_volume_values(this.dark_matter_volume) + ')';
+				
+				FlexGlobals.topLevelApplication.mySO.data.__metal_resource_level__ = MetalFactory.current_level;
+				FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume__ = this.metal_resource_volume;
+
+				this.log = 'refresh_time.(1) FlexGlobals.topLevelApplication.mySO.data.__metal_resource_level__='+FlexGlobals.topLevelApplication.mySO.data.__metal_resource_level__;
+				this.log = 'refresh_time.(2) FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume__='+FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume__;
+
+				FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_level__ = CrystalFactory.current_level;
+				FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_volume__ = this.crystal_resource_volume;
+				
+				FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_level__ = DeuteriumFactory.current_level;
+				FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_volume__ = this.deuterium_resource_volume;
+				
+				FlexGlobals.topLevelApplication.mySO.data.__energy_resource_volume__ = this.energy_resource_volume;
+				
+				FlexGlobals.topLevelApplication.mySO.data.__solar_resource_level__ = SolarFactory.current_level;
+				FlexGlobals.topLevelApplication.mySO.data.__solar_resource_volume__ = this.solar_resource_volume;
+				
+				FlexGlobals.topLevelApplication.mySO.data.__fusion_resource_level__ = FusionFactory.current_level;
+				FlexGlobals.topLevelApplication.mySO.data.__fusion_resource_volume__ = this.fusion_resource_volume;
+				
+				FlexGlobals.topLevelApplication.mySO.data.__solarsatellite_resource_level__ = SolarSatelliteFactory.current_level;
+				FlexGlobals.topLevelApplication.mySO.data.__solarsatellite_resource_volume__ = this.solarsatellite_resource_volume;
+
+				this.save_time_stamp();
+				
+				this.save_build_queue();
+				
+				if ( (this.__isDebugger__) && ((this.__session_seconds__ % 10) == 0) ) {
+					this.log = 'Auto-Saving at Session Seconds of (' + this.__session_seconds__ + ').';
+				}
+				
+				//this.status = '('+((this.has_logger_been_initialized) ? '' : '~')+'LOGGER) ' + this.__status__;
+				this.status = this.__status__;
+				
+				FlexGlobals.topLevelApplication.mySO.flush();
+			}
+			
+			private function refresh_game_parameters():void {
+				var resources:*;
+				var capacity:Number;
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__dark_matter_volume__)) && isFinite(FlexGlobals.topLevelApplication.mySO.data.__dark_matter_volume__) ) {
+					this.dark_matter_volume = FlexGlobals.topLevelApplication.mySO.data.__dark_matter_volume__;
+				} else {
+					this.dark_matter_volume = default_dark_matter_volume;
+					FlexGlobals.topLevelApplication.mySO.data.__dark_matter_volume__ = this.dark_matter_volume;
+				}
+				
+				this.__premium_account__ = (this.dark_matter_volume > 0);
+				this.log = '(3) isNaN(FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume__)='+isNaN(FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume__);
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume__)) ) {
+					this.metal_resource_volume = FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume__;
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume__ = this.metal_resource_volume = default_metal_resource_volume;
+				}
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume_capacity__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume_capacity__)) ) {
+					this.metal_resource_volume_capacity = FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume_capacity__;
+				} else {
+					resources = MetalStorageFactory.level_production_rate_for(0);
+					capacity = resources[ResourceFactory.capacity];
+					FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume_capacity__ = capacity;
+					this.metal_resource_volume_capacity = FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume_capacity__;
+				}
+				this.log = '(3.1) FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume__='+FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume__;
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume_den_capacity__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume_den_capacity__)) ) {
+					this.metal_resource_volume_den_capacity = FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume_den_capacity__;
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume_capacity__ = capacity;
+					this.metal_resource_volume_den_capacity = this.metal_resource_volume_capacity / 5;
+				}
+				this.log = '(3.1) FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume__='+FlexGlobals.topLevelApplication.mySO.data.__metal_resource_volume__;
+				
+				this.metal_resource_rate = MetalFactory.level_production_rate_for(MetalFactory.current_level)[MetalFactory.name]/ticks_per_hour;
+				this.log = '(4.1) this.metal_resource_rate='+this.metal_resource_rate;
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_volume__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_volume__)) ) {
+					this.crystal_resource_volume = FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_volume__;
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_volume__ = this.crystal_resource_volume = default_crystal_resource_volume;
+				}
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_volume_capacity__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_volume_capacity__)) ) {
+					this.crystal_resource_volume_capacity = FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_volume_capacity__;
+				} else {
+					resources = CrystalStorageFactory.level_production_rate_for(0);
+					capacity = resources[ResourceFactory.capacity];
+					FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_volume_capacity__ = capacity;
+					this.crystal_resource_volume_capacity = FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_volume_capacity__;
+				}
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_volume_den_capacity__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_volume_den_capacity__)) ) {
+					this.crystal_resource_volume_den_capacity = FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_volume_den_capacity__;
+				} else {
+					this.crystal_resource_volume_den_capacity = this.crystal_resource_volume_capacity / 5;
+				}
+				
+				this.crystal_resource_rate = CrystalFactory.level_production_rate_for(CrystalFactory.current_level)[CrystalFactory.name]/ticks_per_hour;
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_volume__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_volume__)) ) {
+					this.deuterium_resource_volume = FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_volume__;
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_volume__ = this.deuterium_resource_volume = default_deuterium_resource_volume;
+				}
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_volume_capacity__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_volume_capacity__)) ) {
+					this.deuterium_resource_volume_capacity = FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_volume_capacity__;
+				} else {
+					resources = DeuteriumStorageFactory.level_production_rate_for(0);
+					capacity = resources[ResourceFactory.capacity];
+					FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_volume_capacity__ = capacity;
+					this.deuterium_resource_volume_capacity = FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_volume_capacity__;
+				}
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_volume_den_capacity__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_volume_den_capacity__)) ) {
+					this.deuterium_resource_volume_den_capacity = FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_volume_den_capacity__;
+				} else {
+					this.deuterium_resource_volume_den_capacity = this.deuterium_resource_volume_capacity / 5;
+				}
+				
+				this.deuterium_resource_rate = DeuteriumFactory.level_production_rate_for(DeuteriumFactory.current_level)[DeuteriumFactory.name]/ticks_per_hour;
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__energy_resource_volume__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__energy_resource_volume__)) ) {
+					this.energy_resource_volume = FlexGlobals.topLevelApplication.mySO.data.__energy_resource_volume__;
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__energy_resource_volume__ = this.energy_resource_volume = default_energy_resource_volume;
+				}
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__metal_resource_level__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__metal_resource_level__)) ) {
+					MetalFactory.current_level = FlexGlobals.topLevelApplication.mySO.data.__metal_resource_level__;
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__metal_resource_level__ = MetalFactory.current_level = 0;
+				}
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_level__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_level__)) ) {
+					CrystalFactory.current_level = FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_level__;
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__crystal_resource_level__ = CrystalFactory.current_level = 0;
+				}
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_level__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_level__)) ) {
+					DeuteriumFactory.current_level = FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_level__;
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__deuterium_resource_level__ = DeuteriumFactory.current_level = 0;
+				}
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__solar_resource_level__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__solar_resource_level__)) ) {
+					SolarFactory.current_level = FlexGlobals.topLevelApplication.mySO.data.__solar_resource_level__;
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__solar_resource_level__ = SolarFactory.current_level = 0;
+				}
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__fusion_resource_level__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__fusion_resource_level__)) ) {
+					SolarFactory.current_level = FlexGlobals.topLevelApplication.mySO.data.__fusion_resource_level__;
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__fusion_resource_level__ = FusionFactory.current_level = 0;
+				}
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__solarsatellite_resource_level__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__solarsatellite_resource_level__)) ) {
+					SolarFactory.current_level = FlexGlobals.topLevelApplication.mySO.data.__solarsatellite_resource_level__;
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__solarsatellite_resource_level__ = SolarSatelliteFactory.current_level = 0;
+				}
+
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__metal_storage_level__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__metal_storage_level__)) ) {
+					MetalStorageFactory.current_level = FlexGlobals.topLevelApplication.mySO.data.__metal_storage_level__;
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__metal_storage_level__ = MetalStorageFactory.current_level = 0;
+				}
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__crystal_storage_level__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__crystal_storage_level__)) ) {
+					CrystalStorageFactory.current_level = FlexGlobals.topLevelApplication.mySO.data.__crystal_storage_level__;
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__crystal_storage_level__ = CrystalStorageFactory.current_level = 0;
+				}
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__deuterium_storage_level__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__deuterium_storage_level__)) ) {
+					DeuteriumStorageFactory.current_level = FlexGlobals.topLevelApplication.mySO.data.__deuterium_storage_level__;
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__deuterium_storage_level__ = DeuteriumStorageFactory.current_level = 0;
+				}
+
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__metal_den_storage_level__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__metal_den_storage_level__)) ) {
+					MetalStorageDenFactory.current_level = FlexGlobals.topLevelApplication.mySO.data.__metal_den_storage_level__;
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__metal_den_storage_level__ = MetalStorageDenFactory.current_level = 0;
+				}
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__crystal_den_storage_level__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__crystal_den_storage_level__)) ) {
+					CrystalStorageFactory.current_level = FlexGlobals.topLevelApplication.mySO.data.__crystal_den_storage_level__;
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__crystal_den_storage_level__ = CrystalStorageFactory.current_level = 0;
+				}
+				
+				if ( (!isNaN(FlexGlobals.topLevelApplication.mySO.data.__deuterium_den_storage_level__)) && (isFinite(FlexGlobals.topLevelApplication.mySO.data.__deuterium_den_storage_level__)) ) {
+					DeuteriumStorageFactory.current_level = FlexGlobals.topLevelApplication.mySO.data.__deuterium_den_storage_level__;
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__deuterium_den_storage_level__ = DeuteriumStorageFactory.current_level = 0;
+				}
+				
+				if (this.premium_account) {
+					var now:Date = new Date();
+					this.log = '(!!!) now.fullYear='+now.fullYear+', now.month='+now.month+', now.date='+now.date+', now.hours='+now.hours+', now.minutes='+now.minutes+', now.seconds='+now.seconds+', now.milliseconds='+now.milliseconds+'';
+					var ms:Number = Date.UTC(now.fullYear, now.month, now.date, now.hours, now.minutes, now.seconds, now.milliseconds);
+					var ts:Number = FlexGlobals.topLevelApplication.mySO.data.__time_stamp__;
+					this.log = '(!!!) ts='+ts;
+					if ( (!isNaN(ts)) && (ts > 0) ) {
+						ts = Math.max(ts,ms) - Math.min(ts,ms);
+						var secs:Number = ts/1000;
+						
+						this.metal_resource_volume += (this.metal_resource_rate * secs);
+						this.crystal_resource_volume += (this.crystal_resource_rate * secs);
+						this.deuterium_resource_volume += (this.deuterium_resource_rate * secs);
+						
+						this.__session_seconds__ += secs;
+
+						this.save_time_stamp();
+						this.log = '(!!!) secs='+secs;
+					}
+				}
+
+				this.__session_seconds__ = 0;
+				
+				this.restore_build_queue();
+				
+				FlexGlobals.topLevelApplication.mySO.flush();
+			}
+			
+			private function __startup__():void {
+				if (this.is_logged_in) {
+					this.log = 'Startup.';
+
+					var resources:* = ResourceFactory.current_level_upgraded_resources(1);
+					__default_metal_resource_rate__ = ((resources[MetalFactory.name]/4)/ticks_per_hour);
+					__default_crystal_resource_rate__ = ((resources[CrystalFactory.name]/2)/ticks_per_hour);
+					__default_deuterium_resource_rate__ = ((resources[DeuteriumFactory.name]/5)/ticks_per_hour);
+					this.__timer__.addEventListener(TimerEvent.TIMER, 
+						function (event:TimerEvent):void {
+							_this.refresh_time();
+							var num:int = 1;
+							if ( (_this.premium_account) && (_this.__timers__.source.length > 1) ) {
+								num = 2;
+							}
+							var timers:Array = _this.__timers__.source.slice(0,num);
+							var running:int = _this.__running_timers_using(timers);
+							if ( (timers.length > 0) && (running < 1) ) {
+								var timer:* = timers[0];
+								timer['running'] = true; // failsafe - always ensure one running timer.
+							}
+							ArrayUtils.iterate(timers,
+								function (item:*, i:int, source:Array):void {
+									this.log = DebuggerUtils.explainThis(item);
+									if (item['running']) {
+										var widget:TimerWidget = item['widget'];
+										if (widget) {
+											widget.handle_timer_event(event);
+										}
+									}
+								}
+							);
+							if (_this.is_mode_testing) {
+								/*
+								var value:*;
+								var keys:Array = ObjectUtils.keys(_this.__popUps__);
+								for (var i:int = 0; i < keys.length; i++) {
+									value = _this.__popUps__[keys[i]];
+									if ( (value) && (value['handle_timer_event'] is Function) ) {
+										value['handle_timer_event'](event);
+									}
+								}
+								*/
+								var handler:*;
+								_this.log_warning = 'BEGIN: iterate __handlers__.';
+								for (var i:int = 0; i < _this.__handlers__.length; i++) {
+									handler = _this.__handlers__[i];
+									_this.log_warning = 'iterate __handlers__(1) handler='+handler+', handler[\'handle_timer_event\']='+handler['handle_timer_event'];
+									var func:Function = handler['handle_timer_event'];
+									if (handler) {
+										try {
+											if (func is Function) {
+												func(event);
+											}
+										} catch (err:Error) {
+											_this.log_error = 'iterate __handlers__.1 ' + err.message + ', ' + err.getStackTrace();
+											try {
+												if (handler == ResourcesHandler) {
+													ResourcesHandler.handle_timer_event(event);
+												}
+											} catch (err:Error) {
+												_this.log_error = 'iterate __handlers__.2 ' + err.message + ', ' + err.getStackTrace();
+											}
+										}
+									}
+								}
+								_this.log_warning = 'END!!! iterate __handlers__.';
+							} else {
+								try {
+									if ( (_this.popUpWindow) && (_this.popUpWindow['handle_timer_event'] is Function) ) {
+										_this.popUpWindow['handle_timer_event'](event);
+									}
+								} catch (err:Error) {
+									_this.log_error = 'popUpWindow.handle_timer_event().1 ' + err.message + ', ' + err.getStackTrace();
+								}
+							}
+						}
+					);
+					
+					this.log_warning = 'Push ResourcesHandler into __handlers__.'
+					this.__handlers__.push(ResourcesHandler);
+
+					var popup:* = this.create_popup(this.popUpContainer, Overview, false);
+					this.__popUps__[Overview] = popup;
+					
+					popup = this.create_popup(this.popUpContainer, Resources, false);
+					this.__popUps__[Resources] = popup;
+					
+					popup = this.create_popup(this.popUpContainer, Facilities, false);
+					this.__popUps__[Facilities] = popup;
+					
+					popup = this.create_popup(this.popUpContainer, Trader, false);
+					this.__popUps__[Trader] = popup;
+					
+					popup = this.create_popup(this.popUpContainer, Research, false);
+					this.__popUps__[Research] = popup;
+					
+					popup = this.create_popup(this.popUpContainer, Shipyard, false);
+					this.__popUps__[Shipyard] = popup;
+					
+					popup = this.create_popup(this.popUpContainer, Defense, false);
+					this.__popUps__[Defense] = popup;
+					
+					popup = this.create_popup(this.popUpContainer, Fleet, false);
+					this.__popUps__[Fleet] = popup;
+					
+					popup = this.create_popup(this.popUpContainer, Galaxy, false);
+					this.__popUps__[Galaxy] = popup;
+					
+					popup = this.create_popup(this.popUpContainer, Alliance, false);
+					this.__popUps__[Alliance] = popup;
+					
+					popup = this.create_popup(this.popUpContainer, Officers, false);
+					this.__popUps__[Officers] = popup;
+					
+					refresh_game_parameters();
+					
+					this.__timer__.start();
+					
+					if (this.isDebugger) {
+						this.cb_enable_timer.selected = this.__timer__.running;
+					}
+
+					this.refresh_time();
+					
+					this.callLater(__show_overview__);
+				}
+			}
+			
+			private function initialize_resources():void {
+				var i:int;
+				var item:*;
+				for (i = 0; i < this.__resources__.length; i++) {
+					item = this.__resources__.getItemAt(i);
+					item['label'] = ResourceFactory.normalize_factory_name(item['name']);
+					this.__resources__.setItemAt(item,i);
+				}
+			}
+			
+			protected function windowedapplication1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				
+				ToolTipManager.toolTipClass = HTMLToolTip;
+				
+				var name:String = '/local/vyperlogix/'+this.app_id+'/data/';
+				this.mySO = SharedObject.getLocal(name);
+				
+				this.nativeWindow.x = (Capabilities.screenResolutionX - nativeWindow.width) / 2;
+				this.nativeWindow.y = (Capabilities.screenResolutionY - nativeWindow.height) / 2;
+				
+				this.initialize_resources();
+
+				this.log = 'Prime the logging pump, so to speak however this message will not be logged by design....';
+			}
+			
+			protected function title_window_creationCompleteHandler(event:FlexEvent):void {
+			}
+			
+			private function create_popup(parent:*,winType:Class,visible:Boolean=false):* {
+				var popUp:*;
+				try {
+					var pt:Point = new Point(parent.x,parent.y);
+					var pt2:Point = parent.localToGlobal(pt);
+					popUp = PopUpManager.createPopUp(parent, winType, false);
+					popUp.x = parent.x;
+					popUp.y = pt2.y;
+					popUp.width = parent.width;
+					popUp.height = parent.height;
+					popUp.visible = visible;
+				} catch (err:Error) {
+					this.log_error = err.message + ', ' + err.getStackTrace();
+				}
+				return popUp;
+			}
+			
+			private function generic_popUp_clickHandler(title:String,winType:Class,event:MouseEvent=null):void {
+				if (this.popUpWindow) {
+					if (this.__popUps__[this.popUpWindows_Class]) {
+						this.popUpWindow.visible = false;
+						this.popUpWindows_Class = null;
+					} else {
+						PopUpManager.removePopUp(this.popUpWindow);
+						this.popUpWindow = this.popUpWindows_Class = null;
+					}
+				}
+				/*
+				var pt:Point = new Point(this.popUpContainer.x,this.popUpContainer.y);
+				var pt2:Point = this.popUpContainer.localToGlobal(pt);
+				this.popUpWindow = PopUpManager.createPopUp(this.popUpContainer, winType, false);
+				this.popUpWindow.x = this.popUpContainer.x;
+				this.popUpWindow.y = pt2.y;
+				this.popUpWindow.width = this.popUpContainer.width;
+				this.popUpWindow.height = this.popUpContainer.height;
+				*/
+				this.popUpWindow = (this.__popUps__[winType]) ? this.__popUps__[winType] : this.create_popup(this.popUpContainer, winType, true);
+				this.popUpWindows_Class = winType;
+				if (this.popUpWindow) {
+					this.popUpWindow.title = title;
+					this.popUpWindow.visible = true;
+					var pt:Point = new Point(this.popUpContainer.x,this.popUpContainer.y);
+					var pt2:Point = this.popUpContainer.localToGlobal(pt);
+					this.popUpWindow.x = this.popUpContainer.x;
+					this.popUpWindow.y = pt2.y;
+					this.popUpWindow.width = this.popUpContainer.width;
+					this.popUpWindow.height = this.popUpContainer.height;
+				}
+			}
+			
+			private function __show_overview__():void {
+				this.generic_popUp_clickHandler('Overview',Overview);
+			}
+			
+			protected function btn_overview_clickHandler(event:MouseEvent):void {
+				this.callLater(__show_overview__);
+			}
+			
+			protected function btn_resources_clickHandler(event:MouseEvent):void {
+				this.generic_popUp_clickHandler('Resources',Resources,event);
+			}
+			
+			protected function btn_facilities_clickHandler(event:MouseEvent):void {
+				this.generic_popUp_clickHandler('Facilities',Facilities,event);
+			}
+			
+			protected function btn_trader_clickHandler(event:MouseEvent):void {
+				this.generic_popUp_clickHandler('Trader',Trader,event);
+			}
+			
+			protected function btn_research_clickHandler(event:MouseEvent):void {
+				this.generic_popUp_clickHandler('Research',Research,event);
+			}
+			
+			protected function btn_shipyard_clickHandler(event:MouseEvent):void {
+				this.generic_popUp_clickHandler('Shipyard',Shipyard,event);
+			}
+			
+			protected function btn_defense_clickHandler(event:MouseEvent):void {
+				this.generic_popUp_clickHandler('Defense',Defense,event);
+			}
+			
+			protected function btn_fleet_clickHandler(event:MouseEvent):void {
+				this.generic_popUp_clickHandler('Fleet',Fleet,event);
+			}
+			
+			protected function btn_galaxy_clickHandler(event:MouseEvent):void {
+				this.generic_popUp_clickHandler('Galaxy',Galaxy,event);
+			}
+			
+			protected function btn_alliance_clickHandler(event:MouseEvent):void {
+				this.generic_popUp_clickHandler('Alliance',Alliance,event);
+			}
+			
+			protected function btn_officers_clickHandler(event:MouseEvent):void {
+				this.generic_popUp_clickHandler('Officers',Officers,event);
+			}
+			
+			protected function btn_market_clickHandler(event:MouseEvent):void {
+				if (this.popUpWindow is Market) {
+					this.generic_popUp_clickHandler('Purchase Dark Matter',PurchaseDarkMatter,event);
+				} else {
+					this.generic_popUp_clickHandler('Market',Market,event);
+				}
+			}
+			
+			protected function btn_reset_objects_clickHandler(event:MouseEvent):void {
+				if (this.__isDebugger__) {
+					this.__log__.removeAll();
+					this.log = 'BEGIN RESET !';
+					this.mySO.clear();
+					this.__builds__ = {};
+					this.__telemetry__ = {};
+					this.__aggregated_build__ = {};
+					this.refresh_expecting_builds_in_overview();
+					this.__timers__.removeAll();
+					this.active_build_items.dataProvider = this.__timers__;
+					this.remove_goals();
+					clear_saved_builds();
+					this.refresh_build_goals_in_overview();
+					this.log = 'Cleared Shared Objects !!!';
+					this.recompute_time_shift_factor(1);
+					refresh_game_parameters();
+					this.__cannot_use_logger__ = (this.cb_enable_logging.selected) ? false : true;
+					this.log = 'END RESET !!!';
+					if (this.popUpWindow is Resources) {
+						var resources:Resources = Resources(this.popUpWindow);
+						if (resources) {
+							resources.refresh_panel_titles();
+						}
+					}
+					if (this.popUpWindow is Resources) {
+						this.callLater(function ():void {_this.btn_resources.dispatchEvent(new MouseEvent(MouseEvent.CLICK));});
+					}
+				}
+			}
+			
+			protected function dark_matter_group_clickHandler(event:MouseEvent):void {
+				if (this.popUpWindow is Market) {
+					this.generic_popUp_clickHandler('Purchase Dark Matter',PurchaseDarkMatter,event);
+				} else {
+					this.generic_popUp_clickHandler('Market',Market,event);
+				}
+			}
+			
+			protected function metal_group_clickHandler(event:MouseEvent):void {
+				this.generic_popUp_clickHandler('Resources',Resources,event);
+			}
+			
+			protected function crystal_group_clickHandler(event:MouseEvent):void {
+				this.generic_popUp_clickHandler('Resources',Resources,event);
+			}
+			
+			protected function deuterium_group_clickHandler(event:MouseEvent):void {
+				this.generic_popUp_clickHandler('Resources',Resources,event);
+			}
+			
+			protected function btn_energy_clickHandler(event:MouseEvent):void {
+				this.generic_popUp_clickHandler('Energy',Energy,event);
+			}
+			
+			protected function energy_group_clickHandler(event:MouseEvent):void {
+				this.generic_popUp_clickHandler('Energy',Energy,event);
+			}
+			
+			private function release_bump_DM_button():void {
+				this.btn_bump_DM.enabled = true;
+				//this.hgroup_bump_DM.visible = false;
+				//this.hgroup_bump_DM.includeInLayout = false;
+
+				var aBtn:Button;
+				var btns:Array = DisplayObjectUtils.display_objects_of_type_within(Button,this.hgroup_debugger,this.btn_bump_DM);
+				for (var i:int = 0; i < btns.length; i++) {
+					aBtn = btns[i];
+					aBtn.enabled = true;
+				}
+				
+				if (this.__btnTimer__.running) {
+					//this.__btnTimer__.reset();
+				}
+			}
+			
+			private function release_bump_TIME_button():void {
+				this.btn_bump_TIME.enabled = true;
+				//this.hgroup_bump_TIME.visible = false;
+				//this.hgroup_bump_TIME.includeInLayout = false;
+				
+				var aBtn:Button;
+				var btns:Array = DisplayObjectUtils.display_objects_of_type_within(Button,this.hgroup_debugger,this.btn_bump_TIME);
+				for (var i:int = 0; i < btns.length; i++) {
+					aBtn = btns[i];
+					aBtn.enabled = true;
+				}
+				
+				if (this.__btnTimer__.running) {
+					//this.__btnTimer__.reset();
+				}
+			}
+			
+			private function release_bump_MODE_button():void {
+				this.btn_bump_MODE.enabled = true;
+				//this.hgroup_bump_MODE.visible = false;
+				//this.hgroup_bump_MODE.includeInLayout = false;
+				
+				var aBtn:Button;
+				var btns:Array = DisplayObjectUtils.display_objects_of_type_within(Button,this.hgroup_debugger,this.btn_bump_MODE);
+				for (var i:int = 0; i < btns.length; i++) {
+					aBtn = btns[i];
+					aBtn.enabled = true;
+				}
+				
+				if (this.__btnTimer__.running) {
+					//this.__btnTimer__.reset();
+				}
+			}
+			
+			private function handle_and_clear_registered_btnTimer_handlers(func_to_keep:Function=null):void {
+				var handler:Function;
+				var funcs:Array = [];
+				this.log = '(@@@) handle_and_clear_registered_btnTimer_handlers.1 this.__registered_btnTimer_handlers__.length='+this.__registered_btnTimer_handlers__.length+', this.__registered_btnTimer_handlers__.length='+this.__registered_btnTimer_handlers__.length;
+				while (this.__registered_btnTimer_handlers__.length > 0) {
+					handler = this.__registered_btnTimer_handlers__.pop();
+					if (handler == func_to_keep) {
+						funcs.push(handler);
+					} else {
+						if (handler is Function) {
+							try {
+								handler();
+							} catch (err:Error) {
+								this.log_error = err.message + ', ' + err.getStackTrace();
+							}
+						}
+					}
+				}
+				while (funcs.length > 0) {
+					this.__registered_btnTimer_handlers__.push(funcs.pop());
+				}
+			}
+			
+			protected function btn_bump_DM_clickHandler(event:MouseEvent):void {
+				var btn:Button = event.currentTarget as Button;
+				btn.enabled = false;
+				this.hgroup_bump_DM.visible = true;
+				this.hgroup_bump_DM.includeInLayout = true;
+				
+				var aBtn:Button;
+				var btns:Array = DisplayObjectUtils.display_objects_of_type_within(Button,this.hgroup_debugger,btn);
+				for (var i:int = 0; i < btns.length; i++) {
+					aBtn = btns[i];
+					aBtn.enabled = false;
+				}
+				
+				if (this.__btnTimer__.running) {
+					//this.__btnTimer__.reset();
+				}
+				this.__registered_btnTimer_handlers__.push(this.release_bump_DM_button);
+				this.__btnTimer__.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						_this.handle_and_clear_registered_btnTimer_handlers();
+					}
+				);
+				this.__btnTimer__.delay = timer_delay_btns_ms;
+				if (!this.__btnTimer__.running) {
+					this.__btnTimer__.start();
+				}
+				this.handle_and_clear_registered_btnTimer_handlers(this.release_bump_DM_button);
+			}
+			
+			private function refresh_TIME_selection():void {
+				var i:int;
+				var item:Object;
+				for (i = 0; i < this.choices_bump_TIME.dataProvider.length; i++) {
+					item = this.choices_bump_TIME.dataProvider.getItemAt(i);
+					if (this.__time_shift_factor__ == item['value']) {
+						this.choices_bump_TIME.selectedIndex = i;
+						break;
+					}
+				}
+			}
+			
+			protected function btn_bump_TIME_clickHandler(event:MouseEvent):void {
+				var btn:Button = event.currentTarget as Button;
+				btn.enabled = false;
+				this.hgroup_bump_TIME.visible = true;
+				this.hgroup_bump_TIME.includeInLayout = true;
+				this.callLater(this.refresh_TIME_selection);
+
+				var aBtn:Button;
+				var btns:Array = DisplayObjectUtils.display_objects_of_type_within(Button,this.hgroup_debugger,btn);
+				for (var i:int = 0; i < btns.length; i++) {
+					aBtn = btns[i];
+					aBtn.enabled = false;
+				}
+				
+				if (this.__btnTimer__.running) {
+					//this.__btnTimer__.reset();
+				}
+				this.__registered_btnTimer_handlers__.push(this.release_bump_TIME_button);
+				this.__btnTimer__.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						_this.handle_and_clear_registered_btnTimer_handlers();
+					}
+				);
+				this.__btnTimer__.delay = timer_delay_btns_ms;
+				if (!this.__btnTimer__.running) {
+					this.__btnTimer__.start();
+				}
+				this.handle_and_clear_registered_btnTimer_handlers(this.release_bump_TIME_button);
+			}
+			
+			public function get is_mode_testing():Boolean {
+				return this.mode_choice_whose_value_is(this.__mode__)['value'] == this.mode_choice_whose_value_is(true)['value'];
+			}
+			
+			private function get time_shift_factor_name():String {
+				var item:*;
+				var i:int = ObjectUtils.indexOf(this.__times__, {'value':this.__time_shift_factor__}, true);
+				if (i > -1) {
+					item = this.__times__.getItemAt(i);
+				}
+				return (item && item['name']) ? item['name'] : null;
+			}
+			
+			protected function choices_bump_DM_changeHandler(event:IndexChangeEvent):void {
+				var item:* = this.__choices__.getItemAt(event.newIndex);
+				if ( (item) && (!isNaN(item['value'])) ) {
+					this.log = 'Before Bump DM with value of (' + item['value'] + ')';
+					this.dark_matter_volume = item['value'];
+					this.log = 'After Bump DM with value of (' + this.dark_matter_volume + ')';
+				}
+				this.release_bump_DM_button();
+			}
+			
+			private function recompute_time_shift_factor(value:Number):void {
+				this.__time_shift_factor__ = value;
+				this.__timer__.delay = timer_delay_ms * (1/((this.__time_shift_factor__ > 0) ? this.__time_shift_factor__ : 1));
+			}
+			
+			public function choose_TIME_using(newIndex:int):void {
+				var item:* = this.__times__.getItemAt(newIndex);
+				if ( (item) && (!isNaN(item['value'])) ) {
+					this.log = 'Before Time Shift of (' + item['value'] + ')';
+					this.recompute_time_shift_factor(item['value']);
+					this.log = 'After Time Shift of (' + item['value'] + ')';
+				}
+			}
+			
+			public function choose_next_TIME():void {
+				var newIndex:int = this.choices_bump_TIME.selectedIndex + 1;
+				if (newIndex >= this.choices_bump_TIME.dataProvider.length) {
+					newIndex = this.choices_bump_TIME.dataProvider.length - 1;
+				}
+				this.log = 'choose_next_TIME(' + newIndex + ')';
+				this.choose_TIME_using(newIndex);
+			}
+			
+			public function choose_prev_TIME():void {
+				var newIndex:int = this.choices_bump_TIME.selectedIndex - 1;
+				if (newIndex <= 0) {
+					newIndex = 0;
+				}
+				this.log = 'choose_prev_TIME(' + newIndex + ')';
+				this.choose_TIME_using(newIndex);
+			}
+
+			public function get can_TIME_be_bumped_faster():Boolean {
+				var newIndex:int = this.choices_bump_TIME.selectedIndex + 1;
+				return (newIndex < this.choices_bump_TIME.dataProvider.length);
+			}
+			
+			public function get can_TIME_be_bumped_slower():Boolean {
+				var newIndex:int = this.choices_bump_TIME.selectedIndex - 1;
+				return (newIndex >= 0);
+			}
+			
+			public function get number_TIME_choices():int {
+				return this.choices_bump_TIME.dataProvider.length;
+			}
+			
+			protected function choices_bump_TIME_changeHandler(event:IndexChangeEvent):void {
+				this.choose_TIME_using(event.newIndex);
+				this.release_bump_TIME_button();
+			}
+			
+			private function release_bump_RESOURCES_button():void {
+				this.btn_bump_RESOURCES.enabled = true;
+				//this.hgroup_bump_RESOURCES.visible = false; 
+				//this.hgroup_bump_RESOURCES.includeInLayout = false; 
+				
+				var aBtn:Button;
+				var btns:Array = DisplayObjectUtils.display_objects_of_type_within(Button,this.hgroup_debugger,this.btn_bump_RESOURCES);
+				for (var i:int = 0; i < btns.length; i++) {
+					aBtn = btns[i];
+					aBtn.enabled = true;
+				}
+				
+				if (this.__btnTimer__.running) {
+					//this.__btnTimer__.reset();
+				}
+			}
+			
+			protected function btn_bump_RESOURCES_clickHandler(event:MouseEvent):void {
+				var btn:Button = event.currentTarget as Button;
+				btn.enabled = false;
+				this.hgroup_bump_RESOURCES.visible = true; 
+				this.hgroup_bump_RESOURCES.includeInLayout = true; 
+				
+				var aBtn:Button;
+				var btns:Array = DisplayObjectUtils.display_objects_of_type_within(Button,this.hgroup_debugger,btn);
+				for (var i:int = 0; i < btns.length; i++) {
+					aBtn = btns[i];
+					aBtn.enabled = false;
+				}
+				
+				if (this.__btnTimer__.running) {
+					//this.__btnTimer__.reset();
+				}
+				this.__registered_btnTimer_handlers__.push(this.release_bump_RESOURCES_button);
+				this.__btnTimer__.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						_this.handle_and_clear_registered_btnTimer_handlers();
+					}
+				);
+				this.__btnTimer__.delay = timer_delay_btns_ms;
+				if (!this.__btnTimer__.running) {
+					this.__btnTimer__.start();
+				}
+				this.handle_and_clear_registered_btnTimer_handlers(this.release_bump_RESOURCES_button);
+			}
+			
+			protected function choices_bump_RESOURCES_changeHandler(event:IndexChangeEvent):void {
+				if (this.__btnTimer__.running) {
+				}
+				if (!this.__btnTimer__.running) {
+					this.__btnTimer__.start();
+				}
+				this.log = '(###) choices_bump_RESOURCES_changeHandler().1 --> this.choices_bump_RESOURCES.selectedIndex='+this.choices_bump_RESOURCES.selectedIndex;
+				this.promote_selected_RESOURCE();
+				var dropdown:DropDownList = event.currentTarget as DropDownList;
+				dropdown.selectedIndex = -1;
+			}
+			
+			private function promote_selected_RESOURCE():void {
+				if (this.__isDebugger__) {
+					var resource:* = this.choices_bump_RESOURCES.selectedItem;
+					var name:String = String(resource['name']).toLowerCase();
+					if (name == MetalFactory.name.toLowerCase()) {
+						this.log = 'Before '+StringUtils.capitalize(MetalFactory.name)+' Upgrade.';
+						ResourceFactory.promote_factory_to_next_level(MetalFactory);
+						this.log = 'After '+StringUtils.capitalize(MetalFactory.name)+' Upgrade.';
+					} else if (name == CrystalFactory.name.toLowerCase()) {
+						this.log = 'Before '+StringUtils.capitalize(CrystalFactory.name)+' Upgrade.';
+						ResourceFactory.promote_factory_to_next_level(CrystalFactory);
+						this.log = 'After '+StringUtils.capitalize(CrystalFactory.name)+' Upgrade.';
+					} else if (name == DeuteriumFactory.name.toLowerCase()) {
+						this.log = 'Before '+StringUtils.capitalize(DeuteriumFactory.name)+' Upgrade.';
+						ResourceFactory.promote_factory_to_next_level(DeuteriumFactory);
+						this.log = 'After '+StringUtils.capitalize(DeuteriumFactory.name)+' Upgrade.';
+					} else if (name == MetalStorageFactory.name.toLowerCase()) {
+						this.log = 'Before '+StringUtils.capitalize(MetalStorageFactory.name)+' Upgrade.';
+						ResourceFactory.promote_factory_to_next_level(MetalStorageFactory);
+						this.log = 'After '+StringUtils.capitalize(MetalStorageFactory.name)+' Upgrade.';
+					} else if (name == CrystalStorageFactory.name.toLowerCase()) {
+						this.log = 'Before '+StringUtils.capitalize(CrystalStorageFactory.name)+' Upgrade.';
+						ResourceFactory.promote_factory_to_next_level(CrystalStorageFactory);
+						this.log = 'After '+StringUtils.capitalize(CrystalStorageFactory.name)+' Upgrade.';
+					} else if (name == DeuteriumStorageFactory.name.toLowerCase()) {
+						this.log = 'Before '+StringUtils.capitalize(DeuteriumStorageFactory.name)+' Upgrade.';
+						ResourceFactory.promote_factory_to_next_level(DeuteriumStorageFactory);
+						this.log = 'After '+StringUtils.capitalize(DeuteriumStorageFactory.name)+' Upgrade.';
+					} else if (name == MetalStorageDenFactory.name.toLowerCase()) {
+						this.log = 'Before '+StringUtils.capitalize(MetalStorageDenFactory.name)+' Upgrade.';
+						ResourceFactory.promote_factory_to_next_level(MetalStorageDenFactory);
+						this.log = 'After '+StringUtils.capitalize(MetalStorageDenFactory.name)+' Upgrade.';
+					} else if (name == CrystalStorageDenFactory.name.toLowerCase()) {
+						this.log = 'Before '+StringUtils.capitalize(CrystalStorageDenFactory.name)+' Upgrade.';
+						ResourceFactory.promote_factory_to_next_level(CrystalStorageDenFactory);
+						this.log = 'After '+StringUtils.capitalize(CrystalStorageDenFactory.name)+' Upgrade.';
+					} else if (name == DeuteriumStorageDenFactory.name.toLowerCase()) {
+						this.log = 'Before '+StringUtils.capitalize(DeuteriumStorageDenFactory.name)+' Upgrade.';
+						ResourceFactory.promote_factory_to_next_level(DeuteriumStorageDenFactory);
+						this.log = 'After '+StringUtils.capitalize(DeuteriumStorageDenFactory.name)+' Upgrade.';
+					}
+
+					this.release_bump_RESOURCES_button();
+				}
+			}
+			
+			protected function btn_go_RESOURCES_clickHandler(event:MouseEvent):void {
+				this.promote_selected_RESOURCE();
+			}
+			
+			protected function txt_RESOURCES_focusInHandler(event:FocusEvent):void {
+				var txt:TextInput = event.currentTarget as TextInput;
+				if (this.__btnTimer__.running) {
+					//this.__btnTimer__.reset();
+				}
+				if (!this.__btnTimer__.running) {
+					this.__btnTimer__.start();
+				}
+				this.log = '(###) txt_RESOURCES_focusInHandler().1 --> txt.text='+txt.text;
+			}
+			
+			protected function txt_RESOURCES_focusOutHandler(event:FocusEvent):void {
+				var txt:TextInput = event.currentTarget as TextInput;
+				if (this.__btnTimer__.running) {
+					//this.__btnTimer__.reset();
+				}
+				if (!this.__btnTimer__.running) {
+					this.__btnTimer__.start();
+				}
+				this.log = '(###) txt_RESOURCES_focusOutHandler().1 --> txt.text='+txt.text;
+			}
+			
+			protected function txt_RESOURCES_keyDownHandler(event:KeyboardEvent):void {
+				var ch:uint = event.charCode;
+				
+				if (this.__btnTimer__.running) {
+					//this.__btnTimer__.reset();
+				}
+				this.__btnTimer__.delay += 1000;
+				if (!this.__btnTimer__.running) {
+					this.__btnTimer__.start();
+				}
+				
+				if (ch == 0xd) {
+					this.btn_go_RESOURCES.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+				} else if (!StringUtils.isNumeric(ch)) {
+					event.preventDefault();
+				}
+			}
+			
+			protected function btn_show_LOG_clickHandler(event:MouseEvent):void {
+				var popup:LogViewer = PopUpManager.createPopUp(this,LogViewer,true) as LogViewer;
+				popup.width = 700;
+				popup.height = 500;
+				PopUpManager.centerPopUp(popup);
+				popup.grid_dataProvider = this.__log__;
+				popup.addEventListener(CloseEvent.CLOSE, 
+					function (event:CloseEvent):void {
+						PopUpManager.removePopUp(popup);
+					}
+				);
+			}
+			
+			protected function btn_bump_MODE_clickHandler(event:MouseEvent):void {
+				var btn:Button = event.currentTarget as Button;
+				btn.enabled = false;
+				this.hgroup_bump_MODE.visible = true;
+				this.hgroup_bump_MODE.includeInLayout = true;
+				
+				var aBtn:Button;
+				var btns:Array = DisplayObjectUtils.display_objects_of_type_within(Button,this.hgroup_debugger,btn);
+				for (var i:int = 0; i < btns.length; i++) {
+					aBtn = btns[i];
+					aBtn.enabled = false;
+				}
+				
+				if (this.__btnTimer__.running) {
+					//this.__btnTimer__.reset();
+				}
+				this.__registered_btnTimer_handlers__.push(this.release_bump_MODE_button);
+				this.__btnTimer__.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						_this.handle_and_clear_registered_btnTimer_handlers();
+					}
+				);
+				this.__btnTimer__.delay = timer_delay_btns_ms;
+				if (!this.__btnTimer__.running) {
+					this.__btnTimer__.start();
+				}
+				this.handle_and_clear_registered_btnTimer_handlers(this.release_bump_MODE_button);
+			}
+			
+			protected function choices_bump_MODE_changeHandler(event:IndexChangeEvent):void {
+				var item:* = this.__modes__.getItemAt(event.newIndex);
+				if ( (item) && (item['value'] is Boolean) ) {
+					this.log = 'Before Bump MODE with value of (' + item['name'] + ')';
+					this.__mode__ = item['value'];
+					this.refresh_MODE();
+					this.log = 'After Bump MODE with value of (' + this.currently_selected_mode_choice['name'] + ')';
+				}
+				this.release_bump_MODE_button();
+			}
+			
+			private function mode_choice_whose_value_is(value:Boolean):* {
+				var i:int = 0;
+				var item:*;
+				for (i = 0; i < this.__modes__.length; i++) {
+					item = this.__modes__.getItemAt(i);
+					if (value == item['value']) {
+						return item;
+					}
+				}
+				return null;
+			}
+			
+			private function get currently_selected_mode_choice():* {
+				return this.mode_choice_whose_value_is(this.__mode__);
+			}
+
+			private function __refresh_TIME__():void {
+				var i:int = 0;
+				var item:*;
+				for (i = 0; i < this.__times__.length; i++) {
+					item = this.__times__.getItemAt(i);
+					if (this.time_shift_factor_name == item['name']) {
+						this.choices_bump_TIME.selectedIndex = i;
+						break;
+					}
+				}
+			}
+			
+			private function refresh_MODE():void {
+				var i:int = 0;
+				var item:*;
+				for (i = 0; i < this.__modes__.length; i++) {
+					item = this.__modes__.getItemAt(i);
+					if (this.__mode__ == item['value']) {
+						this.choices_bump_MODE.selectedIndex = i;
+						break;
+					}
+				}
+			}
+			
+			protected function choices_bump_MODE_creationCompleteHandler(event:FlexEvent):void {
+				this.refresh_MODE();
+			}
+			
+			private function turn_on_play_through_mode():void {
+				this.__mode__ = this.__isDebugger__;
+				this.refresh_MODE();
+			}
+			
+			protected function hgroup_debugger_creationCompleteHandler(event:FlexEvent):void {
+				this.callLater(this.turn_on_play_through_mode);
+			}
+			
+			private function __automatic_startup__():void {
+				if (Capabilities.isDebugger) {
+					this.__userid__ = 'admin';
+					this.__isDebugger__ = true;
+					this.callLater(__startup__);
+					this.callLater(turn_on_play_through_mode);
+				}
+			}
+			
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void {
+				if (Capabilities.isDebugger) {
+					this.callLater(this.__automatic_startup__);
+					return;
+				}
+				if ( (!this.is_logged_in) && (!Capabilities.isDebugger) ) {
+					var popup:LoginPanel = this.create_popup(this.popUpContainer, LoginPanel, true);
+					popup.title = 'Login';
+					popup.styleName = 'PanelStyle';
+					popup.addEventListener(FlexEvent.CREATION_COMPLETE, 
+						function (event:FlexEvent):void {
+							popup.set_focus_on_username();
+						}
+					);
+					popup.btn_submit.addEventListener(MouseEvent.CLICK,
+						function (event:MouseEvent):void {
+							var username:String = popup.username.text;
+							var password:String = popup.password.text;
+							var m:String = MD5.hash(password);
+							if ( (username == _this.superuser_username) && (m == _this.superuser_pwd) ) {
+								_this.__userid__ = username;
+								_this.__username__ = _this.superuser_name;
+								_this.__userrole__ = _this.superuser_role;
+							} else if ( (username == _this.user_username) && (m == _this.user_pwd) ) {
+								_this.__userid__ = username;
+								_this.__username__ = _this.user_name;
+								_this.__userrole__ = _this.user_role;
+							}
+							this.log = '(@@@) username='+username+', password='+password+', password (MD5)='+m;
+							if (_this.is_logged_in) {
+								_this.status = this.__status__ = 'Welcome back, Commander ' + _this.__username__ + ' !';
+								PopUpManager.removePopUp(popup);
+								_this.__isDebugger__ = _this.is_super_user;
+								_this.callLater(__startup__);
+								_this.callLater(turn_on_play_through_mode);
+							} else {
+								popup.message.styleName = 'ErrorMessage';
+								popup.message.text = 'INVALID Login.  Please try again.';
+								var t:Timer = new Timer(5000);
+								t.addEventListener(TimerEvent.TIMER, 
+									function (event:TimerEvent):void {
+										popup.message.text = '';
+										popup.username.text = '';
+										popup.password.text = '';
+										popup.set_focus_on_username();
+										t.stop();
+									}
+								);
+								t.start();
+							}
+						}
+					);
+				}
+			}
+			
+			protected function btn_force_timers_clickHandler(event:MouseEvent):void {
+				var i:int;
+				var n:int = MathUtils.randRange(3,10);
+				n = 1;
+				var t:*;
+				var f:*;
+				var resources:Resources = this.__popUps__[Resources] as Resources;
+				var keys:Array = ObjectUtils.keys(this.__builds__);
+				var builds:Array = [];
+				for (i = 0; i < keys.length; i++) {
+					builds.push(this.__builds__[keys[i]]);
+				}
+				builds.sortOn('time',Array.DESCENDING);
+				t = builds.pop();
+				if (t['factory'].name == MetalFactory.name) {
+					f = resources.resources.building_data1;
+				} else if (t['factory'].name == CrystalFactory.name) {
+					f = resources.resources.building_data2;
+				} else if (t['factory'].name == DeuteriumFactory.name) {
+					f = resources.resources.building_data2;
+				} else {
+					f = null;
+				}
+				if (f) {
+					keys = ObjectUtils.keys(f['cost']);
+					for (i = 0; i < keys.length; i++) {
+						if (keys[i] == MetalFactory.name) {
+							this.metal_resource_volume += f['cost'][keys[i]];
+						} else if (keys[i] == CrystalFactory.name) {
+							this.crystal_resource_volume += f['cost'][keys[i]];
+						} else if (keys[i] == DeuteriumFactory.name) {
+							this.deuterium_resource_volume += f['cost'][keys[i]];
+						}
+					}
+					this.add_timer = f;
+				}
+			}
+
+			public function timer_TimerCompletedDelayedHandler(args:*):void {
+				var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+				var data:* = (args is Array) ? args[0] : args;
+				var target:ResourcesGroup = ResourcesGroup(data['target']);
+				var factory:Class = data['factory'];
+				var uuid:String = data['uuid'];
+				if (factory) {
+					app.log = 'Before '+factory.name+' Upgrade.';
+					ResourceFactory.promote_factory_to_next_level(factory);
+					app.accomplished_goal(factory);
+					app.log = 'After '+factory.name+' Upgrade.';
+					if (target) {
+						target.signal_completion_of_timer(Resources.is_building_by_id);
+					}
+				}
+				var i:int = ArrayCollectionUtils.findIndexOfItem(FlexGlobals.topLevelApplication.timers,'uuid',uuid);
+				if (i > -1) {
+					app.log = 'REMOVING TIMER !!!';
+					app.timers.removeItemAt(i);
+					app.active_build_items.dataProvider = app.timers;
+				}
+			}
+			
+			protected function handle_storage_gauge_clickHandler_for(event:MouseEvent,factory:Class,xOffset:Number=0.0,yOffset:Number=0.0):void {
+				if ( (this.is_logged_in) && (!this.__storage_gauge_popup__) ) {
+					this.__storage_gauge_popup__ = PopUpManager.createPopUp(this,StorageGauagePopUp, true) as StorageGauagePopUp;
+					var eCoords:Point = new Point(event.localX,event.localY);
+					var eCoords2:Point = this.__storage_gauge_popup__.localToGlobal(eCoords);
+					this.__storage_gauge_popup__.x = eCoords2.x + xOffset;
+					this.__storage_gauge_popup__.y = eCoords2.y + yOffset;
+					this.__storage_gauge_popup__.width = 200;
+					this.__storage_gauge_popup__.height = 200;
+					this.__storage_gauge_popup__.resource_label = factory.name;
+					this.__storage_gauge_popup__.resource_label_styleName = 'resourceVolumeLabel';
+					var timer:Timer = new Timer(1000);
+					timer.addEventListener(TimerEvent.TIMER, 
+						function (event:TimerEvent):void {
+							_this.__storage_gauge_popup__.resource_percent = StringUtils.decimalToPercentage(factory.current_capacity_percent/100.0);
+							_this.__storage_gauge_popup__.value = factory.current_capacity_percent;
+						}
+					);
+					this.__storage_gauge_popup__.addEventListener(MouseEvent.MOUSE_OUT, 
+						function (event:MouseEvent):void {
+							timer.stop();
+							PopUpManager.removePopUp(_this.__storage_gauge_popup__);
+							_this.__storage_gauge_popup__ = null;
+						}
+					);
+					timer.start();
+				}
+			}
+			
+			protected function metal_storage_gauge_clickHandler(event:MouseEvent):void {
+				this.handle_storage_gauge_clickHandler_for(event,MetalFactory);
+			}
+			
+			protected function crystal_storage_gauge_clickHandler(event:MouseEvent):void {
+				this.handle_storage_gauge_clickHandler_for(event,CrystalFactory,100,0);
+			}
+			
+			protected function deuterium_storage_gauge_clickHandler(event:MouseEvent):void {
+				this.handle_storage_gauge_clickHandler_for(event,DeuteriumFactory,200,0);
+			}
+			
+			protected function enable_logging_creationCompleteHandler(event:FlexEvent):void {
+				var cb:CheckBox = event.currentTarget as CheckBox;
+				cb.selected = this.__cannot_use_logger__ == false;
+			}
+			
+			protected function cb_enable_timer_changeHandler(event:Event):void {
+				var cb:CheckBox = event.currentTarget as CheckBox;
+				if (this.isDebugger) {
+					if (cb.selected) {
+						this.__timer__.start();
+					} else {
+						this.__timer__.stop();
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Panel id="title_window" width="100%" height="100%" styleName="mainCanvas" creationComplete="title_window_creationCompleteHandler(event)">
+		<s:VGroup width="100%" height="100%">
+			<s:HGroup id="resources_group" width="100%" horizontalAlign="center" paddingTop="10">
+				<s:HGroup id="metal_group">
+					<s:HGroup click="metal_storage_gauge_clickHandler(event)">
+						<components:Gauge id="metal_storage_gauge" width="40" height="40" minValue="0" maxValue="100" fontColor="#FFFFFF" showValue="true" showMinMax="true"/>
+					</s:HGroup>
+					<s:VGroup id="metal_vgroup" width="20%" horizontalAlign="center" verticalAlign="middle" paddingLeft="0" paddingRight="10" click="metal_group_clickHandler(event)">
+						<s:HGroup>
+							<s:Label id="lbl_resource_metal_capacity_level" text="0" color="0xFFFFFF"/>
+							<s:Image source="{Images.metalImageClass}"/>
+							<s:Label id="lbl_resource_metal_level" text="0" color="0xFFFFFF"/>
+						</s:HGroup>
+						<s:HGroup paddingLeft="-10">
+							<s:Label id="lbl_resource_metal" text="0"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:HGroup>
+				<s:HGroup id="crystal_group">
+					<s:HGroup click="crystal_storage_gauge_clickHandler(event)">
+						<components:Gauge id="crystal_storage_gauge" width="40" height="40" minValue="0" maxValue="100" fontColor="#FFFFFF" showValue="true" showMinMax="true"/>
+					</s:HGroup>
+					<s:VGroup id="crystal_vgroup" width="20%" horizontalAlign="center" verticalAlign="middle" paddingLeft="0" paddingRight="10" click="crystal_group_clickHandler(event)">
+						<s:HGroup>
+							<s:Label id="lbl_resource_crystal_capacity_level" text="0" color="0xFFFFFF"/>
+							<s:Image source="{Images.crystalImageClass}"/>
+							<s:Label id="lbl_resource_crystal_level" text="0" color="0xFFFFFF"/>
+						</s:HGroup>
+						<s:Label id="lbl_resource_crystal" text="0"/>
+					</s:VGroup>
+				</s:HGroup>
+				<s:HGroup id="deuterium_group">
+					<s:HGroup click="deuterium_storage_gauge_clickHandler(event)">
+						<components:Gauge id="deuterium_storage_gauge" width="40" height="40" minValue="0" maxValue="100" fontColor="#FFFFFF" showValue="true" showMinMax="true"/>
+					</s:HGroup>
+					<s:VGroup id="deuterium_vgroup" width="20%" horizontalAlign="center" verticalAlign="middle" paddingLeft="0" paddingRight="10" click="deuterium_group_clickHandler(event)">
+						<s:HGroup>
+							<s:Label id="lbl_resource_deuterium_capacity_level" text="0" color="0xFFFFFF"/>
+							<s:Image source="{Images.deuteriumImageClass}"/>
+							<s:Label id="lbl_resource_deuterium_level" text="0" color="0xFFFFFF"/>
+						</s:HGroup>
+						<s:Label id="lbl_resource_deuterium" text="0"/>
+					</s:VGroup>
+				</s:HGroup>
+				<s:VGroup id="energy_group" width="20%" horizontalAlign="center" verticalAlign="middle" paddingLeft="10" paddingRight="10" click="energy_group_clickHandler(event)">
+					<s:Image source="{Images.energyImageClass}"/>
+					<s:Label id="lbl_resource_energy" text="0" color="0xFFFFFF"/>
+				</s:VGroup>
+				<s:VGroup id="dark_matter_group" width="20%" horizontalAlign="center" verticalAlign="middle" paddingLeft="10" paddingRight="10" click="dark_matter_group_clickHandler(event)">
+					<s:Image source="{Images.darkMatterImageClass}"/>
+					<s:Label id="lbl_dark_matter" text="0" color="0xFFFFFF"/>
+				</s:VGroup>
+				<s:VGroup id="premium_group" width="20%" horizontalAlign="center" verticalAlign="middle" paddingLeft="10" paddingRight="10" visible="{this.__premium_account__}" includeInLayout="{this.__premium_account__}">
+					<s:Image source="{Images.premiumSmallImageClass}" height="30"/>
+					<s:Label text="PREMIUM" color="0xFFFF00" styleName="premiumLabel"/>
+				</s:VGroup>
+			</s:HGroup>
+			<s:HGroup id="hgroup_debugger" width="100%" visible="{this.__isDebugger__}" includeInLayout="{this.__isDebugger__}" creationComplete="hgroup_debugger_creationCompleteHandler(event)">
+				<s:VGroup width="100%">
+					<s:HGroup width="100%">
+						<s:HGroup width="99%" horizontalAlign="left">
+							<s:HGroup paddingTop="5">
+								<s:Label text="M?" toolTip="Mode ?" styleName="chooseLabel"/>
+							</s:HGroup>
+							<s:Button id="btn_bump_MODE" label="Mode ?" visible="false" includeInLayout="false" click="btn_bump_MODE_clickHandler(event)"/>
+							<s:HGroup id="hgroup_bump_MODE" toolTip="Mode ?" visible="true" includeInLayout="true">
+								<s:DropDownList id="choices_bump_MODE" labelField="name" dataProvider="{this.__modes__}" change="choices_bump_MODE_changeHandler(event)" creationComplete="choices_bump_MODE_creationCompleteHandler(event)"/>
+							</s:HGroup>
+							<s:HGroup paddingTop="5">
+								<s:Label text="DM?" toolTip="Dark Matter ?" styleName="chooseLabel"/>
+							</s:HGroup>
+							<s:Button id="btn_bump_DM" label="DM ?" visible="false" includeInLayout="false" click="btn_bump_DM_clickHandler(event)"/>
+							<s:HGroup id="hgroup_bump_DM" toolTip="Dark Matter ?" visible="true" includeInLayout="true">
+								<s:DropDownList id="choices_bump_DM" labelField="name" dataProvider="{this.__choices__}" change="choices_bump_DM_changeHandler(event)"/>
+							</s:HGroup>
+							<s:HGroup paddingTop="5">
+								<s:Label text="T?" toolTip="Time ?" styleName="chooseLabel"/>
+							</s:HGroup>
+							<s:Button id="btn_bump_TIME" label="TIME ? ()" visible="false" includeInLayout="false" click="btn_bump_TIME_clickHandler(event)"/>
+							<s:HGroup id="hgroup_bump_TIME" toolTip="Time ?" visible="true" includeInLayout="true">
+								<s:DropDownList id="choices_bump_TIME" labelField="name" maxWidth="100" width="100" dataProvider="{this.__times__}" change="choices_bump_TIME_changeHandler(event)"/>
+							</s:HGroup>
+							<s:HGroup paddingTop="5">
+								<s:Label text="R?" toolTip="Resources ?" styleName="chooseLabel"/>
+							</s:HGroup>
+							<s:Button id="btn_bump_RESOURCES" label="RESOURCES ?" visible="false" includeInLayout="false" click="btn_bump_RESOURCES_clickHandler(event)"/>
+							<s:HGroup id="hgroup_bump_RESOURCES" toolTip="Resources ?" visible="true" includeInLayout="true">
+								<s:DropDownList id="choices_bump_RESOURCES" labelField="label" width="250" dataProvider="{this.__resources__}" change="choices_bump_RESOURCES_changeHandler(event)">
+									<s:layout>
+										<s:VerticalLayout requestedRowCount="{this.__resources__.length}"/>
+									</s:layout>
+								</s:DropDownList>
+								<s:HGroup id="hgroup_RESOURCES" visible="false" includeInLayout="{this.hgroup_RESOURCES.visible}">
+									<s:TextInput id="txt_RESOURCES" width="50" maxChars="5" visible="false" includeInLayout="false" keyDown="txt_RESOURCES_keyDownHandler(event)" focusIn="txt_RESOURCES_focusInHandler(event)" focusOut="txt_RESOURCES_focusOutHandler(event)"/>
+									<s:Button id="btn_go_RESOURCES" label="GO" click="btn_go_RESOURCES_clickHandler(event)"/>
+								</s:HGroup>
+							</s:HGroup>
+						</s:HGroup>
+					</s:HGroup>
+					<s:HGroup width="100%" paddingLeft="10" paddingRight="10">
+						<s:HGroup width="1%" horizontalAlign="right">
+							<s:HGroup width="1%" paddingTop="5">
+								<s:Label text="LOGGER ?" styleName="chooseLabel"/>
+							</s:HGroup>
+							<s:CheckBox id="cb_enable_logging" toolTip="Check then Reset Game to take effect." creationComplete="enable_logging_creationCompleteHandler(event)"/>
+						</s:HGroup>
+						<s:HGroup width="1%" horizontalAlign="right">
+							<s:HGroup width="1%" paddingTop="5">
+								<s:Label text="TIMER ?" styleName="chooseLabel"/>
+							</s:HGroup>
+							<s:CheckBox id="cb_enable_timer" toolTip="Checked to start timer or uncheck to stop timer." change="cb_enable_timer_changeHandler(event)"/>
+						</s:HGroup>
+						<s:HGroup width="1%" horizontalAlign="right">
+							<s:Button id="btn_stress_timers" label="Build!" toolTip="Complete the next expected build." width="90" click="btn_force_timers_clickHandler(event)"/>
+						</s:HGroup>
+						<s:HGroup>
+							<s:Button id="btn_show_LOG" label="LOG..." click="btn_show_LOG_clickHandler(event)"/>
+						</s:HGroup>
+						<s:HGroup width="1%" horizontalAlign="right">
+							<s:Button id="btn_reset_objects" label="Reset" width="90" click="btn_reset_objects_clickHandler(event)"/>
+						</s:HGroup>
+					</s:HGroup>
+				</s:VGroup>
+			</s:HGroup>
+			<s:HGroup width="100%" height="100%" paddingLeft="10">
+				<s:VGroup width="130" height="100%" styleName="navBar" horizontalAlign="center">
+					<s:Button id="btn_overview" label="Overview" width="100%" skinClass="skins.ButtonSkin" click="btn_overview_clickHandler(event)"/>
+					<s:Button id="btn_resources" label="Resources" width="100%" skinClass="skins.ButtonSkin" click="btn_resources_clickHandler(event)"/>
+					<s:Button id="btn_energy" label="Energy" width="100%" skinClass="skins.ButtonSkin" click="btn_energy_clickHandler(event)"/>
+					<s:Button id="btn_facilities" label="Facilities" width="100%" skinClass="skins.ButtonSkin" click="btn_facilities_clickHandler(event)"/>
+					<s:Button id="btn_trader" label="Trader" width="100%" skinClass="skins.ButtonSkin" click="btn_trader_clickHandler(event)"/>
+					<s:Button id="btn_research" label="Research" width="100%" skinClass="skins.ButtonSkin" click="btn_research_clickHandler(event)"/>
+					<s:Button id="btn_shipyard" label="Shipyard" width="100%" skinClass="skins.ButtonSkin" click="btn_shipyard_clickHandler(event)"/>
+					<s:Button id="btn_defense" label="Defense" width="100%" skinClass="skins.ButtonSkin" click="btn_defense_clickHandler(event)"/>
+					<s:Button id="btn_fleet" label="Fleet" width="100%" skinClass="skins.ButtonSkin" click="btn_fleet_clickHandler(event)"/>
+					<s:Button id="btn_galaxy" label="Galaxy" width="100%" skinClass="skins.ButtonSkin" click="btn_galaxy_clickHandler(event)"/>
+					<s:Button id="btn_alliance" label="Alliance" width="100%" skinClass="skins.ButtonSkin" click="btn_alliance_clickHandler(event)"/>
+					<s:Button id="btn_officers" label="Officers" width="100%" skinClass="skins.ButtonSkin" click="btn_officers_clickHandler(event)"/>
+					<s:Button id="btn_market" label="Market" width="100%" skinClass="skins.ButtonSkin" click="btn_market_clickHandler(event)"/>
+				</s:VGroup>
+				<s:VGroup id="popUpContainer" width="100%" height="100%">
+				</s:VGroup>
+			</s:HGroup>
+			<s:Panel width="100%" height="100%" styleName="buildQueuePanel" title="Build Queue">
+				<s:VGroup id="active_builds_container" width="100%" height="100%">
+					<s:List id="active_build_items" width="100%" height="100%" labelField="info" dataProvider="{this.__timers__}">
+						<s:layout>
+							<layouts:FlowLayout horizontalGap="5" verticalGap="5"/>
+						</s:layout>
+						<s:itemRenderer>
+							<fx:Component>
+								<s:ItemRenderer>
+									<fx:Script>
+										<![CDATA[
+											import mx.collections.ArrayCollection;
+											import mx.core.FlexGlobals;
+											import mx.events.FlexEvent;
+											import mx.graphics.BitmapScaleMode;
+											
+											import controls.timers.events.TimerCompletedEvent;
+											import controls.timers.events.TimerTickEvent;
+											
+											import factories.CrystalFactory;
+											import factories.DeuteriumFactory;
+											import factories.MetalFactory;
+											import factories.ResourceFactory;
+											
+											import popups.Resources;
+											
+											private var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+											
+											protected function timeDisplay_TimerCompletedEventHandler(event:TimerCompletedEvent):void {
+												var d:* = TimerWidget(event.currentTarget).data;
+												app.perform_delayed_action = {'delay':100,'func':app.timer_TimerCompletedDelayedHandler, 'args':[data]};
+											}
+											
+											protected function timeDisplay_creationCompleteHandler(event:FlexEvent):void {
+												this.timeDisplay.start_timer();
+											}
+											
+											protected function timeDisplay_TimerTickEventHandler(event:TimerTickEvent):void {
+												this.timeDisplay.container.paddingLeft = -10;
+												this.timeDisplay.container.paddingRight = -10;
+												this.timeDisplay.container.paddingTop = -10;
+												this.timeDisplay.lbl.visible = false;
+												this.timeDisplay.lbl.includeInLayout = false;
+												this.timeDisplay.lblV.visible = true;
+												this.timeDisplay.lblV.includeInLayout = true;
+											}
+											
+										]]>
+									</fx:Script>
+									<s:states>
+										<mx:State name="normal" />
+										<mx:State name="hovered" />
+										<mx:State name="selected" />
+									</s:states>
+									<s:Rect left="0" right="0" top="0" bottom="0">
+										<s:stroke>
+											<mx:SolidColorStroke color="0xCCCCCC" joints="round" weight="2"/>
+										</s:stroke>
+										<s:fill>
+											<mx:SolidColor color="0x999999" alpha="0" alpha.hovered="0.2"
+														   alpha.selected="0.6" />
+										</s:fill>
+									</s:Rect>
+									<timers:TimerWidget id="timeDisplay" data="{data}" width="100%" image_width="42" image_height="30" image_scale_mode="{BitmapScaleMode.ZOOM}" height="45" editable="false" is_vertical="true" TimerTickEvent="timeDisplay_TimerTickEventHandler(event)" TimerCompletedEvent="timeDisplay_TimerCompletedEventHandler(event)" creationComplete="timeDisplay_creationCompleteHandler(event)"/>
+								</s:ItemRenderer>
+							</fx:Component>
+						</s:itemRenderer>
+					</s:List>
+				</s:VGroup>
+			</s:Panel>
+		</s:VGroup>
+	</s:Panel>
+</s:WindowedApplication>

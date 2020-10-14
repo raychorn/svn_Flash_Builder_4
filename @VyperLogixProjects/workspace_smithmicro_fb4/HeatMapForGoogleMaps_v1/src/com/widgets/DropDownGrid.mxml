@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width.closed="150" width.open="100%" height="100%" 
+		 xmlns:widgets="com.widgets.*" 
+		 >
+	<s:states>
+		<s:State id="state_closed" name="closed"/>
+		<s:State id="state_open" name="open"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.events.CloseEvent;
+			
+			import com.widgets.events.StateChangeEvent;
+			
+			[Event(name="CHANGE", type="com.widgets.events.StateChangeEvent")]
+			
+			private var _dataProviderChanged:Boolean = false;
+			private var _dataProvider:ArrayCollection;
+
+			public function get correct_height():Number {
+				return (this.currentState == this.state_open.name) ? (this.parentDocument.height - this.parentDocument[this.id].x) : this.btn.height;
+			}
+			
+			public function get is_closed():Boolean {
+				return (this.currentState == this.state_open.name) ? false : true;
+			}
+			
+			public function get dataProvider():ArrayCollection {
+				return this._dataProvider;
+			}
+			
+			public function set dataProvider(dataProvider:ArrayCollection):void {
+				if (this._dataProvider != dataProvider) {
+					this._dataProvider = dataProvider;
+					this._dataProviderChanged = true;
+					this.invalidateProperties();
+				}
+			}
+
+			override protected function commitProperties() : void {
+				super.commitProperties();
+				if (this._dataProviderChanged) {
+					this._dataProviderChanged = false;
+				}
+			}
+			
+			public function flip_state():void {
+				var old_state:String = this.currentState;
+				this.currentState = (this.currentState == this.state_open.name) ? this.state_closed.name : this.state_open.name;
+				this.height = this.correct_height;
+				this.dispatchEvent(new StateChangeEvent(StateChangeEvent.CHANGE,old_state,this.currentState));
+			}
+			
+			private function handle_btn_click_or_touch_event():void {
+				this.flip_state();
+			}
+
+			protected function btn_clickHandler(event:MouseEvent):void {
+				this.handle_btn_click_or_touch_event();
+			}
+
+
+			private function handle_grid_click_or_touch():void {
+				//this.grid.dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%">
+		<s:Button id="btn" label="Grid" visible.open="false" visible.closed="true" includeInLayout="{this.btn.visible}" click="btn_clickHandler(event)"/>
+	</s:VGroup>
+</s:Group>

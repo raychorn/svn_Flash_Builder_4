@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas 
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:s="library://ns.adobe.com/flex/spark" 
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	width="21" height="21">
+	<fx:Script>
+		<![CDATA[
+			
+		]]>
+	</fx:Script>
+	<mx:Button x="0" y="0" id="btn_open" width="{this.width}" height="{this.height}" toolTip="Click this button to open the Folder Navigator to navigate to another home folder or to locate other Archives and Packages." icon="@Embed(source='assets/images/file_folders_cabinet.png')"/>
+</mx:Canvas>

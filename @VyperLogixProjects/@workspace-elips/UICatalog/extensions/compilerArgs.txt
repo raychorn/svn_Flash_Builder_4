@@ -1,0 +1,29 @@
+-air
+-appname
+UICatalog
+-sdk
+C:/OpenPlug/My Environments/ELIPS_3_0_3_63/ElipsFlexSDK
+-deprecatedxml
+C:/OpenPlug/My Environments/ELIPS_3_0_3_63/ElipsFlexSDK/frameworks/projects/ElipsFlexSDK_deprecated.xml
+-opts
+-locale=eng_US,fra_FR
+-output
+C:/@3/PDFXporter/@workspace_elips/UICatalog/extensions
+-mxml
+C:/@3/PDFXporter/@workspace_elips/UICatalog/src/UICatalog.mxml
+-srcpath
+C:/@3/PDFXporter/@workspace_elips/UICatalog/src
+-srcpath
+C:/@3/PDFXporter/@workspace_elips/UICatalog/locale/{locale}
+-libfile
+C:/OpenPlug/My Environments/ELIPS_3_0_3_63/ElipsFlexSDK/frameworks/projects/ElipsAsCore/bin/ElipsAsCore.swc
+-libfile
+C:/OpenPlug/My Environments/ELIPS_3_0_3_63/ElipsFlexSDK/frameworks/projects/ElipsFlashPlayer/bin/ElipsFlashPlayer.swc
+-libfile
+C:/OpenPlug/My Environments/ELIPS_3_0_3_63/ElipsFlexSDK/frameworks/projects/ElipsFlexFramework/bin/ElipsFlexFramework.swc
+-libfile
+C:/OpenPlug/My Environments/ELIPS_3_0_3_63/ElipsFlexSDK/frameworks/projects/ElipsFlexServices/bin/ElipsFlexServices.swc
+-extension
+Android 1.6;java
+-extdir
+C:/OpenPlug/My Environments/ELIPS_3_0_3_63/Src/native_mapping

@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group 
+	add="addHandler()"
+	preinitialize="preinitializeHandler()"
+	removedFromStage="removeHandler()"
+	xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:charts="com.adobe.dashboard.view.charts.*"
+	xmlns:images="assets.images.*"
+	xmlns:mx="library://ns.adobe.com/flex/mx">
+	
+	<fx:Metadata>
+		[Style(name="chartCornerRadius", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="chartPaddingTop", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="chartPaddingBottom", type="Number", format="Length", inherit="no",  minValue="0.0")]
+		[Style(name="chartPaddingLeft", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="chartPaddingRight", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="paddingLeft", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="paddingRight", type="Number", format="Length", inherit="no", minValue="0.0")]
+	</fx:Metadata>
+	
+	<fx:Declarations>
+		<s:CurrencyFormatter id="currencyFormatter" currencySymbol="$" fractionalDigits="0" useCurrencySymbol="true"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.dashboard.model.AppModel;
+			import com.adobe.dashboard.model.chart.SalesGoalModel;
+			import com.adobe.dashboard.presenter.SalesGoalsPresenter;
+			
+			import mx.core.IVisualElement;
+			
+			[Bindable]
+			private var presenter:SalesGoalsPresenter;
+			
+			[Bindable]
+			public var barHeight:int = 30;
+			
+			[Bindable]
+			public var vPadding:int = 10;
+			
+			[Bindable]
+			public var hPadding:int = 10;
+			
+			
+			[Bindable]
+			public var dataLoaded:Boolean=false;
+			
+			//
+			// Private Methods
+			//
+			
+			private function addListeners():void
+			{
+				removeListeners();
+				
+				presenter.monthChartOverviewPresenter.addEventListener(Event.CHANGE, monthPresenterChangeHandler, false, 0, true);
+				presenter.quarterChartOverviewPresenter.addEventListener(Event.CHANGE, quarterPresenterChangeHandler, false, 0, true);
+				presenter.yearChartOverviewPresenter.addEventListener(Event.CHANGE, yearPresenterChangeHandler, false, 0, true);
+			}
+			
+			public function removeListeners():void
+			{
+				presenter.monthChartOverviewPresenter.removeEventListener(Event.CHANGE, monthPresenterChangeHandler);
+				presenter.quarterChartOverviewPresenter.removeEventListener(Event.CHANGE, quarterPresenterChangeHandler);
+				presenter.yearChartOverviewPresenter.removeEventListener(Event.CHANGE, yearPresenterChangeHandler);
+				
+			}
+			
+			
+			public function loadData():void
+			{
+				var now:Date = new Date();
+				presenter.getSalesGoalsMonthChartData(now, now, true);
+				presenter.getSalesGoalsQuarterChartData(now, true);
+				presenter.getSalesGoalsYearChartData(now, true);
+			}
+			
+			
+			//
+			// Event Handlers
+			//
+			
+			protected function preinitializeHandler():void
+			{
+				presenter = AppModel.getInstance().salesGoalsPresenter;
+			}
+			
+			protected function addHandler():void
+			{
+				addListeners();
+			}
+			
+			protected function removeHandler():void
+			{
+				removeListeners();
+			}
+			
+			protected function monthPresenterChangeHandler(event:Event):void
+			{
+				var model:SalesGoalModel = SalesGoalModel(presenter.monthChartOverviewPresenter.dataModel);
+				monthChart.section1Label = model.dateRangeName;
+				monthChart.footnoteLabel = currencyFormatter.format(model.goal);
+				monthChart.section1Percent = model.myGross / model.goal;
+				dataLoaded = true;
+			}
+			
+			protected function quarterPresenterChangeHandler(event:Event):void
+			{
+				var model:SalesGoalModel = SalesGoalModel(presenter.quarterChartOverviewPresenter.dataModel);
+				quarterChart.section1Label = model.dateRangeName;
+				quarterChart.footnoteLabel = currencyFormatter.format(model.goal);
+				quarterChart.section1Percent = model.myGross / model.goal;
+				dataLoaded = true;
+			}
+			
+			protected function yearPresenterChangeHandler(event:Event):void
+			{
+				var model:SalesGoalModel = SalesGoalModel(presenter.yearChartOverviewPresenter.dataModel);
+				yearChart.section1Label = model.dateRangeName;
+				yearChart.footnoteLabel = currencyFormatter.format(model.goal);
+				yearChart.section1Percent = model.myGross / model.goal;
+				dataLoaded = true;
+			}
+		]]>
+	</fx:Script>
+	
+	<!-- background -->
+	<s:Rect radiusX="2" radiusY="2" left="10" top="0" right="10" bottom="0">
+		<s:fill>
+			<!--TODO: move to styles-->
+			<s:SolidColor color="#2E2E2E"/>
+		</s:fill>
+	</s:Rect>
+	
+	<!-- progress bars -->
+	<s:VGroup 
+		left="{getStyle('paddingLeft')}" right="{getStyle('paddingRight')}" top="14" bottom="0"
+		gap="16">
+		
+		<s:Label styleName="labelStyle" text="Sales Goals"/>
+		
+		<charts:ProgressChart id="monthChart"
+							  width="100%" height="{barHeight}"
+							  cornerRadius="{getStyle('chartCornerRadius')}"
+							  paddingBottom="{getStyle('chartPaddingBottom')}"
+							  paddingLeft="{getStyle('chartPaddingLeft')}"
+							  paddingRight="{getStyle('chartPaddingRight')}"
+							  paddingTop="{getStyle('chartPaddingTop')}"
+							  section1ColorList="{ [ 0x2A65C7, 0x2853A2, 0x243D76 ]}"
+							  skipAnimation="@{presenter.skipAnimation}"/>
+		
+		<charts:ProgressChart id="quarterChart"
+							  width="100%" height="{barHeight}"
+							  cornerRadius="{getStyle('chartCornerRadius')}"
+							  paddingBottom="{getStyle('chartPaddingBottom')}"
+							  paddingLeft="{getStyle('chartPaddingLeft')}"
+							  paddingRight="{getStyle('chartPaddingRight')}"
+							  paddingTop="{getStyle('chartPaddingTop')}"
+							  section1ColorList="{ [ 0x2A65C7, 0x2853A2, 0x243D76 ]}"
+							  skipAnimation="@{presenter.skipAnimation}"/>
+		
+		<charts:ProgressChart id="yearChart"
+							  width="100%" height="{barHeight}"
+							  cornerRadius="{getStyle('chartCornerRadius')}"
+							  paddingBottom="{getStyle('chartPaddingBottom')}"
+							  paddingLeft="{getStyle('chartPaddingLeft')}"
+							  paddingRight="{getStyle('chartPaddingRight')}"
+							  paddingTop="{getStyle('chartPaddingTop')}"
+							  section1ColorList="{ [ 0x2A65C7, 0x2853A2, 0x243D76 ]}"
+							  skipAnimation="@{presenter.skipAnimation}"/>
+	</s:VGroup>
+	
+	
+	
+</s:Group>
+

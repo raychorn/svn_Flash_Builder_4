@@ -1,0 +1,903 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%" initialize="vgroup1_initializeHandler(event)"
+		  xmlns:controls="popups.controls.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:states>
+		<mx:State name="panels"/>
+		<mx:State name="nopanels"/>
+		<mx:State name="fancy"/>
+		<mx:State name="fancyHighlight1"/>
+		<mx:State name="fancyHighlight2"/>
+		<mx:State name="fancyHighlight3"/>
+		<mx:State name="fancyHighlight4"/>
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import com.DisplayObjectUtils;
+			import com.GUID;
+			import com.TimeUtils;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import factories.ResourceFactory;
+			
+			private var _this:QuadGroup;
+			
+			private var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+
+			private static var __is_building_by_id__:String;
+			
+			private var popUp:*;
+			
+			private var __factory1__:Class;
+			private var __factory2__:Class;
+			private var __factory3__:Class;
+			private var __factory4__:Class;
+			
+			private var __builder1__:Class;
+			private var __builder2__:Class;
+			private var __builder3__:Class;
+			private var __builder4__:Class;
+			
+			private var __building_container_name1__:String;
+			private var __building_container_name2__:String;
+			private var __building_container_name3__:String;
+			private var __building_container_name4__:String;
+			
+			[Bindable]
+			private var __building_resource_image1__:Class;
+
+			[Bindable]
+			private var __building_resource_image2__:Class;
+
+			[Bindable]
+			private var __building_resource_image3__:Class;
+			
+			[Bindable]
+			private var __building_resource_image4__:Class;
+			
+			[Bindable]
+			private var __building_icon_image1__:Class;
+			
+			[Bindable]
+			private var __building_icon_image2__:Class;
+			
+			[Bindable]
+			private var __building_icon_image3__:Class;
+			
+			[Bindable]
+			private var __building_icon_image4__:Class;
+			
+			[Bindable]
+			private var __resource_label1__:String;
+			
+			[Bindable]
+			private var __resource_label2__:String;
+			
+			[Bindable]
+			private var __resource_label3__:String;
+			
+			[Bindable]
+			private var __resource_label4__:String;
+			
+			[Bindable]
+			private var __padding_top1__:Number = 0;
+			
+			[Bindable]
+			private var __padding_left1__:Number = 0;
+			
+			[Bindable]
+			private var __width1__:Number = 0;
+			
+			[Bindable]
+			private var __height1__:Number = 0;
+			
+			[Bindable]
+			private var __padding_top2__:Number = 0;
+			
+			[Bindable]
+			private var __padding_left2__:Number = 0;
+			
+			[Bindable]
+			private var __width2__:Number = 0;
+			
+			[Bindable]
+			private var __height2__:Number = 0;
+			
+			[Bindable]
+			private var __padding_top3__:Number = 0;
+			
+			[Bindable]
+			private var __padding_left3__:Number = 0;
+			
+			[Bindable]
+			private var __width3__:Number = 0;
+			
+			[Bindable]
+			private var __height3__:Number = 0;
+			
+			[Bindable]
+			private var __padding_top4__:Number = 0;
+			
+			[Bindable]
+			private var __padding_left4__:Number = 0;
+			
+			[Bindable]
+			private var __width4__:Number = 0;
+			
+			[Bindable]
+			private var __height4__:Number = 0;
+			
+			public function get paddingTop1():Number {
+				return this.__padding_top1__;
+			}
+			
+			public function set paddingTop1(value:Number):void {
+				if (this.__padding_top1__ != value) {
+					this.__padding_top1__ = value;
+				}
+			}
+			
+			public function get paddingLeft1():Number {
+				return this.__padding_left1__;
+			}
+			
+			public function set paddingLeft1(value:Number):void {
+				if (this.__padding_left1__ != value) {
+					this.__padding_left1__ = value;
+				}
+			}
+			
+			public function get width1():Number {
+				return this.__width1__;
+			}
+			
+			public function set width1(value:Number):void {
+				if (this.__width1__ != value) {
+					this.__width1__ = value;
+				}
+			}
+			
+			public function get height1():Number {
+				return this.__height1__;
+			}
+			
+			public function set height1(value:Number):void {
+				if (this.__height1__ != value) {
+					this.__height1__ = value;
+				}
+			}
+			
+			public function get paddingTop2():Number {
+				return this.__padding_top2__;
+			}
+			
+			public function set paddingTop2(value:Number):void {
+				if (this.__padding_top2__ != value) {
+					this.__padding_top2__ = value;
+				}
+			}
+			
+			public function get paddingLeft2():Number {
+				return this.__padding_left2__;
+			}
+			
+			public function set paddingLeft2(value:Number):void {
+				if (this.__padding_left2__ != value) {
+					this.__padding_left2__ = value;
+				}
+			}
+			
+			public function get width2():Number {
+				return this.__width2__;
+			}
+			
+			public function set width2(value:Number):void {
+				if (this.__width2__ != value) {
+					this.__width2__ = value;
+				}
+			}
+			
+			public function get height2():Number {
+				return this.__height2__;
+			}
+			
+			public function set height2(value:Number):void {
+				if (this.__height2__ != value) {
+					this.__height2__ = value;
+				}
+			}
+			
+			public function get paddingTop3():Number {
+				return this.__padding_top3__;
+			}
+			
+			public function set paddingTop3(value:Number):void {
+				if (this.__padding_top3__ != value) {
+					this.__padding_top3__ = value;
+				}
+			}
+			
+			public function get paddingLeft3():Number {
+				return this.__padding_left3__;
+			}
+			
+			public function set paddingLeft3(value:Number):void {
+				if (this.__padding_left3__ != value) {
+					this.__padding_left3__ = value;
+				}
+			}
+			
+			public function get width3():Number {
+				return this.__width3__;
+			}
+			
+			public function set width3(value:Number):void {
+				if (this.__width3__ != value) {
+					this.__width3__ = value;
+				}
+			}
+			
+			public function get height3():Number {
+				return this.__height3__;
+			}
+			
+			public function set height3(value:Number):void {
+				if (this.__height3__ != value) {
+					this.__height3__ = value;
+				}
+			}
+			
+			public function get paddingTop4():Number {
+				return this.__padding_top4__;
+			}
+			
+			public function set paddingTop4(value:Number):void {
+				if (this.__padding_top4__ != value) {
+					this.__padding_top4__ = value;
+				}
+			}
+			
+			public function get paddingLeft4():Number {
+				return this.__padding_left4__;
+			}
+			
+			public function set paddingLeft4(value:Number):void {
+				if (this.__padding_left4__ != value) {
+					this.__padding_left4__ = value;
+				}
+			}
+			
+			public function get width4():Number {
+				return this.__width4__;
+			}
+			
+			public function set width4(value:Number):void {
+				if (this.__width4__ != value) {
+					this.__width4__ = value;
+				}
+			}
+			
+			public function get height4():Number {
+				return this.__height4__;
+			}
+			
+			public function set height4(value:Number):void {
+				if (this.__height4__ != value) {
+					this.__height4__ = value;
+				}
+			}
+			
+			public function get resource_label1():String {
+				return this.__resource_label1__;
+			}
+			
+			public function set resource_label1(label:String):void {
+				if (this.__resource_label1__ != label) {
+					this.__resource_label1__ = label;
+				}
+			}
+			
+			public function get resource_label2():String {
+				return this.__resource_label2__;
+			}
+			
+			public function set resource_label2(label:String):void {
+				if (this.__resource_label2__ != label) {
+					this.__resource_label2__ = label;
+				}
+			}
+			
+			public function get resource_label3():String {
+				return this.__resource_label3__;
+			}
+			
+			public function set resource_label3(label:String):void {
+				if (this.__resource_label3__ != label) {
+					this.__resource_label3__ = label;
+				}
+			}
+			
+			public function get resource_label4():String {
+				return this.__resource_label4__;
+			}
+			
+			public function set resource_label4(label:String):void {
+				if (this.__resource_label4__ != label) {
+					this.__resource_label4__ = label;
+				}
+			}
+			
+			public function get building_resource_image1():Class {
+				return this.__building_resource_image1__;
+			}
+			
+			public function set building_resource_image1(image:Class):void {
+				if (this.__building_resource_image1__ != image) {
+					this.__building_resource_image1__ = image;
+				}
+			}
+			
+			public function get building_resource_image2():Class {
+				return this.__building_resource_image2__;
+			}
+			
+			public function set building_resource_image2(image:Class):void {
+				if (this.__building_resource_image2__ != image) {
+					this.__building_resource_image2__ = image;
+				}
+			}
+			
+			public function get building_resource_image3():Class {
+				return this.__building_resource_image3__;
+			}
+			
+			public function set building_resource_image3(image:Class):void {
+				if (this.__building_resource_image3__ != image) {
+					this.__building_resource_image3__ = image;
+				}
+			}
+			
+			public function get building_resource_image4():Class {
+				return this.__building_resource_image4__;
+			}
+			
+			public function set building_resource_image4(image:Class):void {
+				if (this.__building_resource_image4__ != image) {
+					this.__building_resource_image4__ = image;
+				}
+			}
+			
+			public function get building_icon_image1():Class {
+				return this.__building_icon_image1__;
+			}
+			
+			public function set building_icon_image1(image:Class):void {
+				if (this.__building_icon_image1__ != image) {
+					this.__building_icon_image1__ = image;
+				}
+			}
+			
+			public function get building_icon_image2():Class {
+				return this.__building_icon_image2__;
+			}
+			
+			public function set building_icon_image2(image:Class):void {
+				if (this.__building_icon_image2__ != image) {
+					this.__building_icon_image2__ = image;
+				}
+			}
+			
+			public function get building_icon_image3():Class {
+				return this.__building_icon_image3__;
+			}
+			
+			public function set building_icon_image3(image:Class):void {
+				if (this.__building_icon_image3__ != image) {
+					this.__building_icon_image3__ = image;
+				}
+			}
+			
+			public function get building_icon_image4():Class {
+				return this.__building_icon_image4__;
+			}
+			
+			public function set building_icon_image4(image:Class):void {
+				if (this.__building_icon_image4__ != image) {
+					this.__building_icon_image4__ = image;
+				}
+			}
+			
+			public function get building_container_name1():String {
+				return this.__building_container_name1__;
+			}
+			
+			public function set building_container_name1(name:String):void {
+				if (this.__building_container_name1__ != name) {
+					this.__building_container_name1__ = name;
+				}
+			}
+			
+			public function get building_container_name2():String {
+				return this.__building_container_name2__;
+			}
+			
+			public function set building_container_name2(name:String):void {
+				if (this.__building_container_name2__ != name) {
+					this.__building_container_name2__ = name;
+				}
+			}
+			
+			public function get building_container_name3():String {
+				return this.__building_container_name3__;
+			}
+			
+			public function set building_container_name3(name:String):void {
+				if (this.__building_container_name3__ != name) {
+					this.__building_container_name3__ = name;
+				}
+			}
+			
+			public function get building_container_name4():String {
+				return this.__building_container_name4__;
+			}
+			
+			public function set building_container_name4(name:String):void {
+				if (this.__building_container_name4__ != name) {
+					this.__building_container_name4__ = name;
+				}
+			}
+			
+			public function get factory1():Class {
+				return this.__factory1__;
+			}
+			
+			public function set factory1(factory:Class):void {
+				if (this.__factory1__ != factory) {
+					this.__factory1__ = factory;
+				}
+			}
+			
+			public function get factory2():Class {
+				return this.__factory2__;
+			}
+			
+			public function set factory2(factory:Class):void {
+				if (this.__factory2__ != factory) {
+					this.__factory2__ = factory;
+				}
+			}
+			
+			public function get factory3():Class {
+				return this.__factory3__;
+			}
+			
+			public function set factory3(factory:Class):void {
+				if (this.__factory3__ != factory) {
+					this.__factory3__ = factory;
+				}
+			}
+			
+			public function get factory4():Class {
+				return this.__factory4__;
+			}
+			
+			public function set factory4(factory:Class):void {
+				if (this.__factory4__ != factory) {
+					this.__factory4__ = factory;
+				}
+			}
+			
+			public function get builder1():Class {
+				return this.__builder1__;
+			}
+			
+			public function set builder1(builder:Class):void {
+				if (this.__builder1__ != builder) {
+					this.__builder1__ = builder;
+				}
+			}
+			
+			public function get builder2():Class {
+				return this.__builder2__;
+			}
+			
+			public function set builder2(builder:Class):void {
+				if (this.__builder2__ != builder) {
+					this.__builder2__ = builder;
+				}
+			}
+			
+			public function get builder3():Class {
+				return this.__builder3__;
+			}
+			
+			public function set builder3(builder:Class):void {
+				if (this.__builder3__ != builder) {
+					this.__builder3__ = builder;
+				}
+			}
+			
+			public function get builder4():Class {
+				return this.__builder4__;
+			}
+			
+			public function set builder4(builder:Class):void {
+				if (this.__builder4__ != builder) {
+					this.__builder4__ = builder;
+				}
+			}
+			
+			public function signal_enabled_or_disabled_for_others_besides(id:String,__is__:Boolean):void {
+				var children:Array = DisplayObjectUtils.getChildrenFrom(this.building_panels_hgroup);
+				var child:*;
+				__is__ = (id == null) ? true : __is__;
+				for (var i:int = 0; i < children.length; i++) {
+					child = children[i];
+					if (child.id != id) {
+						child.enabled = __is__;
+					}
+				}
+			}
+			
+			public function signal_disabled_for_others_besides(id:String):void {
+				this.signal_enabled_or_disabled_for_others_besides(id,false);
+			}
+			
+			public static function get is_building_by_id():String {
+				return __is_building_by_id__;
+			}
+			
+			public static function set is_building_by_id(is_building_by_id:String):void {
+				if (__is_building_by_id__ != is_building_by_id) {
+					__is_building_by_id__ = is_building_by_id;
+				}
+			}
+			
+			public function signal_completion_of_timer(id:String):void {
+				var panel:Panel;
+				this.signal_enabled_or_disabled_for_others_besides(id,true);
+				this.refresh_panel_title(panel);
+				is_building_by_id = null;
+			}
+			
+			private function get_resource_title_for(panel:Panel):String {
+				var title:String;
+				app.log = 'get_resource_title_for.1 --> panel.id='+panel.id;
+				if ( (this.factory1) && (panel.name.indexOf(this.factory1.name) > -1) ) {
+					title = ResourceFactory.current_level_toString(this.factory1.current_level);
+					app.log = 'get_resource_title_for.2 --> panel.title='+panel.title;
+				} else if ( (this.factory2) && (panel.name.indexOf(this.factory2.name) > -1) ) {
+					title = ResourceFactory.current_level_toString(this.factory2.current_level);
+					app.log = 'get_resource_title_for.3 --> panel.title='+panel.title;
+				} else if ( (this.factory3) && (panel.name.indexOf(this.factory3.name) > -1) ) {
+					title = ResourceFactory.current_level_toString(this.factory3.current_level);
+					app.log = 'get_resource_title_for.4 --> panel.title='+panel.title;
+				} else if ( (this.factory4) && (panel.name.indexOf(this.factory4.name) > -1) ) {
+					title = ResourceFactory.current_level_toString(this.factory4.current_level);
+					app.log = 'get_resource_title_for.5 --> panel.title='+panel.title;
+				}
+				return title;
+			}
+			
+			private function refresh_panel_title(panel:Panel):void {
+				app.log = 'refresh_panel_title.1 --> panel.id='+panel.id;
+				panel.title = this.get_resource_title_for(panel);
+			}
+			
+			public function refresh_panel_titles():void {
+				if (this.currentState == 'panels') {
+					if (this.building_panels_container1 is Panel) {
+						this.building_panels_container1.title = this.get_resource_title_for(this.building_panels_container1);
+					}
+					if (this.building_panels_container2 is Panel) {
+						this.building_panels_container2.title = this.get_resource_title_for(this.building_panels_container2);
+					}
+					if (this.building_panels_container3 is Panel) {
+						this.building_panels_container3.title = this.get_resource_title_for(this.building_panels_container3);
+					}
+					if (this.building_panels_container4 is Panel) {
+						this.building_panels_container4.title = this.get_resource_title_for(this.building_panels_container4);
+					}
+				}
+			}
+			
+			protected function panel1_creationCompleteHandler(event:FlexEvent):void {
+				var panel:Panel = event.currentTarget as Panel;
+				panel.name = this.building_container_name1;
+				this.refresh_panel_title(panel);
+			}
+			
+			protected function panel2_creationCompleteHandler(event:FlexEvent):void {
+				var panel:Panel = event.currentTarget as Panel;
+				panel.name = this.building_container_name2;
+				this.refresh_panel_title(panel);
+			}
+			
+			protected function panel3_creationCompleteHandler(event:FlexEvent):void {
+				var panel:Panel = event.currentTarget as Panel;
+				try {
+					panel.name = this.building_container_name3;
+				} catch (err:Error) {}
+				this.refresh_panel_title(panel);
+			}
+			
+			protected function panel4_creationCompleteHandler(event:FlexEvent):void {
+				var panel:Panel = event.currentTarget as Panel;
+				try {
+					panel.name = this.building_container_name4;
+				} catch (err:Error) {}
+				this.refresh_panel_title(panel);
+			}
+			
+			private function building_container_clickHandler(parent:DisplayObject,classNameBuilder:Class,classNameFactory:Class,container:*,title:String,width:Number,height:Number,xOffset:Number,yOffset:Number,info:String,image:Class,signal:Function,__is__:Boolean,closeHandler:Function):void {
+				if (!is_building_by_id) {
+					this.popUp = PopUpManager.createPopUp(parent,classNameBuilder,true);
+					var pt:Point = new Point(0,0);
+					var pt2:Point = container.localToGlobal(pt);
+					this.popUp.x = pt2.x + xOffset;
+					this.popUp.y = pt2.y + yOffset;
+					this.popUp.width = width;
+					this.popUp.height = height;
+					this.popUp.title = title + '   ' + this.get_resource_title_for(container);
+					this.popUp.addEventListener(CloseEvent.CLOSE, 
+						function (event:CloseEvent):void {
+							PopUpManager.removePopUp(_this.popUp);
+							if (closeHandler is Function) {
+								try {
+									closeHandler();
+								} catch (err:Error) {}
+							}
+						}
+					);
+					this.popUp.btn_build.addEventListener(MouseEvent.CLICK, 
+						function (event:MouseEvent):void {
+							PopUpManager.removePopUp(_this.popUp);
+							var data:* = {'time':TimeUtils.convertTime(classNameFactory.current_level_upgrade_time,false),'parent':null,'target':_this,'aspect':'timer','running':false,'uuid':GUID.create(),'info':info,'tooltip':info,'image':image};
+							
+							app.add_timer = data;
+							_this.refresh_panel_title(container);
+							if (!app.premium_account) {
+								if (signal is Function) {
+									try {
+										signal(container.id,__is__);
+									} catch (err:Error) {
+										this.signal_disabled_for_others_besides(container.id);
+									}
+								}
+							} else {
+								// queue the build...
+							}
+							is_building_by_id = container.id;
+						}
+					);
+				}
+			}
+			
+			protected function building_container_clickHandler1(event:MouseEvent):void {
+				this.building_container_clickHandler(this.building_panels_hgroup,this.builder1,this.factory1,this.building_panels_container1,this.resource_label1,450,200,0,0,'Building '+this.resource_label1,this.building_icon_image1,signal_enabled_or_disabled_for_others_besides,false,
+					function ():void {
+					}
+				);
+			}
+			
+			protected function building_container_clickHandler2(event:MouseEvent):void {
+				this.building_container_clickHandler(this.building_panels_hgroup,this.builder2,this.factory2,this.building_panels_container1,this.resource_label2,450,200,0,0,'Building '+this.resource_label2,this.building_icon_image2,signal_enabled_or_disabled_for_others_besides,false,
+					function ():void {
+					}
+				);
+			}
+			
+			protected function building_container_clickHandler3(event:MouseEvent):void {
+				this.building_container_clickHandler(this.building_panels_hgroup,this.builder3,this.factory3,this.building_panels_container1,this.resource_label3,450,200,0,0,'Building '+this.resource_label3,this.building_icon_image3,signal_enabled_or_disabled_for_others_besides,false,
+					function ():void {
+					}
+				);
+			}
+			
+			protected function building_container_clickHandler4(event:MouseEvent):void {
+				this.building_container_clickHandler(this.building_panels_hgroup,this.builder4,this.factory4,this.building_panels_container1,this.resource_label4,450,200,0,0,'Building '+this.resource_label4,this.building_icon_image4,signal_enabled_or_disabled_for_others_besides,false,
+					function ():void {
+					}
+				);
+			}
+			
+			private function info_name_from_container_name(name:String,suffix:String):String {
+				var toks:Array = name.split('_');
+				toks[toks.length-1] = suffix;
+				return toks.join('_');
+			}
+			
+			protected function building_container_mouseOverHandler1(event:MouseEvent):void {
+				if (this.currentState == 'fancy') {
+					this.currentState = 'fancyHighlight1';
+				}
+			}
+			
+			protected function building_container_mouseOutHandler1(event:MouseEvent):void {
+				if (this.currentState != 'fancy') {
+					this.currentState = 'fancy';
+				}
+			}
+			
+			protected function building_container_mouseOverHandler2(event:MouseEvent):void {
+				if (this.currentState == 'fancy') {
+					this.currentState = 'fancyHighlight2';
+				}
+			}
+			
+			protected function building_container_mouseOutHandler2(event:MouseEvent):void {
+				if (this.currentState != 'fancy') {
+					this.currentState = 'fancy';
+				}
+			}
+			
+			protected function building_container_mouseOverHandler3(event:MouseEvent):void {
+				if (this.currentState == 'fancy') {
+					this.currentState = 'fancyHighlight3';
+				}
+			}
+			
+			protected function building_container_mouseOutHandler3(event:MouseEvent):void {
+				if (this.currentState != 'fancy') {
+					this.currentState = 'fancy';
+				}
+			}
+			
+			protected function building_container_mouseOverHandler4(event:MouseEvent):void {
+				if (this.currentState == 'fancy') {
+					this.currentState = 'fancyHighlight4';
+				}
+			}
+			
+			protected function building_container_mouseOutHandler4(event:MouseEvent):void {
+				if (this.currentState != 'fancy') {
+					this.currentState = 'fancy';
+				}
+			}
+			
+			protected function vgroup1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+			}
+			
+			protected function building_panels_vgroup1_creationCompleteHandler(event:FlexEvent):void {
+				var group:QuadVGroup = event.currentTarget as QuadVGroup;
+				if ( (!isNaN(this.width1)) && (!isNaN(this.height1)) ) {
+					group.width = this.width1;
+					group.height = this.height1;
+				}
+			}
+			
+			protected function building_panels_vgroup2_creationCompleteHandler(event:FlexEvent):void {
+				var group:QuadVGroup = event.currentTarget as QuadVGroup;
+				if ( (!isNaN(this.width2)) && (!isNaN(this.height2)) ) {
+					group.width = this.width2;
+					group.height = this.height2;
+				}
+			}
+			
+			protected function building_panels_vgroup3_creationCompleteHandler(event:FlexEvent):void {
+				var group:QuadVGroup = event.currentTarget as QuadVGroup;
+				if ( (!isNaN(this.width3)) && (!isNaN(this.height3)) ) {
+					group.width = this.width3;
+					group.height = this.height3;
+				}
+			}
+			
+			protected function building_panels_vgroup4_creationCompleteHandler(event:FlexEvent):void {
+				var group:QuadVGroup = event.currentTarget as QuadVGroup;
+				if ( (!isNaN(this.width4)) && (!isNaN(this.height4)) ) {
+					group.width = this.width4;
+					group.height = this.height4;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:HGroup id="building_panels_hgroup" width="100%" height="100%">
+		<s:Panel id="building_panels_container1" 
+				 visible="{this.__building_resource_image1__ != null}" includeInLayout="{this.__building_resource_image1__ != null}"
+				 skinClass.panels="spark.skins.spark.PanelSkin" 
+				 skinClass.nopanels="skins.NoHeaderPanelSkin" 
+				 skinClass.fancy="skins.PanelSkin" 
+				 skinClass.fancyHighlight1="skins.PanelHighlightSkin"
+				 skinClass.fancyHighlight2="skins.PanelSkin" 
+				 skinClass.fancyHighlight3="skins.PanelSkin"
+				 skinClass.fancyHighlight4="skins.PanelSkin"
+				 styleName="resourceBuildPanel"
+				 width="{this.building_panels_vgroup1.building_image.width+20}" 
+				 height="0" 
+				 toolTip="Click to Build {this.__resource_label1__}." 
+				 creationComplete="panel1_creationCompleteHandler(event)" 
+				 click="building_container_clickHandler1(event)" 
+				 mouseOver="building_container_mouseOverHandler1(event)" 
+				 mouseOut="building_container_mouseOutHandler1(event)">
+			<controls:QuadVGroup id="building_panels_vgroup1" 
+									 width="100%" height="100%" 
+									 padding_left="{this.__padding_left1__}"
+									 resource_label="{this.__resource_label1__}" 
+									 building_resource_image="{this.__building_resource_image1__}" 
+									 creationComplete="building_panels_vgroup1_creationCompleteHandler(event)"/>
+		</s:Panel>
+		<s:Panel id="building_panels_container2" 
+				 visible="{this.__building_resource_image2__ != null}" includeInLayout="{this.__building_resource_image2__ != null}"
+				 skinClass.panels="spark.skins.spark.PanelSkin" 
+				 skinClass.nopanels="skins.NoHeaderPanelSkin" 
+				 skinClass.fancy="skins.PanelSkin"
+				 skinClass.fancyHighlight1="skins.PanelSkin"
+				 skinClass.fancyHighlight2="skins.PanelHighlightSkin"
+				 skinClass.fancyHighlight3="skins.PanelSkin"
+				 skinClass.fancyHighlight4="skins.PanelSkin"
+				 styleName="resourceBuildPanel" 
+				 width="{this.building_panels_vgroup2.building_image.width+20}" 
+				 height="0" 
+				 toolTip="Click to Build {this.__resource_label2__}." 
+				 creationComplete="panel2_creationCompleteHandler(event)" 
+				 click="building_container_clickHandler2(event)" 
+				 mouseOver="building_container_mouseOverHandler2(event)" 
+				 mouseOut="building_container_mouseOutHandler2(event)">
+			<controls:QuadVGroup id="building_panels_vgroup2" 
+									 width="100%" height="100%" 
+									 padding_left="{this.__padding_left2__}"
+									 resource_label="{this.__resource_label2__}" 
+									 building_resource_image="{this.__building_resource_image2__}" 
+									 creationComplete="building_panels_vgroup2_creationCompleteHandler(event)"/>
+		</s:Panel>
+		<s:Panel id="building_panels_container3" 
+				 visible="{this.__building_resource_image3__ != null}" includeInLayout="{this.__building_resource_image3__ != null}"
+				 skinClass.panels="spark.skins.spark.PanelSkin" 
+				 skinClass.nopanels="skins.NoHeaderPanelSkin" 
+				 skinClass.fancy="skins.PanelSkin"
+				 skinClass.fancyHighlight1="skins.PanelSkin"
+				 skinClass.fancyHighlight2="skins.PanelSkin"
+				 skinClass.fancyHighlight3="skins.PanelHighlightSkin"
+				 skinClass.fancyHighlight4="skins.PanelSkin"
+				 styleName="resourceBuildPanel" 
+				 width="{this.building_panels_vgroup3.building_image.width+20}" 
+				 height="0" 
+				 toolTip="Click to Build {this.__resource_label3__}." 
+				 creationComplete="panel3_creationCompleteHandler(event)" 
+				 click="building_container_clickHandler3(event)" 
+				 mouseOver="building_container_mouseOverHandler3(event)" 
+				 mouseOut="building_container_mouseOutHandler3(event)">
+			<controls:QuadVGroup id="building_panels_vgroup3" 
+									 width="100%" height="100%" 
+									 padding_left="{this.__padding_left3__}"
+									 resource_label="{this.__resource_label3__}" 
+									 building_resource_image="{this.__building_resource_image3__}" 
+									 creationComplete="building_panels_vgroup3_creationCompleteHandler(event)"/>
+		</s:Panel>
+		<s:Panel id="building_panels_container4" 
+				 visible="{this.__building_resource_image4__ != null}" includeInLayout="{this.__building_resource_image4__ != null}"
+				 skinClass.panels="spark.skins.spark.PanelSkin" 
+				 skinClass.nopanels="skins.NoHeaderPanelSkin" 
+				 skinClass.fancy="skins.PanelSkin"
+				 skinClass.fancyHighlight1="skins.PanelSkin"
+				 skinClass.fancyHighlight2="skins.PanelSkin"
+				 skinClass.fancyHighlight3="skins.PanelSkin"
+				 skinClass.fancyHighlight4="skins.PanelHighlightSkin"
+				 styleName="resourceBuildPanel" 
+				 width="{this.building_panels_vgroup4.building_image.width+20}" 
+				 height="0" 
+				 toolTip="Click to Build {this.__resource_label4__}." 
+				 creationComplete="panel4_creationCompleteHandler(event)" 
+				 click="building_container_clickHandler4(event)" 
+				 mouseOver="building_container_mouseOverHandler4(event)" 
+				 mouseOut="building_container_mouseOutHandler4(event)">
+			<controls:QuadVGroup id="building_panels_vgroup4" 
+									 width="100%" height="100%" 
+									 padding_left="{this.__padding_left4__}"
+									 resource_label="{this.__resource_label4__}" 
+									 building_resource_image="{this.__building_resource_image4__}" 
+									 creationComplete="building_panels_vgroup4_creationCompleteHandler(event)"/>
+		</s:Panel>
+	</s:HGroup>
+</s:VGroup>

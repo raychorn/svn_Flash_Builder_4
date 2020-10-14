@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" showCloseButton="false">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			[Bindable]
+			public var updateVersion:String;
+		]]>
+	</fx:Script>
+	<mx:VBox id="vbox0" horizontalAlign="center" width="100%" height="100%">
+		<s:HGroup horizontalAlign="center">
+			<s:BitmapImage id="logo"/>
+		</s:HGroup>
+		<mx:VBox horizontalAlign="center" verticalAlign="top" width="100%" height="100%">
+			<s:Label text="New version {this.updateVersion} is available." />
+			<s:Label text="Do you want to download and install version {this.updateVersion}?" />
+			<mx:ProgressBar id="prgBar" label="Downloading %3%" visible="false" includeInLayout="false"/>
+			<mx:HBox id="hbox_buttons" horizontalAlign="center" width="100%">
+				<s:Button id="btnYes" label="Yes"/>
+				<s:Button id="btnNo" label="No"/>
+			</mx:HBox>
+			<s:TextArea id="details" width="100%" height="100%" editable="false"/>
+		</mx:VBox>
+	</mx:VBox>
+</mx:TitleWindow>

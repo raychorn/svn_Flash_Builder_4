@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:mx="library://ns.adobe.com/flex/mx"
+		xmlns:s="library://ns.adobe.com/flex/spark" xmlns:dao="dao.*" title="Expenses By Category" 
+		viewActivate="data!=null?getData(data as Report):getAllData()">
+	
+	<fx:Metadata>
+		[Event(name="change")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import dao.Expense;
+			import dao.Report;
+			
+			import mx.charts.HitData;
+			import mx.charts.events.ChartItemEvent;
+			import mx.collections.ArrayCollection;
+			import mx.utils.ObjectUtil;
+			
+			[Bindable]
+			public var chartTitle:String = "Expenses by Category";
+			
+			public var selectedItem:String;
+			
+			public var d:Dictionary = new Dictionary();
+			[Bindable]
+			public var results:ArrayCollection;
+			
+			public function getData(rpt:Report):void
+			{
+				var expenses:ArrayCollection = srv.getExpensesByReport(rpt);
+				
+				for each (var item:Expense in expenses)
+				{
+					var exp:Expense = item as Expense;
+					if (d[exp.category]!=null)
+						d[exp.category]+=exp.amount;
+					else d[exp.category]=exp.amount;
+				}
+				if (data!=null)
+				{
+					var i:int = 0;
+					var results:Array = [];
+					for (var dictionaryKey:Object in d)
+					{
+						results[i] = {category:dictionaryKey,value:d[dictionaryKey]};
+						i++;
+					}
+					colChart.dataProvider = new ArrayCollection(results);
+					pieChart.dataProvider = new ArrayCollection(results);
+				}
+			}
+			
+			public function getAllData():void
+			{
+				var rpts:ArrayCollection = srv.getReports();
+				for each (var item:Report in rpts)
+				{
+					var rpt:Report = item as Report;
+					getData(rpt);
+				}
+				var i:int = 0;
+				var results:Array = [];
+				
+				for (var dictionaryKey:Object in d)
+				{
+					results[i] = {category:dictionaryKey,value:d[dictionaryKey]};
+					i++;
+				}
+				colChart.dataProvider = new ArrayCollection(results);
+				pieChart.dataProvider = new ArrayCollection(results);
+			}
+			
+			protected function getDataTipCol(hitData:HitData):String
+			{
+				var value:Boolean = Object(hitData.element).yField == "value";
+				return "<p align='center'><b>" + hitData.chartItem.item.category + 
+					"</b><br>" + (value?"Category:":"Amount:") + 
+					" $" + nf.format(Object(hitData.chartItem).yValue * 100)+"</p>";
+			}
+			
+			protected function getDataTipPie(hitData:HitData):String
+			{
+				var value:Boolean = Object(hitData.element).field == "value";
+				return "<p align='center'><b>" + hitData.chartItem.item.category + 
+					"</b><br>" + (value?"Category:":"Amount:") + 
+					" $" + nf.format(Object(hitData.chartItem).value * 100)+"</p>";
+			}
+			
+			protected function chart_itemClickHandler(event:ChartItemEvent):void
+			{
+				selectedItem = event.hitData.chartItem.item.category;
+				dispatchEvent(new Event('change'));
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<mx:SeriesInterpolate id="interpolate"/>
+		<s:NumberFormatter id="nf" fractionalDigits="0"/>
+		<dao:ExpenseReportDAO id="srv"/>
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout paddingTop="5" paddingBottom="5" paddingLeft="5" paddingRight="5" gap="5" 
+						  horizontalAlign="center" verticalAlign="middle"/>
+	</s:layout>
+	
+	<s:Label id="lbl" text="{chartTitle}" styleName="title"/>
+	
+	<mx:ColumnChart id="colChart" fontSize="16"
+					bottom="0" left="0" right="0" top="30"
+					showDataTips="true" dataTipFunction="getDataTipCol"
+					itemClick="chart_itemClickHandler(event)" seriesFilters="[]">
+		
+		<mx:horizontalAxis>
+			<mx:CategoryAxis categoryField="category"/>
+		</mx:horizontalAxis>
+		
+		<mx:verticalAxis>
+			<mx:LinearAxis id="vAxis" minimum="0"/>
+		</mx:verticalAxis>
+		
+		<mx:series>
+			<mx:ColumnSeries yField="value" showDataEffect="{interpolate}"/>
+			<mx:LineSeries yField="total" form="curve" displayName="Amount">
+				<mx:stroke>
+					<s:SolidColorStroke weight="1"/> 
+				</mx:stroke>
+			</mx:LineSeries>
+		</mx:series>
+	</mx:ColumnChart>
+
+	
+	<mx:PieChart id="pieChart" height="100%" width="100%" paddingRight="5" paddingLeft="5" color="0x323232"
+				 showDataTips="true" dataTipFunction="getDataTipPie">
+		
+		<mx:series>
+			<mx:PieSeries labelPosition="callout" field="value" displayName="Amount">
+				<mx:calloutStroke>
+					<s:SolidColorStroke weight="0" color="0x888888" alpha="1.0"/>
+				</mx:calloutStroke>
+				<mx:radialStroke>
+					<s:SolidColorStroke weight="0" color="#FFFFFF" alpha="0.20"/>
+				</mx:radialStroke>
+				<mx:stroke>
+					<s:SolidColorStroke color="0" alpha="0.20" weight="2"/>
+				</mx:stroke>
+			</mx:PieSeries>
+		</mx:series>
+	</mx:PieChart>
+	
+</s:View>

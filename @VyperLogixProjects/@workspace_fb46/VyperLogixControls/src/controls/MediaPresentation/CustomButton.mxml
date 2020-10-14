@@ -1,0 +1,228 @@
+<MediaPresentation:CustomButtonAdapter 
+		xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:CustomSlider3="views.components.CustomSlider3.*" horizontalAlign="left"
+		width="100%" height="100%" 
+		creationComplete="hgroup1_creationCompleteHandler(event)" 
+		xmlns:MediaPresentation="controls.MediaPresentation.*" 
+		xmlns:components="views.components.*" 
+		xmlns:sliders="com.anjantek.controls.sliders.*" 
+		xmlns:DropDownList="controls.MediaPresentation.DropDownList.*" xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="itemClick", type="mx.events.ItemClickEvent")]
+		[Event(name="selectedTabFromList", type="controls.MediaPresentation.DropDownList.events.SelectedTabFromListEvent")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import flash.utils.getTimer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.events.ItemClickEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import controls.MediaPresentation.DropDownList.events.SelectedTabFromListEvent;
+			
+			private var slider_dp:ArrayCollection = new ArrayCollection([{value:"1", label:"A1", fixedValue:"true"}]);
+			
+			[Bindable]
+			private var decrement_button_symbol:String = '<-';
+			
+			[Bindable]
+			private var increment_button_symbol:String = '->';
+			
+			[Bindable]
+			private var __units_value__:int = 10;
+			
+			[Bindable]
+			private var __min_units_value__:int = 1;
+			
+			[Bindable]
+			private var __max_units_value__:int = 100;
+
+			private var __units_increment__:int = 1;
+
+			private var __units_increments__:Array = [1,5,10,15,20,25,30,35,40,45,50];
+			private var __units_increments_ptr__:int = 0;
+			
+			private var __last_units_activity__:int;
+			private var __last_units_activity_offset__:int;
+			private var __units_activity_count__:int = 0;
+			
+			public function get units_value():int {
+				return this.__units_value__;
+			}
+			
+			public function set units_value(units_value:int):void {
+				if (this.__units_value__ != units_value) {
+					this.__units_value__ = units_value;
+				}
+			}
+			
+			public function get min_units_value():int {
+				return this.__min_units_value__;
+			}
+			
+			public function set min_units_value(min_units_value:int):void {
+				if (this.__min_units_value__ != min_units_value) {
+					this.__min_units_value__ = min_units_value;
+				}
+			}
+			
+			public function get max_units_value():int {
+				return this.__max_units_value__;
+			}
+			
+			public function set max_units_value(max_units_value:int):void {
+				if (this.__max_units_value__ != max_units_value) {
+					this.__max_units_value__ = max_units_value;
+				}
+			}
+			
+			protected function hgroup1_creationCompleteHandler(event:FlexEvent):void {
+			}
+			
+			protected function btnBar_clickHandler(event:MouseEvent):void {
+				var item:* = this.btnBar.selectedItem;
+				if (item) {
+					this.dispatchEvent(new ItemClickEvent(ItemClickEvent.ITEM_CLICK,true,false,item[this.btnBar.labelField],this.btnBar.selectedIndex,this.btnBar,item));
+				}
+			}
+			
+			private function get is_button_bar_selected():Boolean {
+				return true;
+			}
+			
+			protected function btnBar_changeHandler(event:IndexChangeEvent):void {
+				this.incrementGroup.visible = this.includeInLayout = this.is_button_bar_selected;
+			}
+			
+			protected function tabs_selectedTabFromListHandler(event:SelectedTabFromListEvent):void {
+				this.dispatchEvent(new SelectedTabFromListEvent(SelectedTabFromListEvent.TYPE_SELECTED_TAB_FROM_LIST,event.item))
+			}
+			
+			private function handle_units_activity():void {
+				if (this.__last_units_activity__ is int) {
+					var t:int = getTimer() - this.__last_units_activity__;
+					if (this.__last_units_activity_offset__ is int) {
+						trace('1. this.__last_units_activity_offset__='+this.__last_units_activity_offset__+', t='+t);
+						if (this.__last_units_activity_offset__ > t) {
+							trace('(+)');
+							this.__units_activity_count__++;
+							trace('1.1 this.__units_activity_count__='+this.__units_activity_count__);
+							if (this.__units_activity_count__ > 2) {
+								this.__units_increments_ptr__++;
+								if (this.__units_increments_ptr__ > this.__units_increments__.length) {
+									this.__units_increments_ptr__ = this.__units_increments__.length;
+								}
+								this.__units_increment__ += this.__units_increments__[this.__units_increments_ptr__];
+								this.__units_activity_count__ = 0;
+							} else {
+								this.__units_increments_ptr__ = 0;
+							}
+						} else {
+							trace('(-)');
+							this.__units_activity_count__--;
+							trace('2.1 this.__units_activity_count__='+this.__units_activity_count__);
+							if (this.__units_activity_count__ > 2) {
+								this.__units_increments_ptr__--;
+								if (this.__units_increments_ptr__ < 0) {
+									this.__units_increments_ptr__ = 0;
+								}
+								this.__units_increment__ += this.__units_increments__[this.__units_increments_ptr__];
+								this.__units_activity_count__ = 0;
+							} else {
+								this.__units_increments_ptr__ = 0;
+							}
+						}
+						this.__last_units_activity_offset__ = t;
+					} else {
+						this.__last_units_activity_offset__ = t;
+					}
+					this.__last_units_activity__ = getTimer();
+				} else {
+					this.__last_units_activity__ = getTimer();
+				}
+			}
+			
+			protected function btnDecrement_clickHandler(event:MouseEvent):void {
+				this.units_value -= this.__units_increment__;
+				if (this.units_value < this.min_units_value) {
+					this.units_value = this.min_units_value;
+				}
+				this.handle_units_activity();
+			}
+			
+			protected function btnIncrement_clickHandler(event:MouseEvent):void {
+				this.units_value += this.__units_increment__;
+				if (this.units_value > this.max_units_value) {
+					this.units_value = this.max_units_value;
+				}
+				this.handle_units_activity();
+			}
+			
+			protected function btnBar_creationCompleteHandler(event:FlexEvent):void {
+				var target:ButtonBar = event.currentTarget as ButtonBar;
+				var minWidth:Number = 0;
+				if (target is ButtonBar) {
+					var item:*;
+					var w:Number;
+					for (var i:int=0; i < this.btnBarDataProvider.length; i++) {
+						item = this.btnBarDataProvider.getItemAt(i);
+						try {
+							w = Number(item['minWidth']);
+							if (w is Number) {
+								minWidth += w;
+							}
+						} catch (err:Error) {}
+					}
+					if (minWidth > 0) {
+						target.minWidth = minWidth;
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:HGroup width="100%">
+		<s:VGroup width="100%">
+			<s:HGroup width="100%">
+				<s:HGroup id="btn">
+					<s:Button id="btn1" width="100%" label="{this.__label1__}"/>
+					<s:Button id="btn2" width="100%" label="{this.__label2__}"/>
+				</s:HGroup>
+				<s:ButtonBar id="btnBar" width="100%" 
+							 labelField="{this.__btnBarLabelField__}" 
+							 dataProvider="{this.__btnBarDataProvider__}" 
+							 change="btnBar_changeHandler(event)" 
+							 click="btnBar_clickHandler(event)" 
+							 creationComplete="btnBar_creationCompleteHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup id="incrementGroup" width="100%" visible="{this.is_button_bar_selected}" includeInLayout="{this.is_button_bar_selected}">
+				<s:Button id="btnDecrement" height="30" 
+						  label="{this.decrement_button_symbol}" 
+						  click="btnDecrement_clickHandler(event)"/>
+				<s:HGroup paddingTop="5">
+					<s:Label id="incrementLabel" text="Units: {this.__units_value__}" paddingLeft="5" paddingRight="5" paddingTop="5" enabled="{!this.btn.enabled}"/>
+				</s:HGroup>
+				<s:Button id="btnIncrement" height="30" 
+						  label="{this.increment_button_symbol}" 
+						  click="btnIncrement_clickHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<DropDownList:DropDownList id="tabs" 
+										   width="100%" 
+										   labelField="{this.__listLabelField__}" 
+										   dataProvider="{this.__listDataProvider__}" 
+										   selectedTabFromList="tabs_selectedTabFromListHandler(event)"
+										   />
+			</s:HGroup>
+		</s:VGroup>
+		<s:VGroup>
+		</s:VGroup>
+	</s:HGroup>
+</MediaPresentation:CustomButtonAdapter>

@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group 
+	width="400" height="300"
+	xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:charts="mx.charts.*"
+	xmlns:series="mx.charts.series.*"
+	xmlns:components="com.adobe.dashboard.view.components.*">
+
+	<fx:Metadata>
+		[Event (name="itemClick", type="mx.charts.events.ChartItemEvent")]
+	</fx:Metadata>
+
+	<fx:Declarations>
+		<s:CurrencyFormatter id="currencyFormatter" useCurrencySymbol="true" currencySymbol="$"/>
+		<mx:SeriesInterpolate id="seriesInterpolate" duration="1000" minimumElementDuration="300" elementOffset="30"/>
+		<s:VerticalLayout id="verticalLayout" horizontalAlign="center"/>
+		<s:HorizontalLayout id="horizontalLayout" verticalAlign="middle"/>
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.dashboard.presenter.ChartPresenter;
+
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.events.ChartItemEvent;
+			import mx.collections.ArrayCollection;
+
+			import spark.layouts.supportClasses.LayoutBase;
+
+			[Bindable]
+			public var tooltipBorder:uint;
+
+			[Bindable]
+			public var tooltipText:String;
+
+			[Bindable]
+			public var areaChartDataProvider:ArrayCollection;
+
+			[Bindable]
+			private var series1DataProvider:ArrayCollection = new ArrayCollection();
+
+			[Bindable]
+			private var series2DataProvider:ArrayCollection = new ArrayCollection();
+
+			[Bindable]
+			public var pieDisplayLayout:LayoutBase = verticalLayout;
+
+			[Bindable]
+			public var pieChartTop:int = 70;
+
+			[Bindable]
+			public var pieChartBottom:int = 0;
+
+
+			private var _chartPresenter:ChartPresenter;
+
+			[Bindable(event="chartPresenterChanged")]
+			public function get chartPresenter():ChartPresenter
+			{
+				return _chartPresenter;
+			}
+
+			public function set chartPresenter(value:ChartPresenter):void
+			{
+				if (_chartPresenter && _chartPresenter.dataProvider)
+				{
+					_chartPresenter.removeEventListener(Event.CHANGE, presenterDataProviderChangeHandler);
+				}
+				_chartPresenter = value;
+				_chartPresenter.addEventListener(Event.CHANGE, presenterDataProviderChangeHandler);
+				dispatchEvent(new Event("chartPresenterChanged"));
+			}
+
+
+			//
+			// Public Methods
+			//
+
+			public function playAnimation():void
+			{
+				if (!chartPresenter)
+				{
+					return;
+				}
+			}
+
+
+			//
+			// Protected Methods
+			//
+
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void
+			{
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+
+				// Layout pie chart legend maually  
+				if (currentState == "pieChart" && pieChartDisplay)
+				{
+					if (pieDisplayLayout == horizontalLayout)
+					{
+						pieChartDisplay.width = width * 0.7;
+						pieChartDisplay.height = height - pieChartTop - pieChartBottom;
+						pieChartDisplay.x = 0;
+						pieChartDisplay.y = 0;
+
+						pieChartLegend.width = width * 0.3;
+						pieChartLegend.height = height - pieChartTop - pieChartBottom;
+						pieChartLegend.x = pieChartDisplay.width;
+						pieChartLegend.y = 10 + (height / 2) - (pieChartLegend.height / 2);
+					}
+					else if (pieDisplayLayout == verticalLayout)
+					{
+						pieChartDisplay.width = width;
+						pieChartDisplay.height = height * 0.7;
+						pieChartDisplay.x = (width / 2) - (pieChartDisplay.width / 2);
+						pieChartDisplay.y = 0;
+
+						pieChartLegend.width = width;
+						pieChartLegend.height = height * 0.3;
+						pieChartLegend.y = pieChartDisplay.height;
+						pieChartLegend.x = 0;
+					}
+				}
+
+			}
+
+			private function currencyParseFunction(labelValue:Object, previousValue:Object, axis:IAxis):String
+			{
+				return Number(labelValue) / 1000 + "k";
+			}
+
+			protected function dataTipFunction(hitData:HitData):String
+			{
+				return hitData.item.label + ": " + currencyFormatter.format(hitData.item.value);
+			}
+
+			protected function areaChartDataTipFunction(hitData:HitData):String
+			{
+				if (hitData.chartItem.element["yField"] == "value1")
+				{
+					return currencyFormatter.format(hitData.item.value1);
+				}
+				else
+				{
+					return currencyFormatter.format(hitData.item.value2);
+				}
+			}
+
+			protected function areaChartHorizontalAxisLabelFunction(param1:*, param2:*, param3:*, param4:*):String
+			{
+				return "";
+			}
+
+			protected function showSeriesToolTip(event:MouseEvent, borderColor:uint):void
+			{
+				var series:AreaSeries = event.currentTarget as AreaSeries;
+				var dataPoints:Array = series.findDataPoints(series.mouseX, series.mouseY, 10000);
+				var hitData:HitData = dataPoints[0] as HitData;
+				tooltipText = areaChartDataTipFunction(hitData);
+				tooltipBorder = borderColor;
+				areaChartToolTip.visible = true;
+				areaChartToolTip.x = mouseX - areaChartToolTip.width / 2;
+				areaChartToolTip.y = mouseY - areaChartToolTip.height - 5;
+			}
+
+			protected function hideToolTip():void
+			{
+				areaChartToolTip.visible = false;
+			}
+
+
+			//
+			// Event Handlers
+			// 
+
+			protected function presenterDataProviderChangeHandler(event:Event):void
+			{
+				if (_chartPresenter.dataProvider.length == 2)
+				{
+					areaChartDataProvider = new ArrayCollection();
+					for (var i:int = 0; i < 2; i++)
+					{
+						areaChartDataProvider.addItem({ x: i, value1: _chartPresenter.dataProvider.getItemAt(0).value, value2: _chartPresenter.dataProvider.getItemAt(1).value });
+					}
+					series1DataProvider = new ArrayCollection([{ label: _chartPresenter.dataProvider.getItemAt(0).label, value: _chartPresenter.dataProvider.getItemAt(0).value }]);
+					series2DataProvider = new ArrayCollection([{ label: _chartPresenter.dataProvider.getItemAt(1).label, value: _chartPresenter.dataProvider.getItemAt(1).value }]);
+				}
+			}
+
+			protected function costSeries_rollOverHandler(event:MouseEvent):void
+			{
+				showSeriesToolTip(event, 0x8A155F);
+			}
+
+			protected function costSeries_mouseMoveHandler(event:MouseEvent):void
+			{
+				showSeriesToolTip(event, 0x8A155F);
+			}
+
+			protected function profitSeries_rollOverHandler(event:MouseEvent):void
+			{
+				showSeriesToolTip(event, 0x869938);
+			}
+
+			protected function profitSeries_mouseMoveHandler(event:MouseEvent):void
+			{
+				showSeriesToolTip(event, 0x869938);
+			}
+
+			protected function costSeries_rollOutHandler(event:MouseEvent):void
+			{
+				hideToolTip();
+			}
+
+			protected function profitSeries_rollOutHandler(event:MouseEvent):void
+			{
+				hideToolTip();
+			}
+
+			protected function profitSeries_clickHandler(event:MouseEvent):void
+			{
+				seriesClickHandler(event);
+			}
+
+			protected function costSeries_clickHandler(event:MouseEvent):void
+			{
+				seriesClickHandler(event);
+			}
+
+			protected function seriesClickHandler(event:MouseEvent):void
+			{
+				var series:AreaSeries = event.currentTarget as AreaSeries;
+				var dataPoints:Array = series.findDataPoints(series.mouseX, series.mouseY, 10000);
+				var hitData:HitData = dataPoints[0] as HitData;
+				var itemClickEvent:ChartItemEvent = new ChartItemEvent(ChartItemEvent.ITEM_CLICK, dataPoints);
+				dispatchEvent(itemClickEvent);
+			}
+		]]>
+	</fx:Script>
+
+	<!-- currentState bound to chartPresenter.chartModel.chartType -->
+	<s:states>
+		<s:State name="columnChart"/>
+		<s:State name="pieChart"/>
+	</s:states>
+
+	<!-- column display of data -->
+	<s:HGroup top="27" includeIn="columnChart" gap="40">
+		<components:LegendItem color="0x869938" label="Profit" styleName="labelStyle"/>
+		<components:LegendItem color="0x8A155F" label="Cost" styleName="labelStyle"/>
+	</s:HGroup>
+	<charts:AreaChart id="areaChart"
+		width="100%"
+		top="70" bottom="0"
+		dataProvider="{areaChartDataProvider}"
+		showDataTips="false"
+		includeIn="columnChart"
+		dataTipFunction="areaChartDataTipFunction">
+
+		<charts:backgroundElements>
+			<mx:GridLines gridDirection="both" alpha="0"/>
+		</charts:backgroundElements>
+
+		<charts:series>
+			<series:AreaSeries id="costSeries"
+				click="costSeries_clickHandler(event)"
+				mouseMove="costSeries_mouseMoveHandler(event)"
+				rollOut="costSeries_rollOutHandler(event)"
+				rollOver="costSeries_rollOverHandler(event)"
+				showDataEffect="{seriesInterpolate}"
+				yField="value2"
+				xField="x"
+				displayName="cost">
+				<series:areaFill>
+					<s:LinearGradient rotation="90">
+						<s:GradientEntry color="0xE067B4"/>
+						<s:GradientEntry color="0xC81E89"/>
+						<s:GradientEntry color="0x8A155F"/>
+					</s:LinearGradient>
+				</series:areaFill>
+			</series:AreaSeries>
+
+			<series:AreaSeries id="profitSeries"
+				click="profitSeries_clickHandler(event)"
+				mouseMove="profitSeries_mouseMoveHandler(event)"
+				rollOut="profitSeries_rollOutHandler(event)"
+				rollOver="profitSeries_rollOverHandler(event)"
+				showDataEffect="{seriesInterpolate}"
+				yField="value1"
+				xField="x"
+				displayName="profit">
+				<series:areaFill>
+					<s:LinearGradient rotation="90">
+						<s:GradientEntry color="0xD6CE6B"/>
+						<s:GradientEntry color="0xB2CC4A"/>
+						<s:GradientEntry color="0x869938"/>
+					</s:LinearGradient>
+				</series:areaFill>
+			</series:AreaSeries>
+
+		</charts:series>
+
+		<charts:horizontalAxis>
+			<charts:CategoryAxis labelFunction="areaChartHorizontalAxisLabelFunction" categoryField="x"/>
+		</charts:horizontalAxis>
+
+		<charts:verticalAxis>
+			<mx:LinearAxis labelFunction="currencyParseFunction"/>
+		</charts:verticalAxis>
+
+	</charts:AreaChart>
+	<s:Group id="areaChartToolTip" visible="false">
+		<s:Rect width="100%" height="100%">
+			<s:stroke>
+				<s:SolidColorStroke color="{tooltipBorder}"/>
+			</s:stroke>
+			<s:fill>
+				<s:SolidColor color="#ffffff" alpha=".75"/>
+			</s:fill>
+		</s:Rect>
+		<s:Group>
+			<s:Label text="{tooltipText}"/>
+			<s:layout>
+				<s:HorizontalLayout paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10"/>
+			</s:layout>
+		</s:Group>
+	</s:Group>
+
+
+	<!-- contains pie chart and custom legend -->
+	<s:Group id="pieGroup" width="100%" top="{pieChartTop}" bottom="{pieChartBottom}">
+
+		<!-- pie display of data -->
+		<charts:PieChart id="pieChartDisplay"
+			dataProvider="{chartPresenter.dataProvider}"
+			showDataTips="true"
+			includeIn="pieChart"
+			dataTipFunction="dataTipFunction">
+
+			<charts:series>
+				<series:PieSeries field="value" nameField="label" showDataEffect="{seriesInterpolate}">
+					<series:fills>
+						<s:LinearGradient rotation="90">
+							<s:GradientEntry color="0xE067B4"/>
+							<s:GradientEntry color="0xC81E89"/>
+							<s:GradientEntry color="0x8A155F"/>
+						</s:LinearGradient>
+						<s:LinearGradient rotation="90">
+							<s:GradientEntry color="0xD6CE6B"/>
+							<s:GradientEntry color="0xB2CC4A"/>
+							<s:GradientEntry color="0x869938"/>
+						</s:LinearGradient>
+					</series:fills>
+				</series:PieSeries>
+			</charts:series>
+
+		</charts:PieChart>
+
+		<!-- custom legend -->
+		<s:VGroup id="pieChartLegend" horizontalAlign="left" includeIn="pieChart" gap="20">
+			<components:LegendItem width="100" color="0x869938" label="Profit" styleName="labelStyle"/>
+			<components:LegendItem width="100" color="0x8A155F" label="Cost" styleName="labelStyle"/>
+		</s:VGroup>
+
+	</s:Group>
+
+</s:Group>
+

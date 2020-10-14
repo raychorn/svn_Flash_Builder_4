@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				showCloseButton="false" title="Form Viewer (Form Name Goes Here...)"
+				layout="absolute" width="100%" height="100%" 
+				creationComplete="titlewindow1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.Generator;
+			import com.ObjectUtils;
+			
+			import mx.containers.Canvas;
+			import mx.events.FlexEvent;
+			private var _dataProvider_:Object;
+			
+			public function get dataProvider():Object {
+				return this._dataProvider_;
+			}
+			
+			public function set dataProvider(dataProvider:Object):void {
+				if (this._dataProvider_ != dataProvider) {
+					this._dataProvider_ = dataProvider;
+				}
+			}
+
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void {
+				var container:*;
+				var _this:FormViewer = this;
+				var parent:*;
+				var items:Array = [];
+				var gen:Generator = new Generator(this.dataProvider, 
+					function (gen:Generator,item:Object):void {
+						//items.push({'gen':gen,'item':item});
+//						var keys:Array = ObjectUtils.keys(item);
+//						if ( (keys is Array) && (keys.length > 0) ) {
+//							trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> parent='+gen.parent+', children='+DebuggerUtils.explainThis(gen.children));
+//							var name:String = keys[0];
+//							if (name.toLowerCase() == 'table') {
+//								container = new Canvas();
+//								container.x = 0;
+//								container.y = 0;
+//								container.percentWidth = 100.0;
+//								container.percentHeight = 100.0;
+//							}
+//							if (container == null) {
+//								_this.addChild(container);
+//							} else {
+//								parent..addChild(container);
+//							}
+//							parent = container;
+//						}
+					}
+				);
+				gen.walk(function (aGen:Generator):void {
+					if ( (aGen.children is Array) && (aGen.children.length > 0) ) {
+						items.push(aGen);
+					}
+					//trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> parent='+aGen.parent+', children='+DebuggerUtils.explainThis(aGen.children));
+				});
+				trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> items='+DebuggerUtils.explainThis(items));
+				var ii:int = -1;
+			}
+
+		]]>
+	</fx:Script>
+</mx:TitleWindow>

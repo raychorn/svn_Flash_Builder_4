@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Graphic version="2.0" viewHeight="24" viewWidth="24" ai:appVersion="15.0.1.399" ATE:version="1.0.0" flm:version="1.0.0" d:using="" xmlns="http://ns.adobe.com/fxg/2008" xmlns:ATE="http://ns.adobe.com/ate/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:flm="http://ns.adobe.com/flame/2008">
+  <Library/>
+  <Group ai:seqID="1" d:layerType="page" d:pageHeight="24" d:pageWidth="24" d:type="layer" d:userLabel="Artboard 1">
+    <Group ai:seqID="2" d:type="layer" d:userLabel="Layer 1">
+      <Group x="-12.3535" y="-12.3535" ai:seqID="3">
+        <mask>
+          <Group x="12.3535" y="12.3535" ai:spare="1">
+            <Rect width="24" height="24" ai:seqID="4">
+              <fill>
+                <SolidColor color="#FFFFFF"/>
+              </fill>
+            </Rect>
+          </Group>
+        </mask>
+        <Rect x="12.3535" y="12.3535" width="24" height="24" ai:seqID="5">
+          <fill>
+            <SolidColor color="#F0EFE9"/>
+          </fill>
+        </Rect>
+        <Group ai:seqID="6" flm:knockout="false">
+          <Line xFrom="24.3535" yFrom="48.3535" xTo="48.3535" yTo="24.3535" ai:seqID="7">
+            <stroke>
+              <SolidColorStroke weight="1" caps="none" joints="miter" miterLimit="10" color="#DDDDCC"/>
+            </stroke>
+          </Line>
+          <Line xFrom="21.3535" yFrom="45.3535" xTo="45.3535" yTo="21.3535" ai:seqID="8">
+            <stroke>
+              <SolidColorStroke weight="1" caps="none" joints="miter" miterLimit="10" color="#DDDDCC"/>
+            </stroke>
+          </Line>
+          <Line xFrom="18.3535" yFrom="42.3535" xTo="42.3535" yTo="18.3535" ai:seqID="9">
+            <stroke>
+              <SolidColorStroke weight="1" caps="none" joints="miter" miterLimit="10" color="#DDDDCC"/>
+            </stroke>
+          </Line>
+          <Line xFrom="15.3535" yFrom="39.3535" xTo="39.3535" yTo="15.3535" ai:seqID="10">
+            <stroke>
+              <SolidColorStroke weight="1" caps="none" joints="miter" miterLimit="10" color="#DDDDCC"/>
+            </stroke>
+          </Line>
+          <Line xFrom="12.3535" yFrom="36.3535" xTo="36.3535" yTo="12.3535" ai:seqID="11">
+            <stroke>
+              <SolidColorStroke weight="1" caps="none" joints="miter" miterLimit="10" color="#DDDDCC"/>
+            </stroke>
+          </Line>
+          <Line xFrom="9.35352" yFrom="33.3535" xTo="33.3535" yTo="9.35352" ai:seqID="12">
+            <stroke>
+              <SolidColorStroke weight="1" caps="none" joints="miter" miterLimit="10" color="#DDDDCC"/>
+            </stroke>
+          </Line>
+          <Line xFrom="6.35352" yFrom="30.3535" xTo="30.3535" yTo="6.35352" ai:seqID="13">
+            <stroke>
+              <SolidColorStroke weight="1" caps="none" joints="miter" miterLimit="10" color="#DDDDCC"/>
+            </stroke>
+          </Line>
+          <Line xFrom="3.35352" yFrom="27.3535" xTo="27.3535" yTo="3.35352" ai:seqID="14">
+            <stroke>
+              <SolidColorStroke weight="1" caps="none" joints="miter" miterLimit="10" color="#DDDDCC"/>
+            </stroke>
+          </Line>
+          <Line xFrom="0.353516" yFrom="24.3535" xTo="24.3535" yTo="0.353516" ai:seqID="15">
+            <stroke>
+              <SolidColorStroke weight="1" caps="none" joints="miter" miterLimit="10" color="#DDDDCC"/>
+            </stroke>
+          </Line>
+        </Group>
+      </Group>
+    </Group>
+  </Group>
+  <Private/>
+</Graphic>

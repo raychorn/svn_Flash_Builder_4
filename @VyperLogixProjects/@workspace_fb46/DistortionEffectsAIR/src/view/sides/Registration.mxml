@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel 
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	title="Registration" 
+	horizontalAlign="center" verticalAlign="middle"
+	width="288" height="206">
+
+	<mx:Metadata>
+		[Event("change", type="mx.events.Event")]
+	</mx:Metadata>
+
+	<mx:Accordion creationPolicy="all">
+		<mx:Canvas label="Personal Details">
+			<mx:Form>
+				<mx:FormItem label="Name">
+					<mx:TextInput />
+				</mx:FormItem>
+				<mx:FormItem label="Address">
+					<mx:TextInput />
+				</mx:FormItem>
+			</mx:Form>
+		</mx:Canvas>
+		<mx:Canvas label="Payment Details">
+			<mx:Form>
+				<mx:FormItem label="Credit Card">
+					<mx:CheckBox />
+				</mx:FormItem>
+				<mx:FormItem label="Delivery">
+					<mx:RadioButton />
+				</mx:FormItem>								
+			</mx:Form>
+		</mx:Canvas>											
+	</mx:Accordion>
+	
+	<mx:Button 
+		label="Back to Login" 
+		click="dispatchEvent( new Event( Event.CHANGE ) );"/>
+	
+</mx:Panel>

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.URLUtils;
+			
+			import controls.Alert.AlertPopUp;
+			
+			import flash.html.HTMLLoader;
+			
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			import utils.AIRHelper;
+
+			[Bindable]
+			private var _currentLocation:String = '';
+			
+			private var _onComplete:Function;
+			
+			private var loader:HTMLLoader;
+			
+			public function set onComplete(onComplete:Function):void {
+				if (this._onComplete != onComplete) {
+					this._onComplete = onComplete;
+				}
+			}
+			
+			public function get onComplete():Function {
+				return this._onComplete;
+			}
+			
+			public function set currentLocation(url:String):void {
+				var _this:HTMLCanvas = this;
+				function show_content(url:String):void {
+					_this._currentLocation = url;
+					if (_this._currentLocation is String) {
+						_this.loader = new HTMLLoader();
+						_this.loader.load(new URLRequest(url));
+						_this.loader.x = 0;
+						_this.loader.y = 0;
+						_this.loader.width = _this.width;
+						_this.loader.height = _this.height;
+						var uic:UIComponent = new UIComponent();
+						uic.addEventListener(FlexEvent.CREATION_COMPLETE, function (event:FlexEvent):void {
+							if (_this.onComplete is Function) {
+								_this.onComplete(event);
+							}
+						});
+						uic.addChild(_this.loader);
+						_this.addChild(uic);
+					}
+				}
+				if (this._currentLocation != url) {
+					if (url.toLowerCase().indexOf('.pdf') > -1) {
+						if (HTMLLoader.pdfCapability == HTMLPDFCapability.STATUS_OK) {
+							show_content(url);
+						} else {
+							FlexGlobals.topLevelApplication.mainCanvas.docsList.currentState = 'details';
+							AIRHelper.navigate_to_url(AIRHelper.normalize_url(url),'_blank');
+						}
+					} else {
+						show_content(url);
+					}
+				}
+			}
+			
+			public function get currentLocation():String {
+				return this._currentLocation;
+			}
+		]]>
+	</fx:Script>
+</mx:Canvas>

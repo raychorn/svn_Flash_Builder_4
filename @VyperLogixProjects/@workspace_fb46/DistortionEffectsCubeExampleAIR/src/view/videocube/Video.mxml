@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<view:CubeSide xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:view="view.videocube.*"
+    title="Video" xmlns:videos="controls.videos.*">
+	<mx:Script>
+		<![CDATA[
+			[Bindable]
+			public var video_id:String = "-7gIpfrQdAI";
+		]]>
+	</mx:Script>
+    <view:sideContent>
+
+        <mx:VBox>
+			<videos:YouTubeVideo id="youtube" x="0" y="0" width="100%" height="100%" video_id="{this.video_id}" horizontalScrollPolicy="off" verticalScrollPolicy="off"/>
+        </mx:VBox>
+
+    </view:sideContent>
+
+</view:CubeSide>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   minWidth="955" minHeight="600" initialize="init()" xmlns:shapes="shapes.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			import shapes.MarsRoverShape;
+			
+			private function init():void {
+			}
+
+			protected function marsrovershape1_creationCompleteHandler(event:FlexEvent):void {
+				this.rover.callback = this.debugCallback;
+				this.rover.refreshCallback = this.refreshCallback;
+				this.rover.drawShape(5,5,30);
+			}
+			
+			public function set debugMessage(message:String):void {
+				this.debugOut.text = message + '\n' + this.debugOut.text;
+			}
+			
+			private function debugCallback(someText:String):void {
+				this.debugMessage = someText;
+			}
+
+			private function refreshCallback():void {
+				this.position.text = this.rover.pt.x+' '+this.rover.pt.y+' '+this.rover.direction;
+			}
+
+			protected function command_changeHandler(event:Event):void {
+				//var t:TextInput = event.currentTarget as TextInput;
+				//var s:String = '### '+t.text;
+				//this.debugOut.text = s + '\n' + this.debugOut.text;
+			}
+
+
+			protected function command_keyDownHandler(event:KeyboardEvent):void {
+				var t:TextInput = event.currentTarget as TextInput;
+				if (event.charCode == 13) {
+					var s:String = '### '+t.text;
+					this.debugMessage = s;
+					this.rover.command = t.text;
+					t.text = '';
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<mx:Canvas id="controlPanel" x="0" y="0" width="{this.width}" height="35" borderColor="#0000FF" borderStyle="outset">
+		<mx:HBox width="100%" paddingTop="5">
+			<mx:Label text="Command: "/>
+			<mx:TextInput id="command" width="300" change="command_changeHandler(event)" keyDown="command_keyDownHandler(event)"/>
+			<mx:Spacer width="10"/>
+			<mx:Label text="Position: "/>
+			<mx:TextInput id="position" width="100" text=""/>
+		</mx:HBox>
+	</mx:Canvas>
+	<shapes:MarsRoverShape id="rover" x="0" y="0" width="{this.width}" height="{this.height-this.controlPanel.height}" creationComplete="marsrovershape1_creationCompleteHandler(event)">
+	</shapes:MarsRoverShape>
+	<mx:Canvas id="debugger" x="0" y="{this.height-this.debugger.height}" width="100%" height="{this.height-this.controlPanel.height}">
+		<mx:HBox width="100%" height="100%">
+			<s:TextArea id="debugOut" width="100%" height="100%"/>
+		</mx:HBox>
+	</mx:Canvas>
+</s:Application>

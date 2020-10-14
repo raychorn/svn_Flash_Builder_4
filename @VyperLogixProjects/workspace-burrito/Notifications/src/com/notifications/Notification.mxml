@@ -1,0 +1,868 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+@author Arnaud FOUCAL - http://afoucal.free.fr - afoucal@free.fr
+
+
+@licence
+This file is part of the component called Flex Notification.
+It is delivered under the CC Attribution 3.0 Unported licence (http://creativecommons.org/licenses/by/3.0/) and under the following condition:
+
+Mention the name and the url of the author in a part of your product that is visible to the user ("About"/"Credits" section, documentation...)
+
+This condition can be waived:
+- if you get permission from the copyright holder and purchase a non restrictive licence.
+- if you contribute to the projet by sharing your enhancements.
+Please contact me at afoucal@free.fr.
+
+-->
+<gradientcomponents:GradientCanvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+								   xmlns:s="library://ns.adobe.com/flex/spark" 
+								   xmlns:mx="library://ns.adobe.com/flex/mx" 
+								   xmlns:gradientcomponents="com.gradientcomponents.*" 
+								   width="100%" height="100%" creationComplete="gradientcanvas1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<!--
+		DEFAULT EFFECTS
+		-->
+		<mx:Fade id="defaultEffect" alphaFrom="1" alphaTo="0"/>
+		<mx:Parallel id="defaultAddedEffect" duration="700" effectStart="defaultAddedEffect_effectStartHandler(event)" effectEnd="defaultAddedEffect_effectEndHandler(event)">
+			<mx:Move id="defaultMoveEffect" easingFunction="{Back.easeOut}" />
+			<mx:Fade/>
+		</mx:Parallel>
+		
+		<!--
+		DEFAULT DROPSHADOWFILTER
+		-->
+		<mx:DropShadowFilter id="defaultShadowFilter"/>
+	</fx:Declarations>
+	<fx:Style source="styles.css"/>
+	<fx:Metadata>
+		<!--
+		/**
+		* Name of the CSS style declaration that specifies stylesnfor the gap
+		* between the left or right border of the parent and the notification
+		* 
+		* @default 10
+		*/
+		-->
+		[Style(name = "horizontalGap", type = "Number", inherit = "no")]
+		
+		<!--
+		/**
+		* Name of the CSS style declaration that specifies stylesnfor the gap
+		* between the upper or lower border of the parent and the notification
+		* 
+		* @default 10
+		*/
+		-->
+		[Style(name = "verticalGap", type = "Number", inherit = "no")]
+		
+		<!--
+		/**
+		* Name of the CSS style declaration that specifies styles
+		*  for the Notification title text. 
+		*
+		*  <p>You only set this style by using a type selector, which sets the style 
+		*  for all Alert controls in your application.  
+		*  If you set it on a specific instance of the Notification control, it can cause the control to 
+		*  size itself incorrectly.</p>
+		* 
+		*  @default "windowStyles" 
+		*/
+		-->
+		[Style(name = "titleStyleName", type = "String", inherit = "no")]
+		
+		<!--
+		/**
+		*  Name of the CSS style declaration that specifies
+		*  styles for the Notification message text. 
+		*
+		*  <p>You only set this style by using a type selector, which sets the style 
+		*  for all Notifications controls in your application.  
+		*  If you set it on a specific instance of the Notification control, it can cause the control to 
+		*  size itself incorrectly.</p>
+		* 
+		*  @default undefined
+		*/
+		-->
+		[Style(name = "messageStyleName", type = "String", inherit = "no")]
+		
+		<!--
+		/**
+		*  Name of the CSS style declaration that specifies
+		*  styles for the background of Notification. 
+		*
+		*  <p>You only set this style by using a type selector, which sets the style 
+		*  for all Notifications controls in your application.</p>
+		* 
+		*  @default undefined
+		*/
+		-->
+		[Style(name = "backgroundStyleName", type = "String", inherit = "no")]		
+		
+		<!--
+		/**
+		*  Name of the CSS style declaration that specifies the class
+		*  that is used as image for the close button at the top right corner of the Notification. 
+		*
+		*  <p>You only set this style by using a type selector, which sets the style 
+		*  for all Notifications controls in your application.  
+		*  If you set it on a specific instance of the Notification control, it can cause the control to 
+		*  size itself incorrectly.</p>
+		* 
+		*  @default undefined
+		*/
+		-->
+		[Style(name = "closeButtonIcon", type = "Class", inherit = "no")]
+		
+		<!--
+		/**
+		*  Name of the CSS style declaration that specifies the 4 paddings of the Notification. 
+		*
+		*  <p>You only set this style by using a type selector, which sets the style 
+		*  for all Notifications controls in your application.  
+		*  If you set it on a specific instance of the Notification control, it can cause the control to 
+		*  size itself incorrectly.</p>
+		* 
+		*  @default 3
+		*/
+		-->
+		[Style(name = "paddingTop", type = "String", inherit = "no")]
+		[Style(name = "paddingBottom", type = "String", inherit = "no")]
+		[Style(name = "paddingLeft", type = "String", inherit = "no")]
+		[Style(name = "paddingRight", type = "String", inherit = "no")]
+		
+		<!--
+		/**
+		*  Notification Closed Event. 
+		*/
+		-->
+		[Event(name="notificatonClosed", type="com.notifications.events.com.notifications.events")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.gradientcomponents.GradientCanvas;
+			import com.notifications.NotificationStackManager;
+			import com.notifications.events.NotificationClosedEvent;
+			
+			import flash.display.Sprite;
+			import flash.events.Event;
+			import flash.events.MouseEvent;
+			import flash.events.TimerEvent;
+			import flash.utils.Timer;
+			
+			import mx.core.Application;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.effects.easing.*;
+			import mx.events.CloseEvent;
+			import mx.events.EffectEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.core.SpriteVisualElement;
+			
+			use namespace mx_internal;
+			
+			
+			//--------------------------------------------------------------------------
+			//  CONSTANTS
+			//--------------------------------------------------------------------------
+			/**
+			 * To put the notification in the top left corner of the parent.
+			 */
+			public static const NOTIFICATION_POSITION_TOP_LEFT:String = "topleft";
+			
+			/**
+			 * To put the notification in the top right corner of the parent.
+			 */
+			public static const NOTIFICATION_POSITION_TOP_RIGHT:String = "topright";
+			
+			/**
+			 * To put the notification centered at the top of the parent.
+			 */
+			public static const NOTIFICATION_POSITION_TOP_CENTER:String = "topcenter";
+			
+			/**
+			 * To put the notification in the bottom left corner of the parent.
+			 */
+			public static const NOTIFICATION_POSITION_BOTTOM_LEFT:String = "bottomleft";
+			
+			/**
+			 * To put the notification in the bottom right corner of the parent.
+			 */
+			public static const NOTIFICATION_POSITION_BOTTOM_RIGHT:String = "bottomright";
+			
+			/**
+			 * To put the notification centered at the bottom of the parent.
+			 */
+			public static const NOTIFICATION_POSITION_BOTTOM_CENTER:String = "bottomcenter";
+			
+			/**
+			 * To put the notification centered at the left side of the parent.
+			 */
+			public static const NOTIFICATION_POSITION_MIDDLE_LEFT:String = "middleleft";
+			
+			/**
+			 * To put the notification centered at the right side of the parent.
+			 */
+			public static const NOTIFICATION_POSITION_MIDDLE_RIGHT:String = "middleright";
+			
+			/**
+			 * To put the notification at the center of the parent
+			 */
+			public static const NOTIFICATION_POSITION_CENTER:String = "center";
+			
+			/**
+			 * The default distance between the left or right side of the parent and the Notification
+			 */
+			public static const NOTIFICATION_DEFAULT_HORIZONTALGAP:int = 10;
+			
+			/**
+			 * The default distance betwen the top or botom side of the parent and the Notification
+			 */
+			public static const NOTIFICATION_DEFAULT_VERTICALGAP:int = 10;
+			
+			/**
+			 * The default distance betwen the Notification borders and its content
+			 */
+			public static const NOTIFICATION_DEFAULT_PADDING:int = 3;
+			
+			/**
+			 * The default duration of the closing effect
+			 */
+			public static const NOTIFICATION_DEFAULT_CLOSE_EFFECT_DURATION:int = 300;
+			
+			
+			//--------------------------------------------------------------------------
+			//  PROPERTIES
+			//--------------------------------------------------------------------------
+			/**
+			 * The position of the notification in the parent.
+			 * Use one of the static constant to specify this property.
+			 * 
+			 * @default NOTIFICATION_POSITION_BOTTOM_RIGHT
+			 */
+			public var position:String = NOTIFICATION_POSITION_BOTTOM_RIGHT;
+			
+			
+			/**
+			 * The parent of the notification.
+			 */
+			public var notificationParent:DisplayObject;
+			
+			
+			/**
+			 * The duration of the notification in millisecond.
+			 * 
+			 * @default 2500
+			 */
+			public var duration:Number = 2500;
+			
+			
+			/**
+			 * Indicates whether the Notifications are displayed in a stacked fashion or are overlayed.
+			 * The stackable property has no effect if the position is NOTIFICATION_POSITION_MIDDLE_LEFT, NOTIFICATION_POSITION_MIDDLE_RIGHT, NOTIFICATION_POSITION_CENTER.
+			 * 
+			 * @default true
+			 */
+			public var stackable:Boolean = true;
+			
+			/**
+			 * The notificationTextArea TextField.
+			 * 
+			 * @default null
+			 */
+			public var notificationTextArea:TextField;
+			
+			/*
+			* The time used to control the duration of the Notification
+			*/
+			private var _elapseTime:Timer;
+			
+			
+			/**
+			 *  The class of the icon to display.
+			 *  You typically embed an asset, such as a JPEG, PNG or GIF file,
+			 *  and then use the variable associated with the embedded asset 
+			 *  to specify the value of this property.
+			 *
+			 *  @default null
+			 */
+			[Bindable]
+			public var iconClass:Class;
+			
+			
+			/**
+			 * The message of the Notification. It is displayed as html.
+			 */
+			private var _text_:String;
+			
+
+			/**
+			 * The child displayable object that stand-in for the text.
+			 */
+			private var _child_:*;
+			
+			/**
+			 * True if the child was added to the container already..
+			 */
+			private var _was_child_added_:Boolean = false;
+			
+			/**
+			 * The title of the Notification
+			 */
+			[Bindable]
+			public var title:String;
+			
+			
+			/**
+			 *  text setter.
+			 */
+			public function set text(text:String):void {
+				if (this._text_ != text) {
+					this._text_ = text;
+					if ( (this.notificationTextArea is TextField) && (text) ) {
+						this.notificationTextArea.htmlText = text;
+					}
+				}
+			}
+			
+			/**
+			 *  text getter.
+			 */
+			public function get text():String {
+				return this._text_;
+			}
+			
+			/**
+			 *  was_child_added setter.
+			 */
+			public function set was_child_added(was_child_added:Boolean):void {
+				if (this._was_child_added_ != was_child_added) {
+					this._was_child_added_ = was_child_added;
+				}
+			}
+			
+			/**
+			 *  was_child_added getter.
+			 */
+			public function get was_child_added():Boolean {
+				return this._was_child_added_;
+			}
+			
+			/**
+			 *  child setter.
+			 */
+			public function set child(child:*):void {
+				if (this._child_ != child) {
+					this._child_ = child;
+					if ( (this.container is BorderContainer) && (child) ) {
+						try {
+							this.container.addChild(child);
+							this.was_child_added = true;
+						} catch (err:Error) {
+							try {
+								this.container.addElement(child);
+								this.was_child_added = true;
+							} catch (err:Error) {								
+								this.was_child_added = false;
+							}
+						}
+					}
+				}
+			}
+			
+			/**
+			 *  child getter.
+			 */
+			public function get child():* {
+				return this._child_;
+			}
+			
+			//--------------------------------------------------------------------------
+			// METHODS
+			//--------------------------------------------------------------------------
+			/**
+			 * Place the Notification at the specified part of the parent.
+			 * By default the parameter parent is the application itself.
+			 * 
+			 * This method also configure the Move effect that is played by default when the Notification is shown
+			 * 
+			 * @param	parent	Sprite
+			 */
+			public function moveToPosition( notificationParent:DisplayObject = null ) :void
+			{
+				// Check and set the notificationParent
+				if (!notificationParent)
+					notificationParent = Sprite(FlexGlobals.topLevelApplication); 
+				
+				// Check and set the gaps betwen the Notification and the borders of the parent
+				var hg:Number = getStyle( 'horizontalGap' );
+				if ( !hg )
+					hg = NOTIFICATION_DEFAULT_HORIZONTALGAP;
+				
+				var vg:Number = getStyle( 'verticalGap' );
+				if ( !vg )
+					vg = NOTIFICATION_DEFAULT_VERTICALGAP;
+				
+				// Determine the factor to calculate the position in the stack
+				// 1 by defaut, used for non stackable Notifications
+				var factor:int = 1;
+				// And for stackable Notifications, get the stackTop of the StackManager
+				if (stackable)
+				{
+					factor = NotificationStackManager.getInstance().stackTop;
+					NotificationStackManager.getInstance().stackTop++;
+				}
+				
+				
+				switch (position)
+				{
+					case NOTIFICATION_POSITION_BOTTOM_RIGHT:
+						x = notificationParent.x + notificationParent.width - width - hg;
+						y = notificationParent.y + notificationParent.height - (vg + height) * factor;
+						if ( y < 0 )
+						{
+							factor = prepareStack();
+							y = notificationParent.y + notificationParent.height - (vg + height) * factor;
+						}
+						defaultMoveEffect.yFrom = notificationParent.y + notificationParent.height;
+						defaultMoveEffect.yTo = y;
+						break;
+					
+					case NOTIFICATION_POSITION_BOTTOM_CENTER:
+						x = notificationParent.x + (notificationParent.width - width)/2;
+						y = notificationParent.y + notificationParent.height - (vg + height) * factor;
+						if ( y < 0 )
+						{
+							factor = prepareStack();
+							y = notificationParent.y + notificationParent.height - (vg + height) * factor;
+						}
+						defaultMoveEffect.yFrom = notificationParent.y + notificationParent.height;
+						defaultMoveEffect.yTo = y;
+						break;
+					
+					case NOTIFICATION_POSITION_BOTTOM_LEFT:
+						x = notificationParent.x + hg;
+						y = notificationParent.y + notificationParent.height - (vg + height) * factor;
+						if ( y < 0 )
+						{
+							factor = prepareStack();
+							y = notificationParent.y + notificationParent.height - (vg + height) * factor;
+						}
+						defaultMoveEffect.yFrom = notificationParent.y + notificationParent.height;
+						defaultMoveEffect.yTo = y;
+						break;
+					
+					case NOTIFICATION_POSITION_TOP_LEFT:
+						x = notificationParent.x + hg;
+						y = notificationParent.y + (vg + height) * factor - height;
+						if ( (y+height) > notificationParent.height )
+						{
+							factor = prepareStack();
+							y = notificationParent.y + (vg + height) * factor - height;
+						}
+						defaultMoveEffect.yFrom = notificationParent.y - height;
+						defaultMoveEffect.yTo = y;
+						break;
+					
+					case NOTIFICATION_POSITION_TOP_CENTER:
+						x = notificationParent.x + (notificationParent.width - width)/2;
+						y = notificationParent.y + (vg + height) * factor - height;
+						if ( (y + height) > notificationParent.height )
+						{
+							factor = prepareStack();
+							y = notificationParent.y + (vg + height) * factor - height;
+						}
+						defaultMoveEffect.yFrom = notificationParent.y - height;
+						defaultMoveEffect.yTo = y;
+						break;
+					
+					case NOTIFICATION_POSITION_TOP_RIGHT:
+						x = notificationParent.x + notificationParent.width - hg - width;
+						y = notificationParent.y + (vg + height) * factor - height;
+						if ( (y + height) > notificationParent.height )
+						{
+							factor = prepareStack();
+							y = notificationParent.y + (vg + height) * factor - height;
+						}
+						defaultMoveEffect.yFrom = notificationParent.y - height;
+						defaultMoveEffect.yTo = y;
+						break;
+					
+					case NOTIFICATION_POSITION_MIDDLE_LEFT:
+						x = notificationParent.x + hg;
+						y = notificationParent.y + (notificationParent.height - height) / 2;
+						defaultMoveEffect.xFrom = -width;
+						defaultMoveEffect.xTo = x
+						break;
+					
+					case NOTIFICATION_POSITION_MIDDLE_RIGHT:
+						x = notificationParent.x + notificationParent.width - hg - width;
+						y = notificationParent.y + (notificationParent.height - height) / 2;
+						defaultMoveEffect.xFrom = notificationParent.width;
+						defaultMoveEffect.xTo = x
+						break;
+					
+					case NOTIFICATION_POSITION_CENTER:
+						x = notificationParent.x + ( notificationParent.width - width ) /2;
+						y = notificationParent.y + (notificationParent.height - height) / 2;
+						break;
+				}
+				this.x = x;
+				this.y = y;
+			}
+			
+			
+			private function prepareStack():int
+			{
+				var f:int;
+				
+				NotificationStackManager.getInstance().resetStack();
+				f = NotificationStackManager.getInstance().stackTop;
+				NotificationStackManager.getInstance().stackTop++;
+				
+				return f;
+			}
+			
+			
+			/*
+			* Called when the user clicks the close button or the Notification itself
+			*/
+			private function closePopup( e:Event=null ) :void
+			{
+				PopUpManager.removePopUp( this );
+				NotificationStackManager.getInstance().remove();
+			}
+			
+			
+			/*
+			* Run the default close effect and start a timer to close the popup once the effect
+			* has ended.
+			* fixes exceptions errors when there are lots of open popups.
+			*/
+			private function closeHandler( e:Event = null ) :void
+			{
+				defaultEffect.duration = NOTIFICATION_DEFAULT_CLOSE_EFFECT_DURATION;
+				defaultEffect.target = this;
+				
+				_elapseTime = new Timer(NOTIFICATION_DEFAULT_CLOSE_EFFECT_DURATION + 10,1);
+				
+				_elapseTime.addEventListener(TimerEvent.TIMER_COMPLETE, closePopup);
+				_elapseTime.start();
+				defaultEffect.play();
+				
+				this.dispatchEvent(new NotificationClosedEvent(NotificationClosedEvent.TYPE_NOTIFICATION_CLOSED,this));
+			}
+			
+			/**
+			 * Static method that pops up the Notification control. The Notification control 
+			 * closes after the timer is complete, when you click the close button or the Notification itself.
+			 * You can keep the Notification displayed by passing the mouse over it. The Notification will then
+			 * close when the mouse rolls out.
+			 * 
+			 * @param	text Text string that appears in the Notification control. It is displayed as htmlText.
+			 * @param	title Text string that appears in the title bar. This text is left justified.
+			 * @param	duration Number The duration in ms during which the Notification is displayed.
+			 * @param	position String The place where the Notification pops up.
+			 * @param	iconClass Class of the icon that is placed to the left of the text in the Notification control.
+			 * @param	notificationParent Sprite upon which the Notification control centers itself.
+			 * @param	filtersArray Aray The array containing all filter to be applied on the Notification. By default, only a DropShadowFilter is applied.
+			 * @return 	A reference to the Notification control. 
+			 */
+			public static function show(text_or_child:* = null, 
+										title:String = '',
+										duration:Number = 2500,
+										position:String = null,
+										iconClass:Class = null,
+										stackable:Boolean = true,
+										notificationParent:Sprite = null,
+										filtersArray:Array = null):Notification {
+				var notification:Notification = new Notification();	
+				
+				if (!notificationParent)
+					notification.notificationParent = Sprite(FlexGlobals.topLevelApplication); 
+				else
+					notification.notificationParent = notificationParent;
+				
+				// Kept from the Alert class
+				// Setting a module factory allows the correct embedded font to be found.
+				if (notificationParent is UIComponent)
+					notification.moduleFactory = UIComponent(notificationParent).moduleFactory;
+				
+				// Set the position of the notification
+				if ( position != null )
+					notification.position = position;
+				else
+					notification.position = NOTIFICATION_POSITION_BOTTOM_RIGHT;
+
+				// Set other properties
+				if (text_or_child is String) {
+					notification.text = text_or_child;
+					notification.child = null;
+				} else {
+					notification.text = null;
+					notification.child = text_or_child;
+				}
+				notification.title = title;
+				notification.iconClass = iconClass;
+				notification.duration = duration - NOTIFICATION_DEFAULT_CLOSE_EFFECT_DURATION;
+				notification.stackable = stackable;
+				
+				// If no filter is specified, the default DropShadowFilter is applied
+				if ( filtersArray == null )
+					filtersArray = [notification.defaultShadowFilter];
+				
+				notification.filters = filtersArray;
+				
+				// And finally add the Notification
+				PopUpManager.addPopUp( notification, notification.notificationParent, false );
+				NotificationStackManager.getInstance().add(notification);
+				
+				return notification;
+			}
+			
+			public function play_effects():void {
+				this.defaultMoveEffect.play();
+			}
+			
+			/**
+			 * @private
+			 */
+			private function completed() :void
+			{
+				// Fix by Bruno Dix
+//				this.focusManager.deactivate();
+				parentApplication.focusManager.activate();
+				//------------
+				
+				moveToPosition( notificationParent );
+				this.defaultMoveEffect.target = this;
+				
+				//this.play_effects();
+				
+				// Allow the user to close the Notifiation by a mouse click
+				addEventListener( MouseEvent.CLICK,
+					function() :void
+					{
+						closeHandler();
+					});
+				
+				// Manage non autoclose Notification
+				if ( duration > 0 )
+				{
+					_elapseTime = new Timer(Math.abs(duration - NOTIFICATION_DEFAULT_CLOSE_EFFECT_DURATION), 1);
+					// Keep the Notification displayed if the user pass the mouse over
+					addEventListener( MouseEvent.ROLL_OVER,
+						function() :void
+						{
+							_elapseTime.removeEventListener(TimerEvent.TIMER_COMPLETE, closeHandler);
+						});
+					
+					// Close the Notification when the mouse is out..
+					addEventListener( MouseEvent.ROLL_OUT,
+						function() :void
+						{
+							closeHandler();
+						});
+					
+					// Launch the timer
+					_elapseTime.addEventListener(TimerEvent.TIMER_COMPLETE, closeHandler);
+					_elapseTime.start();
+				}
+			}
+			
+			
+			/**
+			 *  @private
+			 */
+			override protected function createChildren():void
+			{
+				super.createChildren();
+				
+				// Set the 4 paddings of the Notification
+				setAllPaddings();
+				
+				// Get the style for the background of the notification
+				// The notification extends a GradientCanvas so, the style is applied to the component itself
+				var background:String = getStyle( 'backgroundStyleName' );
+				if ( background )
+					styleName = background;
+				
+				// Apply a style name for the message if defined in a css file
+				var msgStyle:String = getStyle('messageStyleName');
+//				if (msgStyle)
+//					notificationTextArea.styleName = msgStyle;
+				
+				// Apply a style name for the title if defined in a css file
+				var ttlStyle:String = getStyle('titleStyleName');
+				if (ttlStyle)
+				{
+					notificationTitleLabel.styleName = ttlStyle;
+				}
+				else
+				{
+					// Define the default style of the title: bold font
+					notificationTitleLabel.setStyle( 'fontWeight', 'bold' );
+				}
+				
+				// Get the style for the close button
+				var closeButtonStyle:Class = getStyle( 'closeButtonIcon' );
+				if ( closeButtonStyle )
+					notificationCloseIcon.source = closeButtonStyle;
+				
+				// Set the effect that is played when the Notification pops up
+				var creationEffect:String = getStyle( 'creationCompleteEffect' );
+				if ( !creationEffect )
+					setStyle( 'creationCompleteEffect', defaultAddedEffect );
+				
+				
+				var removeEffect:String = getStyle('removedEffect');
+				/*
+				if ( !removeEffect )
+				setStyle( 'removedEffect', defaultEffect );
+				*/
+				
+				// If the title is empty, remove the title bar
+				if ( title == null || title == '' )
+					removeChild( titleBar );
+			}
+			
+			
+			override protected function updateDisplayList( w:Number, h:Number ) :void
+			{
+				super.updateDisplayList( w, h );
+				autoSizeMessage();
+			}
+			
+			
+			private function autoSizeMessage() :void
+			{
+				//notificationTextArea.validateNow();
+				//notificationTextArea.heightInLines = NaN;
+			}
+			
+			
+			/*
+			* Get paddings styles and apply them or use default values
+			*/
+			private function setAllPaddings() :void
+			{
+				var padTopStyle:Number = getStyle('paddingTop');
+				if ( padTopStyle )
+					titleBar.setStyle('paddingTop', padTopStyle);
+				else
+					titleBar.setStyle('paddingTop', NOTIFICATION_DEFAULT_PADDING);
+				
+				var padBottomStyle:Number = getStyle('paddingBottom');
+				if ( padBottomStyle )
+					messageBox.setStyle('paddingBottom', padBottomStyle);
+				else
+					messageBox.setStyle('paddingBottom', NOTIFICATION_DEFAULT_PADDING);
+				
+				var padLeftStyle:Number = getStyle( 'paddingLeft' );
+				if ( padLeftStyle )
+				{
+					titleBar.setStyle('paddingLeft', padLeftStyle);
+					messageBox.setStyle('paddingLeft', padLeftStyle);
+				}
+				else
+				{
+					titleBar.setStyle('paddingLeft', NOTIFICATION_DEFAULT_PADDING);
+					messageBox.setStyle('paddingLeft', NOTIFICATION_DEFAULT_PADDING);
+				}
+				
+				var padRightStyle:Number = getStyle( 'paddingRight' );
+				if ( padRightStyle )
+				{
+					titleBar.setStyle('paddingRight', padRightStyle);
+					messageBox.setStyle('paddingRight', padRightStyle);
+				}
+				else
+				{
+					titleBar.setStyle('paddingRight', NOTIFICATION_DEFAULT_PADDING);
+					messageBox.setStyle('paddingRight', NOTIFICATION_DEFAULT_PADDING);
+				}
+				
+				// Manage the particular case where there is no more title bar
+				if ( title == null || title == '' )
+					if ( padTopStyle )
+						messageBox.setStyle('paddingTop', padTopStyle);
+					else
+						messageBox.setStyle('paddingTop', NOTIFICATION_DEFAULT_PADDING);
+			}
+
+			protected function container_creationCompleteHandler(event:FlexEvent):void {
+				var _this:Notification = this;
+				var container:BorderContainer = event.currentTarget as BorderContainer;
+				
+				if (this.text is String) {
+					var aSprite:SpriteVisualElement = new SpriteVisualElement();
+					this.notificationTextArea = new TextField();
+					this.notificationTextArea.name = 'notificationTextArea';
+					this.notificationTextArea.multiline = true;
+					this.notificationTextArea.selectable = false;
+					this.notificationTextArea.autoSize = TextFieldAutoSize.LEFT;
+					if (_this._text_ is String) {
+						this.notificationTextArea.htmlText = _this._text_;
+					}
+					this.notificationTextArea.width = container.width-5;
+					this.notificationTextArea.height = container.height - 5;
+					this.notificationTextArea.wordWrap = false;
+					aSprite.addChild(this.notificationTextArea);
+					container.addElement(aSprite);
+				} else if ( (this.child) && (!this.was_child_added) ) {
+					this.container.addChild(this.child);
+					this.was_child_added = true;
+				}
+			}
+
+
+			protected function gradientcanvas1_creationCompleteHandler(event:FlexEvent):void {
+				this.callLater(this.completed,[]);
+			}
+
+
+			protected function defaultAddedEffect_effectStartHandler(event:EffectEvent):void {
+				var ii:int = -1;
+			}
+
+
+			protected function defaultAddedEffect_effectEndHandler(event:EffectEvent):void {
+				var ii:int = -1;
+			}
+
+		]]>
+	</fx:Script>
+	
+	<!--
+	THE NOTIFICATION STRUCTURE
+	-->
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup id="titleBar" width="100%">
+			<s:Label id="notificationTitleLabel" text="{title}"/>
+			<mx:Spacer width="100%"/>
+			<s:Image id="notificationCloseIcon" click="closeHandler(event);" buttonMode="true" />
+		</s:HGroup>
+		
+		<s:HGroup id="messageBox" y="{titleBar.height+5}" width="100%" height="100%"
+				  styleName="MessageBox">
+			<s:Image id="notificationIconClass" source="{iconClass}" />
+			<s:BorderContainer id="container" 
+				backgroundColor="white" cornerRadius="10"
+				borderStyle="inset" borderWeight="4" 
+				left="10" right="10" top="10" bottom="10" 
+				width="100%" height="100%"
+				creationComplete="container_creationCompleteHandler(event)">
+				<s:layout>
+					<s:HorizontalLayout 
+						paddingLeft="5" paddingRight="5" 
+						paddingTop="5" paddingBottom="5"/>
+				</s:layout>
+			</s:BorderContainer> 
+		</s:HGroup>
+	</s:VGroup>
+	
+</gradientcomponents:GradientCanvas>

@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:Sequence id="openingEffect">
+			<mx:Pause duration="400"/>
+			<mx:Resize id="expand" widthTo="500" duration="300" easingFunction="Circular.easeOut"/>
+			<mx:Pause duration="300"/>
+			<mx:Resize id="expand2" heightTo="450" duration="300" easingFunction="Circular.easeInOut"/>
+		</mx:Sequence>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.vyperlogix.AdHocOperation;
+			import com.vyperlogix.AdHocService;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.activity.Preloader;
+			
+			import mx.effects.easing.*;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+
+			private var busy:Preloader;
+			
+			private var __url__:String;
+
+			private var __timeout__:int = 120;
+
+			[Bindable]
+			private var __status__:Boolean = false;
+			
+			public function set url(url:String):void {
+				if (url != this.__url__) {
+					this.__url__ = url;
+				}
+			}
+			
+			public function get url():String {
+				return this.__url__;
+			}
+
+			public function set timeout(timeout:int):void {
+				if (timeout != this.__timeout__) {
+					this.__timeout__ = timeout;
+				}
+			}
+			
+			public function get timeout():int {
+				return this.__timeout__;
+			}
+			
+			public function hide_busy_spinner():void {
+				if (this.busy is Preloader) {
+					PopUpManager.removePopUp(this.busy);
+					this.busy = null;
+				}
+			}
+			
+			public function show_busy_spinner():void {
+				if (!this.busy) {
+					this.busy = PopUpManager.createPopUp(this,Preloader,true) as Preloader;
+					this.openingEffect.target = busy;
+					this.openingEffect.duration = 1000;
+					this.openingEffect.end();
+					PopUpManager.centerPopUp(this.busy);
+					this.openingEffect.play();
+				}
+			}
+			
+			public function issue_request(url:String,params:Object):void {
+				var _this:SystemStatusPopUp = this;
+				var msg:String;
+				try {
+					var svc:AdHocService = new AdHocService();
+					params = {};
+					var op:AdHocOperation = svc.custom_with_params(url,params);
+					op.timeout = this.__timeout__;
+					op.addEventListener(Event.COMPLETE,
+						function (event:Event):void {
+							_this.hide_busy_spinner();
+							try {
+								var data:Object = event.currentTarget.data;
+								if (String(data.status).toLowerCase() == 'ok') {
+									_this.__status__ = true;
+									_this.text.text = '\n\nSUCCESS !!!\n\nThis means your Report Request should work so long as there are no connectivity or technical issues getting in the way.';
+									_this.text.text += '\n\nClick the dismiss button to continue...';
+								} else {
+									_this.text.text = '\n\nFAILURE !!!\n\nThe wrong data was returned from the server... Kindly get some assistance from the Analytics Development Team... thanks.';
+								}
+							} catch (err:Error) {
+								_this.text.text = '\n\nCannot continue because: '+err.toString();
+							}
+						}
+					);
+					op.addEventListener(ErrorEvent.ERROR,
+						function (event:ErrorEvent):void {
+							msg = 'Because: "' + ((event.text is String) && (event.text.length > 0)) ? event.text : event.toString() + '"';
+							_this.hide_busy_spinner();
+							_this.text.text = '\n\nCannot continue because: '+msg;
+							AlertPopUp.surpriseNoOkay(msg,'WARNING');
+						}
+					);
+					_this.text.text = 'Making a test request using the Request Processor to see if the interface is working... Please stand-by... this will only take a moment or two...';
+					this.show_busy_spinner();
+					op.execute();
+				} catch (err:Error) {
+					AlertPopUp.surpriseNoOkay(+err.toString()+'\n\n'+err.getStackTrace().substr(0,512)+'\n','WARNING.101');
+				}
+			}
+			
+			protected function text_creationCompleteHandler(event:FlexEvent):void {
+				this.issue_request(this.url,{});
+			}
+
+			private function dismiss_dialog():void {
+				PopUpManager.removePopUp(this);
+			}
+			
+			protected function panel_closeHandler(event:CloseEvent):void {
+				this.dismiss_dialog();
+			}
+			
+			protected function btn_dismiss_clickHandler(event:MouseEvent):void {
+				this.dismiss_dialog();
+			}
+			
+		]]>
+	</fx:Script>
+	<s:TitleWindow id="panel" width="100%" height="100%" title="System Status Checker Process" close="panel_closeHandler(event)">
+		<s:VGroup width="100%" height="100%" verticalAlign="top">
+			<s:HGroup width="100%" height="100%" horizontalAlign="center">
+				<s:TextArea id="text" width="100%" height="100%" editable="false" creationComplete="text_creationCompleteHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup id="hbox_btn" width="100%" horizontalAlign="center" visible="{this.__status__}" includeInLayout="{this.hbox_btn.visible}">
+				<s:Button id="btn_dismiss" label="Dismiss" click="btn_dismiss_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:TitleWindow>
+</s:BorderContainer>

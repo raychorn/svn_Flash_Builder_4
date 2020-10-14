@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel 
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:s="library://ns.adobe.com/flex/spark" 
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	layout="absolute" 
+	width="300" height="90">
+	<fx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager;
+
+			public function dismissPopUp():void {
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function onClickCloseButton():void {
+				this.dismissPopUp();
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox x="0" y="0" width="100%" verticalAlign="middle">
+		<mx:Text id="labelText" width="100%"/>
+		<mx:HBox width="100%" horizontalAlign="left">
+			<mx:Button id="btn_close" label="OK" click="onClickCloseButton()"/>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Panel>

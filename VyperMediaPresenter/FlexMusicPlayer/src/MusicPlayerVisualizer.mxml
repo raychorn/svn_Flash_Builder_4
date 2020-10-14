@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" 
+		   width="100%" height="100%"
+		   xmlns:controls="nl.fxc.controls.*"
+		   xmlns:fus="com.fusiox.ui.*"	
+		   xmlns:rf="com.randomFractals.media.controls.*"
+		   >
+	<mx:states>
+		<mx:State name="visualizer"/>
+	</mx:states>
+	<mx:VBox id="musicBox"
+			 verticalGap="0"	
+			 horizontalAlign="center" 
+			 verticalAlign="middle">
+		
+		<rf:MusicVisualizer id="MusicVisualizer"
+							width="{musicPlayer.width}" height="66%" 
+							backgroundColor="#212121" />
+		
+		<rf:MusicPlayer id="musicPlayer" 
+						resize="{MusicVisualizer.height = (musicPlayer.width - musicPlayer.width/3)}"  
+						width="100%" height="33%" autoPlay="true" />
+		
+	</mx:VBox>
+</mx:Canvas>

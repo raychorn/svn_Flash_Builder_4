@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			[Embed(source="assets/icons/close_32x32.gif")]
+			[Bindable]
+			public var closeCls:Class;
+			
+
+			protected function btn_creationCompleteHandler(event:FlexEvent):void 		{
+				this.btn.buttonMode = this.btn.useHandCursor = true;
+			}
+
+		]]>
+	</fx:Script>
+	<mx:Image x="0" y="0" id="btn" source="{this.closeCls}" creationComplete="btn_creationCompleteHandler(event)"/>
+</mx:Canvas>

@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   width="100%" height="200" currentState="normal" 
+		   verticalScrollPolicy="off" horizontalScrollPolicy="off"
+		   creationComplete="canvas1_creationCompleteHandler(event)">
+	<mx:states>
+		<s:State name="State1"/>
+		<s:State name="normal"/>
+		<s:State name="search"/>
+		<s:State name="filter"/>
+	</mx:states>
+	<fx:Declarations>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import controls.Alert.AlertPopUp;
+			import controls.renderers.CheckBoxRenderer;
+			
+			import flash.text.engine.ElementFormat;
+			import flash.text.engine.FontMetrics;
+			import flash.text.engine.TextElement;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.TextInput;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			
+			import spark.events.TextOperationEvent;
+			
+			import utils.AIRHelper;
+
+			[Bindable]
+			public var aboutUsCls:Class;
+
+			[Embed(source="assets/images/about_us.png")]
+			[Bindable]
+			public var aboutUsEnglishCls:Class;
+			
+			[Embed(source="assets/images/about_us-spanish.png")]
+			[Bindable]
+			public var aboutUsSpanishCls:Class;
+			
+			[Bindable]
+			public var bibleSoftwareCls:Class;
+
+			[Embed(source="assets/images/bible-software.png")]
+			[Bindable]
+			public var bibleSoftwareEnglishCls:Class;
+
+			[Embed(source="assets/images/bible-software-spanish.png")]
+			[Bindable]
+			public var bibleSoftwareSpanishCls:Class;
+			
+			[Bindable]
+			public var helpCls:Class;
+			
+			[Embed(source="assets/images/help.png")]
+			[Bindable]
+			public var helpEnglishCls:Class;
+
+			[Embed(source="assets/images/help-spanish.png")]
+			[Bindable]
+			public var helpSpanishCls:Class;
+			
+			[Bindable]
+			public var quitCls:Class;
+			
+			[Embed(source="assets/images/quit.png")]
+			[Bindable]
+			public var quitEnglishCls:Class;
+
+			[Embed(source="assets/images/quit-spanish.png")]
+			[Bindable]
+			public var quitSpanishCls:Class;
+			
+			[Bindable]
+			public var searchCls:Class;
+			
+			[Embed(source="assets/images/search.png")]
+			[Bindable]
+			public var searchEnglishCls:Class;
+
+			[Embed(source="assets/images/search-spanish.png")]
+			[Bindable]
+			public var searchSpanishCls:Class;
+			
+			[Bindable]
+			public var homeCls:Class;
+
+			[Embed(source="assets/images/home.png")]
+			[Bindable]
+			public var homeEnglishCls:Class;
+
+			[Embed(source="assets/images/home-spanish.png")]
+			[Bindable]
+			public var homeSpanishCls:Class;
+			
+			[Embed(source="assets/icons/CheckBox.png")]
+			[Bindable]
+			public var checkboxCls:Class;
+			
+			[Embed(source="assets/icons/undo.gif")]
+			[Bindable]
+			public var undoButtonCls:Class;
+
+			[Bindable]
+			public var btn_removeFilter_onClick_handler:Function;
+			
+			[Bindable]
+			private var search_options_menu_data:ArrayCollection = new ArrayCollection();
+			
+			protected function btn_creationCompleteHandler(event:FlexEvent):void {
+				var btn:Button = event.currentTarget as Button;
+				if (FlexGlobals.topLevelApplication.view.isLanguageEnglish) {
+					btn.width -= 10;
+					if (btn.id == 'btn_home') {
+						this.after_home_spacer.width = 45;
+					} else if (btn.id == 'btn_aboutUs') {
+						this.after_info_spacer.width = 105;
+					} else if (btn.id == 'btn_bibleSoftware') {
+						this.after_software_spacer.width = 80;
+					} else if (btn.id == 'btn_help') {
+						this.after_help_spacer.width = 15;
+					}
+				} else {
+					btn.width -= 10;
+					if (btn.id == 'btn_home') {
+						this.after_home_spacer.width = 50;
+					} else if (btn.id == 'btn_aboutUs') {
+						this.after_info_spacer.width = 125;
+					} else if (btn.id == 'btn_bibleSoftware') {
+						this.after_software_spacer.width = 85;
+					} else if (btn.id == 'btn_help') {
+						this.after_help_spacer.width = 5;
+					}
+				}
+				btn.buttonMode = btn.useHandCursor = true;
+			}
+
+			private function handle_filter_removal(event:*):void {
+				if (this.btn_removeFilter_onClick_handler is Function) {
+					try {
+						this.btn_removeFilter_onClick_handler(event);
+					} catch (err:Error) {
+					}
+				}
+			}
+			
+			protected function btn_removeFilter_clickHandler(event:MouseEvent):void {
+				this.handle_filter_removal(event);
+			}
+
+
+			protected function list_options_creationCompleteHandler(event:FlexEvent):void {
+				this.search_options_menu_data.addItem({label:"Search Titles", data:"search_titles", icon:null});
+				this.search_options_menu_data.addItem({label:"Search Text", data:"search_text", icon:null});
+				this.search_options_menu_data.addItem({label:"Search Keywords", data:"search_keywords", icon:null});
+				this.search_options_menu_data.addItem({label:"Search All", data:"search_all", icon:this.checkboxCls});
+			}
+
+			protected function list_options_itemClickHandler(event:MenuEvent):void {
+				for (var i:String in this.search_options_menu_data.source) {
+					this.search_options_menu_data.source[i].icon = null;
+				}
+				AIRHelper.options['current_search_option'] = event.item.data;
+				event.item.icon = this.checkboxCls;
+				this.dispatchEvent(new FlexEvent(FlexEvent.DATA_CHANGE));
+			}
+			
+
+			protected function canvas1_creationCompleteHandler(event:FlexEvent):void {
+				this.homeCls = (FlexGlobals.topLevelApplication.view.isLanguageEnglish) ? this.homeEnglishCls : this.homeSpanishCls;
+				this.aboutUsCls = (FlexGlobals.topLevelApplication.view.isLanguageEnglish) ? this.aboutUsEnglishCls : this.aboutUsSpanishCls;
+				this.bibleSoftwareCls = (FlexGlobals.topLevelApplication.view.isLanguageEnglish) ? this.bibleSoftwareEnglishCls : this.bibleSoftwareSpanishCls;
+				this.helpCls = (FlexGlobals.topLevelApplication.view.isLanguageEnglish) ? this.helpEnglishCls : this.helpSpanishCls;
+				this.quitCls = (FlexGlobals.topLevelApplication.view.isLanguageEnglish) ? this.quitEnglishCls : this.quitSpanishCls;
+				this.searchCls = (FlexGlobals.topLevelApplication.view.isLanguageEnglish) ? this.searchEnglishCls : this.searchSpanishCls;
+			}
+
+
+			protected function txt_search_creationCompleteHandler(event:FlexEvent):void {
+				if (FlexGlobals.topLevelApplication.view.isLanguageEnglish) {
+					this.txt_search.width = 170;
+				} else {
+					this.txt_search.width = 180;
+				}
+			}
+			
+			private function get search_button_width():Number {
+				return (FlexGlobals.topLevelApplication.view.isLanguageEnglish) ? 30 : 30;
+			}
+
+			private function get remove_button_text():String {
+				return (FlexGlobals.topLevelApplication.view.isLanguageEnglish) ? 'Remove Filter' : 'Revertir';
+			}
+			
+			protected function txt_search_changeHandler(event:TextOperationEvent):void {
+				var txt:spark.components.TextInput = spark.components.TextInput(event.currentTarget);
+				if (txt.text.length == 0) {
+					this.handle_filter_removal(new MouseEvent(MouseEvent.CLICK));
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle">
+			<mx:Button id="btn_home" includeIn="normal" icon="{this.homeCls}" creationComplete="btn_creationCompleteHandler(event)"/>
+			<mx:Spacer id="after_home_spacer" includeIn="normal"/>
+			<mx:Button id="btn_aboutUs" includeIn="normal" icon="{this.aboutUsCls}" creationComplete="btn_creationCompleteHandler(event)"/>
+			<mx:Spacer id="after_info_spacer" includeIn="normal"/>
+			<mx:Button id="btn_bibleSoftware" includeIn="normal" icon="{this.bibleSoftwareCls}" creationComplete="btn_creationCompleteHandler(event)"/>
+			<mx:Spacer id="after_software_spacer" includeIn="normal"/>
+			<mx:Button id="btn_help" includeIn="normal" icon="{this.helpCls}" creationComplete="btn_creationCompleteHandler(event)"/>
+			<mx:Spacer id="after_help_spacer" includeIn="normal"/>
+			<mx:Button id="btn_quit" includeIn="normal" icon="{this.quitCls}" creationComplete="btn_creationCompleteHandler(event)"/>
+			<s:TextInput id="txt_search" includeIn="filter,search" width="{this.width - this.btn_search.width - 70}" enabled.filter="false" change="txt_search_changeHandler(event)" creationComplete="txt_search_creationCompleteHandler(event)"/>
+			<mx:Spacer width="2"/>
+			<mx:Button id="btn_search" includeIn="search" icon="{this.searchCls}" creationComplete="btn_creationCompleteHandler(event)"/>
+			<mx:Button id="btn_removeFilter" includeIn="filter" icon="{this.undoButtonCls}" width="{this.search_button_width}" toolTip="{this.remove_button_text}" click="btn_removeFilter_clickHandler(event)"/>
+			<mx:Spacer width="5" includeIn="filter" visible="false" includeInLayout="false"/>
+			<mx:PopUpMenuButton id="list_options" includeIn="filter" visible="false" includeInLayout="false" label="*" width="40" styleName="docs_search_options" dataProvider="{this.search_options_menu_data}" labelField="label" iconField="icon" itemClick="list_options_itemClickHandler(event)" creationComplete="list_options_creationCompleteHandler(event)"/>
+			<mx:Spacer width="5" includeIn="normal" visible="false" includeInLayout="false"/>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Canvas>

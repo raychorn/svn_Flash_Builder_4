@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel 
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="100%" height="100%" title="Menu IDs In-Use">
+	<mx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager;
+			import mx.collections.ArrayCollection;
+			
+			[Bindable]
+			public var dataProvider:Array;
+
+			[Bindable]
+			public var labelField:String;
+
+			[Bindable]
+			public var rowHeight:int;
+			
+			private function onClick_btn_dismiss(event:MouseEvent):void {
+				PopUpManager.removePopUp(this);
+			}
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%" height="100%">
+		<mx:List id="list" width="100%" height="100%" paddingBottom="{this.rowHeight*2}" rowHeight="{this.rowHeight}" labelField="{this.labelField}" dataProvider="{this.dataProvider}"/>
+		<mx:Button id="btn_dismiss" width="100%" label="Close" click="onClick_btn_dismiss(event)"/>
+	</mx:VBox>
+</mx:Panel>

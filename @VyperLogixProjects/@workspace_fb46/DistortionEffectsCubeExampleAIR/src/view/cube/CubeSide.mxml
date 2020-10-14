@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel 
+    xmlns:mx="http://www.adobe.com/2006/mxml">
+
+    <mx:Metadata>
+		[Event("direction", type="view.cube.DirectionEvent")]
+	</mx:Metadata>
+
+    <mx:Script>
+        <![CDATA[
+            import mx.core.UIComponent;
+            import view.cube.DirectionEvent;
+
+            override protected function createChildren():void
+            {
+                super.createChildren();
+
+
+                var addedSideContent:UIComponent;
+                if (sideContent == null)
+                    addedSideContent = new UIComponent();
+                else
+                    addedSideContent = UIComponent(sideContent.getInstance());
+
+                if (content != null)
+                {
+                    content.addChild(addedSideContent);
+                }
+            }
+
+
+
+
+
+            private function dispatchLeft():void
+            {
+                dispatchEvent(new DirectionEvent(DirectionEvent.LEFT));
+            }
+
+            private function dispatchLeft2():void
+            {
+                dispatchEvent(new DirectionEvent(DirectionEvent.LEFT, 2));
+            }
+
+            private function dispatchLeft3():void
+            {
+                dispatchEvent(new DirectionEvent(DirectionEvent.LEFT, 3));
+            }
+
+            private function dispatchLeft4():void
+            {
+                dispatchEvent(new DirectionEvent(DirectionEvent.LEFT, 4));
+            }
+
+
+
+            private function dispatchRight():void
+            {
+                dispatchEvent(new DirectionEvent(DirectionEvent.RIGHT));
+            }
+
+            private function dispatchRight2():void
+            {
+                dispatchEvent(new DirectionEvent(DirectionEvent.RIGHT, 2));
+            }
+
+            private function dispatchRight3():void
+            {
+                dispatchEvent(new DirectionEvent(DirectionEvent.RIGHT, 3));
+            }
+
+            private function dispatchRight4():void
+            {
+                dispatchEvent(new DirectionEvent(DirectionEvent.RIGHT, 4));
+            }
+
+
+
+            private function dispatchTop():void
+            {
+                dispatchEvent(new DirectionEvent(DirectionEvent.TOP));
+            }
+
+            private function dispatchTop2():void
+            {
+                dispatchEvent(new DirectionEvent(DirectionEvent.TOP, 2));
+            }
+
+            private function dispatchTop3():void
+            {
+                dispatchEvent(new DirectionEvent(DirectionEvent.TOP, 3));
+            }
+
+            private function dispatchTop4():void
+            {
+                dispatchEvent(new DirectionEvent(DirectionEvent.TOP, 4));
+            }
+
+
+
+
+            private function dispatchBottom():void
+            {
+                dispatchEvent(new DirectionEvent(DirectionEvent.BOTTOM));
+            }
+
+            private function dispatchBottom2():void
+            {
+                dispatchEvent(new DirectionEvent(DirectionEvent.BOTTOM, 2));
+            }
+
+            private function dispatchBottom3():void
+            {
+                dispatchEvent(new DirectionEvent(DirectionEvent.BOTTOM, 3));
+            }
+
+            private function dispatchBottom4():void
+            {
+                dispatchEvent(new DirectionEvent(DirectionEvent.BOTTOM, 4));
+            }
+
+
+
+            [InstanceType("mx.core.UIComponent")]
+            public var sideContent:IDeferredInstance;
+        ]]>
+    </mx:Script>
+
+    <mx:HBox 
+        width="100%" height="100%"
+        horizontalAlign="center"
+        paddingBottom="10"
+        paddingLeft="10"
+        paddingRight="10"
+        paddingTop="10"
+        verticalAlign="middle">
+
+        <mx:VBox 
+            height="100%"
+            verticalAlign="middle">
+            <mx:Button 
+                width="29" height="20"
+                label="&lt;"
+                click="dispatchLeft()"/>
+            <mx:Button 
+                width="29" height="20"
+                label="&lt;&lt;"
+                click="dispatchLeft2();"/>
+            <mx:Button 
+                width="29" height="20"
+                label="&lt;&lt;&lt;"
+                click="dispatchLeft3();"/>
+            <mx:Button 
+                width="29" height="20"
+                label="&lt;&lt;&lt;&lt;"
+                click="dispatchLeft4();"/>
+        </mx:VBox>
+
+        <mx:VBox 
+            width="100%" height="100%"
+            horizontalAlign="center"
+            verticalAlign="middle">
+            <mx:HBox 
+                width="100%" height="20"
+                horizontalAlign="center">
+                <mx:Button 
+                    width="29" height="20"
+                    label="&lt;"
+                    click="dispatchTop()"/>
+                <mx:Button 
+                    width="29" height="20"
+                    label="&lt;&lt;"
+                    click="dispatchTop2();"/>
+                <mx:Button 
+                    width="29" height="20"
+                    label="&lt;&lt;&lt;"
+                    click="dispatchTop3();"/>
+                <mx:Button 
+                    width="29" height="20"
+                    label="&lt;&lt;&lt;&lt;"
+                    click="dispatchTop4();"/>
+            </mx:HBox>
+
+            <mx:VBox id="content"
+                width="100%" height="100%"
+                horizontalAlign="center"
+                verticalAlign="middle">
+
+                <!--Content area-->
+
+            </mx:VBox>
+
+
+            <mx:HBox 
+                width="100%" height="20"
+                horizontalAlign="center">
+                <mx:Button 
+                    width="29" height="20"
+                    label="&gt;"
+                    click="dispatchBottom()"/>
+                <mx:Button 
+                    width="29" height="20"
+                    label="&gt;&gt;"
+                    click="dispatchBottom2();"/>
+                <mx:Button 
+                    width="29" height="20"
+                    label="&gt;&gt;&gt;"
+                    click="dispatchBottom3();"/>
+                <mx:Button 
+                    width="29" height="20"
+                    label="&gt;&gt;&gt;&gt;"
+                    click="dispatchBottom4();"/>
+            </mx:HBox>
+        </mx:VBox>
+
+        <mx:VBox 
+            height="100%"
+            verticalAlign="middle">
+            <mx:Button 
+                width="29" height="20"
+                label="&gt;"
+                click="dispatchRight();"/>
+            <mx:Button 
+                width="29" height="20"
+                label="&gt;&gt;"
+                click="dispatchRight2();"/>
+            <mx:Button 
+                width="29" height="20"
+                label="&gt;&gt;&gt;"
+                click="dispatchRight3();"/>
+            <mx:Button 
+                width="29" height="20"
+                label="&gt;&gt;&gt;&gt;"
+                click="dispatchRight4();"/>
+        </mx:VBox>
+    </mx:HBox>
+
+
+</mx:Panel>

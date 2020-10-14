@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml" 
+	styleName="MenuNamePopUpPanel"
+	width="100%" height="100%" title="Save As A New Version"
+>
+	<mx:states>
+		<mx:State name="SaveAs">
+			<mx:SetProperty target="{label1}" name="text" value="Select the Date for the New Menu:"/>
+			<mx:SetProperty target="{btn_save}" name="label" value="Save"/>
+			<mx:SetProperty name="title" value="Save As A New Version"/>
+		</mx:State>
+	</mx:states>
+	<mx:Style>
+		.errorTipHide {
+			backgroundAlpha: 0;
+		}
+	</mx:Style>
+	<mx:Script>
+		<![CDATA[
+			import mx.formatters.DateFormatter;
+			import mx.events.CalendarLayoutChangeEvent;
+			import mx.controls.DateChooser;
+			import mx.collections.ArrayCollection;
+			import vzw.utils.StringUtils;
+			import mx.controls.ToolTip;
+			import mx.managers.ToolTipManager;
+             
+			public const symbol_logged_out:String = 'logged-out';
+			public const symbol_saveAs_state:String = 'SaveAs';
+			
+			private var _menu_list_data_provider:ArrayCollection;
+			
+			private var _errorTip:ToolTip;
+			
+			public function set menu_list_data_provider(dataProvider:ArrayCollection):void {
+				var ac:ArrayCollection = new ArrayCollection();
+				for (var i:String in dataProvider.source) {
+					try {
+						if ( (dataProvider.source[i].label != null) && (dataProvider.source[i].uuid != null) ) {
+							ac.addItem(dataProvider.source[i]);
+						}
+					} catch (e:Error) {}
+				}
+				this._menu_list_data_provider = ac;
+			}
+
+			public function get menu_list_data_provider():ArrayCollection {
+				return this._menu_list_data_provider;
+			}
+
+			private function onCreationComplete_txt_menu_name():void {
+				this.txt_menu_name.setFocus();
+			}
+
+			private function showErrorTip(myError:String,event:Object,container:*):void {
+				event.currentTarget.errorString = myError;
+			}
+            
+            private function hideErrorTip(event:*):void {
+                event.currentTarget.errorString = '';
+            }
+
+			private function truncated_string_from_using(something:String,token:String):String {
+				var value:String = something;
+				if ( (something is String) && (something.indexOf(token) > -1) ) {
+					var toks:Array;
+					toks = something.split(token);
+					value = StringUtils.trim(String(toks[0]));
+				}
+				return value;
+			}
+			
+			private function isMenuNameCollision(target:String):Boolean {
+				var aLabel:String;
+				var isCollision:Boolean = (String(target).length > 0) ? false : true;
+				for (var i:String in this._menu_list_data_provider.source) {
+					aLabel = this._menu_list_data_provider.source[i].label;
+					if (aLabel is String) {
+						aLabel = this.truncated_string_from_using(aLabel,',');
+						aLabel = this.truncated_string_from_using(aLabel,' ');
+					}
+					if (aLabel == target) {
+						isCollision = true;
+						break;
+					}
+				}
+				return isCollision;
+			}
+						
+			private function _onKeyEvent_txt_menu_name(event:KeyboardEvent,isDownEvent:Boolean):void {
+				var aWidget:* = event.currentTarget;
+				if (aWidget is DateChooser) {
+					var aTextInput:DateChooser = aWidget as DateChooser;
+					var isCollision:Boolean = false;
+					var target:String = aTextInput.selectedDate.toDateString();
+					isCollision = this.isMenuNameCollision(target);
+					if (isCollision) {
+						this.showErrorTip('The menu name you entered is on the list of existing menu names and cannot be used again. Kindly make the appropriate change to clear this error condition.',event,this.vbox1);
+					} else {
+						this.hideErrorTip(event);
+					}
+					this.btn_save.enabled = (isCollision == false);
+					if (isDownEvent) {
+						//aTextInput.text = StringUtils.ellipsis(aTextInput.text,50);
+						if (event.charCode == 13) {
+							this.btn_save.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+						}
+					}
+				}
+			}
+			
+			private function onKeyDown_txt_menu_name(event:KeyboardEvent):void {
+				return this._onKeyEvent_txt_menu_name(event,true);
+			}
+			
+			private function onKeyUp_txt_menu_name(event:KeyboardEvent):void {
+				return this._onKeyEvent_txt_menu_name(event,false);
+			}
+
+			private function onChange_txt_menu_name(event:CalendarLayoutChangeEvent):void {
+				var aWidget:DateField = event.target as DateField;
+				var formatter:DateFormatter = new DateFormatter();
+				formatter.formatString = aWidget.formatString;
+				var dt:String = formatter.format(aWidget.selectedDate);
+				var isCollision:Boolean = this.isMenuNameCollision(dt);
+				if (isCollision) {
+					this.showErrorTip('The Release Date you have chosen is on the list of existing Release Dates and cannot be chosen again. Kindly make the appropriate change to clear this error condition.',event,this.vbox1);
+				} else {
+					this.hideErrorTip(event);
+				}
+				this.btn_save.enabled = (isCollision == false);
+			}
+			
+			public function saveAsState():void {
+				this.currentState = this.symbol_saveAs_state;
+			}
+			
+			public function get isSaveAsState():Boolean {
+				return (this.currentState == this.symbol_saveAs_state);
+			}
+			
+			private function selectableDateRange():Object {
+				var dt1:Date = new Date();
+				return {rangeStart : dt1,rangeEnd : new Date(dt1.getFullYear()+50,12,31)};
+			}
+			
+			private function disabledDateRange():Array {
+				// disabledRanges="{[new Date(2006,0,11), {rangeStart: new Date(2006,0,23), rangeEnd: new Date(2006,1,10)}, {rangeStart: new Date(2006,2,1)}]}"
+				var a:Array = [];
+				var aDt:Date;
+				var aLabel:String;
+				var formatter:DateFormatter = new DateFormatter();
+				formatter.formatString = this.txt_menu_name.formatString;
+				for (var i:String in this._menu_list_data_provider.source) {
+					aLabel = this._menu_list_data_provider.source[i].label;
+					if (aLabel is String) {
+						aDt = formatter['parseDateString'](aLabel);
+						trace(this.className+'.disabledDateRange().1 --> aDt='+aDt);
+						a.push(aDt);
+					}
+				}
+				return a;
+			}
+		]]>
+	</mx:Script>
+	<mx:VBox id="vbox1" width="100%" height="100%">
+		<mx:HBox width="100%" paddingTop="5">
+			<mx:Label text="Choose the Release Date for this Menu:" id="label1"/>
+			<mx:DateField id="txt_menu_name" width="150" toolTip="Click the Calendar icon to the right of this entry field to choose the Release Date for the Menu copy you wish to save in the database." formatString="YYYY-MM-DD" change="onChange_txt_menu_name(event)" creationComplete="onCreationComplete_txt_menu_name()" selectableRange="{this.selectableDateRange()}" disabledRanges="{this.disabledDateRange()}"/>
+		</mx:HBox>
+		<mx:HBox width="100%" horizontalAlign="center" paddingTop="5" paddingBottom="5">
+			<mx:Button id="btn_save" label="Save" enabled="false"/>
+			<mx:Spacer width="5"/>
+			<mx:Button id="btn_dismiss" label="Cancel"/>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Panel>

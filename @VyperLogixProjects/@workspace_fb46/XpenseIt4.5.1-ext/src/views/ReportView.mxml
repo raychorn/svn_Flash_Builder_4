@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" xmlns:dao="dao.*" xmlns:components="components.*"
+		title="{data.id>0?'Edit Expense Report':'New Expense Report'}"
+		destructionPolicy="never">
+
+	<fx:Script>
+		<![CDATA[
+			import dao.Report;
+			
+			import events.ReportEvent;
+			
+			protected function save_clickHandler():void
+			{
+				data.date = new Date(Date.parse(date.text));
+				data.id = srv.saveReport(data as Report);
+				systemManager.dispatchEvent(new ReportEvent(ReportEvent.REPORT_SAVED, data));
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<dao:ExpenseReportDAO id="srv"/>
+		<s:DateTimeFormatter id="dtf" dateTimePattern="yyyy/MM/dd"/>
+	</fx:Declarations>
+	
+	<s:actionContent>
+		<s:Button click="save_clickHandler()" skinClass="skins.SaveButtonSkin"/>
+	</s:actionContent>
+	
+	<s:layout>
+		<s:VerticalLayout paddingTop="20" paddingLeft="12" paddingBottom="12" paddingRight="12"/>
+	</s:layout>
+
+	<s:HGroup verticalAlign="middle">
+		<s:Label text="Title:" width="90"/>
+		<s:TextInput id="reportTitle" text="@{data.title}" width="250"/>
+	</s:HGroup>
+	
+	<s:HGroup verticalAlign="middle">
+		<s:Label text="Date:" width="90"/>
+		<s:TextInput id="date" text="{dtf.format(data.date)}" width="250"/>
+	</s:HGroup>
+
+	<s:HGroup verticalAlign="middle">
+		<s:Label text="Description:" width="90"/>
+		<s:TextInput id="description" text="@{data.description}" width="250"/>
+	</s:HGroup>
+
+	<s:Spacer height="8"/>
+
+	<s:BorderContainer width="100%" height="100%">
+		<components:ESRIMap id="map" expenses="{srv.getExpensesByReport(data as Report)}" width="100%" height="100%" />
+	</s:BorderContainer>
+	
+</s:View>

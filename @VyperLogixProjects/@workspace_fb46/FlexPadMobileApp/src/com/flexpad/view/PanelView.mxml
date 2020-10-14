@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<view:FlexpadView xmlns:fx="http://ns.adobe.com/mxml/2009"
+    xmlns:s="library://ns.adobe.com/flex/spark"
+    xmlns:mx="library://ns.adobe.com/flex/mx"
+    xmlns:flexpad="http://code.google.com/p/flexpad/"
+    xmlns:view="com.flexpad.view.*">
+    <view:layout>
+        <s:VerticalLayout/>
+    </view:layout>
+
+    <flexpad:AlertPanel 
+        text="Do you want to leave this site?"
+        title="http://google.com"/>
+
+</view:FlexpadView>

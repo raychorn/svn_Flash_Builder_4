@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" height="100%"
+		 initialize="mobileapplication_initializeHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:DateFormatter id="fmt_date" formatString="MMDDYYYYJNN"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.ObjectUtils;
+			import com.vyperlogix.GoogleCloudService;
+			
+			import controls.Alert.AlertAlternative;
+			import controls.ToolTips.HTMLToolTip;
+			
+			import flash.desktop.NativeApplication;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.managers.ToolTipManager;
+			
+			import proxy.events.ApplicationProxyReadyEvent;
+			
+			import spark.components.TextArea;
+			
+			import views.MenuPanel;
+			
+			[Event(name="applicationProxyReady", type="proxy.events.ApplicationProxyReadyEvent")]		
+
+			[Bindable]
+			public var mySO:SharedObject;
+			
+			[Bindable]
+			public var user_data:Object;
+			
+			[Bindable]
+			public var _navigator:*;
+			
+			[Bindable]
+			public var txt_status:TextArea;
+			
+			[Bindable]
+			public var isScreenHD:Boolean = Capabilities.screenResolutionX > 1000;
+			
+			[Bindable]
+			public var isDebugger:Boolean = false; //Capabilities.isDebugger;
+			
+			[Bindable]
+			public var menuPanel:MenuPanel;
+			
+			[Bindable]
+			public var appMenu:Array = [];
+			
+			[Bindable]
+			private var __is_menu_shown__:Boolean = false;
+			
+			[Bindable]
+			public var nativeApplication:NativeApplication = NativeApplication.nativeApplication;
+			
+			public function get is_menu_shown():Boolean {
+				return (this.menuPanel is MenuPanel) || __is_menu_shown__;
+			}
+			
+			public function get isLoggedIn():Boolean {
+				return this.mySO.data.__isLoggedIn;
+			}
+			
+			public function set isLoggedIn(isLoggedIn:Boolean):void {
+				this.mySO.data.__isLoggedIn = isLoggedIn;
+				this.mySO.flush();
+			}
+			
+			public function popUp_menuPanel():void {
+				this.menuPanel = PopUpManager.createPopUp(FlexGlobals.topLevelApplication as DisplayObject,MenuPanel,true) as MenuPanel;
+				this.menuPanel.x = 0;
+				this.menuPanel.y = 100;
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> this.menuPanel.y='+this.menuPanel.y);
+			}
+			
+			public function dismiss_menuPanel():void {
+				if (this.is_menu_shown) {
+					PopUpManager.removePopUp(this.menuPanel);
+					this.menuPanel = null;
+				}
+			}
+			
+			public function show(msg:String,options:Object=null):void {
+				var current_options:Object = {colour:0x0000ff,textColour:0xffffff,textSize:10,background:'blur'};
+				var keys:Array = ObjectUtils.keys(options);
+				if (keys is Array) {
+					for (var i:String in keys) {
+						current_options[keys[i]] = options[keys[i]];
+					}
+				}
+				AlertAlternative.show(msg,current_options);
+			}
+			
+			public function error(msg:String,options:Object=null):void {
+				var current_options:Object = {colour:0xff0000,textColour:0xffffff,textSize:10,background:'blur'};
+				if (options) {
+					var keys:Array = ObjectUtils.keys(current_options);
+					if (keys is Array) {
+						for (var i:String in keys) {
+							current_options[keys[i]] = options[keys[i]];
+						}
+					}
+				}
+				AlertAlternative.error(msg,current_options);
+			}
+			
+			protected function mobileapplication_initializeHandler(event:FlexEvent):void {
+				this.name = 'application';
+				if (FlexGlobals.topLevelApplication['domain_name'] is String) {
+					GoogleCloudService.domain = GoogleCloudService.air_id = FlexGlobals.topLevelApplication.domain_name;
+					trace(DebuggerUtils.getFunctionName(new Error())+'.1 INFO: GoogleCloudService.domain is "'+GoogleCloudService.domain+'".');
+				} else {
+					trace(DebuggerUtils.getFunctionName(new Error())+'.1 WARNING: Missing the "domain_name" variable definition in the Top-Level Application.');
+				}
+				if (FlexGlobals.topLevelApplication['sub_domain_name'] is String) {
+					GoogleCloudService.sub_domain = FlexGlobals.topLevelApplication.sub_domain_name;
+				} else {
+					trace(DebuggerUtils.getFunctionName(new Error())+'.1 WARNING: Missing the "sub_domain_name" variable definition in the Top-Level Application.');
+				}
+				var now:Date = new Date();
+				var name:String = '/local/vyperlogix/'+this.fmt_date.format(now)+'/data/';
+				this.mySO = SharedObject.getLocal(name);
+				Multitouch.inputMode = MultitouchInputMode.GESTURE;
+				ToolTipManager.toolTipClass = HTMLToolTip;
+				this.dispatchEvent(new ApplicationProxyReadyEvent(ApplicationProxyReadyEvent.APPLICATION_PROXY_READY));
+			}
+
+			private function onItemClick_menuBar(event:*):void {
+				var _this:ApplicationProxy = this;
+				/*
+				var menu:* = Menu(event.menu);
+				if (event.item['doFunc'] is Function) {
+				try {event.item.doFunc(event)} catch (err:Error) {AlertPopUp.surpriseNoOkay(err.toString()+'\n'+err.getStackTrace().substr(0,512),'WARNING onItemClick_menuBar()');}
+				} else {
+				AlertPopUp.infoNoOkay('Cannot perform the menu action due to some kind of programming problem.', this.className+'.onItemClick_menuBar().1 --> item='+event.item.name);
+				}
+				*/
+			}
+			
+			private function onCreationComplete_menuBar(event:FlexEvent):void {
+				/*
+				var mb:MenuBar = MenuBar(event.currentTarget);
+				var ac:ArrayCollection;
+				mb.enabled = false;
+				if ((mb.dataProvider is ArrayCollection) == false) {
+				mb.dataProvider = new ArrayCollection();
+				}
+				ac = ArrayCollection(mb.dataProvider);
+				
+				var i:String;
+				var j:String;
+				var aSourceMenu:Object;
+				var aChild:Object;
+				var children:Array;
+				for (i in this.appMenu) {
+				aSourceMenu = this.appMenu[i];
+				children = aSourceMenu.children;
+				var isEnabled:* = null;
+				if (aSourceMenu['enabled'] is Function) {
+				try {isEnabled = aSourceMenu['enabled']()} catch (err:Error) {isEnabled = false}
+				} else {
+				isEnabled = aSourceMenu['enabled'];
+				}
+				var isOkayToSkipChildren:Boolean = ( (isEnabled is Boolean) && (isEnabled == false) );
+				var inheritedEnabled:Boolean = ( (isEnabled is Boolean) && (isEnabled == true) );
+				function toggleChild(child:Object):void {
+				if ( (child['toggled'] is Boolean) && (child['toggledFunc'] is Function) ) {
+				try {child.toggled = child.toggledFunc();} catch (err:Error) {child.toggled = false;}
+				}
+				}
+				for (j in children) {
+				aChild = children[j];
+				if (isOkayToSkipChildren) {
+				aChild.enabled = this.isLoggedIn && inheritedEnabled;
+				toggleChild(aChild);
+				} else {
+				if (aChild['enabled'] is Boolean) {
+				aChild.enabled = this.isLoggedIn;
+				} else {
+				toggleChild(aChild);
+				}
+				}
+				}
+				ac.addItem(aSourceMenu);
+				}
+				this.__is_menu_shown__ = true;
+				*/
+			}
+		]]>
+	</fx:Script>
+	<!--
+	<s:MenuBar id="menuBar" x="0" y="0" width="100%" itemClick="onItemClick_menuBar(event)" creationComplete="onCreationComplete_menuBar(event)"/>
+	-->
+</s:Group>

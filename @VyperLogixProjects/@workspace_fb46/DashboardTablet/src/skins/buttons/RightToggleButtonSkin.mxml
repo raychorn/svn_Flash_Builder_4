@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SparkButtonSkin 
+	height="35"
+	xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:fb="http://ns.adobe.com/flashbuilder/2009"
+	alpha.disabledStates="0.5"
+	xmlns:images="assets.images.*">
+	
+	<!-- host component -->
+	<fx:Metadata>
+		<![CDATA[ 
+		/** 
+		* @copy spark.skins.spark.ApplicationSkin#hostComponent
+		*/
+		[HostComponent("spark.components.ToggleButton")]
+		]]>
+	</fx:Metadata>
+	
+	
+	<!-- states -->
+	<s:states>
+		<s:State name="up"/>
+		<s:State name="over" stateGroups="overStates"/>
+		<s:State name="down" stateGroups="downStates"/>
+		<s:State name="disabled" stateGroups="disabledStates"/>
+		<s:State name="upAndSelected" stateGroups="selectedStates, selectedUpStates"/>
+		<s:State name="overAndSelected" stateGroups="overStates, selectedStates"/>
+		<s:State name="downAndSelected" stateGroups="downStates, selectedStates"/>
+		<s:State name="disabledAndSelected" stateGroups="selectedUpStates, disabledStates, selectedStates"/>
+	</s:states>
+	<s:Rect width="100%" height="100%" alpha="1" blendMode="normal" topRightRadiusX="3" bottomRightRadiusX="3">
+		<s:stroke>
+			<s:SolidColorStroke caps="none" color.selectedStates="#000000" joints="miter" miterLimit="4"
+								color="#4D4D4D"
+								weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:SolidColor color.selectedStates="#0D0D0D"
+						  color="#404040"/>
+		</s:fill>
+	</s:Rect>
+	<s:HGroup verticalAlign="middle"
+			  verticalCenter="0"
+			  left="8"
+			  right="8">
+		<s:BitmapImage id="iconDisplay"
+				scaleMode="letterbox"/>
+		<s:Label id="labelDisplay"
+				 paddingTop="12"/>
+	</s:HGroup>
+
+</s:SparkButtonSkin>

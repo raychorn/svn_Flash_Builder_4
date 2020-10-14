@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group width="100%"
+		 height="100%"
+		 currentState="{presenter.currentState}"
+		 initialize="initializeHandler()"
+		 preinitialize="preinitializeHandler()"
+		 xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:view="com.adobe.webdashboard.view.*"
+		 xmlns:components="com.adobe.dashboard.view.components.*"
+		 xmlns:components1="com.adobe.webdashboard.view.components.*">
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.dashboard.enum.StateEnum;
+			import com.adobe.dashboard.model.AppModel;
+			import com.adobe.dashboard.presenter.MainPresenter;
+
+			import mx.events.CloseEvent;
+			import mx.states.State;
+
+			[Bindable]
+			private var presenter:MainPresenter;
+
+
+			// Validate that the states strings are valid
+			private function validateStates():void
+			{
+				var x:XML=describeType(StateEnum);
+				var constantList:XMLList=x..constant; // All the constants in the Class
+
+				for each (var s:State in states)
+				{
+					var stateFound:Boolean=false;
+					for each (var constant:XML in constantList)
+					{
+						var constantName:String=constant.@name.toString();
+						var stateString:String=StateEnum[constantName];
+						if (s.name == stateString)
+						{
+							stateFound=true;
+							break;
+						}
+					}
+
+					if (!stateFound)
+					{
+						throw new Error("This class contains a state that does not match a known state enum value. " + s.name);
+					}
+				}
+			}
+
+
+			//
+			// Event Handlers
+			//
+
+			protected function preinitializeHandler():void
+			{
+				// Set (Inject) the presentation model
+				presenter=AppModel.getInstance().mainPresenter;
+			}
+
+			protected function initializeHandler():void
+			{
+				// String contracts for states are too loose 
+				validateStates();
+			}
+
+			protected function tourTip_closeHandler(event:CloseEvent):void
+			{
+				presenter.hideTourTip();
+			}
+
+
+			protected function tourTip_hideAllHandler(event:Event):void
+			{
+				presenter.hideAllTourTips();
+			}
+		]]>
+	</fx:Script>
+
+	<s:states>
+		<!-- MUST KEEP THIS STATES IN SYNC WITH StateEnum.as -->
+		<s:State name="salesGoalsState"/>
+		<s:State name="averageRevenuePerSaleState"
+				 enterState="{presenter.hideTourTip()}"/>
+		<s:State name="yearToDateSalesState"/>
+		<s:State name="topTenOpportunitiesState"/>
+		<s:State name="salesPipelineState"
+				 enterState="{presenter.hideTourTip()}"/>
+	</s:states>
+
+	<!-- header -->
+	<view:HeaderView id="headerView"
+					 width="100%"
+					 height="45"/>
+
+	<!-- Chart overview menu -->
+	<view:ChartOverviewView width="240"
+							left="0"
+							top="45"
+							bottom="0"/>
+
+	<!-- Sales Goals -->
+	<view:SalesGoalsWebView left="240"
+							right="0"
+							top="45"
+							bottom="0"
+							includeIn="salesGoalsState"/>
+
+	<!-- Average Revenue per Sale -->
+	<view:AverageRevenueWebView left="240"
+								right="0"
+								top="45"
+								bottom="0"
+								includeIn="averageRevenuePerSaleState"/>
+
+	<!-- Year to Date Sales -->
+	<view:YearToDateOpportunitiesWebView left="240"
+										 right="0"
+										 top="45"
+										 bottom="0"
+										 includeIn="yearToDateSalesState"/>
+
+	<!-- Top 10 Opportunities -->
+	<view:TopTenOpportunitesWebView left="240"
+									right="0"
+									top="45"
+									bottom="0"
+									includeIn="topTenOpportunitiesState"/>
+
+	<!-- Sales Pipeline -->
+	<view:SalesPipelineWebView left="240"
+							   right="0"
+							   top="45"
+							   bottom="0"
+							   includeIn="salesPipelineState"/>
+
+	<components1:TourTip id="tourTip"
+						 left="240"
+						 top="100"
+						 message="Select a metric to change view"
+						 visible="{presenter.showTourTip}"
+						 close="tourTip_closeHandler(event)"
+						 hideAll="tourTip_hideAllHandler(event)"/>
+</s:Group>

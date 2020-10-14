@@ -1,0 +1,1835 @@
+<mx:Panel 
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="100%" height="100%" 
+	title="Menu Item Editor" styleName="SmartPanel" creationComplete="init()"
+	xmlns:controls="vzw.controls.*" verticalScrollPolicy="off" 
+	xmlns:sbistram="com.de.sbistram.controls.*" 
+	xmlns:BrowserControls="vzw.controls.BrowserBarTextField.*">
+	<mx:Style>
+		.RolesLabelStyle1
+		{
+			color: #000000;
+			fontFamily: Arial;
+			fontSize: 12;
+			fontWeight: bold;
+			backgroundAlpha: 1;
+			backgroundColor: #999999;
+			borderColor: #000000;
+   		}
+	</mx:Style>
+	<mx:states>
+		<mx:State name="LabelsOnly">
+			<mx:SetProperty target="{this.accordion}" name="selectedIndex" value="{this.mode_label}"/>
+		</mx:State>
+		<mx:State name="ExistingLabelBodyRoot">
+			<mx:SetProperty target="{this.vbox_separator}" name="enabled" value="false"/>
+			<mx:SetProperty target="{this.vbox_label_body}" name="enabled" value="false"/>
+			<mx:SetProperty target="{this.accordion}" name="selectedIndex" value="0"/>
+		</mx:State>
+		<mx:State name="ExistingLabelBody" basedOn="ExistingLabelBodyRoot">
+			<mx:RemoveChild target="{this.vbox_separator}"/>
+			<mx:RemoveChild target="{this.vbox_label_body}"/>
+		</mx:State>
+		<mx:State name="AddingToExistingLabelBody" basedOn="ExistingLabelBodyRoot">
+			<mx:SetProperty target="{this.vbox_separator}" name="enabled" value="true"/>
+			<mx:SetProperty target="{this.accordion}" name="selectedIndex" value="1"/>
+			<mx:RemoveChild target="{this.vbox_label_body}"/>
+			<mx:SetProperty target="{this}" name="height" value="250"/>
+			<mx:SetProperty target="{this.vbox_default}" name="height" value="110"/>
+			<mx:SetProperty target="{this.accordion}" name="height" value="150"/>
+		</mx:State>
+		<mx:State name="EditingExistingLabelBody" basedOn="ExistingLabelBody">
+			<mx:SetProperty target="{this.vbox_default}" name="enabled" value="false"/>
+			<mx:SetProperty target="{this.vbox_label_body}" name="enabled" value="true"/>
+			<mx:SetProperty target="{this.accordion}" name="selectedIndex" value="2"/>
+		</mx:State>
+		<mx:State name="EditingExistingLabelBodyOnly">
+			<mx:RemoveChild target="{this.vbox_separator}"/>
+			<mx:RemoveChild target="{this.vbox_default}"/>
+			<mx:SetProperty target="{this.accordion}" name="selectedIndex" value="0"/>
+			<mx:SetProperty target="{this.vbox_label_body}" name="enabled" value="true"/>
+			<mx:SetProperty target="{this.accordion}" name="enabled" value="true"/>
+			<mx:SetProperty target="{this.label_edit2}" name="enabled" value="true"/>
+			<mx:SetProperty target="{this.body_edit2}" name="enabled" value="true"/>
+			<mx:SetProperty target="{this.hbox_label_body}" name="enabled" value="true"/>
+			<mx:SetProperty target="{this.hbox2_label_body}" name="enabled" value="true"/>
+		</mx:State>
+		<mx:State name="glinks-only">
+			<mx:RemoveChild target="{this.vbox_separator}"/>
+			<mx:RemoveChild target="{this.vbox_label_body}"/>
+			<mx:SetProperty name="__symbol_mode_default" value=""/>
+			<mx:RemoveChild target="{label2}"/>
+			<mx:SetProperty name="title" value="Global Link Editor"/>
+		</mx:State>
+		<mx:State name="glinks-LabelsOnly" basedOn="glinks-only">
+			<mx:RemoveChild target="{label1}"/>
+			<mx:RemoveChild target="{combo_domain}"/>
+			<mx:RemoveChild target="{url_edit}"/>
+			<mx:RemoveChild target="{cb_newWindow}"/>
+		</mx:State>
+		<mx:State name="signOut-LabelsOnly" basedOn="glinks-only">
+			<mx:SetProperty name="title" value="Sign Out Editor"/>
+		</mx:State>
+		<mx:State name="search-LabelsOnly" basedOn="glinks-only">
+			<mx:SetProperty name="title" value="Search Editor"/>
+		</mx:State>
+		<mx:State name="cart-LabelsOnly" basedOn="glinks-LabelsOnly">
+			<mx:SetProperty name="title" value="Cart Editor"/>
+		</mx:State>
+		<mx:State name="cart-LabelsAndLinks" basedOn="glinks-only">
+			<mx:SetProperty name="title" value="Cart Editor"/>
+		</mx:State>
+		<mx:State name="logo-LinkOnly" basedOn="glinks-only">
+			<mx:SetProperty target="{this.hbox_label}" name="visible" value="false"/>
+			<mx:SetProperty target="{this.hbox_label}" name="includeInLayout" value="false"/>
+			<mx:SetProperty name="title" value="Logo Link Editor"/>
+		</mx:State>
+		<mx:State name="lob-LinkOnly" basedOn="glinks-only">
+			<mx:SetProperty target="{this.hbox_label}" name="visible" value="false"/>
+			<mx:SetProperty target="{this.hbox_label}" name="includeInLayout" value="false"/>
+			<mx:SetProperty name="title" value="Line Of Business Link Editor"/>
+		</mx:State>
+		<mx:State name="category" basedOn="glinks-only">
+			<mx:SetProperty name="title" value="Category Editor"/>
+		</mx:State>
+		<mx:State name="category+LoggedIn">
+			<mx:SetProperty name="title" value="Category Editor"/>
+		</mx:State>
+		<mx:State name="add_to_category" basedOn="glinks-only">
+			<mx:SetProperty name="title" value="Add Item to Category"/>
+		</mx:State>
+		<mx:State name="location" basedOn="glinks-only">
+			<mx:SetProperty name="title" value="Location Editor"/>
+			<mx:SetProperty target="{this.hbox_label}" name="enabled" value="false"/>
+		</mx:State>
+		<mx:State name="house-LinkOnly" basedOn="glinks-only">
+			<mx:SetProperty target="{this.hbox_label}" name="visible" value="false"/>
+			<mx:SetProperty target="{this.hbox_label}" name="includeInLayout" value="false"/>
+			<mx:SetProperty name="title" value="Home Link Editor"/>
+		</mx:State>
+	</mx:states>
+	<mx:Script>
+		<![CDATA[
+			import vzw.utils.GUID;
+			import vzw.utils.Generator;
+			import vzw.utils.ArrayUtils;
+			import mx.events.ListEvent;
+			import mx.events.FlexEvent;
+			import vzw.menu.builder.events.SmartAccordionIndexChangedEvent;
+			import mx.controls.List;
+			import mx.containers.Tile;
+			import mx.events.IndexChangedEvent;
+			import mx.utils.UIDUtil;
+			import mx.controls.RadioButton;
+			import vzw.controls.renderers.CheckBoxRenderer;
+			import vzw.utils.ObjectExplainer;
+			import com.hurlant.util.der.Integer;
+			import vzw.utils.StringUtils;
+			import vzw.controls.Alert.AlertPopUp;
+			import vzw.utils.ArrayCollectionUtils;
+			import vzw.utils.URLUtils;
+			import vzw.utils.ObjectUtils;
+			import vzw.menu.builder.MenuController;
+			import mx.collections.ArrayCollection;
+
+			private var currentFunc:Function = null;
+			
+			public static const symbol_other_domain:String = 'other';
+			
+			private const symbol_URLEditor_className:String = 'URLEditor';
+
+			private const symbol_roles_label:String = 'Check the roles that can view this link:';
+			
+			private var __rolesList:ArrayCollection = new ArrayCollection();
+			
+			private const symbol_panel_title:String = 'Menu Item Editor';
+			
+			private const mode_default:int = 0;
+			private const mode_separator:int = 1;
+			private const mode_label:int = 2;
+			
+			private var _mode:int = 0; // default is of course the default... what else would it be... ?!?
+			
+			private const symbol_mode_default:String = 'Default Menu Item';
+			private const symbol_mode_separator:String = 'Menu Separator';
+			private const symbol_mode_label:String = 'Header Menu Item';
+			
+			[Bindable]
+			public var __symbol_mode_default:String = 'Default Menu Item';
+			
+			private var _target:*;
+			private var _source:*;
+			private var _source_dp:*;
+			
+			private var _isAddSubMenuItem:Boolean = false;
+			private var _isEditMenuItem:Boolean = false;
+			private var _isDeleteMenuItem:Boolean = false;
+
+			private var _isAllowingSeps:Boolean = false;
+
+			private var _menuDepth:int = -1;
+			
+			private var _delayed_refreshes:Object = {};
+			private var _relays_refreshes:Object = {};
+
+			[Bindable]
+			private var _dataProvider:Object = {};
+
+			private var _dataProvider_store:Array = [{},{},{},{},{}];
+			
+			[Bindable]
+			private var _relax_validations:Boolean = false;
+			
+			[Bindable]
+			public var categoryPosition:int;
+
+			[Bindable]
+			public var itemPosition:int;
+
+			public function set relax_validations(relax_validations:Boolean):void {
+				if (this._relax_validations != relax_validations) {
+					this._relax_validations = relax_validations;
+				}
+			}
+			
+			public function get relax_validations():Boolean {
+				return (this._relax_validations is Boolean) ? this._relax_validations : false;
+			}
+			
+			// *****************************************************************************************
+			// **  BEGIN:  Functions...
+			// *****************************************************************************************
+			private function dummy(data:*):* {
+				return (data.source == null) ? data : data.source;
+			}
+			
+			private function boolean(vector:Object):Boolean {
+				var source:* = vector.source;
+				return (source.toString().toLowerCase() == 'true') ? true : false;
+			}
+			
+			private function invert_boolean(vector:Object):Boolean {
+				var source:* = vector.source;
+				return (source.toString().toLowerCase() == 'true') ? false : true;
+			}
+			
+			private function always_false(vector:Object):Boolean {
+				return false;
+			}
+			
+			private function always_empty(vector:Object):String {
+				return '';
+			}
+			
+			private function choice(vector:Object):String {
+				var source:* = vector.source;
+				return (source.toString().toLowerCase() == 'choose...') ? '' : source;
+			}
+
+			private function url(vector:Object):String {
+				var url:String = new String(vector.source);
+				var domain:String = URLUtils.domain_without_port(url);
+				var protocol:String = URLUtils.protocol(url);
+				var i:int = ArrayCollectionUtils.findIndexOfItemCaseless(this.combo_domain.dataProvider,'domain',domain);
+				if (i > -1) {
+					AlertPopUp.errorNoOkay('Looks like the URL has some kind of domain name ("' + domain + '") however you really need to choose the domain name from the drop-down list rather than entering it here.','ERROR - User Error');
+				} else if (i == -1) {
+					//AlertPopUp.errorNoOkay('The Server Properties file is missing the domain name of "' + domain + '", please update this file and then return to enter the URL of "' + url + '".','ERROR - Configuration Error');
+				}
+				return url;
+			}
+
+			private function iDomain(vector:Object):* {
+				var source:* = vector.source;
+				var iDomain:int = (source) ? source.iDomain : vector.iDomain;
+				return iDomain;
+			}
+			
+			private function iKey(vector:Object):* {
+				var source:* = vector.source;
+				var aValue:int = (source) ? source.iKey : vector.iKey;
+				return aValue;
+			}
+			
+			private function filterRoles(vector:Object):* {
+//				var roles:* = vector.source;
+//				var event:* = vector.event;
+//				var aRole:Object;
+//				var _aRole:Object;
+//				var _roles_list:ArrayCollection = this.roles_list.dataProvider as ArrayCollection;
+//				for (var j:String in this.__rolesList.source) {
+//					aRole = this.__rolesList.source[j];
+//					for (var k:String in _roles_list) {
+//						_aRole = _roles_list[k];
+//						if (_aRole.value == aRole.value) {
+//						}
+//					}
+//				}
+//				this.mark_roles_selected(roles,_roles_list,'value');
+//				this.__rolesList.removeAll();
+//				ArrayCollectionUtils.appendAllInto(this.__rolesList,_roles_list);
+//				
+//
+//				var theRoles:Array = [];
+//        		for (var i:String in _roles_list) {
+//		        	aRole = ObjectUtils.cloneWithoutThese(_roles_list[i],'mx_internal_uid');
+//		        	if (aRole.isSelected) {
+//	    				theRoles.push(aRole);
+//		        	}
+//        		}
+//        		return theRoles;
+			}
+
+			private function _chooseRoles(roles:*):* {
+				var aRole:Object;
+				var _roles_list:Array = (roles is ArrayCollection) ? roles.source : (roles is Array) ? roles : [roles];
+				
+				var theRoles:Array = [];
+				var keys:Array;
+        		for (var i:String in _roles_list) {
+		        	aRole = ObjectUtils.cloneWithThese(_roles_list[i],['value','isSelected']);
+		        	if (aRole.isSelected) {
+			        	aRole = ObjectUtils.cloneWithoutThese(aRole,'isSelected');
+	    				theRoles.push(aRole.value);
+		        	}
+        		}
+        		return theRoles;
+			}
+			
+			private function chooseRoles(vector:Object):* {
+				var roles:* = vector.source;
+				var event:* = vector.event;
+				
+				var dp:ArrayCollection = event.currentTarget.dataProvider as ArrayCollection
+				
+				var theRoles:Array = this._chooseRoles(dp);
+
+        		return theRoles;
+			}
+			
+			private function roles_vector(vector:Object):* {
+				return vector;
+			}
+			// *****************************************************************************************
+			// **  END!  Functions...
+			// *****************************************************************************************
+			
+			private var _dataSelectors:Array = [
+				{ // this.mode_default
+					'label_edit':[{'a':'label_text','s':'text','f':'dummy','x':MenuController.hash.label}],
+					'url_edit':[{'a':'url_text','s':'text','f':'url','x':MenuController.hash.url}],
+					'cb_newWindow':[{'a':'target_text','s':'selected','f':'boolean','x':MenuController.hash.target}],
+					'combo_domain':[{'a':'domain','s':'selectedItem','f':'iDomain','x':MenuController.hash.domain,'y':MenuController.hash.domain_key}],
+					'rb_oneBill':[{'a':'one_bill','s':'selected','f':'boolean','x':MenuController.hash.onebill}],
+					'rb_alltel':[{'a':'alltel','s':'selected','f':'boolean','x':MenuController.hash.alltel}],
+					'txt_alltel_url':[{'a':'alltel_url_text','s':'text','f':'dummy','x':MenuController.hash.alltelurl}],
+					'rb_none':[{'a':'one_bill','s':'selected','f':'always_false'},{'a':'alltel','s':'selected','f':'always_false'},{'a':'alltel_url_text','s':'selected','f':'always_empty'}],
+					'cb_role':[{'a':'tiled_roles','s':'selected','f':'roles_vector','x':MenuController.hash.roles}],
+					'cbox_roles':[{'a':'role','s':'selected','f':'roles_vector','x':MenuController.hash.roles}],
+					'txt_hbxlink':[{'a':'hbxlink_text','s':'text','f':'dummy','x':MenuController.hash.hbxlink}]
+				},
+				{ // this.mode_separator
+					'cb_isSeparator':[{'a':'separator_text','s':'selected','f':'boolean','x':MenuController.hash.type}]
+				},
+				{ // this.mode_label
+					'label_edit2':[{'a':'label_text2','s':'text','f':'dummy','x':MenuController.hash.label}],
+					'body_edit2':[{'a':'body_text2','s':'text','f':'dummy','x':MenuController.hash.body}]
+					//'body_edit':[{'a':'body_text','s':'text','f':'dummy','x':MenuController.hash.body}]
+				}
+			];
+			
+			private function init():void {
+				var i:String;
+				var m:String;
+				var isNull:Boolean;
+				for (m in this._dataSelectors) {
+					for (i in this._dataSelectors[m]) {
+						isNull = true;
+						try { isNull = (this[i] == null); } catch (e:Error) {}
+						this._relays_refreshes[i] = isNull;
+					}
+				}
+			}
+			
+			public function get asObject():Object {
+				var i:String;
+				var j:String;
+				var obj:Object = {};
+				var selectors:Array;
+				var aSelector:Object;
+				var x:String;
+				var y:String;
+				var aValue:*;
+				var yValue:*;
+				var aFunc:Function;
+				var aWidget:*;
+				for (i in this._dataSelectors[this._mode]) {
+					selectors = this._dataSelectors[this._mode][i];
+					for (j in selectors) {
+						aSelector = selectors[j];
+						x = aSelector.x;
+						y = aSelector.y;
+						if ( (x is String) && (x.length > 0) ) {
+							if (obj[x] == null) {
+								aValue = null;
+								try {
+									if ( (i == 'roles_list1') || (i == 'roles_list2') ) {
+										//aWidget = this.options.roles_list;
+									} else if (i == 'rb_oneBill') {
+										aWidget = this.options.rb_oneBill;
+									} else if (i == 'rb_alltel') {
+										aWidget = this.options.rb_alltel;
+									} else if (i == 'rb_none') {
+										aWidget = null;
+									} else if (i == 'txt_alltel_url') {
+										aWidget = this.options.txt_alltel_url;
+									} else if (i == 'txt_hbxlink') {
+										aWidget = this.options.txt_hbxlink;
+									} else if (i == 'cb_role') {
+										//aWidget = this.options.roles_list;
+									} else {
+										aWidget = this[i];
+									}
+									if (aWidget != null) {
+										if (i == 'cb_role') {
+											aValue = this.tiled_roles;
+										} else {
+											aValue = aWidget[aSelector.s];
+											if (i == 'cb_newWindow') {
+												aValue = (aValue) ? '_blank' : '_top';
+											} else if ( (i == 'roles_list1') || (i == 'roles_list2') ) {
+												aValue = this._chooseRoles(this.rolesList);
+											} else if (i == 'combo_domain') {
+												obj[y] = aValue.iKey;
+												obj[x] = aValue.iDomain;
+											}
+										}
+									}
+								} catch (e:Error) {
+									//trace(this.className+'.asObject --> ERROR '+e.toString()+'\n'+e.getStackTrace());
+								}
+								if (aValue != null) {
+									if ( (aValue is String) && (aValue.length == 0) ) {
+										continue;
+									}
+									if (i != 'combo_domain') {
+										obj[x] = aValue;
+									}
+									if (i == 'combo_domain') {
+										if ( (x is String) && (y is String) && (x.length > 0) && (y.length > 0) ) {
+											if ( (obj[x] != null) && (obj[y] != null) && (obj[x] != obj[y]) ) {
+												trace(this.className+'.asObject.WARNING.201 --> Something is wrong with the domain/key...');
+											}
+										} else {
+											trace(this.className+'.asObject.WARNING.101 --> Something is wrong with the domain/key...');
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				if (this._isLoggedInState) {
+					var p:*;
+					aSelector = this.dataSelectors.foo;
+					aSelector = (aSelector is Array) ? aSelector[0] : aSelector;
+					x = aSelector.x;
+					var domain_index:int;
+					var isURLEditor:Boolean;
+					var roles:Array = [];
+
+					var _dp:Object = {};
+
+					var children:Array = this.vbox2.getChildren();
+					if (children.length > 0) {
+						for (var n:String in children) {
+							p = children[n];
+							try { roles.push(p.asObject); } 
+								catch (err:Error) {trace(this.className+'.asObject().ERROR.1 '+err.toString()+'\n'+err.getStackTrace())}
+						}
+					}
+				}
+				var dp:Object = this.dataProvider;
+				obj[MenuController.hash.uuid] = ( (dp[MenuController.hash.uuid] is String) && (String(dp[MenuController.hash.uuid]).length > 0) ) ? dp[MenuController.hash.uuid] : UIDUtil.createUID();
+				if (roles is Array) {
+					obj[x] = roles;
+				}
+				// DO NOT touch the UUID value here...
+				return obj;
+			}
+
+			// *****************************************************************************************
+			// **  BEGIN: LoggedIn state support...
+			// *****************************************************************************************
+			[Bindable]
+			private var _rolesList:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var _current_roles_list:List;
+
+			private var _isLoggedInState:Boolean = false;
+			private var _isLogoLinkState:Boolean = false;
+			private var _isGLinksOnlyState:Boolean = false;
+			private var _isLabelsOnlyState:Boolean = false;
+			private var _isLabelsOnlyLoggedInState:Boolean = false;
+			private var _isCategoryState:Boolean = false;
+			private var _isHouseLinkOnlyState:Boolean = false;
+			private var _isEditingExistingLabelBodyOnly:Boolean = false;
+			
+			[Bindable]
+			private var options:AdminOptions;
+			
+			public function set _currentState(stateName:String):void {
+				var _this:* = this;
+				//trace(this.className+'._currentState().1 --> stateName='+stateName);
+				this._isLabelsOnlyLoggedInState = (String(stateName).indexOf('LabelsOnly+loggedIn') > -1);
+				this._isLoggedInState = (String(stateName).toLowerCase().indexOf('loggedin') > -1);
+				this._isLogoLinkState = (String(stateName) == 'logo-LinkOnly');
+				this._isGLinksOnlyState = (String(stateName) == 'glinks-LabelsOnly') || (String(stateName) == 'cart-LabelsOnly');
+				this._isLabelsOnlyState = (String(stateName).toLowerCase().indexOf('labelsonly') > -1);
+				this._isCategoryState = (String(stateName).toLowerCase().indexOf('category+loggedin') > -1);
+				this._isHouseLinkOnlyState = (String(stateName).toLowerCase().indexOf('house-linkonly') > -1);
+				this.currentState = ( (!this._isLoggedInState) && (!this._isLabelsOnlyLoggedInState) && (!this._isHouseLinkOnlyState) ) ? stateName : this.currentState;
+				this._isEditingExistingLabelBodyOnly = (this.currentState == 'EditingExistingLabelBodyOnly');
+				//trace(this.className+'._currentState().2 --> this.currentState='+this.currentState);
+				//trace(this.className+'._currentState().3 --> this._isLabelsOnlyLoggedInState='+this._isLabelsOnlyLoggedInState);
+				//trace(this.className+'._currentState().4 --> this._isLoggedInState='+this._isLoggedInState);
+				//trace(this.className+'._currentState().5 --> this._isLogoLinkState='+this._isLogoLinkState);
+				//trace(this.className+'._currentState().6 --> this._isGLinksOnlyState='+this._isGLinksOnlyState);
+				//trace(this.className+'._currentState().7 --> this._isCategoryState='+this._isCategoryState);
+				this.relax_validations = (this._isLoggedInState || this._isHouseLinkOnlyState);
+				this._isLoggedInState = (this._isLoggedInState || this._isCategoryState || this._isHouseLinkOnlyState) ? true : this._isLoggedInState;
+				if (this._isLoggedInState) {
+					//trace(this.className+'._currentState().7 !');
+					this.accordion.selectedIndex = 0;
+					var p:* = this.hbox2.parent;
+					p.removeChild(this.hbox2);
+					p = this.hbox3.parent;
+					p.removeChild(this.hbox3);
+					var hbox_editor:URLEditorHBox = new URLEditorHBox()
+					hbox_editor.width = this.vbox2.width;
+					hbox_editor.currentState = 'loggedIn';
+					hbox_editor.combo_domain_dataProvider = this.combo_domain.dataProvider as ArrayCollection;
+					hbox_editor.onChangeCallback_combo_domain = function (event:ListEvent):void {
+						//trace('### hbox_editor.onChangeCallback_combo_domain().1 !');
+						_this.onChange(event);
+					};
+					hbox_editor.onValidate_valueCallback = function (value:*,target:*):void {
+						//trace('### hbox_editor.onValidate_valueCallback().1 value='+value+', target='+target);
+						_this.validate_value(value,target);
+					};
+					
+					function tag_roles_with_menu_id(_roles:Array):void {
+						var aRole:Object;
+						var aMenuId:Object;
+						var _aMenuId:Object;
+						var aRolesEditor:Object;
+						var aUrlEditor:Object;
+						
+						function push_role_into(role:Object,the_roles:Array):void {
+							try {
+								if (the_roles.length > 0) {
+									the_roles.splice(0,the_roles.length);
+								}
+								the_roles.push(role);
+							} catch (err:Error) {}
+						}
+						
+						if (_roles is Array) {
+							aRole = (_roles.length == 0) ? {} : _roles[0];
+							try {
+								aRolesEditor = aRole.rolesEditor;
+								push_role_into(aRole,_roles);
+							} catch (err:Error) {
+								aRole = {};
+								aRole.rolesEditor = {};
+								aRolesEditor = aRole.rolesEditor;
+								push_role_into(aRole,_roles);
+							}
+							if (aRolesEditor == null) {
+								aRole.rolesEditor = {};
+								aRolesEditor = aRole.rolesEditor;
+							}
+
+							var i:String;
+							var anEditor:String;
+							var urlEditors:Array = MenuController.urlEditors_Names;
+							for (i in urlEditors) {
+								anEditor = urlEditors[i];
+								aUrlEditor = aRolesEditor[anEditor];
+								if (aUrlEditor == null) {
+									aRolesEditor[anEditor] = {};
+									aUrlEditor = aRolesEditor[anEditor];
+								}
+								aMenuId = aUrlEditor.menu_id;
+								if (aMenuId == null) {
+									aUrlEditor.menu_id = {};
+									aMenuId = aUrlEditor.menu_id;
+								}
+								if (aMenuId is String) {
+									aUrlEditor.menu_id = {};
+									aMenuId = aUrlEditor.menu_id;
+								}
+								function get_next_menu_id_value_from(source_array:Array):int {
+									var i:String;
+									var aValue:int;
+									var candidate:int = -1;
+									var target:int = -1;
+									for (i in source_array) {
+										aValue = source_array[i];
+										candidate = Math.max(candidate,aValue);
+									}
+									return candidate+1;
+								}
+								
+								if ( (aMenuId.menu_id == null) || ( (aMenuId.menu_id is String) && (aMenuId.menu_id.length == 0) ) ) {
+									var ids:Array = MenuController.menu_id_sorted;
+									//trace(this.className+'._currentState().1 --> MenuController.menu_id_sorted='+(new ObjectExplainer(MenuController.menu_id_sorted)).explainThisWay());
+									var num:int = get_next_menu_id_value_from(MenuController.menu_id_sorted);
+									aMenuId.menu_id = 'GN'+num;
+									MenuController.menu_id_sorted.push(num);
+									var anId:String = aMenuId.menu_id;
+									MenuController._menu_id_sorted.push({'label':anId,'id':anId});
+									//trace(this.className+'._currentState().2 --> anId='+anId);
+								}
+							}
+						}
+					}
+					
+					hbox_editor.relax_validations = this.relax_validations;
+					hbox_editor.categoryPosition = categoryPosition;
+					hbox_editor.itemPosition = itemPosition;
+					
+					var roles:Array = this.dataProvider[MenuController.hash.roles];
+					if (roles == null) {
+						this.dataProvider[MenuController.hash.roles] = [];
+						roles = this.dataProvider[MenuController.hash.roles];
+					}
+					tag_roles_with_menu_id(roles);
+					hbox_editor.dataProvider = roles;
+
+					this.vbox2.addChildAt(hbox_editor,0);
+					this.vbox2.height = 300;
+					this.vbox_default.height = 355;
+					
+					this.hbox3.styleName = 'cbNewWindowHBox';
+					this.hbox1.styleName = 'HBox1';
+					this.vbox_default.styleName = 'SmartPanelDefaultVBox';
+					this.hbox_category_label.styleName = 'SmartPanelCategoryLabelHBox';
+					
+					this.btn_save.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+						var i:int = -1;
+					});
+					
+					this._dataSelectors[0] = {
+						'foo':[{'x':MenuController.hash.roles}],
+						'label_edit':[{'a':'label_text','s':'text','f':'dummy','x':MenuController.hash.label}]
+					};
+					
+					this.btn_save.enabled = true;
+					//trace(this.className+'._currentState().8 !');
+
+					var children:Array = this.accordion.getChildren();
+					var i:int = this.vbox00.getChildIndex(this.accordion);
+					this.vbox00.removeChildAt(i);
+					for (var n:String in children) {
+						//trace(this.className+'._currentState().9 --> children['+n+'].id='+children[n].id);
+						this.vbox00.addChildAt(children[n],i);
+					}
+					this._mode = this.mode_default;
+					//trace(this.className+'._currentState().10 --> this._mode='+this._mode);
+				} else if (this._isEditingExistingLabelBodyOnly) {
+					this.refresh_accordion_state(this.vbox_label_body);
+				} else if ( (!(this.currentState is String)) || (this.currentState == '') ) {
+					this.height = 280;
+				}
+				this.btn_save.enabled = this.isEnabled_btn_save;
+			}
+			
+			private function onCreationComplete_options(event:*):void {
+			}
+			
+			private function onCreationComplete_roles_list(event:*):void {
+//				this._current_roles_list = event.currentTarget as List;
+//				this._current_roles_list.itemRenderer = new ClassFactory(CheckBoxRenderer);
+//				this._current_roles_list.setStyle("alternatingItemColors", new Array("#EEEEEE", "white"));
+//				this._current_roles_list.dataProvider = this._rolesList;
+			}
+			
+			public function set role(role:*):void {
+				// Does nothing for now - this is just a placeholder...
+			}
+			
+			[Bindable]
+			public function get role():* {
+				//var selectedIndex:int = this.cbox_roles.selectedIndex;
+				//trace(this.className+'.role.1 --> selectedIndex='+selectedIndex);
+				//var ac:ArrayCollection = this.cbox_roles.dataProvider as ArrayCollection;
+				//trace(this.className+'.role.2 --> source='+(new ObjectExplainer(ac.source)).explainThisWay());
+				//var item:* = this.cbox_roles.selectedItem;
+				//trace(this.className+'.role.3 --> item='+(new ObjectExplainer(item)).explainThisWay());
+				return ''; // item.value;
+			}
+
+			public function get isRoleValid():Boolean {
+				//trace(this.className+'.isRoleValid.1 --> this.role=('+this.role+').');
+				return (this.role.length > 0) ? true : false;
+			}
+
+			private function validate_cbox_role():void {
+				var role:String = this.role;
+				//trace(this.className+'.validate_cbox_role().1 --> role='+role);
+				//this.cbox_roles.styleName = (role.length > 0) ? 'REQUIREDComplete' : 'REQUIRED';
+				//trace(this.className+'.validate_cbox_role().2 --> this.cbox_roles.styleName='+this.cbox_roles.styleName);
+				this.btn_save.enabled = this.isEnabled_btn_save;
+			}
+			
+//			public function get roles_list():* {
+//				return this.options.roles_list;
+//			}
+			
+			public function get rb_onebill():* {
+				return this.options.rb_oneBill;
+			}
+			
+			public function get rb_alltel():* {
+				return this.options.rb_alltel;
+			}
+			
+			public function get rb_none():* {
+				//return this.options.rb_none;
+			}
+			
+			public function get txt_alltel_url():TextInput {
+				return this.options.txt_alltel_url;
+			}
+			
+			public function get txt_hbxlink():TextInput {
+				return this.options.txt_hbxlink;
+			}
+
+//			public function get rolesTileList():Tile {
+//				return this.options.roles_list;
+//			}
+			
+			public function get txt_body_edit():TextInput {
+				return (String(this.currentState).toLowerCase() == 'labelsonly') ? this.body_edit2 : this['body_edit'];
+			}
+			
+			[Bindable]			
+			public function get rolesList():ArrayCollection {
+				return this._rolesList;
+			}
+
+			public function set rolesList(rolesList:ArrayCollection):void {
+				this._rolesList.removeAll();
+				ArrayCollectionUtils.appendAllInto(this._rolesList,rolesList);
+				if (this._current_roles_list is List) {
+					this._current_roles_list.dataProvider = this._rolesList;
+				}
+			}
+			
+			public function get isAddSubMenuItem():Boolean {
+				return this._isAddSubMenuItem;
+			}
+			
+			public function set isAddSubMenuItem(isAddSubMenuItem:Boolean):void {
+				if (this._isAddSubMenuItem != isAddSubMenuItem) {
+					this._isAddSubMenuItem = isAddSubMenuItem;
+					if (this.vbox_default.enabled == true) {
+						this.vbox_default.enabled = isAddSubMenuItem;
+					}
+					if (this.vbox_label_body.enabled == true) {
+						this.vbox_label_body.enabled = isAddSubMenuItem;
+					}
+					if (this.vbox_separator.enabled == true) {
+						this.vbox_separator.enabled = isAddSubMenuItem;
+					}
+				}
+			}
+			
+			public function get isAllowingSeps():Boolean {
+				return this._isAllowingSeps;
+			}
+			
+			public function set isAllowingSeps(isAllowingSeps:Boolean):void {
+				if (this._isAllowingSeps != isAllowingSeps) {
+					this.vbox_separator.enabled = this._isAllowingSeps = isAllowingSeps;
+				}
+			}
+			
+			public function get isEditMenuItem():Boolean {
+				return this._isEditMenuItem;
+			}
+			
+			public function set isEditMenuItem(isEditMenuItem:Boolean):void {
+				if (this._isEditMenuItem != isEditMenuItem) {
+					this._isEditMenuItem = isEditMenuItem;
+				}
+			}
+			
+			public function get isDeleteMenuItem():Boolean {
+				return this._isDeleteMenuItem;
+			}
+			
+			public function set isDeleteMenuItem(isDeleteMenuItem:Boolean):void {
+				if (this._isDeleteMenuItem != isDeleteMenuItem) {
+					this._isDeleteMenuItem = isDeleteMenuItem;
+				}
+			}
+			
+			public function get menuDepth():int {
+				return this._menuDepth;
+			}
+			
+			public function set menuDepth(vector:*):void {
+				var menuDepth:int = vector['menuLevel'];
+				var count_label_bodies:int = vector['count_label_bodies'];
+				var count_seps:int = vector['count_seps'];
+
+				//trace('set menuDepth().0 --> menuDepth='+menuDepth + ', count_label_bodies=' +count_label_bodies + ', count_seps='+count_seps);
+				//trace('set menuDepth().1 --> this._menuDepth='+this._menuDepth + ', menuDepth=' +menuDepth);
+				if (this._menuDepth != menuDepth) {
+					this._menuDepth = menuDepth;
+					
+					var b:Boolean = (this.menuDepth == MenuController._maxMenuDepth) || (this.currentState == null);
+					//trace('set menuDepth().2 b='+b);
+					if ( (this.vbox_label_body.enabled == true) || (this.currentState == null) ) {
+						this.vbox_label_body.enabled = b;
+						//trace('set menuDepth().3 this.vbox_label_body.enabled='+this.vbox_label_body.enabled);
+					}
+					//trace('set menuDepth().4 this.currentState='+this.currentState);
+					if (this.currentState != 'AddingToExistingLabelBody') {
+						//trace('set menuDepth().5 !');
+						if ( (this.vbox_separator.enabled == true) || (this.currentState == null) ) {
+							this.vbox_separator.enabled = b;
+							//trace('set menuDepth().6 this.vbox_separator.enabled='+this.vbox_separator.enabled);
+						}
+						//trace('set menuDepth().7 this.currentState='+this.currentState);
+						if (this.currentState != 'EditingExistingLabelBody') {
+							this.vbox_separator.enabled = this.vbox_label_body.enabled;
+							//trace('set menuDepth().8 this.vbox_separator.enabled='+this.vbox_separator.enabled);
+						}
+						//trace('set menuDepth().9 this.menuDepth='+this.menuDepth + ', MenuController._maxMenuDepth=' + MenuController._maxMenuDepth);
+						if (this.menuDepth < MenuController._maxMenuDepth) {
+							this.vbox_separator.enabled = false;
+							this.vbox_label_body.enabled = (this.menuDepth == 1) ? (((count_label_bodies == 0) && (count_seps == 0)) ? true : false) : this.vbox_label_body.enabled; 
+							//trace('set menuDepth().10 this.vbox_separator.enabled='+this.vbox_separator.enabled + ', this.vbox_label_body.enabled=' + this.vbox_label_body.enabled);
+						}
+					}
+				}
+			}
+
+			// *****************************************************************************************
+			// **  END!   LoggedIn state support...
+			// *****************************************************************************************
+			
+			public function get _symbol_mode_default():String {
+				return this.__symbol_mode_default;
+			}
+			
+			public function set _symbol_mode_default(symbol_mode_default:String):void {
+				if (this.__symbol_mode_default != symbol_mode_default) {
+					this.__symbol_mode_default = symbol_mode_default;
+				}
+			}
+			
+			public function get dataSelectors():* {
+				return this._dataSelectors[this._mode];
+			}
+
+			public function set target(target:*):void {
+				if (this._target != target) {
+					this._target = target;
+				}
+			}
+			
+			public function get target():* {
+				return this._target;
+			}
+
+			public function set source(source:*):void {
+				if (this._source != source) {
+					this._source = source;
+				}
+			}
+			
+			public function get source():* {
+				return this._source;
+			}
+			
+			public function set source_dp(source_dp:*):void {
+				if (this._source_dp != source_dp) {
+					this._source_dp = source_dp;
+				}
+			}
+			
+			public function get source_dp():* {
+				return this._source_dp;
+			}
+			
+			private function dump_dataProvider(source:*=null,data:*=null):void {
+				var className:String = (source != null) ? source.className : this.className;
+				//trace(className+'.dump_dataProvider().1 BEGIN:\n' + (new ObjectExplainer((data != null) ? data : this._dataProvider)).explainThisWay() + '\nEND!\n');
+			}
+						
+			public function set dataProvider(dataProvider:Object):void {
+				if (this._dataProvider != dataProvider) {
+					this._dataProvider = dataProvider;
+					this.refresh_editables();
+					this.btn_save.enabled = this.isEnabled_btn_save;
+				}
+			}
+			
+			public function get dataProvider():Object {
+				return (this._dataProvider) ? this._dataProvider : {};
+			}
+			
+			public function get domains():ArrayCollection {
+				return this.combo_domain.dataProvider as ArrayCollection;
+			}
+			
+			private function remove_disabled_children(source:*):void {
+				try {
+					var ar:Array = source.getChildren();
+					for (var i:String in ar) {
+						if (ar[i]['enabled'] == false) {
+							source.removeChild(ar[i]);
+						}
+					}
+				} catch (e:Error) {
+					var st:String = e.getStackTrace();
+					//trace(this.className + '.remove_disabled_children() ERROR:' + st);
+				}
+			}
+
+			private function queue_or_handle_specific_refresh(name:String,func:Function):void {
+				//trace('queue_or_handle_specific_refresh().1 name='+name);
+				//trace('queue_or_handle_specific_refresh().2 this._relays_refreshes[name]='+this._relays_refreshes[name]);
+				if (this._relays_refreshes[name]) {
+					_delayed_refreshes[name] = func;
+					//trace('queue_or_handle_specific_refresh().3 _delayed_refreshes[name]='+_delayed_refreshes[name]);
+				} else if (func is Function) {
+					try { func(); } catch (e:Error) {trace('queue_or_handle_specific_refresh().4 ERROR='+e.message);}
+				}
+			}
+			
+			private function refresh_editables():void {
+				//trace('### refresh_editables() !');
+				if (this._mode == this.mode_default) {
+					this.queue_or_handle_specific_refresh('label_edit',this.refresh_label_text);
+					this.queue_or_handle_specific_refresh('url_edit',this.refresh_url_text);
+					this.queue_or_handle_specific_refresh('cb_newWindow',this.refresh_target_text);
+					this.queue_or_handle_specific_refresh('combo_domain',this.refresh_domain_text);
+					this.queue_or_handle_specific_refresh('txt_body_edit',this.refresh_body_text);
+					
+					try { this.refresh_selected_roles(); } catch (e:Error) {}
+					//try { this.refresh_roles(); } catch (e:Error) {}           // 'cb_role'
+					try { this.refresh_onebill_text(); } catch (e:Error) {}    // 'rb_oneBill'
+					try { this.refresh_alltel_text(); } catch (e:Error) {}     // 'rb_alltel'
+					try { this.refresh_none_text(); } catch (e:Error) {}       // 'rb_none'
+					try { this.refresh_alltel_url_text(); } catch (e:Error) {} // 'txt_alltel_url'
+					try { this.refresh_hbxlink_text(); } catch (e:Error) {}    // 'txt_hbxlink'
+				} else if (this._mode == this.mode_separator) {
+					this.queue_or_handle_specific_refresh('cb_isSeparator',this.refresh_separator_text);
+				} else if (this._mode == this.mode_label) {
+					this.queue_or_handle_specific_refresh('label_edit2',this.refresh_label_edit2);
+					this.queue_or_handle_specific_refresh('body_edit2',this.refresh_body_text2);
+				}
+				//this.remove_disabled_children(this.accordion);
+			}
+			
+			private function validate_value(value:*,target:*):Boolean {
+				//trace(this.className+'.validate_value().1 --> this.relax_validations='+this.relax_validations);
+				if (!this.relax_validations) {
+					var isChooseWidget:Boolean = false;
+					try {
+						if (target.labelField is String) {
+							try {
+								if (target.dataProvider[target.selectedIndex][target.labelField] == 'Choose...') {
+									isChooseWidget = true;
+								} else {
+									value = true;
+								}
+							} catch (e:Error) {}
+						}
+					} catch (e:Error) {}
+					var isBeingDebugged:Boolean = (target.id == 'url_edit');
+					value = (isChooseWidget) ? -1 : value;
+					var passesPatternCheck:Boolean = true;
+					var queryStringStart:int = String(value).indexOf('?');
+					var toks:Array = String(value).split('?');
+					var queryString:String = (toks.length == 2) ? String(toks[toks.length-1]) : '';
+					var hasQueryStringContents:Boolean = ( (toks.length == 2) && ((queryString == null) || ((queryString is String) && (queryString.length > 0))) );
+					var argsToks:Array = queryString.split('&');
+					var hasValidQueryStringContents:Boolean = true;
+					var hasQueryStringSymbol:Boolean = (queryStringStart > -1);
+					if (hasQueryStringSymbol) {
+						var b:Boolean = false;
+						for (var j:String in argsToks) {
+							argsToks[j] = argsToks[j].split('=');
+							b = ( (argsToks[j].length == 2) && (argsToks[j][0].length > 0) && (argsToks[j][1].length > 0) );
+							if (!b) {
+								//hasValidQueryStringContents = false;
+							} else {
+								//hasValidQueryStringContents = true;
+							}
+						}
+					}
+					//trace(this.className+'.validate_value().0 --> (' + target.id + ') value='+value);
+					var domain:Object = this.combo_domain.selectedItem;
+					var isOtherChosen:Boolean = ( (domain != null) && (domain.iDomain == -1) && (domain.iKey == -1) && (domain.name == SmartMenuFlyoutItemAdmin.symbol_other_domain));
+					//trace(this.className+'.validate_value().1 --> isOtherChosen='+isOtherChosen);
+					var test1:Boolean = (!isOtherChosen) && (String(value).indexOf('://') != -1);
+					//trace(this.className+'.validate_value().2 --> test1='+test1);
+					var test2:Boolean = ( (!isOtherChosen) && (String(value).length > 0) ) ? (String(value).substr(0,1) != '/') : false;
+					//trace(this.className+'.validate_value().3 --> test2='+test2);
+					var slashSlashStart:int = String(value).indexOf('//');
+					var hasSlashSlash:Boolean = (slashSlashStart > -1);
+					var ProtocolStart:int = String(value).indexOf('http://');
+					ProtocolStart = (ProtocolStart == -1) ? String(value).indexOf('https://') : ProtocolStart;
+					var hasValidProtocolStart:Boolean = (ProtocolStart == 0);
+					var hasProtocolStartAfterQueryStringStart:Boolean = (hasQueryStringSymbol) && (ProtocolStart > queryStringStart);
+					var hasInvalidProtocol:Boolean = (hasValidProtocolStart) && (hasProtocolStartAfterQueryStringStart);
+					var hasProtocol:Boolean = (!isOtherChosen) ? true : ( (hasValidProtocolStart) && (!hasInvalidProtocol) ); // assume there is a protocol if other is not chosen to keep the logic simple.
+					//trace(this.className+'.validate_value().4 --> hasProtocolStartAfterQueryStringStart='+hasProtocolStartAfterQueryStringStart);
+					//trace(this.className+'.validate_value().5 --> hasValidProtocolStart='+hasValidProtocolStart);
+					//trace(this.className+'.validate_value().6 --> hasInvalidProtocol='+hasInvalidProtocol);
+					//trace(this.className+'.validate_value().7 --> hasProtocol='+hasProtocol);
+					var test3:Boolean;
+					var test4:Boolean = (!isOtherChosen) && (String(value).indexOf(':') != -1);
+					test3 = (hasQueryStringSymbol) && ( (!hasQueryStringContents) || (!hasValidQueryStringContents) );
+					var hasProblemsWithSlashSlash:Boolean = ((!isOtherChosen) && (hasQueryStringSymbol) && (slashSlashStart > -1) ) ? (slashSlashStart <= queryStringStart) : false;
+					test3 ||= (hasProblemsWithSlashSlash) ? hasProblemsWithSlashSlash : (test3 || hasSlashSlash);
+					//trace(this.className+'.validate_value().8 --> test3='+test3);
+					//trace(this.className+'.validate_value().9 --> test4='+test4);
+					var isUrl_edit:Boolean = (target.id == 'url_edit');
+					//trace(this.className+'.validate_value().10 --> isUrl_edit='+isUrl_edit);
+					//trace(this.className+'.validate_value().11 --> passesPatternCheck='+passesPatternCheck);
+					passesPatternCheck = ((isUrl_edit) && ((test1) || (test2) || (test3) || (test4) || (!hasProtocol))) ? false : passesPatternCheck;
+					//trace(this.className+'.validate_value().12 --> passesPatternCheck='+passesPatternCheck);
+					if (passesPatternCheck == false) {
+						var xx:int = -1;
+					}
+					var _styleName:String = ( (target.styleName == 'REQUIRED') && ((value is String) ? ( (value.length > 0) && (passesPatternCheck) ) : ((value is Boolean) ? (value == true) : (value > -1)) ) ) ? 'REQUIREDComplete' : ( (target.styleName == 'REQUIREDComplete') && ((value is String) ? ( (value.length == 0) || (!passesPatternCheck) ) : ((value is Boolean) ? (value == false) : (value == -1))) ) ? 'REQUIRED' : target.styleName;
+					//trace(this.className+'.validate_value().13 --> _styleName='+_styleName);
+					if (target.id == 'cb_isSeparator') {
+						target.parent.styleName = _styleName;
+					} else {
+						target.styleName = _styleName;
+					}
+				}
+				target.errorString = '';
+				if (target.styleName == 'REQUIRED') {
+					if (target.id != 'url_edit') {
+						if (value is String) {
+							if (value.length == 0) {
+								target.errorString = 'Please enter a value in this entry field.';
+							}
+						} else {
+							if ( (value == -1) || (value != null) ) {
+								target.errorString = 'Please choose a valid value other than the one presently selected.';
+								//trace(this.className+'.validate_value().1 --> ('+target.id+') target='+target);
+							}
+						}
+					} else {
+						if (!passesPatternCheck) {
+							if (!isOtherChosen) {
+								if (test1) {
+									target.errorString = 'This value may not have "http://" or "https://" or any other value that contains the "://" as the protocol is supplied by the domain selection to the left of this entry field.';
+								} else if (test2) {
+									target.errorString = 'Proper URL values must begin with the "/" character.';
+								} else if (test3) {
+									if (hasProblemsWithSlashSlash) {
+										target.errorString = 'Slash-slash ("//") CANNOT appear to the left of the Query String symbol ("?").';
+									}
+								} else if (test4) {
+									target.errorString = 'Proper URL values cannot use the ":" character at-all.';
+								}
+							} else {
+								if (hasInvalidProtocol) {
+									target.errorString = 'Proper URL values CANNOT have an embedded Protocol as part of the Query String, try using URL Encoded values instead because this is what is required.';
+								} else if (!hasProtocol) {
+									target.errorString = 'Proper URL values MUST begin with a valid Protocol ("http://" or "https://").';
+								}
+							}
+							if ( (hasQueryStringSymbol) && ( (!hasQueryStringContents) || (!hasValidQueryStringContents) ) ) {
+								target.errorString = 'Your Query String is INVALID, kindly make your Query String valid.';
+							}
+						}
+					}
+				}
+				target.styleName = (target.errorString.length == 0) ? 'REQUIREDComplete' : 'REQUIRED';
+				//trace(this.className+'.validate_value().98 target.errorString.length=' + target.errorString.length + '\n');
+				//trace(this.className+'.validate_value().99 target.styleName=' + target.styleName + '\n');
+				return target.errorString.length == 0;
+			}
+			
+			private function onChange(event:Event):void {
+				var i:String;
+				var source:*;
+				var dest:*;
+				var value:*;
+				var dp:*;
+				var target:* = event.currentTarget;
+				var p:* = target.parent;
+				var isURLEditor:Boolean = (p.className == this.symbol_URLEditor_className);
+				var _this:* = (isURLEditor) ? p : this;
+				var id:String = target.id;
+				var selectors:* = this._dataSelectors[this._mode][id];
+				var aSelector:Object;
+				if (selectors is Array) {
+					for (i in selectors) {
+						aSelector = selectors[i];
+						source = target[aSelector.s];
+						dest = _this[aSelector.a];
+						try {
+							dp = target.dataProvider;
+							dp = (dp == null) ? target['dataProvider'] : dp;
+							dp = (dp is Array) ? dp as ArrayCollection : dp;
+						} catch (e:Error) {dp = new ArrayCollection()}
+						this.currentFunc = this[aSelector.f];
+						if ( ( (id == 'rb_none') && (this.currentFunc is Function) ) || ( (source != dest) && (this.currentFunc is Function) ) ) {
+							var data:Object = {'source':source,'event':event};
+							if (id == 'cb_role') {
+								data.dataProvider = dp;
+							}
+							value = this.currentFunc(data);
+							_this[aSelector.a] = value;
+							_this.validate_value(value,target);
+						}
+					}
+
+					if (this._isLoggedInState) {
+						this.dump_dataProvider();
+					}
+				}
+
+				this.btn_save.enabled = this.isEnabled_btn_save;
+			}
+
+			public function set label_text(label_text:String):void {
+				var aSelector:String = MenuController.hash.label;
+				if ( (this._dataProvider != null) && (aSelector != null) ) {
+					if (this._dataProvider[aSelector] != label_text) {
+						this._dataProvider[aSelector] = label_text;
+					}
+				}
+			}
+
+			[Bindable]
+			public function get label_text():String {
+				var aSelector:String = MenuController.hash.label;
+				var text:String = ( (this._dataProvider != null) && (aSelector != null) ) ? this._dataProvider[aSelector] : '';
+				//trace(this.className+'.label_text().1 --> text='+text);
+				return text;
+			}
+			
+			public function set body_text(body_text:*):void {
+				var aSelector:String = MenuController.hash.body;
+				if ( (this._dataProvider != null) && (aSelector != null) ) {
+					if (this._dataProvider[aSelector] != body_text) {
+						this._dataProvider[aSelector] = body_text;
+					}
+				}
+			}
+
+			[Bindable]
+			public function get body_text():String {
+				var aSelector:String = MenuController.hash.body;
+				var text:String = ( (this._dataProvider != null) && (aSelector != null) ) ? this._dataProvider[aSelector] : '';
+				return text;
+			}
+
+			private function refresh_label_text():void {
+				this.label_edit.text = this.label_text;
+				this.validate_value(this.label_edit.text,this.label_edit);
+			}
+			
+			private function refresh_body_text():void {
+				try {
+					this.txt_body_edit.text = this.body_text;
+				} catch (e:Error) {}
+			}
+			
+			public function set url_text(url_text:String):void {
+				var aSelector:String = MenuController.hash.url;
+				if ( (this._dataProvider != null) && (aSelector != null) ) {
+					if (this._dataProvider[aSelector] != url_text) {
+						this._dataProvider[aSelector] = url_text;
+					}
+				}
+			}
+
+			[Bindable]
+			public function get url_text():String {
+				var aUrlSelector:String = MenuController.hash.url;
+				var text:String = ((this._dataProvider != null) && (aUrlSelector != null)) ? this._dataProvider[aUrlSelector] : '';
+				//trace(this.className+'.###.1 --> text='+text);
+				return text;
+			}
+
+			private function refresh_url_text():void {
+				this.url_edit.text = this.url_text;
+				this.validate_value(this.url_edit.text,this.url_edit);
+			}
+
+			public function set hbxlink_text(hbxlink_text:String):void {
+				try {
+					var aSelector:String = MenuController.hash.hbxlink;
+					if ( (this._dataProvider != null) && (aSelector != null) ) {
+						var target:String = this._dataProvider[aSelector];
+						if (target != hbxlink_text) {
+							this._dataProvider[aSelector] = hbxlink_text;
+						}
+					}
+				} catch (e:Error) {}
+			}
+
+			[Bindable]
+			public function get hbxlink_text():String {
+				var text:String = '';
+				try {
+					var aSelector:String = MenuController.hash.hbxlink;
+					text = ((this._dataProvider != null) && (aSelector != null)) ? this._dataProvider[aSelector] : '';
+				} catch (e:Error) {}
+				return text;
+			}
+
+			public function set alltel_url_text(url_text:String):void {
+				try {
+					var aSelector:String = MenuController.hash.alltelurl;
+					if ( (this._dataProvider != null) && (aSelector != null) ) {
+						var target:String = this._dataProvider[aSelector];
+						if (target != url_text) {
+							this._dataProvider[aSelector] = url_text;
+						}
+					}
+				} catch (e:Error) {}
+			}
+
+			[Bindable]
+			public function get alltel_url_text():String {
+				var text:String = '';
+				try {
+					var aSelector:String = MenuController.hash.alltelurl;
+					text = ((this._dataProvider != null) && (aSelector != null)) ? this._dataProvider[aSelector] : '';
+				} catch (e:Error) {}
+				return text;
+			}
+
+			private function refresh_alltel_url_text():void {
+				try {
+					this.txt_alltel_url.text = this.alltel_url_text;
+				} catch (e:Error) {}
+			}
+			
+			private function refresh_hbxlink_text():void {
+				try {
+					this.txt_hbxlink.text = this.hbxlink_text;
+				} catch (e:Error) {}
+			}
+			
+			public function set target_text(target_text:String):void {
+				if (this._dataProvider != null) {
+					var aSelector:String = MenuController.hash.target;
+					var target:String = ((this._dataProvider != null) && (aSelector != null)) ? this._dataProvider[aSelector] : '';
+					target_text = (target_text == 'true') ? '_blank' : '';
+					if (target != target_text) {
+						this._dataProvider[aSelector] = target_text;
+					}
+				}
+			}
+
+			[Bindable]
+			public function get target_text():String {
+				var aSelector:String = MenuController.hash.target;
+				var target:* = ((this._dataProvider != null) && (aSelector != null)) ? this._dataProvider[aSelector] : '';
+				return target;
+			}
+
+			public function set tiled_roles(roles:*):void {
+				if (this._dataProvider != null) {
+					var aSelector:String = MenuController.hash.roles;
+					var target:* = ((this._dataProvider != null) && (aSelector != null)) ? this._dataProvider[aSelector] : [];
+					target = (target is Array) ? target : ((target == null) ? [] : [target]);
+					var role:String = roles.dataProvider.value.toString();
+					var _f:int = target.indexOf(role);
+					if (_f == -1) {
+						target.push(role);
+					} else {
+						target.splice(_f,1);
+					}
+					this._dataProvider[aSelector] = target;
+				}
+			}
+			
+			[Bindable]
+			public function get tiled_roles():* {
+				var hash:Object = MenuController.hash;
+				var aSelector:String = MenuController.hash.roles;
+				var target:* = ((this._dataProvider != null) && (aSelector != null)) ? this._dataProvider[aSelector] : [];
+				target = (target is Array) ? target : ((target == null) ? [] : [target]);
+				return target;
+			}
+
+			public function set selected_roles(roles:*):void {
+				if (this._dataProvider != null) {
+					var aSelector:String = MenuController.hash.roles;
+					var target:* = ((this._dataProvider != null) && (aSelector != null)) ? this._dataProvider[aSelector] : [];
+					if (target != roles) {
+						this._dataProvider[aSelector] = roles;
+					}
+				}
+			}
+			
+			[Bindable]
+			public function get selected_roles():* {
+				var hash:Object = MenuController.hash;
+				var aSelector:String = MenuController.hash.roles;
+				var target:* = ((this._dataProvider != null) && (aSelector != null)) ? this._dataProvider[aSelector] : [];
+				return target;
+			}
+			
+			public function set one_bill(selected:Boolean):void {
+				if (this._dataProvider != null) {
+					var aSelector1:String = MenuController.hash.onebill;
+					var aSelector2:String = MenuController.hash.alltel;
+					var target1:Boolean = ((this._dataProvider != null) && (aSelector1 != null)) ? this._dataProvider[aSelector1] : false;
+					var target2:Boolean = ((this._dataProvider != null) && (aSelector2 != null)) ? this._dataProvider[aSelector2] : false;
+					if (target1 != selected) {
+						this._dataProvider[aSelector1] = selected;
+						var rb_alltel:* = this.options.rb_alltel;
+						if (rb_alltel is RadioButton) {
+							this._dataProvider[aSelector2] = (selected) ? false : selected;
+						}
+					}
+				}
+			}
+			
+			[Bindable]
+			public function get one_bill():Boolean {
+				var hash:Object = MenuController.hash;
+				var aSelector:String = MenuController.hash.onebill;
+				var target:Boolean = ((this._dataProvider != null) && (aSelector != null)) ? this._dataProvider[aSelector] : false;
+				return target;
+			}
+			
+			public function set alltel(selected:Boolean):void {
+				if (this._dataProvider != null) {
+					var aSelector1:String = MenuController.hash.alltel;
+					var aSelector2:String = MenuController.hash.onebill;
+					var target1:Boolean = ((this._dataProvider != null) && (aSelector1 != null)) ? this._dataProvider[aSelector1] : false;
+					var target2:Boolean = ((this._dataProvider != null) && (aSelector2 != null)) ? this._dataProvider[aSelector2] : false;
+					if (target1 != selected) {
+						this._dataProvider[aSelector1] = selected;
+						var rb_oneBill:* = this.options.rb_oneBill;
+						if (rb_oneBill is RadioButton) {
+							this._dataProvider[aSelector2] = (selected) ? false : selected;
+						}
+					}
+				}
+			}
+			
+			[Bindable]
+			public function get alltel():Boolean {
+				var hash:Object = MenuController.hash;
+				var aSelector:String = MenuController.hash.alltel;
+				var target:Boolean = ((this._dataProvider != null) && (aSelector != null)) ? this._dataProvider[aSelector] : false;
+				return target;
+			}
+			
+			private function refresh_target_text():void {
+				this.cb_newWindow.selected = this.target_text == '_blank';
+			}
+			
+			private function refresh_onebill_text():void {
+				try {
+					var aBool:Boolean = this.one_bill;
+					this.rb_onebill.selected = (aBool == true);
+				} catch (e:Error) {}
+			}
+			
+			private function refresh_alltel_text():void {
+				try {
+					var aBool:Boolean = this.alltel;
+					this.rb_alltel.selected = (aBool == true);
+				} catch (e:Error) {}
+			}
+			
+			private function refresh_none_text():void {
+				try {
+					var aBool1:Boolean = this.alltel;
+					var aBool2:Boolean = this.one_bill;
+					this.rb_none.selected = (aBool1 == false) && (aBool2 == false);
+				} catch (e:Error) { }
+			}
+			
+			public function set domain(domain_index:int):void {
+				var aSelector:String = MenuController.hash.domain;
+				var aSelector2:String = MenuController.hash.domain_key;
+				if (this._dataProvider != null) {
+					var aDomain:Object = this.get_domain_from_domain_index(domain_index);
+					if (aDomain != null) {
+						if (this.currentFunc is Function) {
+							var iDomain:Number = -1;
+							try {
+								iDomain = this.currentFunc(aDomain);
+							} catch (e:Error) {}
+							var iKey:Number = -1;
+							try {
+								iKey = this.iKey(aDomain);
+							} catch (e:Error) {}
+						}
+						if (this._dataProvider[aSelector] != iDomain) {
+							this._dataProvider[aSelector] = iDomain;
+						}
+						if (this._dataProvider[aSelector2] != iKey) {
+							this._dataProvider[aSelector2] = iKey;
+						}
+					}
+				}
+			}
+
+			public function get domain():int {
+				var aSelector:String = MenuController.hash.domain;
+				if ( (this._dataProvider != null) && (this._dataProvider[aSelector] != null) ) {
+					return this._dataProvider[aSelector];
+				}
+				return -1;
+			}
+
+			private function get_domain_index_from_domain_number(num:Number):int {
+				var i:int = 0;
+				var obj:Object;
+				var ac:ArrayCollection = this.combo_domain.dataProvider as ArrayCollection;
+				var iData:Number = -1;
+				for (; i < ac.length; i++) {
+					obj = ac.getItemAt(i);
+					if (obj.iDomain != null) {
+						iData = StringUtils.isStringNumeric(obj.iDomain) ? new Number(obj.iDomain) : (StringUtils.isStringNumeric(obj.iDomain.toString())) ? obj.iDomain : -1;
+						if (iData == num) {
+							return i;
+						}
+					}
+				}
+				return -1;
+			}
+			
+			private function get_domain_from_domain_index(num:Number):* {
+				var i:int = 0;
+				var obj:Object;
+				var ac:ArrayCollection = this.combo_domain.dataProvider as ArrayCollection;
+				var iDomain:Number = -1;
+				for (; i < ac.length; i++) {
+					obj = ac.getItemAt(i);
+					if (obj.iDomain != null) {
+						iDomain = StringUtils.isStringNumeric(obj.iDomain) ? new Number(obj.iDomain) : (StringUtils.isStringNumeric(obj.iDomain.toString())) ? obj.iDomain : -1;
+						if (iDomain == num) {
+							return obj;
+						}
+					}
+				}
+				return null;
+			}
+			
+			public function domain_index():int {
+				var aSelector:String = MenuController.hash.domain;
+				var domain:String = ((this._dataProvider != null) && (aSelector != null)) ? this._dataProvider[aSelector] : '0';
+				if ( (domain is String) && (domain.length > 0) ) {
+					var iDomain:Number = StringUtils.isStringNumeric(domain) ? new Number(domain) : -1;
+					var i:int = this.get_domain_index_from_domain_number(iDomain);
+					var n:int = (i < 0) ? 0 : i;
+					return (i < 0) ? 0 : i;
+				}
+				return -1;
+			}
+
+			private function get_index_from_data(data:*):int {
+				var obj:*;
+				var n:int;
+				var datum:String;
+				var labelField:String = this.combo_domain.labelField;
+				var dataField:String;
+				var keys:Array;
+				var ac:ArrayCollection = this.combo_domain.dataProvider as ArrayCollection;
+				for (var i:int = 0; i < ac.length; i++) {
+					obj = ac.getItemAt(i);
+					keys = ObjectUtils.keys(obj);
+					n = keys.indexOf(labelField);
+					dataField = 'iDomain';
+					datum = obj[dataField];
+					if (datum == data) {
+						return i;
+					}
+				}
+				return 0;
+			}
+			
+			private function refresh_domain_text():void {
+				var num:int = this.domain_index();
+				//var i:int = this.get_index_from_data(num);
+				this.combo_domain.selectedIndex = num;
+				var value:* = (this.combo_domain.selectedIndex > -1) ? this.combo_domain.dataProvider[this.combo_domain.selectedIndex] : {};
+				this.validate_value((this.combo_domain.selectedIndex > -1) ? this.combo_domain.dataProvider[this.combo_domain.selectedIndex] : {},this.combo_domain);
+			}
+
+			private function mark_roles_selected(source:*,target:*,selector:String,reset:Boolean=false):void {
+				var i:String;
+				var aRole:Object;
+				var _aRole:Object;
+				if (reset) {
+					for (i in target) {
+						aRole = target[i];
+						aRole.isSelected = false;
+					}
+				}
+				for (var j:String in source) {
+					_aRole = source[j];
+					_aRole = (_aRole is String) ? _aRole : _aRole[selector];
+					for (i in target) {
+						aRole = target[i];
+						try {
+							if (aRole[selector] == _aRole) {
+								aRole.isSelected = true;
+							}
+						} catch (e:Error) {}
+					}
+				}
+			}
+			
+			private function refresh_selected_roles():void {
+//				try {
+//					var selectedRoles:Array = this.selected_roles;
+//					var list:List = this.roles_list;
+//					var roles:ArrayCollection = this.rolesList;
+//					this.mark_roles_selected(selectedRoles,roles,'value',true);
+//					list.dataProvider = roles;
+//				} catch (e:Error) {}
+			}
+			
+			private function refresh_roles():void {
+//				var selectedRoles:Array = this.selected_roles;
+//				try {
+//					this.options.selected_roles = selectedRoles;
+//				} catch (e:Error) {/*trace(this.className + '.refresh_roles().1 --> ERROR=' + e.message);*/}
+			}
+			
+			private function labelFunction(data:*):String {
+				var keys:Array = ObjectUtils.keys(data);
+				var iSelector1:int = keys.indexOf('label');
+				var iSelector2:int = keys.indexOf('text');
+				var selector:String = (iSelector1 > -1) ? keys[iSelector1] : (iSelector2 > -1) ? keys[iSelector2] : 'label';
+				return data[selector];
+			}
+			
+			// BEGIN: MODE SEPARATOR... =================================================================
+
+			public function set separator_text(separator_text:String):void {
+				if (this._dataProvider != null) {
+					var aSelector:String = MenuController.hash.type;
+					var target:String = ((this._dataProvider != null) && (aSelector != null)) ? this._dataProvider[aSelector] : '';
+					separator_text = (separator_text == 'true') ? 'separator' : '';
+					if (target != separator_text) {
+						this._dataProvider[aSelector] = separator_text;
+					}
+				}
+			}
+
+			[Bindable]
+			public function get separator_text():String {
+				var aSelector:String = MenuController.hash.type;
+				var target:String = ((this._dataProvider != null) && (aSelector != null)) ? this._dataProvider[aSelector] : '';
+				return target;
+			}
+
+			private function refresh_separator_text():void {
+				this.cb_isSeparator.selected = this.separator_text == 'separator';
+			}
+
+			public function set label_text2(label_text:String):void {
+				var aSelector:String = MenuController.hash.label;
+				if ( (this._dataProvider != null) && (aSelector != null) ) {
+					if (this._dataProvider[aSelector] != label_text) {
+						this._dataProvider[aSelector] = label_text;
+					}
+				}
+			}
+
+			[Bindable]
+			public function get label_text2():String {
+				var aSelector:String = MenuController.hash.label;
+				var text:String = ( (this._dataProvider != null) && (aSelector != null) ) ? this._dataProvider[aSelector] : '';
+				return text;
+			}
+			
+			private function refresh_body_text2():void {
+				try { this.body_edit2.text = this.body_text2; } catch (e:Error) {}
+				//trace('refresh_body_text2().1 !');
+				try { this.validate_value(this.body_edit2.text,this.body_edit2); } 
+					catch (e:Error) {trace('\trefresh_body_text2().ERROR='+e.message);}
+			}
+			
+			public function set body_text2(body_text:*):void {
+				var aSelector:String = MenuController.hash.body;
+				if ( (this._dataProvider != null) && (aSelector != null) ) {
+					if (this._dataProvider[aSelector] != body_text) {
+						this._dataProvider[aSelector] = body_text;
+					}
+				}
+			}
+
+			[Bindable]
+			public function get body_text2():String {
+				var aSelector:String = MenuController.hash.body;
+				var text:String = ( (this._dataProvider != null) && (aSelector != null) ) ? this._dataProvider[aSelector] : '';
+				return text;
+			}
+
+			private function refresh_label_edit2():void {
+				try { this.label_edit2.text = this.label_text2; } catch (e:Error) {}
+				//trace('refresh_label_edit2().1 !');
+				//trace('this.label_edit2='+this.label_edit2);
+				try { this.validate_value(this.label_edit2.text,this.label_edit2); } 
+					catch (e:Error) {trace('\trefresh_label_edit2().ERROR='+e.message);}
+			}
+			
+			// END!  MODE SEPARATOR... =================================================================
+
+			private function get_mode_from_label(label:String):int {
+				if (label == this.symbol_mode_default) {
+					return this.mode_default;
+				} else if (label == this.symbol_mode_separator) {
+					return this.mode_separator;
+				} else if (label == this.symbol_mode_label) {
+					return this.mode_label;
+				}
+				return -1;
+			}	
+					
+			private function get_label_from_mode(mode:int):String {
+				if (mode == this.mode_default) {
+					return this.symbol_mode_default;
+				} else if (mode == this.mode_separator) {
+					return this.symbol_mode_separator;
+				} else if (mode == this.mode_label) {
+					return this.symbol_mode_label;
+				}
+				return '';
+			}	
+			
+			private function refresh_accordion_state(vbox:VBox,isOnChanged:Boolean=false):void {
+				try {
+					this.title = this.symbol_panel_title + ' :: ' + (vbox is VBox) ? vbox.label : '';
+					var _mode:int = (vbox is VBox) ? this.get_mode_from_label(vbox.label) : -1;
+					if (_mode > -1) {
+						if (isOnChanged) {
+							this._dataProvider_store[this._mode] = this._dataProvider;
+						}
+						this._mode = _mode;
+						if (isOnChanged) {
+							this._dataProvider = this._dataProvider_store[this._mode];
+						}
+					}
+				} catch (err:Error) {}
+				this.refresh_editables();
+			}
+			
+			private function onChange_accordion(event:IndexChangedEvent):void {
+				var vbox:VBox = event.relatedObject as VBox;
+				this.refresh_accordion_state(vbox,true);
+				this.btn_save.enabled = this.isEnabled_btn_save;
+			}
+			
+			private function onChangedIndex_accordion(event:SmartAccordionIndexChangedEvent):void {
+				var aChild:SmartAccordion = event.target as SmartAccordion;
+				var kids:Array = aChild.getChildren();
+				var aVbox:VBox = kids[event.index] as VBox;
+				try {
+					var _mode:int = this.get_mode_from_label(aVbox.label);
+					if (_mode > -1) {
+						this._mode = _mode;
+					}
+				} catch (err:Error) {
+					this._mode = -1;
+				}
+				this.refresh_editables();
+			}
+			
+			private function onCreationComplete_accordion():void {
+				this.title = this.symbol_panel_title;
+				with (this.vbox_separator) {
+					enabled = false;
+				}
+				with (this.vbox_label_body) {
+					enabled = false;
+				}
+				this.accordion.addEventListener(SmartAccordionIndexChangedEvent.TYPE_SMART_ACCORDION_INDEX_CHANGED_EVENT, this.onChangedIndex_accordion);
+			}
+			
+			private function get isEnabled_btn_save():Boolean {
+				var aBoolean:Boolean = false;
+				var label_text:String = this.label_text;
+				if (this._mode == this.mode_default) {
+					var url_text:String = this.url_text;
+					var domain:int = this.domain_index();
+					if (this._isGLinksOnlyState) {
+						aBoolean = (label_text is String) && (label_text.length > 0);
+					} else if ( (this.currentState is String) && (this._isLabelsOnlyState) && (this._isLoggedInState) ) {
+						aBoolean = (this.txt_body_edit.text is String) && (this.txt_body_edit.text.length > 0);
+					} else {
+						aBoolean = true; // NOTE: This is now handled by the validate function, no need to give any thought to this condition here... (label_text is String) && (label_text.length > 0) && (url_text is String) && (url_text.length > 0) && (domain > -1);
+					}
+					//trace(this.className+'.isEnabled_btn_save.0 --> this._isLogoLinkState='+this._isLogoLinkState);
+					//trace(this.className+'.isEnabled_btn_save.1 --> aBoolean='+aBoolean);
+					var test1:Boolean = ( (this._isLogoLinkState) || (this._isHouseLinkOnlyState) ) ? true : this.validate_value(this.label_edit.text,this.label_edit);
+					//trace(this.className+'.isEnabled_btn_save.2 --> test1='+test1);
+					var test2:Boolean = this.validate_value(this.url_edit.text,this.url_edit);
+					//trace(this.className+'.isEnabled_btn_save.3 --> test2='+test2);
+					//trace(this.className+'.isEnabled_btn_save.4 --> this.combo_domain.selectedIndex='+this.combo_domain.selectedIndex);
+					var test3:Boolean = true;
+					try { test3 = this.validate_value((this.combo_domain.selectedIndex > -1) ? this.combo_domain.dataProvider[this.combo_domain.selectedIndex] : {},this.combo_domain); } catch (err:Error) {}
+					//trace(this.className+'.isEnabled_btn_save.5 --> test3='+test3);
+					if ( (aBoolean) && (!test1) ) {
+						aBoolean = test1;
+					}
+					//trace(this.className+'.isEnabled_btn_save.6 --> aBoolean='+aBoolean);
+					if ( (aBoolean) && (!test2) ) {
+						aBoolean = test2;
+					}
+					//trace(this.className+'.isEnabled_btn_save.7 --> aBoolean='+aBoolean);
+					if ( (!this._isGLinksOnlyState) && (aBoolean) && (!test3) ) {
+						aBoolean = test3;
+					}
+					//trace(this.className+'.isEnabled_btn_save.8 --> aBoolean='+aBoolean);
+
+					if (this._isLoggedInState) {
+					}
+				} else if (this._mode == this.mode_separator) {
+					aBoolean = ( (this.cb_isSeparator is CheckBox) && (this.cb_isSeparator.selected) ); // if the flag is checked then the record can be saved otherwise not...
+				} else if (this._mode == this.mode_label) {
+					var body_text:String = this.body_text;
+					aBoolean = ( (label_text is String) && (label_text.length > 0) && (body_text is String) && (body_text.length > 0) );
+				}
+				//trace(this.className+'.isEnabled_btn_save.1 --> this.relax_validations='+this.relax_validations);
+				//trace(this.className+'.isEnabled_btn_save.2 --> aBoolean='+aBoolean);
+				return (this.relax_validations) ? true : aBoolean;
+			}
+			
+			private function onCreationComplete_handler(event:FlexEvent):void {
+				var target:* = event.currentTarget;
+				if (this._relays_refreshes[target.id] == true) {
+					var aFunc:Function = _delayed_refreshes[target.id];
+					if (aFunc is Function) {
+						try { aFunc(); } catch (e:Error) {trace('+++ onCreationComplete_handler().4 ERROR=!'+e.message);}
+						delete _delayed_refreshes[target.id];
+						this._relays_refreshes[target.id] = false;
+					}
+				}
+			}
+			
+			private function onCreationComplete_label_edit2(event:FlexEvent):void {
+				this.onCreationComplete_handler(event);
+			}
+			
+			private function onCreationComplete_body_text2(event:FlexEvent):void {
+				this.onCreationComplete_handler(event);
+			}
+			
+			private function onCreationComplete_label_edit(event:FlexEvent):void {
+				this.onCreationComplete_handler(event);
+			}
+			
+			public function onCreationComplete_combo_domain(event:FlexEvent):void {
+				this.onCreationComplete_handler(event);
+			}
+			
+			private function onCreationComplete_url_edit(event:FlexEvent):void {
+				this.onCreationComplete_handler(event);
+			}
+			
+			private function onCreationComplete_cb_isSeparator(event:FlexEvent):void {
+				this.onCreationComplete_handler(event);
+			}
+		]]>
+	</mx:Script>
+	<mx:VBox id="vbox00" width="100%" verticalAlign="top">
+		<mx:HBox id="hbox_category_label" width="100%" visible="{this.label_category.text.length > 0}" includeInLayout="{this.visible}">
+			<mx:Spacer width="5"/>
+			<mx:Label text="Menu Category:" fontWeight="bold" id="label2"/>
+			<mx:Spacer width="1"/>
+			<mx:Label styleName="SmartMenuFlyoutAdminCategoryLabel" id="label_category" text="" fontWeight="bold"/>
+			<mx:Spacer width="5"/>
+		</mx:HBox>
+		<controls:SmartAccordion id="accordion" styleName="SmartPanelAccordion" width="100%" height="100%" minHeight="165" change="onChange_accordion(event)" creationComplete="onCreationComplete_accordion()">
+			<mx:VBox id="vbox_default" label="{this.__symbol_mode_default}" width="100%" height="100%" minHeight="110">
+				<mx:Spacer height="5"/>
+				<mx:HBox id="hbox1" width="100%">
+					<mx:VBox id="vbox1" width="100%" height="100%">
+						<mx:HBox id="hbox_label" width="100%">
+							<mx:Spacer width="5"/>
+							<mx:Label text="Label:" styleName="SmartPanelLabelText"/>
+							<mx:Spacer width="1"/>
+							<mx:TextInput id="label_edit" width="100%" styleName="{(this.vbox_default.enabled) ? 'REQUIRED' : ''}" toolTip="REQUIRED FIELD: This is the Label that appears on the menu." text="{this.label_text}" change="onChange(event)" creationComplete="onCreationComplete_label_edit(event)"/>
+							<mx:Spacer width="5"/>
+						</mx:HBox>
+						<mx:VBox id="vbox2" width="100%">
+							<mx:HBox id="hbox2" width="100%">
+								<mx:Spacer id="spacer2" width="5"/>
+								<mx:Label text="URL:" id="label1" fontWeight="bold"/>
+								<mx:Spacer width="1"/>
+								<sbistram:MatchComboBox id="combo_domain" width="100%" styleName="{(this.vbox_default.enabled) ? 'REQUIRED' : ''}" toolTip="REQUIRED FIELD: This is the domain for the URL." selectedIndex="{this.domain_index}" labelFunction="labelFunction" change="onChange(event)" creationComplete="onCreationComplete_combo_domain(event)"/>
+								<!--
+								<mx:TextInput id="url_edit" width="100%" height="100%" styleName="{(this.vbox_default.enabled) ? 'REQUIRED' : ''}" toolTip="REQUIRED FIELD: This is the part of the URL that does not have the HTTP:// init however this value MUST begin with a slash." text="{this.url_text}" change="onChange(event)" creationComplete="onCreationComplete_url_edit(event)"/>
+								-->
+								<BrowserControls:BrowserBarTextField id="url_edit" width="100%" height="100%" styleName="{(this.vbox_default.enabled) ? 'REQUIRED' : ''}" toolTip="REQUIRED FIELD: This is the part of the URL that does not have the HTTP:// init however this value MUST begin with a slash." text="{this.url_text}" change="onChange(event)" creationComplete="onCreationComplete_url_edit(event)"/>
+								<mx:Spacer width="5"/>
+							</mx:HBox>
+						</mx:VBox>
+						<mx:HBox id="hbox3" width="100%" horizontalAlign="left" visible="{this.label_category.text.length > 0}">
+							<mx:Spacer width="5"/>
+							<mx:CheckBox id="cb_newWindow" label="Check if the URL should open in a new window" toolTip="This checkbox tells the URL to open in a New Window rather than opening in the current window of the browser." styleName="SmartPanelLabelText" selected="{this.target_text}" change="onChange(event)"/>
+						</mx:HBox>
+						<mx:HBox width="100%" id="hbox4" horizontalAlign="left">
+						</mx:HBox>
+						<mx:HBox width="100%" id="hbox5" horizontalAlign="left">
+						</mx:HBox>
+					</mx:VBox>
+				</mx:HBox>
+			</mx:VBox>
+			<mx:VBox id="vbox_separator" label="{this.symbol_mode_separator}" width="100%">
+				<mx:Spacer height="5"/>
+				<mx:HBox id="hbox_separator1" styleName="{this.cb_isSeparator.styleName}" horizontalAlign="left">
+					<mx:Spacer width="5"/>
+					<mx:CheckBox id="cb_isSeparator" styleName="{(this.vbox_separator.enabled) ? 'REQUIRED' : ''}" label="Check if this is a Separator Menu Item" toolTip="This checkbox tells the Admin Tool this is a Separator Menu Item." selected="{this.separator_text}" change="onChange(event)" creationComplete="onCreationComplete_cb_isSeparator(event)"/>
+				</mx:HBox>
+			</mx:VBox>
+			<mx:VBox id="vbox_label_body" label="{this.symbol_mode_label}" width="100%">
+				<mx:Spacer height="5"/>
+				<mx:HBox id="hbox_label_body" width="100%">
+					<mx:Spacer width="5"/>
+					<mx:Label text="Label:" fontWeight="bold"/>
+					<mx:Spacer width="1"/>
+					<mx:TextInput id="label_edit2" styleName="{(this.vbox_label_body.enabled) ? 'REQUIRED' : ''}" width="100%" toolTip="This is the Label that appears on the menu without a URL as bold text." text="{this.label_text2}" change="onChange(event)" creationComplete="onCreationComplete_label_edit2(event)"/>
+					<mx:Spacer width="5"/>
+				</mx:HBox>
+				<mx:HBox id="hbox2_label_body" width="100%">
+					<mx:Spacer width="5"/>
+					<mx:Label text="Body:" fontWeight="bold"/>
+					<mx:Spacer width="1"/>
+					<mx:TextInput id="body_edit2" styleName="{(this.vbox_label_body.enabled) ? 'REQUIRED' : ''}" width="100%" toolTip="This is the text that appears on the menu below the header label and again there is no URL for this menu item." text="{this.body_text2}" change="onChange(event)" creationComplete="onCreationComplete_body_text2(event)"/>
+					<mx:Spacer width="5"/>
+				</mx:HBox>
+			</mx:VBox>
+		</controls:SmartAccordion>
+		<mx:HBox width="100%" height="100%" horizontalAlign="center" paddingBottom="5">
+			<mx:Spacer width="10"/>
+			<mx:HBox styleName="{(btn_save.enabled) ? 'REQUIREDComplete' : 'REQUIRED'}">
+				<mx:Button id="btn_save" label="Save" toolTip="{(btn_save.enabled == false) ? 'One of the required fields, with a red background, must be satisfied before this button will become enabled with a green background.' : 'Click this button to save your changes to the database.'}"/>
+			</mx:HBox>
+			<mx:Spacer width="100"/>
+			<mx:Button id="btn_dismiss" label="Cancel" toolTip="Click this button to dismiss your changes without saving them to the database."/>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Panel>

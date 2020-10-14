@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		xmlns:popups="controls.popups.*" 
+		initialize="view1_initializeHandler(event)" 
+		creationComplete="view1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import controls.popups.PopUpWindow;
+			
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+
+			private var _this:CommonView;
+			
+			private var popUpWindow:PopUpWindow;
+
+			private function toggle_CreditsWindowVisible():void {
+				this.popUpWindow.visible = this.popUpWindow.includeInLayout = !this.popUpWindow.visible;
+				var rows:Array = this.parentApplication.credits.split('\n');
+				var window:PopUpWindow = this.popUpWindow;
+				window.dataProvider.removeAll();
+				for (var i:String in rows) {
+					window.text = rows[i];
+				}
+			}
+
+			protected function showCredits_clickHandler(event:MouseEvent):void {
+				this.toggle_CreditsWindowVisible();
+			}
+			
+			protected function exitApp_clickHandler(event:MouseEvent):void {
+				this.parentApplication.nativeApplication.exit();
+			}
+			
+			private function dismiss_popUpWindow():void {
+				this.popUpWindow.visible = this.popUpWindow.includeInLayout = !this.popUpWindow.visible;
+			}
+			
+			protected function popUpWindow_creationCompleteHandler(event:FlexEvent):void {
+				var popup:PopUpWindow = event.currentTarget as PopUpWindow;
+				popup.btnClose.addEventListener(MouseEvent.CLICK, 
+					function (event:MouseEvent):void {
+						_this.dismiss_popUpWindow();
+					}
+				);
+				popup.addEventListener(CloseEvent.CLOSE, 
+					function (event:CloseEvent):void {
+						_this.dismiss_popUpWindow();
+					}
+				);
+				popup.btnClose.label = 'Dismiss';
+			}
+			
+			protected function view1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				if (this.popUpWindow == null) {
+					this.popUpWindow = new PopUpWindow();
+					this.popUpWindow.percentWidth = 100;
+					this.popUpWindow.percentHeight = 100;
+					this.popUpWindow.visible = this.popUpWindow.includeInLayout = false;
+					this.popUpWindow.addEventListener(FlexEvent.CREATION_COMPLETE, popUpWindow_creationCompleteHandler);
+					this.addElement(this.popUpWindow);
+				}
+			}
+			
+			protected function view1_creationCompleteHandler(event:FlexEvent):void {
+				trace(this.className+'.view1_creationCompleteHandler.1 --> title='+this.title);
+				this.title = this.parentApplication.appTitle+' :: '+this.title;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:viewMenuItems>
+		<s:ViewMenuItem id="showCredits" label="Credits..." enabled="true" click="showCredits_clickHandler(event)"/>
+		<s:ViewMenuItem id="exitApp" label="Exit" enabled="true" click="exitApp_clickHandler(event)"/>
+	</s:viewMenuItems>
+	<!--
+	<s:layout> 
+	<s:ViewMenuLayout horizontalGap="2" verticalGap="2" id="contentGroupLayout" requestedMaxColumnCount="3"/> 
+	</s:layout> 
+	-->
+</s:View>

@@ -1,0 +1,996 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" backgroundAlpha="0"
+	layout="absolute" 
+	creationComplete="init()" 
+	alpha="1.0" 
+	preloader="preload.CustomPreloader">
+	<mx:Style>
+		.AdminMenuItemCanvas {
+			paddingLeft: 10px;
+		}
+		
+		.SmartPanel {
+			borderColor: #F81919;
+			borderAlpha: 1.0;
+			borderThicknessLeft: 10;
+			borderThicknessTop: 10;
+			borderThicknessBottom: 10;
+			borderThicknessRight: 10;
+			roundedBottomCorners: true;
+			cornerRadius: 10;
+			headerHeight: 25;
+			backgroundAlpha: 1;
+			highlightAlphas: 0.25, 0.25;
+			headerColors: #E80000, #F81919;
+			shadowDistance: 11;
+			shadowDirection: right;
+			titleStyleName: "SmartPanelTitle";
+		}
+		
+		.SmartPanelTitle {
+			color: #ffffff;
+			fontFamily: Verdana;
+			fontSize: 12;
+			fontWeight: bold;
+		}
+		
+		.SmartControlPanelContainer {
+			borderColor: #ffffff;
+			borderAlpha: 0.65;
+			borderThicknessLeft: 0;
+			borderThicknessTop: 10;
+			borderThicknessBottom: 0;
+			borderThicknessRight: 0;
+			roundedBottomCorners: true;
+			cornerRadius: 10;
+			headerHeight: 0;
+			backgroundAlpha: 1;
+			highlightAlphas: 0, 0;
+			headerColors: #ffffff, #ffffff;
+			titleStyleName: "SmartControlPanelContainerTitle";
+		}
+		
+		.SmartControlPanelContainerTitle {
+			color: #ffffff;
+			fontFamily: Verdana;
+			fontSize: 12;
+			fontWeight: bold;
+		}
+
+		.ReorderPanel {
+			borderColor: #E80000;
+			borderAlpha: 1.0;
+			borderThicknessLeft: 5;
+			borderThicknessTop: 0;
+			borderThicknessBottom: 10;
+			borderThicknessRight: 5;
+			roundedBottomCorners: true;
+			cornerRadius: 10;
+			headerHeight: 25;
+			backgroundAlpha: 1;
+			highlightAlphas: 0.25, 0.25;
+			headerColors: #E80000, #F81919;
+			titleStyleName: "ReorderPanelTitle";
+		}
+		
+		.ReorderPanelTitle {
+			color: #ffffff;
+			fontFamily: Verdana;
+			fontSize: 12;
+			fontWeight: bold;
+		}
+		
+		.ReorderPanelLabel {
+			backgroundColor: #869CA7;
+			backgroundAlpha: 0.5;
+		}
+		
+		.ReorderPanelLabelText {
+			fontWeight: bold;
+		}
+
+		.ReorderPanelButtons {
+			backgroundColor: #869CA7;
+			backgroundAlpha: 0.5;
+			paddingBottom: 10;
+		}
+
+		.PreferencesPanel {
+			borderColor: #E80000;
+			borderAlpha: 1.0;
+			borderThicknessLeft: 5;
+			borderThicknessTop: 0;
+			borderThicknessBottom: 10;
+			borderThicknessRight: 5;
+			roundedBottomCorners: true;
+			cornerRadius: 10;
+			headerHeight: 25;
+			backgroundAlpha: 1;
+			highlightAlphas: 0.25, 0.25;
+			headerColors: #E80000, #F81919;
+			titleStyleName: "PreferencesPanelTitle";
+		}
+		
+		.PreferencesPanelTitle {
+			color: #ffffff;
+			fontFamily: Verdana;
+			fontSize: 12;
+			fontWeight: bold;
+		}
+		
+		.ControlPanelContainer {
+			borderColor: #E80000;
+			borderAlpha: 1.0;
+			borderThicknessLeft: 0;
+			borderThicknessTop: 0;
+			borderThicknessBottom: 10;
+			borderThicknessRight: 0;
+			roundedBottomCorners: true;
+			cornerRadius: 10;
+			headerHeight: 25;
+			backgroundAlpha: 1;
+			highlightAlphas: 0, 0;
+			headerColors: #E80000, #F81919;
+			titleStyleName: "ControlPanelContainerTitle";
+		}
+		
+		.ControlPanelContainerTitle {
+			color: #ffffff;
+			fontFamily: Verdana;
+			fontSize: 12;
+		}
+
+		.LoginPanel {
+			borderColor: #E80000;
+			borderAlpha: 1.0;
+			borderThicknessLeft: 5;
+			borderThicknessTop: 0;
+			borderThicknessBottom: 10;
+			borderThicknessRight: 5;
+			roundedBottomCorners: true;
+			cornerRadius: 10;
+			headerHeight: 25;
+			backgroundAlpha: 1;
+			highlightAlphas: 0.25, 0.25;
+			headerColors: #E80000, #F81919;
+			titleStyleName: "LoginPanelTitle";
+		}
+		
+		.LoginPanelTitle {
+			color: #ffffff;
+			fontFamily: Verdana;
+			fontSize: 12;
+			fontWeight: bold;
+		}
+		
+		.MenuNamePopUpPanel {
+			borderColor: #E80000;
+			borderAlpha: 1.0;
+			borderThicknessLeft: 5;
+			borderThicknessTop: 0;
+			borderThicknessBottom: 10;
+			borderThicknessRight: 5;
+			roundedBottomCorners: true;
+			cornerRadius: 10;
+			headerHeight: 25;
+			backgroundAlpha: 1;
+			highlightAlphas: 0.25, 0.25;
+			headerColors: #E80000, #F81919;
+			titleStyleName: "MenuNamePopUpPanelTitle";
+		}
+		
+		.MenuNamePopUpPanelTitle {
+			color: #ffffff;
+			fontFamily: Verdana;
+			fontSize: 12;
+			fontWeight: bold;
+		}
+		
+		.BottomControlPanel {
+			borderColor: #F81919;
+			borderAlpha: 1.0;
+			borderThicknessLeft: 10;
+			borderThicknessTop: 5;
+			borderThicknessBottom: 5;
+			borderThicknessRight: 10;
+			roundedBottomCorners: true;
+			cornerRadius: 10;
+			headerHeight: 5;
+			backgroundAlpha: 1;
+			highlightAlphas: 0.25, 0.25;
+			headerColors: #E80000, #F81919;
+			shadowDistance: 11;
+			shadowDirection: right;
+			titleStyleName: "BottomControlPanel";
+		}
+		
+		.BottomControlPanel {
+			color: #000000;
+			fontFamily: Verdana;
+			fontSize: 12;
+			fontWeight: bold;
+		}
+		
+		.BottomControlPanelTitle {
+			color: #000000;
+			fontFamily: Verdana;
+			fontSize: 11;
+			fontWeight: bold;
+		}
+		
+		.RoleWidgetBorder {
+/* 			borderStyle: outset;
+			borderThickness: 1;
+ */		}
+
+		.cbNewWindowHBox {
+			paddingTop: 0;
+		}
+
+		.URLEditorHBox {
+			paddingBottom: -25;
+		}
+		
+		.HBox1 {
+		}
+ 
+		.SmartPanelAccordion {
+		}
+
+		.SmartPanelDefaultVBox {
+		}
+
+		.SmartPanelCategoryLabelHBox {
+			paddingBottom: -115;
+		}
+
+		.SmartPanelLabelText {
+			fontWeight: bold;
+		}
+
+		.AttentionLabel {
+			color: #ff0000;
+			fontFamily: Verdana;
+			fontSize: 10;
+			fontWeight: bold;
+		}
+
+		.AddendumLabel {
+			color: #0000ff;
+			fontFamily: Verdana;
+			fontSize: 10;
+			fontWeight: bold;
+		}
+
+		.REQUIRED {
+			backgroundColor: #ff0000;
+			backgroundAlpha: 0.5;
+		}
+
+		.REQUIREDComplete {
+			backgroundColor: #00ff00;
+			backgroundAlpha: 0.5;
+		}
+		
+   	</mx:Style>
+	<mx:Script>
+		<![CDATA[
+			import preload.WelcomeScreen;
+			import menu.builder.UserProfile;
+			import com.controller.AppController;
+			import mxml.header.utils.EditableLabel;
+			import mx.events.MoveEvent;
+			import controls.MenuIdMonitor;
+			import utils.*;
+			import mx.events.ResizeEvent;
+			import com.models.PropParser;
+			import mx.containers.HBox;
+			import mx.controls.Alert;
+			import mx.collections.ArrayCollection;
+			import controls.SmartMenuFlyoutItemAdmin;
+			import mx.managers.ToolTipManager;
+			import mx.managers.PopUpManager;
+			import controls.ToolTips.HTMLToolTip;
+			import controls.Alert.AlertPopUp;
+			import mx.rpc.events.ResultEvent;
+			import menu.builder.MenuController;
+			import menu.builder.WmsAPI;
+			import com.libs.vo.GlobalsVO;
+			import mx.events.FlexEvent;
+			import menu.builder.MenuItemActions;
+			import mx.controls.PopUpMenuButton;
+			import utils.ObjectUtils;
+
+			private var _appController:*;
+			private var _menuController:*;
+			private var _menuModel:*;
+			
+			private var WmsAPI_disable_keepalive_timer:Boolean = true;
+			private var _disable_menuId_popup:Boolean = true;
+			
+	        private var __admin_editor_popup:SmartMenuFlyoutItemAdmin;
+	        
+			private var __popup:Array = [];
+
+			private var model:*;
+			
+			private function handle_category(ci:*,_menuBar:*,_model:*):void {
+				ci.adminIcon.addEventListener(FlexEvent.CREATION_COMPLETE, function (event:FlexEvent):void { if (MenuController._currentTargetMenuBar == null) { MenuController._currentTargetMenuBar = _menuBar.parent; MenuController._currentTargetMenuBarDataProvider = _model; } MenuController.registerCategory(ci.adminIcon,ci,ci.category_label); });
+			}
+			
+			private function access_GlobalsVO(... args):* {
+				if (args.length == 1) {
+					return GlobalsVO[args[0]];
+				} else if (args.length == 2) {
+					return GlobalsVO[args[0]](args[1]);
+				}
+				return null;
+			}
+			
+			private function signal_onDataReady(_menuController:*):void {
+				this._menuController = _menuController;
+				try {
+					var view:* = this._menuController.createMenuBar;
+					if (view != null) {
+						view.callback_signal_addCategory = this.handle_category;
+					}
+					this._menuController.isAdminTool = true;
+					this._menuController.callback_signal_initMenuItem = this.signal_menuItem;
+					if (MenuController.menuModel == null) {
+						this._menuModel = this._menuController.menuModel;
+						MenuController.menuModel = this._menuModel;
+						MenuController.hash = ObjectUtils.deepCopy(MenuController.menuModel.metaData.hash);
+						//this.hash = MenuController.menuModel.metaData.hash;
+					}
+					MenuController.callback_sendDataToMenuModel = this.getData;
+					MenuController.propsParser = new PropParser();
+					var flashVars:Object = LoaderInfo(this.root.loaderInfo).parameters;
+					//trace('MenuController.initialize() ! --> this.WmsAPI_disable_keepalive_timer='+WmsAPI_disable_keepalive_timer);
+					MenuController.initialize(Application.application,this,this.container,false,flashVars,WmsAPI_disable_keepalive_timer);
+				} catch (e:Error) {
+					//var stackTrace:String = e.getStackTrace();				}
+			}
+			
+			private function signal_start(_menuController:*):void {
+				_menuController.callback_signal_initMenuData = signal_onDataReady;
+			}
+			
+			private function signal_menuItem(menuItem:*,data:*):void {
+				menuItem.addEventListener(FlexEvent.CREATION_COMPLETE, function (event:FlexEvent):void { MenuController.registerMenuItem(menuItem,'parentRef','CategoryItem',GlobalsVO,GlobalsVO.META_LABEL,GlobalsVO.DATA_MODEL,data); });
+			}
+			
+			private function getData_done(e:*):void {
+				//trace(this.className+'.getData_done().1 --> MenuController.isLoggedOut='+MenuController.isLoggedOut);
+				//trace(this.className+'.getData_done().2 --> this._disable_menuId_popup='+this._disable_menuId_popup);
+				if (!MenuController.isLoggedOut) {
+					var d:* = MenuController.menu_model_as_obj();
+					try {
+						MenuController.generator = new Generator(d,MenuController.generator_callback);
+					} catch (err:Error) {trace(this.className+'.getData().ERROR '+err.toString()+'\n'+err.getStackTrace())}
+					var aValue:String;
+					for (var i:String in MenuController.used_GN_Values) {
+						aValue = MenuController.used_GN_Values[i];
+						if ( (aValue is String) && (aValue.length > 0) ) {
+							MenuController.menu_id_to_generator[aValue] = null;
+						}
+					}
+					MenuController.menu_id_sorted = ObjectUtils.keys_filtered(MenuController.menu_id_to_generator,MenuController.filter_menu_id_to_number);
+					//trace('### BEFORE: MenuController.menu_id_sorted='+(new ObjectExplainer(MenuController.menu_id_sorted)).explainThisWay());
+					MenuController.menu_id_sorted.sort(Array.NUMERIC);
+					//trace('### AFTER: MenuController.menu_id_sorted='+(new ObjectExplainer(MenuController.menu_id_sorted)).explainThisWay());
+					
+					MenuController._menu_id_sorted = [];
+					var anId:*;
+					for (var j:String in MenuController.menu_id_sorted) {
+						anId = 'GN'+MenuController.menu_id_sorted[j];
+						MenuController._menu_id_sorted.push({'label':anId,'id':anId});
+					}
+				}
+				if ( (!this._disable_menuId_popup) && (MenuController._menu_id_monitor_popup == null) ) {
+					var pos:Object;
+					var aPt:Point;
+					var cPt:Point;
+					MenuController._menu_id_monitor_popup = PopUpManager.createPopUp(MenuController.parent, MenuIdMonitor, false) as MenuIdMonitor;
+					MenuController._menu_id_monitor_popup.width = 100;
+					MenuController._menu_id_monitor_popup.rowHeight = 10;
+					MenuController._menu_id_monitor_popup.styleName = 'PreferencesPanel';
+					MenuController._menu_id_monitor_popup.height = MenuController.parent.height - 150;
+					MenuController._menu_id_monitor_popup.btn_dismiss.addEventListener(MouseEvent.CLICK,function ():void {MenuController._menu_id_monitor_popup = null;});
+					MenuController._menu_id_monitor_popup.addEventListener(MoveEvent.MOVE,
+						function (event:MoveEvent):void {
+							var target:MenuIdMonitor = event.currentTarget as MenuIdMonitor;
+							aPt = new Point(target.x,target.y);
+							cPt = target.contentToGlobal(aPt);
+							pos = {'x':cPt.x,'y':cPt.y,'width':target.width,'height':target.height};
+							MenuController.mySO.data._menu_id_monitor_popup_pos = pos;
+							MenuController.mySO.flush();
+						}
+					);
+					PopUpManager.centerPopUp(MenuController._menu_id_monitor_popup);
+					pos = MenuController.mySO.data._menu_id_monitor_popup_pos;
+					//trace('### pos='+(new ObjectExplainer(pos)).explainThisWay());
+					if (pos != null) {
+						MenuController._menu_id_monitor_popup.x = pos.x - 10;
+						MenuController._menu_id_monitor_popup.y = pos.y - 30;
+						//trace('### x/y='+MenuController._menu_id_monitor_popup.x+','+MenuController._menu_id_monitor_popup.y);
+						//MenuController._menu_id_monitor_popup.width = pos.width;
+						//MenuController._menu_id_monitor_popup.height = pos.height;
+						//trace('### width/height='+MenuController._menu_id_monitor_popup.width+','+MenuController._menu_id_monitor_popup.height);
+					}
+					MenuController._menu_id_monitor_popup.dataProvider = MenuController._menu_id_sorted;
+					//trace('### data='+(new ObjectExplainer(MenuController._menu_id_monitor_popup.dataProvider)).explainThisWay());
+					MenuController._menu_id_monitor_popup.labelField = 'label';
+				}
+
+				MenuController.callback_getData_done(e);
+			}
+			
+			private function getData(url:String):void {
+				this._menuModel.getMenuData(url,this.getData_done);
+			}
+			
+			private function onClick_admin_editor_popup(event:MouseEvent):void {
+				PopUpManager.removePopUp(this.__admin_editor_popup);
+				this.__admin_editor_popup = null;
+			}
+		
+	        public function onClick_save_admin_editor_popup(event:MouseEvent):void {
+	        	var popup:SmartMenuFlyoutItemAdmin = event.currentTarget.parentDocument as SmartMenuFlyoutItemAdmin;
+	        	var menuitem:Object = popup.asObject;
+				var aMenuItem:* = popup.source;
+				var something:* = aMenuItem['label'];
+				var isSomethingToBeKept:Boolean = (something is String) || (something is Number);
+	        	PopUpManager.removePopUp(popup);
+	        	var s_json:String = MenuController.menu_model_as_json();
+	        	MenuController.setMenuJSON(s_json);
+	        }
+	        
+			private function onClick_PopUpMenu_ActionBtn(event:*):void {
+				var popup:Alert;
+				var item:* = event.item;
+				var name:String = item.name;
+				if (name == EditableLabel.symbol_edit_menuitem) {
+					var props:Array = MenuController.getProps();
+
+					if (MenuController.numPropertiesErrors == 0) {
+						if (props is Array) {
+							this.__admin_editor_popup = PopUpManager.createPopUp(MenuController.parent, SmartMenuFlyoutItemAdmin, true) as SmartMenuFlyoutItemAdmin;
+							this.__admin_editor_popup.width = MenuController.parent.width - 150;
+							var url:String = item.menuitem[MenuController.hash.url];
+							var domain:String = item.menuitem[MenuController.hash.domain];
+							var domain_key:String = item.menuitem[MenuController.hash.domain_key];
+							this.__admin_editor_popup.currentState = ( (url is String) && (url.length > 0) ) || ( (domain is String) && (domain.length > 0) ) || ( (domain_key is String) && (domain_key.length > 0) ) ? 'glinks-only' : 'glinks-LabelsOnly';
+							this.__admin_editor_popup._symbol_mode_default = 'Global Link';
+							PopUpManager.centerPopUp(this.__admin_editor_popup);
+							
+							this.__admin_editor_popup._currentState = 'glinks-LabelsOnly';
+							//this.__admin_editor_popup.btn_save.enabled = true;
+		
+							// BEGIN: This has to come from the properties file...
+							var _props:Array = [];
+							ArrayUtils.addAllInto(_props,props);
+							var ac:ArrayCollection = new ArrayCollection(_props);
+							ac.addItemAt({'label':'Choose...','data':''},0);
+							// END!   This has to come from the properties file...
+							this.__admin_editor_popup.combo_domain.dataProvider = ac;
+	
+							this.__admin_editor_popup.dataProvider = item.menuitem;
+							this.__admin_editor_popup.source = item.menuitem;
+	
+							this.__admin_editor_popup.btn_save.addEventListener(MouseEvent.CLICK,this.onClick_save_admin_editor_popup);
+							this.__admin_editor_popup.btn_dismiss.addEventListener(MouseEvent.CLICK,this.onClick_admin_editor_popup);
+						} else {
+							popup = AlertPopUp.errorNoOkay('Cannot edit a Menuitem unless there is a Properties file and presently there is no Properties file.\n\nThe Properties file is required even if no such file will be used once your Menu reaches the Production server.\n\nThe Properties file contains useful information about the many domains covered by the Admin Tool.\n\nKindly contact your CIS Administrator to make the Properties file available for your needs.','ERROR MenuController.101.1.1');
+							PopUpManager.centerPopUp(popup);
+						} 
+					} else {
+						popup = AlertPopUp.errorNoOkay('Cannot edit a Menuitem unless the Properties file is known to be consistent with the model and there are no known issues with the Properties file.\n\nThe Properties file must be consistent with the Model which is to say there must be no keys that cannot be resolved from the perspective of the Model.','ERROR MenuController.101.2.1');
+						PopUpManager.centerPopUp(popup);
+					}
+				} else if (name == EditableLabel.symbol_delete_menuitem) {
+					MenuController.onClick_PopUpMenu_ActionBtn(event);
+				} else {
+					popup = AlertPopUp.errorNoOkay('Cannot perform the requested operation due to some kind of system failure.','Warning');
+					PopUpManager.centerPopUp(popup);
+				}
+			}
+
+			private function onCreationComplete(event:FlexEvent):void {
+				var toolTip:String;
+				var label_text:String;
+				var isEmpty:Boolean;
+				var items:Array = [];
+				var hbox:HBox;
+				var popup:MenuItemActions;
+
+				isEmpty = ObjectUtils.isEmpty(MenuController._currentSelectedMenu);
+
+				var label:EditableLabel = event.currentTarget as EditableLabel;
+				var dp:* = label._dataProvider;
+				dp = (dp is Array) ? dp : [dp];
+				var aDp:Object;
+				var containers:Array = label.containers;
+				for ( var i:String in dp) {
+					aDp = dp[i];
+					hbox = containers[i];
+					label_text = aDp[MenuController.hash.label];
+					label_text = ( (label_text is String) && (label_text.length > 0) ) ? label_text : aDp.name;
+					toolTip = (isEmpty) ? 'Admin Tool is in View-Only Mode pending the selection of a Named Menu using the Control Panel...' : 'Edit the item with the label of "' + label_text + '"...';
+	
+					items = [];
+		            items.push({'label':'Edit MenuItem "' + label_text + '"...','name':EditableLabel.symbol_edit_menuitem,'icon':((isEmpty) ? MenuController.adminEditDisabledIcon : MenuController.adminEditIcon),'menuitem':aDp,'_label':label_text});
+	            	items.push({'label':'Delete MenuItem "' + label_text + '"...','name':EditableLabel.symbol_delete_menuitem,'icon':((isEmpty) ? MenuController.adminDeleteDisabledIcon : MenuController.adminDeleteIcon),'menuitem':aDp,'_label':label_text});
+	
+					popup = new MenuItemActions();
+					popup.height = 16;
+					popup.width = 14;
+					popup.isMirror = false;
+					popup.items = items;
+					popup.toolTip = toolTip;
+					this.__popup.push(popup);
+					hbox.addChildAt(popup,0);
+	
+					popup.addEventListener(FlexEvent.CREATION_COMPLETE, 
+						function(event:FlexEvent):void { 
+							var target:MenuItemActions = event.currentTarget as MenuItemActions;
+							var child:PopUpMenuButton = target.getChildByName('popup') as PopUpMenuButton;
+							if (child) {
+								child.labelField = 'label';
+								child.toolTip = target.toolTip;
+								child.dataProvider = target.items;
+								if (isEmpty == false) {
+									child.addEventListener("itemClick", onClick_PopUpMenu_ActionBtn); 
+								}
+							}
+						});
+				}
+			}
+			
+			private function onCreationComplete_NoDelete(event:FlexEvent):void {
+				var toolTip:String;
+				var label_text:String;
+				var isEmpty:Boolean;
+				var items:Array = [];
+				var hbox:HBox;
+				var popup:MenuItemActions;
+
+				isEmpty = ObjectUtils.isEmpty(MenuController._currentSelectedMenu);
+
+				var label:EditableLabel = event.currentTarget as EditableLabel;
+				var dp:* = label._dataProvider;
+				dp = (dp is Array) ? dp : [dp];
+				var aDp:Object;
+				var containers:Array = label.containers;
+				for ( var i:String in dp) {
+					aDp = dp[i];
+					hbox = containers[i];
+					label_text = aDp[MenuController.hash.label];
+					label_text = ( (label_text is String) && (label_text.length > 0) ) ? label_text : aDp.name;
+					toolTip = (isEmpty) ? 'Admin Tool is in View-Only Mode pending the selection of a Named Menu using the Control Panel...' : 'Edit the item with the label of "' + label_text + '"...';
+	
+					items = [];
+		            items.push({'label':'Edit MenuItem "' + label_text + '"...','name':EditableLabel.symbol_edit_menuitem,'icon':((isEmpty) ? MenuController.adminEditDisabledIcon : MenuController.adminEditIcon),'menuitem':aDp,'_label':label_text});
+	            	//items.push({'label':'Delete MenuItem "' + label_text + '"...','name':EditableLabel.symbol_delete_menuitem,'icon':((isEmpty) ? MenuController.adminDeleteDisabledIcon : MenuController.adminDeleteIcon),'menuitem':aDp,'_label':label_text});
+	
+					popup = new MenuItemActions();
+					popup.height = 16;
+					popup.width = 14;
+					popup.isMirror = false;
+					popup.items = items;
+					popup.toolTip = toolTip;
+					this.__popup.push(popup);
+					hbox.addChildAt(popup,0);
+	
+					popup.addEventListener(FlexEvent.CREATION_COMPLETE, 
+						function(event:FlexEvent):void { 
+							var target:MenuItemActions = event.currentTarget as MenuItemActions;
+							var child:PopUpMenuButton = target.getChildByName('popup') as PopUpMenuButton;
+							if (child) {
+								child.labelField = 'label';
+								child.toolTip = target.toolTip;
+								child.dataProvider = target.items;
+								if (isEmpty == false) {
+									child.addEventListener("itemClick", onClick_PopUpMenu_ActionBtn); 
+								}
+							}
+						});
+				}
+			}
+			
+			private function onClick_Icon_PopUpMenu_ActionBtn(event:*):void {
+			}
+
+			private function onCreationComplete_Icon(event:FlexEvent):void {
+				var toolTip:String;
+				var label_text:String;
+				var isEmpty:Boolean;
+				var items:Array = [];
+				var hbox:HBox;
+				var popup:MenuItemActions;
+
+				isEmpty = ObjectUtils.isEmpty(MenuController._currentSelectedMenu);
+
+				var label:EditableLabel = event.currentTarget as EditableLabel;
+				var containers:Array = label.containers;
+				hbox = containers[0];
+				var dp:* = label._dataProvider;
+				dp = (dp is Array) ? dp : [dp];
+				label_text = 'Global Links';
+				toolTip = (isEmpty) ? 'Admin Tool is in View-Only Mode pending the selection of a Named Menu using the Control Panel...' : 'Edit the item with the label of "' + label_text + '"...';
+
+				items = [];
+	            items.push({'label':'Add Global Links Item...','name':'add_glinks_item','icon':((isEmpty) ? MenuController.adminAddDisabledIcon : MenuController.adminAddIcon),'menuitem':dp,'_label':label_text});
+	            if (isEmpty == false) {
+	            	items.push({'label':'Reorder Global Links Items...','name':'reorder_menu_items','icon':MenuController.adminReorderIcon,'menuitem':dp,'_label':label_text});
+	            }
+
+				popup = new MenuItemActions();
+				popup.height = 16;
+				popup.width = 14;
+				popup.isMirror = false;
+				popup.items = items;
+				popup.toolTip = toolTip;
+				hbox.addChildAt(popup,0);
+
+				popup.addEventListener(FlexEvent.CREATION_COMPLETE, 
+					function(event:FlexEvent):void { 
+						var target:MenuItemActions = event.currentTarget as MenuItemActions;
+						var child:PopUpMenuButton = target.getChildByName('popup') as PopUpMenuButton;
+						if (child) {
+							child.labelField = 'label';
+							child.toolTip = target.toolTip;
+							child.dataProvider = target.items;
+							if (isEmpty == false) {
+								child.addEventListener("itemClick", MenuController.onClick_PopUpMenu_ActionBtn); 
+							}
+						}
+					});
+			}
+			
+			private function onCreationComplete_LogoIcon(event:FlexEvent):void {
+				var toolTip:String;
+				var label_text:String;
+				var isEmpty:Boolean;
+				var items:Array = [];
+				var hbox:HBox;
+				var popup:MenuItemActions;
+
+				isEmpty = ObjectUtils.isEmpty(MenuController._currentSelectedMenu);
+
+				var label:EditableLabel = event.currentTarget as EditableLabel;
+				var containers:Array = label.containers;
+				hbox = containers[0];
+				var dp:* = label._dataProvider;
+				dp = (dp is Array) ? dp : [dp];
+				label_text = 'Logo';
+				toolTip = (isEmpty) ? 'Admin Tool is in View-Only Mode pending the selection of a Named Menu using the Control Panel...' : 'Edit the item with the label of "' + label_text + '"...';
+
+				items = [];
+	            items.push({'label':'Edit Logo Link...','name':'edit_logo_item','icon':((isEmpty) ? MenuController.adminAddDisabledIcon : MenuController.adminAddIcon),'menuitem':dp,'_label':label_text});
+
+				popup = new MenuItemActions();
+				popup.height = 16;
+				popup.width = 14;
+				popup.isMirror = false;
+				popup.items = items;
+				popup.toolTip = toolTip;
+				hbox.addChildAt(popup,0);
+
+				popup.addEventListener(FlexEvent.CREATION_COMPLETE, 
+					function(event:FlexEvent):void { 
+						var target:MenuItemActions = event.currentTarget as MenuItemActions;
+						var child:PopUpMenuButton = target.getChildByName('popup') as PopUpMenuButton;
+						if (child) {
+							child.labelField = 'label';
+							child.toolTip = target.toolTip;
+							child.dataProvider = target.items;
+							if (isEmpty == false) {
+								child.addEventListener("itemClick", MenuController.onClick_PopUpMenu_ActionBtn); 
+							}
+						}
+					});
+			}
+			
+			private function onCreationComplete_LOBIcon(event:FlexEvent):void {
+				var toolTip:String;
+				var label_text:String;
+				var isEmpty:Boolean;
+				var items:Array = [];
+				var hbox:HBox;
+				var popup:MenuItemActions;
+
+				isEmpty = ObjectUtils.isEmpty(MenuController._currentSelectedMenu);
+
+				var label:EditableLabel = event.currentTarget as EditableLabel;
+				var containers:Array = label.containers;
+				hbox = containers[0];
+				var dp:* = label._dataProvider;
+				dp = (dp is Array) ? dp : [dp];
+				label_text = 'Logo';
+				toolTip = (isEmpty) ? 'Admin Tool is in View-Only Mode pending the selection of a Named Menu using the Control Panel...' : 'Edit the item with the label of "' + label_text + '"...';
+
+				items = [];
+	            items.push({'label':'Edit Line of Business Tab Link...','name':'edit_lob_item','icon':((isEmpty) ? MenuController.adminAddDisabledIcon : MenuController.adminAddIcon),'menuitem':dp,'_label':label_text});
+
+				popup = new MenuItemActions();
+				popup.height = 16;
+				popup.width = 14;
+				popup.isMirror = false;
+				popup.items = items;
+				popup.toolTip = toolTip;
+				hbox.addChildAt(popup,0);
+
+				popup.addEventListener(FlexEvent.CREATION_COMPLETE, 
+					function(event:FlexEvent):void { 
+						var target:MenuItemActions = event.currentTarget as MenuItemActions;
+						var child:PopUpMenuButton = target.getChildByName('popup') as PopUpMenuButton;
+						if (child) {
+							child.labelField = 'label';
+							child.toolTip = target.toolTip;
+							child.dataProvider = target.items;
+							if (isEmpty == false) {
+								child.addEventListener("itemClick", MenuController.onClick_PopUpMenu_ActionBtn); 
+							}
+						}
+					});
+			}
+			
+			private function onCreationComplete_GLinksIcon(event:FlexEvent):void {
+				var toolTip:String;
+				var label_text:String;
+				var isEmpty:Boolean;
+				var items:Array = [];
+				var hbox:HBox;
+				var popup:MenuItemActions;
+
+				isEmpty = ObjectUtils.isEmpty(MenuController._currentSelectedMenu);
+
+				var label:EditableLabel = event.currentTarget as EditableLabel;
+				var containers:Array = label.containers;
+				hbox = containers[0];
+				var dp:* = label._dataProvider;
+				dp = (dp is Array) ? dp : [dp];
+				label_text = 'GLink';
+				toolTip = (isEmpty) ? 'Admin Tool is in View-Only Mode pending the selection of a Named Menu using the Control Panel...' : 'Edit the item with the label of "' + label_text + '"...';
+
+				items = [];
+	            items.push({'label':'Edit Global Links Item...','name':'edit_glinks_item','icon':((isEmpty) ? MenuController.adminEditDisabledIcon : MenuController.adminEditIcon),'menuitem':dp,'_label':label_text});
+            	items.push({'label':'Delete Global Links Item "' + label_text + '"...','name':'delete_glinks_item','icon':((isEmpty) ? MenuController.adminDeleteDisabledIcon : MenuController.adminDeleteIcon),'menuitem':dp,'_label':label_text});
+
+				popup = new MenuItemActions();
+				popup.height = 16;
+				popup.width = 14;
+				popup.isMirror = false;
+				popup.items = items;
+				popup.toolTip = toolTip;
+				hbox.addChildAt(popup,0);
+
+				popup.addEventListener(FlexEvent.CREATION_COMPLETE, 
+					function(event:FlexEvent):void { 
+						var target:MenuItemActions = event.currentTarget as MenuItemActions;
+						var child:PopUpMenuButton = target.getChildByName('popup') as PopUpMenuButton;
+						if (child) {
+							child.labelField = 'label';
+							child.toolTip = target.toolTip;
+							child.dataProvider = target.items;
+							if (isEmpty == false) {
+								child.addEventListener("itemClick", MenuController.onClick_PopUpMenu_ActionBtn); 
+							}
+						}
+					});
+			}
+
+			private function onCreationComplete_LocationIcon(event:FlexEvent):void {
+				var toolTip:String;
+				var label_text:String;
+				var isEmpty:Boolean;
+				var items:Array = [];
+				var hbox:HBox;
+				var popup:MenuItemActions;
+
+				isEmpty = ObjectUtils.isEmpty(MenuController._currentSelectedMenu);
+
+				var label:EditableLabel = event.currentTarget as EditableLabel;
+				var containers:Array = label.containers;
+				hbox = containers[0];
+				var dp:* = label._dataProvider;
+				dp = (dp is Array) ? dp : [dp];
+				label_text = 'Location';
+				toolTip = (isEmpty) ? 'Admin Tool is in View-Only Mode pending the selection of a Named Menu using the Control Panel...' : 'Edit the item with the label of "' + label_text + '"...';
+
+				items = [];
+	            items.push({'label':'Edit Location Link Item...','name':'edit_location_item','icon':((isEmpty) ? MenuController.adminEditDisabledIcon : MenuController.adminEditIcon),'menuitem':dp,'_label':label_text});
+
+				popup = new MenuItemActions();
+				popup.height = 16;
+				popup.width = 14;
+				popup.isMirror = false;
+				popup.items = items;
+				popup.toolTip = toolTip;
+				hbox.addChildAt(popup,0);
+
+				popup.addEventListener(FlexEvent.CREATION_COMPLETE, 
+					function(event:FlexEvent):void { 
+						var target:MenuItemActions = event.currentTarget as MenuItemActions;
+						var child:PopUpMenuButton = target.getChildByName('popup') as PopUpMenuButton;
+						if (child) {
+							child.labelField = 'label';
+							child.toolTip = target.toolTip;
+							child.dataProvider = target.items;
+							if (isEmpty == false) {
+								child.addEventListener("itemClick", MenuController.onClick_PopUpMenu_ActionBtn); 
+							}
+						}
+					});
+			}
+
+			public function init():void {
+				var i:int;
+				
+				WelcomeScreen.waitForSignal = true; // signal the preloader to wait for the Login Screen...
+
+				ToolTipManager.toolTipClass = HTMLToolTip;
+				
+				this._appController = new AppController();
+				
+				this._appController.callback_signal_start = this.signal_start;
+				
+				GlobalsVO.ISLoggedOut = false;
+
+				// Set Application Root Reference
+				GlobalsVO.setGlobal(GlobalsVO.APPLICATION,Layout);
+				GlobalsVO.setGlobal('_APPLICATION',Application.application);
+
+				GlobalsVO.setGlobal(GlobalsVO.ISADMIN,true);
+				GlobalsVO.setGlobal(GlobalsVO.ISWMSDEV,false);
+
+				GlobalsVO.setGlobal(GlobalsVO.EDITABLELABEL_onClickHandler,onClick_PopUpMenu_ActionBtn);
+				GlobalsVO.setGlobal(GlobalsVO.EDITABLELABEL_onCreationComplete,onCreationComplete);
+
+				GlobalsVO.setGlobal(GlobalsVO.NONEDITABLELABEL_onCreationComplete,onCreationComplete_NoDelete);
+
+				GlobalsVO.setGlobal(GlobalsVO.EDITABLEICON_onClickHandler,onClick_Icon_PopUpMenu_ActionBtn);
+				GlobalsVO.setGlobal(GlobalsVO.EDITABLEICON_onCreationComplete,onCreationComplete_Icon);
+
+				GlobalsVO.setGlobal(GlobalsVO.EDITABLELOGOICON_onCreationComplete,onCreationComplete_LogoIcon);
+				
+				GlobalsVO.setGlobal(GlobalsVO.EDITABLELOBICON_onCreationComplete,onCreationComplete_LOBIcon);
+				
+				GlobalsVO.setGlobal(GlobalsVO.EDITABLEGLINKS_onCreationComplete,onCreationComplete_GLinksIcon);
+				
+				GlobalsVO.setGlobal(GlobalsVO.EDITABLELOCATION_onCreationComplete,onCreationComplete_LocationIcon);
+
+				var overRide:String = '';
+
+				//var toks:Array = Application.application.url.split('/');
+        		//var url:String = 'http://localhost:7001/WMSWeb/flex/admin/VZW_AdminTool.html?prefix=/WMSWeb/globalnav&css=http://localhost:7001/WMSWeb/flex/admin/css/globalnav-flex.css&d=http://localhost:7001/WMSWeb/flex/admin/LoggedOutState_Header-compressed-json.txt&p=http://localhost:7001/WMSWeb/flex/admin/globalnav.txt';
+
+				var userId:String = StringUtils.urlEncode('raychorn,103136174d231ac2abc3a1de8fc3aac3b9c2afc3892f');
+        		//var url:String = 'http://localhost:7001/WMSWeb/flex/admin/VZW_AdminTool.html?css=http://localhost:7001/WMSWeb/flex/admin/css/globalnav-flex.css&d=http://localhost:7001/WMSWeb/flex/admin/LoggedOutState_Header-compressed-json.txt&p=http://localhost:7001/WMSWeb/flex/admin/globalnav.txt&userid=' + userId;
+
+				var menuType:String;
+        		
+        		//var url:String = 'http://localhost:7001/WMSWeb/flex/globalnav/VZW_AdminTool.swf?prefix=/WMSWeb/globalnav&css=http://localhost:7001/WMSWeb/flex/globalnav/css/globalnav-flex.css&img=http://localhost:7001/WMSWeb/flex/globalnav/images&d=http://localhost:7001/WMSWeb/flex/globalnav/LoggedOutState-Header-compressed-json.txt&p=http://localhost:7001/WMSWeb/flex/globalnav/globalnav.txt&userid=' + userId;
+
+        		var url:String = Application.application.url;
+        		
+				MenuController.callback_GlobalsVO = this.access_GlobalsVO;
+
+				//MenuController.rolesList = this.roles_list;
+				//MenuController.envsList = this.envs_list;
+
+				var toks:Array = [];
+				
+				var __url:String = new String(url).toLowerCase();
+				var isRunningLocalDev:Boolean = (__url.indexOf("file://") > -1);
+				var isRunningLocalVzw:Boolean = (__url.indexOf('/c0horra/') > -1) || (__url.indexOf('\\c0horra\\') > -1);
+				var isRunningLocalViaZ:Boolean = (__url.indexOf('/z:/z/') > -1);				
+				if ( (isRunningLocalDev) && ( (isRunningLocalVzw) || (isRunningLocalViaZ) ) ) {
+					var server_type:int = -1;
+					
+					for (i = 0; i < 10; i++) {
+						trace("\n");
+					}
+
+					GlobalsVO.DEVMODE=false;
+					GlobalsVO.ISLoggedOut = (String(url).toLowerCase().indexOf("vzw_admintool-loggedin") == -1);
+ 					
+					menuType = (GlobalsVO.ISLoggedOut) ? WmsAPI.symbol_loggedOut_token : WmsAPI.symbol_loggedIn_token;
+					menuType = 'menuType='+menuType;
+
+					// For Dev Server...
+					var hostAddr:String = '127.0.0.1:8888';
+					if ( (isRunningLocalDev) && (isRunningLocalViaZ) ) {
+						hostAddr = 'unknownlaptop:8888';
+					}
+					toks.push('cb=true');
+					toks.push('userName=Ray Horn');
+					toks.push('zipDisplay=0');
+					toks.push("img=http://" + hostAddr + "/global-nav/"  + ((GlobalsVO.ISLoggedOut) ? 'images-loggedout' : 'images-loggedin') + "/");
+					toks.push("css=http://" + hostAddr + "/global-nav/" + ((GlobalsVO.ISLoggedOut) ? 'css-loggedout' : 'css-loggedin') + "/globalnav-flex.css");
+					toks.push("d=http://" + hostAddr + "/static/global-nav/Logged" + ((GlobalsVO.ISLoggedOut) ? 'Out' : 'In') + "State_Header-compressed-json.txt");
+					toks.push("p=http://" + hostAddr + "/static/global-nav/globalnav.txt");
+					toks.push("x=http://" + hostAddr + "/static/users/freeemailhost__c.json");
+					overRide = "?" + toks.join('&');
+
+					MenuController._overrides = overRide + ((overRide.indexOf('?') > -1) ? '&menuType=' + menuType : '');
+
+					GlobalsVO.setGlobal(GlobalsVO.ISDEBUGGING,true);
+
+					GlobalsVO.setGlobal(GlobalsVO.ISWMSDEV,false);
+					GlobalsVO.DEVMODE = false;
+					trace('+++ --> GlobalsVO.DEVMODE='+GlobalsVO.DEVMODE);
+					MenuController.userID = userId;
+					trace('+++ MenuController.userID='+MenuController.userID);
+					GlobalsVO.setGlobal(GlobalsVO.USERID,userId); 
+
+					this._disable_menuId_popup = false;
+					trace('this._disable_menuId_popup='+this._disable_menuId_popup);
+					this.WmsAPI_disable_keepalive_timer = (String(url).toLowerCase().indexOf("wca10408lbitaol.uswin.ad.vzwcorp.com") > -1) || (isRunningLocally);
+					trace('this.WmsAPI_disable_keepalive_timer='+this.WmsAPI_disable_keepalive_timer);
+					WmsAPI._disable_keepalive_timer = this.WmsAPI_disable_keepalive_timer;
+					WmsAPI.internal_domain = 'http://' + hostAddr;
+				} else {
+					GlobalsVO.DEVMODE=false;
+					GlobalsVO.setGlobal(GlobalsVO.ISDEBUGGING,false);
+
+	        		var overrides:Object = URLUtils.parse_overrides(url);
+	        		
+	        		var domain:String = '.';
+	        		var prefix:String = '';
+	        		var css:String = '';
+	        		var json:String = '';
+	        		var props:String = '';
+	        		var domains:String = '';
+	        		var userID:String = '';
+	        		var userName:String = '';
+	        		var zipDisplay:String = '0';
+
+	        		domain = (overrides.domain != null) ? overrides.domain : domain;
+	        		prefix = (overrides.prefix != null) ? overrides.prefix : prefix;
+	        		css = (overrides.css != null) ? overrides.css : css;
+	        		json = (overrides.d != null) ? overrides.d : json;
+	        		props = (overrides.p != null) ? overrides.p : props;
+	        		domains = (overrides.x != null) ? overrides.x : domains;
+	        		userID = (overrides.userid != null) ? overrides.userid : userID;
+	        		userName = (overrides.userName != null) ? overrides.userName : userName;
+	        		zipDisplay = (overrides.zipDisplay != null) ? overrides.zipDisplay : zipDisplay;
+
+					GlobalsVO.USERNAME = ( (userName is String) && (userName.length > 0) ) ? userName : '';	        		
+
+					GlobalsVO.setGlobal(GlobalsVO.USERID,userID);
+					
+	        		var css_overrides:Object = URLUtils.parse_overrides(css);
+	        		var d_overrides:Object = URLUtils.parse_overrides(json);
+	        		var p_overrides:Object = URLUtils.parse_overrides(props);
+ 
+					toks.push("cb=true");
+					toks.push("userName="+GlobalsVO.USERNAME);
+					toks.push("zipDisplay=" + zipDisplay);
+					toks.push("css="+css);
+					toks.push("d="+json);
+					toks.push("p="+props);
+					toks.push("x="+domains);
+					overRide = "?" + toks.join('&');
+					
+					var isRunningLocally:Boolean = (String(url).toLowerCase().indexOf("wca10408lditamu.uswin.ad.vzwcorp.com") > -1);
+					this._disable_menuId_popup = (isRunningLocally) ? false : this._disable_menuId_popup;
+					trace('this._disable_menuId_popup='+this._disable_menuId_popup);
+					this.WmsAPI_disable_keepalive_timer = (String(url).toLowerCase().indexOf("wca10408lbitaol.uswin.ad.vzwcorp.com") > -1) || (isRunningLocally);
+					trace('this.WmsAPI_disable_keepalive_timer='+this.WmsAPI_disable_keepalive_timer);
+					WmsAPI._disable_keepalive_timer = this.WmsAPI_disable_keepalive_timer;
+					GlobalsVO.ISLoggedOut = (String(url).toLowerCase().indexOf("_loggedin") == -1);
+				}
+				
+				trace('overRide='+overRide);
+				_appController.init(overRide);
+			}
+		]]>
+	</mx:Script>
+	<mx:VBox id="hbox1" width="100%" height="90">
+		<mx:HBox right="0" left="0" bottom="0" top="0" width="100%" backgroundColor="#f72100" alpha="1.0" horizontalScrollPolicy="off" verticalScrollPolicy="off">
+			<mx:TitleWindow id="container" styleName="ControlPanelContainer" x="0" y="0" width="100%" height="{this.hbox1.height}" layout="absolute" horizontalScrollPolicy="off" verticalScrollPolicy="off" title="{UserProfile.company_name} Admin Tool Control Panel"/>
+		</mx:HBox>
+	</mx:VBox>
+	<mx:Canvas right="0" left="0" bottom="0" top="{this.hbox1.height}" id="Layout" horizontalScrollPolicy="off" verticalScrollPolicy="off" width="100%" height="100%"/>
+</mx:Application>

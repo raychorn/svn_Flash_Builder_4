@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			import spark.components.Group;
+			import spark.components.Label;
+			[Bindable]
+			private var __image_width__:int;
+			
+			[Bindable]
+			private var __image_height__:int;
+			
+			[Bindable]
+			private var __image_scale_mode__:String;
+			
+			[Bindable]
+			private var __vertical_text__:String;
+			
+			[Bindable]
+			private var __source__:Class;
+			
+			public function get source():Class {
+				return this.__source__;
+			}
+			
+			public function set source(source:Class):void {
+				if (this.__source__ != source) {
+					this.__source__ = source;
+				}
+			}
+			
+			public function get image_width():int {
+				return this.__image_width__;
+			}
+			
+			public function set image_width(width:int):void {
+				if (this.__image_width__ != width) {
+					this.__image_width__ = width;
+				}
+			}
+			
+			public function get image_height():int {
+				return this.__image_height__;
+			}
+			
+			public function set image_height(height:int):void {
+				if (this.__image_height__ != height) {
+					this.__image_height__ = height;
+				}
+			}
+			
+			public function get image_scale_mode():String {
+				return this.__image_scale_mode__;
+			}
+			
+			public function set image_scale_mode(scaleMode:String):void {
+				if (this.__image_scale_mode__ != scaleMode) {
+					this.__image_scale_mode__ = scaleMode;
+				}
+			}
+			
+			public function get vertical_text():String {
+				return this.__vertical_text__;
+			}
+			
+			private function apply_vertical_text():void {
+				var msg:String = this.vertical_text;
+				
+				var g1:Group = new Group();
+				var label1:Label = new Label();
+				label1.text = msg;
+				label1.rotation = 90;
+				g1.addElement(label1);
+				var pt:Point = new Point(0,0);
+				g1.x = pt.x + 10;
+				g1.y = pt.y + 40;
+				this.addElement(g1);
+				
+				var g2:Group = new Group();
+				var label2:Label = new Label();
+				label2.text = msg;
+				label2.rotation = 90;
+				g2.addElement(label2);
+				var pt2:Point = new Point(0,0);
+				g2.x = pt2.x + 10;
+				g2.y = pt2.y + 40;
+				this.addElement(g2);
+				
+				var g3:Group = new Group();
+				var label3:Label = new Label();
+				label3.text = msg;
+				label3.rotation = 90;
+				g3.addElement(label3);
+				var pt3:Point = new Point(0,0);
+				g3.x = pt3.x + 10;
+				g3.y = pt3.y + 40;
+				this.addElement(g3);
+			}
+			
+			public function set vertical_text(vertical_text:String):void {
+				if (this.__vertical_text__ != vertical_text) {
+					this.__vertical_text__ = vertical_text;
+					
+					if ( (this.image) && (this.source) ) {
+						this.callLater(this.apply_vertical_text);
+					}
+				}
+			}
+			
+			protected function image_creationCompleteHandler(event:FlexEvent):void {
+				if ( (this.image) && (this.source) && (this.vertical_text) ) {
+					this.callLater(this.apply_vertical_text);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:HGroup id="container" width="100%" paddingTop="5">
+		<s:Image id="image" source="{this.__source__}" width="{this.__image_width__}" height="{this.__image_height__}" scaleMode="{this.__image_scale_mode__}" creationComplete="image_creationCompleteHandler(event)"/>
+	</s:HGroup>
+</s:Group>

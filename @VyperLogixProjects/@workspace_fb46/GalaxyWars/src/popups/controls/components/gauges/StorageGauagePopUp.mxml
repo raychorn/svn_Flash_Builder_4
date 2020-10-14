@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" xmlns:components="com.betterthantomorrow.components.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:NumberFormatter id="gauge_value_formatter" precision="2" rounding="none"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			import spark.components.HGroup;
+			import spark.components.Label;
+			import spark.components.VGroup;
+			[Bindable]
+			private var __minimum__:Number = 0;
+			
+			[Bindable]
+			private var __maximum__:Number = 100;
+			
+			[Bindable]
+			private var __value__:Number = 1;
+			
+			private var __label__:Label;
+
+			private var __percent__:Label;
+			
+			private var __resource_label__:String;
+			private var __resource_label_styleName__:String;
+			private var __resource_percent__:String;
+			
+			public function get resource_label_styleName():String {
+				return this.__resource_label_styleName__;
+			}
+			
+			public function set resource_label_styleName(styleName:String):void {
+				if (this.__resource_label_styleName__ != styleName) {
+					this.__resource_label_styleName__ = styleName;
+					if (this.__label__) {
+						this.__label__.styleName = styleName;
+					}
+				}
+			}
+			
+			public function get resource_label():String {
+				return this.__resource_label__;
+			}
+			
+			public function set resource_label(label:String):void {
+				if (this.__resource_label__ != label) {
+					this.__resource_label__ = label;
+					if (this.__label__) {
+						this.__label__.text = label;
+					}
+				}
+			}
+			
+			public function get resource_percent():String {
+				return this.__resource_percent__;
+			}
+			
+			public function set resource_percent(label:String):void {
+				if (this.__resource_percent__ != label) {
+					this.__resource_percent__ = label;
+					if (this.__percent__) {
+						this.__percent__.text = label;
+					}
+				}
+			}
+			
+			public function get value():Number {
+				return this.__value__;
+			}
+			
+			public function set value(value:Number):void {
+				if (this.__value__ != value) {
+					this.__value__ = value;
+				}
+			}
+			
+			public function get minimum():Number {
+				return this.__minimum__;
+			}
+			
+			public function set minimum(minimum:Number):void {
+				if (this.__minimum__ != minimum) {
+					this.__minimum__ = minimum;
+				}
+			}
+
+			public function get maximum():Number {
+				return this.__maximum__;
+			}
+			
+			public function set maximum(minimum:Number):void {
+				if (this.__maximum__ != maximum) {
+					this.__maximum__ = maximum;
+				}
+			}
+			
+			protected function gauge_creationCompleteHandler(event:FlexEvent):void {
+				var vgroup:VGroup = new VGroup();
+				vgroup.width = this.width - 50;
+				vgroup.horizontalAlign = 'center';
+				vgroup.x = 0;
+				vgroup.y = this.height - 50;
+				vgroup.paddingLeft = 50;
+				
+				this.__label__ = new Label();
+				this.__label__.text = this.__resource_label__;
+				this.__label__.styleName = this.__resource_label_styleName__;
+				vgroup.addElement(this.__label__);
+
+				this.__percent__ = new Label();
+				this.__percent__.text = this.__resource_percent__;
+				this.__percent__.styleName = this.__resource_label_styleName__;
+				vgroup.addElement(this.__percent__);
+
+				this.addElement(vgroup);
+			}
+			
+		]]>
+	</fx:Script>
+	<components:Gauge id="gauge" width="100%" height="100%" minValue="{this.__minimum__}" maxValue="{this.__maximum__}" value="{this.__value__}" fontColor="#FFFFFF" showValue="true" showMinMax="true" valueFormatter="{this.gauge_value_formatter}" creationComplete="gauge_creationCompleteHandler(event)"/>
+</s:Group>

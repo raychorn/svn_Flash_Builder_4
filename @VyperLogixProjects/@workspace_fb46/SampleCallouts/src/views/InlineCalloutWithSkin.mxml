@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" title="Inline Callout with Skin"  xmlns:components="components.*"
+		viewActivate="view1_viewActivateHandler(event)" viewDeactivate="callout.close()">
+	<fx:Script>
+		<![CDATA[
+			import components.MyCalloutComp;
+			
+			import spark.events.ViewNavigatorEvent;
+			protected var callout:Callout1;
+			
+			protected function view1_viewActivateHandler(event:ViewNavigatorEvent):void
+			{
+				callout=new Callout1();
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<fx:Component className="Callout1">
+			<s:Callout xmlns:fx="http://ns.adobe.com/mxml/2009"  
+					   xmlns:s="library://ns.adobe.com/flex/spark" skinClass="skins.MyCalloutSkin" verticalPosition="after">			
+				<s:VGroup paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10" horizontalAlign="center">
+					<s:Label text="My Story" fontWeight="bold" fontSize="30" color="0xAA0D0A"/>
+					<s:TextArea text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur accumsan felis ac tortor aliquam iaculis. Phasellus hendrerit viverra enim, sit amet scelerisque lectus dictum at. Aenean sodales nisi sed leo congue et porttitor ligula vehicula. 
+Pellentesque turpis massa, suscipit vel fermentum quis, dignissim sed ipsum. Nulla aliquet libero adipiscing risus lobortis eleifend quis at velit. Duis at leo urna. 
+Praesent facilisis faucibus neque, ut ullamcorper lacus gravida a. Donec vel iaculis sapien." skinClass="spark.skins.mobile.TextAreaSkin" width="90%" editable="false"/>
+				</s:VGroup>  
+			</s:Callout>
+		</fx:Component>
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout paddingTop="40" paddingBottom="8" paddingLeft="8" paddingRight="8" gap="15" 
+						  horizontalAlign="center"/>
+	</s:layout>
+	
+	<s:TextArea skinClass="spark.skins.mobile.TextAreaSkin" width="90%" 
+				text="You can specify a Callout component inline rather than in separate MXML as shown in this sample. You can also apply a custom skin since the Callout
+component extends the SkinnablePopUpContainer class. Click the story icon below to invoke a skinned callout."/>
+	<s:Image id="img" source="@Embed(source='text48.png')" click="callout.open(img)"/>
+
+</s:View>

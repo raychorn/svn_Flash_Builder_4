@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application 
+    backgroundColor="#424242"
+    minHeight="100"
+    minWidth="100"
+    xmlns:fx="http://ns.adobe.com/mxml/2009"
+    xmlns:s="library://ns.adobe.com/flex/spark"
+    xmlns:mx="library://ns.adobe.com/flex/mx"
+    xmlns:icon="com.flexpad.icon.*"
+    xmlns:flexpad="http://code.google.com/p/flexpad/">
+    <fx:Script>
+        <![CDATA[
+            import flash.filters.DropShadowFilter;
+        ]]>
+    </fx:Script>
+
+    <s:layout>
+        <s:VerticalLayout gap="15"/>
+    </s:layout>
+
+    <flexpad:Scroller 
+        width="100%" height="100%">
+        <s:VGroup 
+            width="100%" height="100%">
+            <flexpad:BarGrey 
+                width="100%" height="45">
+                <flexpad:BackButtonGrey 
+                    left="5"
+                    verticalCenter="0"
+                    label="Back grey button"/>
+                <flexpad:BarGreyLabel 
+                    horizontalCenter="0"
+                    verticalCenter="0"
+                    text="Label"/>
+            </flexpad:BarGrey>
+
+            <flexpad:BarGrey 
+                width="100%" height="45">
+                <flexpad:layout>
+                    <s:HorizontalLayout 
+                        paddingLeft="10"
+                        paddingRight="10"
+                        verticalAlign="middle"/>
+                </flexpad:layout>
+                <flexpad:ButtonBarGrey requireSelection="true">
+                    <flexpad:dataProvider>
+                        <s:ArrayCollection>
+                            <fx:String>Search</fx:String>
+                            <fx:String>Directions</fx:String>
+                        </s:ArrayCollection>
+                    </flexpad:dataProvider>
+                </flexpad:ButtonBarGrey>
+                <mx:Spacer width="100%"/>
+                <flexpad:HintTextInput hint="Google"/>
+                <flexpad:SearchTextInput 
+                    text="Text"
+                    hint="Search"/>
+            </flexpad:BarGrey>
+
+            <flexpad:BarBlack 
+                width="100%" height="45">
+                <flexpad:layout>
+                    <s:HorizontalLayout 
+                        horizontalAlign="center"
+                        verticalAlign="middle"/>
+                </flexpad:layout>
+
+                <flexpad:BarBlackLabel text="Label"/>
+
+            </flexpad:BarBlack>
+
+            <flexpad:BarBlackSemiTrans 
+                width="100%" height="45">
+                <flexpad:BackButtonBlack 
+                    left="5"
+                    verticalCenter="0"
+                    label="Back black button"/>
+                <flexpad:BarBlackLabel 
+                    horizontalCenter="0"
+                    verticalCenter="0"
+                    text="Label"/>
+            </flexpad:BarBlackSemiTrans>
+
+            <flexpad:TabBarBlack 
+                width="100%" height="50">
+                <mx:ArrayCollection>
+                    <fx:Object 
+                        icon="@Embed(source='/asset/icon/tabBarBlackicon1.png')"
+                        label="Label One"
+                        iconSelected="@Embed(source='/asset/icon/tabBarBlackicon1Selected.png')"/>
+                    <fx:Object 
+                        icon="@Embed(source='/asset/icon/tabBarBlackIcon2.png')"
+                        label="Label Two"
+                        iconSelected="@Embed(source='/asset/icon/tabBarBlackIcon2Selected.png')"/>
+                    <fx:Object 
+                        icon="@Embed(source='/asset/icon/tabBarBlackIcon3.png')"
+                        label="Label Three"
+                        iconSelected="@Embed(source='/asset/icon/tabBarBlackIcon3Selected.png')"/>
+                </mx:ArrayCollection>
+            </flexpad:TabBarBlack>
+
+            <flexpad:ButtonGrey label="Edit"/>
+            <flexpad:ButtonBlack label="Edit"/>
+            <flexpad:ButtonBlue label="Edit"/>
+            <flexpad:ButtonGreyBlue label="Edit"/>
+            <flexpad:ButtonRed label="Edit"/>
+            <flexpad:BackButtonGrey label="Back"/>
+            <flexpad:BackButtonBlack label="Back"/>
+            <flexpad:Switch/>
+            <flexpad:ButtonBarBlack requireSelection="true">
+                <flexpad:dataProvider>
+                    <s:ArrayCollection>
+                        <fx:String>Label 1</fx:String>
+                        <fx:String>Label 2</fx:String>
+                        <fx:String>Label 3</fx:String>
+                    </s:ArrayCollection>
+                </flexpad:dataProvider>
+            </flexpad:ButtonBarBlack>
+            <flexpad:AlertPanel 
+                text="Do you want to leave this site?"
+                title="http://google.com"/>
+            <s:HGroup verticalAlign="middle">
+                <flexpad:VSlider height="100"/>
+                <flexpad:HSlider width="200"/>
+            </s:HGroup>
+
+            <flexpad:LargeButtonBarGrey requireSelection="true">
+                <flexpad:dataProvider>
+                    <s:ArrayCollection>
+                        <fx:String>Search</fx:String>
+                        <fx:String>Middle</fx:String>
+                        <fx:String>Directions</fx:String>
+                    </s:ArrayCollection>
+                </flexpad:dataProvider>
+            </flexpad:LargeButtonBarGrey>
+
+            <icon:CheckEmptyIcon/>
+            <icon:CheckFilledIcon/>
+            <icon:ArrowIcon/>
+            <icon:AddBlueIcon/>
+            <icon:RemoveIcon/>
+
+            <flexpad:CheckBox label="Checkbox"/>
+            <s:VGroup>
+                <flexpad:RadioButton 
+                    label="Radio button 1"
+                    selected="true"
+                    groupName="test"/>
+                <flexpad:RadioButton 
+                    label="Radio button 2"
+                    groupName="test"/>
+            </s:VGroup>
+        </s:VGroup>
+    </flexpad:Scroller>
+</s:Application>

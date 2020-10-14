@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ViewNavigatorApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							xmlns:s="library://ns.adobe.com/flex/spark" 
+							firstView="views.TimersHomeView" 
+							initialize="viewnavigatorapplication1_initializeHandler(event)" 
+							applicationComplete="viewnavigatorapplication1_applicationCompleteHandler(event)"
+							applicationDPI="160" 
+							>
+	<fx:Style source="styles.css"/>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:Sequence id="openingEffect">
+			<s:Pause duration="150"/>
+			<s:Resize id="expand" widthTo="500" duration="150"/>
+			<s:Pause duration="150"/>
+			<s:Resize id="expand2" heightTo="450" duration="150"/>
+		</s:Sequence>
+		<s:DateTimeFormatter id="fmt_date" dateTimePattern="MMddyyyy"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.components.TextArea;
+			import spark.components.TitleWindow;
+			
+			[Bindable]
+			public var mySO:SharedObject;
+			
+			[Bindable]
+			public var nativeApplication:NativeApplication = NativeApplication.nativeApplication;
+			
+			public var appDescriptor:XML = NativeApplication.nativeApplication.applicationDescriptor;
+			public var nsDeclaration:Namespace = appDescriptor.namespace();
+			
+			public var app_id:String = appDescriptor.nsDeclaration::id[ 0 ] ;
+			
+			[Bindable]
+			public var versionNumber:String = appDescriptor.nsDeclaration::versionNumber[ 0 ] ;
+			
+			[Bindable]
+			public var copyright:String = appDescriptor.nsDeclaration::copyright[ 0 ] ;
+			
+			[Bindable]
+			public var description:String = appDescriptor.nsDeclaration::description[ 0 ] ;
+			
+			[Bindable]
+			public var credits:String = 'Credits:\n\nThis Android App was produced by Ray C Horn for Vyper Logix Corp; (c). Copyright 2012, Vyper Logix Corp. (http://www.vyperlogix.com), All Rights Reserved\n\n';
+			
+			[Bindable]
+			public var is_debugging:Boolean = false; //app_id.indexOf('.debug') == -1;
+			
+			[Bindable]
+			public var is_menu_enhanced:Boolean = true;
+			
+			public function popUpHelpWindow(parent:*,x:Number,y:Number,width:Number,height:Number,info:String,callback:Function=null):void {
+				var window:TitleWindow = PopUpManager.createPopUp(parent,TitleWindow,true) as TitleWindow;
+				window.x = x;
+				window.y = y;
+				window.width = width;
+				window.height = height;
+				window.title = '(Touch this window to dismiss...)';
+				window.addEventListener(FlexEvent.CREATION_COMPLETE, 
+					function (event:FlexEvent):void {
+						var ta:TextArea = new TextArea();
+						ta.x = 0;
+						ta.y = 0;
+						ta.editable = false;
+						ta.percentWidth = 100;
+						ta.percentHeight = 100;
+						ta.text = info;
+						window.addElement(ta);
+					}
+				);
+				window.addEventListener(MouseEvent.CLICK, 
+					function (event:MouseEvent):void {
+						PopUpManager.removePopUp(window);
+						if (callback is Function) {
+							try {callback()} catch (err:Error) {}
+						}
+					}
+				);
+				PopUpManager.centerPopUp(window);
+				PopUpManager.bringToFront(window);
+			}
+			
+			public function get ms_since_installation_check():Number {
+				var ms:Number = 0;
+				var today:Date = new Date();
+				var installation:Date = FlexGlobals.topLevelApplication.mySO.data.__installation;
+				if (installation is Date) {
+					installation.setDate(installation.getDate() + 1);
+					ms = Math.max(installation.time,today.time) - Math.min(installation.time,today.time);
+					trace(this.className+'.get-ms_since_installation_check.1 --> today.time='+today.time+', installation.time='+installation.time+', ms='+ms);
+					trace(this.className+'.get-ms_since_installation_check.2 --> today='+today.toDateString()+' '+today.toTimeString()+', installation='+installation.toDateString()+' '+installation.toTimeString());
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data.__installation = today;
+					FlexGlobals.topLevelApplication.mySO.flush();
+				}
+				return ms;
+			}
+			
+			public function get num_days():Number {
+				return 30;
+			}
+			
+			public function get num_days_trial_remaining():Number {
+				var numDays:Number = this.num_days;
+				var ms:Number = this.ms_since_installation_check;
+				var msD:Number = 86400*1000;
+				var maxMS:Number = (msD*numDays);
+				var d:Number = Math.max(maxMS,ms) - Math.min(maxMS,ms);
+				var days:Number = Math.floor(d / msD);
+				trace(this.className+'.num_days_trial_remaining.1 --> ms='+ms+', days='+days+', maxMS='+maxMS);
+
+				var today:Date = new Date();
+				var serial:String = this.fmt_date.format(today);
+				var key:String = '__installation_date_check_serial_'+serial;
+				var installation_serial_days:String = FlexGlobals.topLevelApplication.mySO.data[key];
+				trace(this.className+'.num_days_trial_remaining.2 --> key='+key+', installation_serial_days='+installation_serial_days);
+				if (installation_serial_days) {
+				} else {
+					FlexGlobals.topLevelApplication.mySO.data[key] = days;
+					FlexGlobals.topLevelApplication.mySO.flush();
+				}
+				return days;
+			}
+			
+			private function initialize_SharedObject():void {
+				var now:Date = new Date();
+				var name:String = '/local/vyperlogix/'+this.app_id+'/data/';
+				trace(this.className+'.initialize_SharedObject().1 --> name='+name);
+				try {
+					this.mySO = SharedObject.getLocal(name);
+					if (Capabilities.isDebugger) {
+						this.mySO.clear();
+						var aDate:Date = new Date();
+						aDate.setDate(aDate.getDate() - 1);
+						trace(this.className+'.initialize_SharedObject().1.1 --> aDate='+aDate.toDateString());
+						FlexGlobals.topLevelApplication.mySO.data.__installation = aDate;
+						FlexGlobals.topLevelApplication.mySO.flush();
+					}
+					var ms:Number = this.ms_since_installation_check;
+					trace(this.className+'.initialize_SharedObject().2 --> ms='+ms);
+				} catch (err:Error) {
+					trace(this.className+'.initialize_SharedObject().ERR --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+			}
+			
+			protected function viewnavigatorapplication1_initializeHandler(event:FlexEvent):void {
+				var toks:Array = app_id.split('.');
+				toks.pop();
+				app_id = toks.join('.');
+				this.initialize_SharedObject();
+			}
+			
+			protected function viewnavigatorapplication1_applicationCompleteHandler(event:FlexEvent):void  {
+				this.stage.addEventListener(KeyboardEvent.KEY_DOWN, 
+					function (event:KeyboardEvent):void {
+						try {
+							if (event.keyCode == Keyboard.BACK) {
+							} else if (event.keyCode == Keyboard.MENU) {
+								event.preventDefault();
+								this.viewMenuOpen = true;
+							} else if (event.keyCode == Keyboard.SEARCH) {
+							}
+						} catch (err:Error) {
+						}
+					}
+				);
+			}
+			
+		]]>
+	</fx:Script>
+</s:ViewNavigatorApplication>

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%"
+	creationComplete="init()" 
+	verticalScrollPolicy="off" horizontalScrollPolicy="off">
+	<mx:HBox x="0" y="0" width="100%" height="{componentHeight}" horizontalGap="{searchGap}" 
+		paddingRight="{searchPadR}"
+		verticalAlign="middle" horizontalAlign="right" id="container"
+		verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		<mx:TextInput id="searchField" focusEnabled="false" keyDown="onKeyDown(event)" click="onMouse(event)" enabled="{this.isSearchFieldEnabled}"/>
+		<mx:Button label="Search" id="searchBtn" labelPlacement="left" 
+			click="onMouse(event)" fontSize="12" 
+			fontFamily="Arial" fontWeight="bold" textAlign="center" 
+			cornerRadius="4"/>
+	</mx:HBox>
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.Menu;
+			import models.Menu_Model;
+			import flash.utils.setInterval;
+			import communication.WebServices;
+			import libs.vo.GlobalsVO;
+			
+			private const ENTERKEY:uint = 13;
+			private const GAP:String = "searchGap";
+			private const HEIGHT:String = "searchH";
+			private const REDIRECT:String = "_self";
+			private const HITBOX_JS_FUNCTION:String = "invokehbx";
+			
+			[Bindable]
+			private var searchGap:Number = 0;
+			
+			[Bindable]
+			private var componentHeight:Number = 0;
+			
+			[Bindable]
+			public var searchPadR:Number = 0;
+			
+			public var currentData:Object;
+
+			public var menuItems:Array;
+			public var menuToolTip:String;
+
+			private var _mcr:*;
+			private var _tabOrder:int;
+			private var _isAdmin:Boolean = Boolean(GlobalsVO.getGlobal(GlobalsVO.ISADMIN));
+			
+			private var searchInfo:Array = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL).getHeaderData("search",false);
+
+			private const MCR:String = "MenuController";
+
+			private function get isSearchBtnEnabled():Boolean {
+				return this._isAdmin == false;
+			}	
+					
+			private function get isSearchFieldEnabled():Boolean {
+				return this._isAdmin == false;
+			}	
+					
+			public function init():void {
+				
+	   			this._mcr = GlobalsVO.getGlobal(MCR);
+
+				_tabOrder = GlobalsVO.INIT_TAB_SEARCH;
+				
+				// Set focus listener and it's tab priority
+				GlobalsVO.addFocus(searchField,_tabOrder++);
+				GlobalsVO.addFocus(searchBtn,_tabOrder++);
+				
+				searchBtn.styleName="SearchButton";
+				GlobalsVO.setStyle(searchBtn);
+
+				componentHeight = Number(GlobalsVO.getCSSProperty(HEIGHT));
+				searchGap = Number(GlobalsVO.getCSSProperty(GAP));
+
+				var model:Menu_Model = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL);
+				this.currentData = model.headerData.data.search[model.headerData.name];
+
+				if (this._isAdmin) {
+					var onCreationCompleteHandler:Function = GlobalsVO.getGlobal(GlobalsVO.EDITABLESEARCHICON_onCreationComplete);
+					if (onCreationCompleteHandler is Function) {
+						var e:* = {'currentTarget':this};
+						onCreationCompleteHandler(e);
+					}
+				}
+			}
+			
+			
+			
+			
+			public function onKeyDown(e:KeyboardEvent):void {
+				if(e.charCode == ENTERKEY) onSearch();
+			}
+			
+			
+			
+			/**
+			 * Accessibility, get the current selected
+			 * instance from this class
+			 * @see Accessibility_Model:talk()
+			 */
+			 
+			public function getDataByAccessibility(instance:*):Object {
+				if(instance.toString().toLowerCase().indexOf("searchfield") > -1) {
+					//trace("getDataByAccessibility: Search Field"+instance);
+					//ExternalInterface.call("focusMe",1);
+					//interval();
+					return {name:"Search Field. Type your search text then press enter key after you have finished typing.",value:null,component:searchField};
+				}
+				if(instance.toString().toLowerCase().indexOf("searchbtn") > -1) {
+					return {name:"Search Button. Press space bar.",value:null};
+				}
+				
+				return null;
+			}		
+			
+
+			/* public function setF():void {
+				this.searchField.setFocus();
+				
+				stage.focus = searchField;
+			}
+ */
+
+			import flash.utils.setInterval;
+			public function interval():void {
+				
+				var _this:Object = this;
+				var f:Function = function():void {
+					_this.stage.focus = _this.searchField;
+					trace("loop: "+_this.stage.focus);
+				}
+				
+				setInterval(f,500);
+			}
+
+
+			/**
+			 * Send form post request to server
+			 * for search
+			 */
+			 			
+			public function onSearch():void {
+				if (!_isAdmin) {
+					var queryStr:String = searchInfo[0].value+String(GlobalsVO.getCSSProperty("searchStr"))+searchField.text+String(GlobalsVO.getCSSProperty("searchLid"));
+					WebServices.navigateToUrl(queryStr,searchInfo[0].target);
+				}
+			}
+
+			private function onMouse(e:MouseEvent):void {
+				switch(e.type) {
+					case MouseEvent.CLICK :
+		      			if ( (this._mcr) && (this._mcr.onMouseClickMenuSearch_callback) ) {
+		      				this._mcr.onMouseClickMenuSearch_callback(e, this);
+		      			}
+					break;
+				}
+			}
+		]]>
+	</mx:Script>
+</mx:Canvas>

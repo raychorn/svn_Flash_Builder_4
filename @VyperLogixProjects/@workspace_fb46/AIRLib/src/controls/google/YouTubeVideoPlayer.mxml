@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  width="100%" height="100%" 
+		  initialize="vgroup1_initializeHandler(event)" 
+		  >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="playButtonClicked", type="controls.google.buttons.events.PlayButtonClickedEvent")]
+		[Event(name="pauseButtonClicked", type="controls.google.buttons.events.PauseButtonClickedEvent")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.DisplayObjectUtils;
+			
+			import controls.google.buttons.PauseVideoButton;
+			import controls.google.buttons.PlayVideoButton;
+			import controls.google.buttons.events.PauseButtonClickedEvent;
+			import controls.google.buttons.events.PlayButtonClickedEvent;
+			
+			import flash.desktop.NativeApplication;
+			import flash.desktop.SystemIdleMode;
+			
+			import mobile.MobileDebuggerUtils;
+			
+			import mx.controls.SWFLoader;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			private var _this:YouTubeVideoPlayer;
+			
+			protected var loader:Loader;
+			public var player:Object;
+			private var swfLoader:SWFLoader;
+
+			[Bindable]
+			private var __videoID__:String;
+			
+			[Bindable]
+			private var __url__:String = "http://www.youtube.com/apiplayer?version=3";
+			
+			private var __actionContent___:Array;
+			
+			public var playButton:PlayVideoButton;
+			
+			public var pauseButton:PauseVideoButton;
+			
+			public function get videoID():String {
+				return this.__videoID__;
+			}
+			
+			public function set videoID(videoID:String):void {
+				if (this.__videoID__ != videoID) {
+					this.__videoID__ = videoID;
+				}
+			}
+			
+			public function get url():String {
+				return this.__url__;
+			}
+			
+			public function set url(url:String):void {
+				if (this.__url__ != url) {
+					this.__url__ = url;
+				}
+			}
+			
+			public function get actionContent():Array {
+				return this.__actionContent___;
+			}
+			
+			public function set actionContent(actionContent:Array):void {
+				if ( (actionContent) && (this.__actionContent___ != actionContent) ) {
+					this.__actionContent___ = actionContent;
+					this.playButton = new PlayVideoButton();
+					this.playButton.percentWidth = 100;
+					this.playButton.percentHeight = 100;
+					this.playButton.addEventListener(MouseEvent.CLICK, 
+						function (event:MouseEvent):void {
+							dispatchEvent(new PlayButtonClickedEvent(PlayButtonClickedEvent.TYPE_PLAY_BUTTON_CLICKED));
+						}
+					);
+					this.__actionContent___.push(this.playButton);
+					this.pauseButton = new PauseVideoButton();
+					this.pauseButton.percentWidth = 100;
+					this.pauseButton.percentHeight = 100;
+					this.pauseButton.addEventListener(MouseEvent.CLICK, 
+						function (event:MouseEvent):void {
+							dispatchEvent(new PauseButtonClickedEvent(PauseButtonClickedEvent.TYPE_PAUSE_BUTTON_CLICKED));
+						}
+					);
+					this.__actionContent___.push(this.pauseButton);
+				}
+			}
+			
+			/**
+			 * Init
+			 */
+			private function init():void {
+				// Prevents the system from dropping into an idle mode.
+				NativeApplication.nativeApplication.systemIdleMode = SystemIdleMode.KEEP_AWAKE;
+				
+				// Load a chromeless YouTubePlayer player 
+				// More info: http://code.google.com/apis/youtube/flash_api_reference.html#GettingStarted
+				loader  = new Loader();
+				loader.contentLoaderInfo.addEventListener(Event.INIT, onLoaderInit);
+				loader.load(new URLRequest(this.url));   
+			}
+			
+			/**
+			 *  Player init event handler
+			 */
+			protected function onLoaderInit(event:Event):void {
+				// Set the YouTube Player listeners
+				// More info: http://code.google.com/apis/youtube/flash_api_reference.html#Events
+				var content:* = (this.loader.content) ? this.loader.content : event.target.content;
+				content.addEventListener("onReady", onPlayerReady);
+				content.addEventListener("onError", onPlayerError);
+				content.addEventListener("onStateChange", onPlayerStateChange);
+			}
+			
+			/**
+			 * On Player Ready
+			 * This event is fired when the player is loaded and initialized, meaning it is ready to receive API calls.
+			 */
+			protected function onPlayerReady(event:Event):void {
+				var timer1:Timer = new Timer(250);
+				timer1.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						try {
+							if (_this.stage) {
+								try {
+									player.setSize(_this.stage.stageWidth, _this.stage.stageHeight - FlexGlobals.topLevelApplication.actionBar.height );
+								} catch (err:Error) {
+									try {
+										player.width = _this.stage.stageWidth;
+										player.height = _this.stage.stageHeight - FlexGlobals.topLevelApplication.actionBar.height;
+									} catch (err:Error) {}
+								}
+								timer1.stop();
+							}
+						} catch(err:Error) {}
+					}
+				);
+				timer1.start();
+				
+				// Display the YouTubePlayer into an SWFLoader
+				swfLoader = new SWFLoader(); 
+				swfLoader.autoLoad = true;
+				swfLoader.setStyle("backgroundColor", 0x333333)
+				swfLoader.scaleContent = true;
+				swfLoader.maintainAspectRatio = true;
+				addElement(swfLoader)				
+				swfLoader.load(player);
+				
+				// Play the Video
+				// The property 'data' contains the video ID passed  
+				// from the HomeView (i.e. "LDfM5c0ZKOw")
+				var timer2:Timer = new Timer(250);
+				timer2.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						try {
+							if (loader.content) {
+								player = loader.content;
+								if (_this.__videoID__) {
+									timer2.stop();
+									playVideo(_this.__videoID__);
+								}
+							}
+						} catch(err:Error) {}
+					}
+				);
+				timer2.start();
+			}
+			
+			/**
+			 * Video Player Stage Change
+			 * This event is fired whenever the player's state changes. 
+			 * Possible values are unstarted (-1), ended (0), playing (1),
+			 * paused (2), buffering (3), video cued (5). 
+			 * When the SWF is first loaded it will broadcast an unstarted (-1) event. 
+			 * When the video is cued and ready to play it will broadcast a video cued event (5).
+			 */
+			protected function onPlayerStateChange(event:Event):void {
+				trace("Player state changed:", Object(event).data);
+				
+				switch (Object(event).data) {
+					// STOP
+					case -1:
+						// do nothing
+						break;
+					
+					// end
+					case 0:
+						// do nothing
+						break;
+					
+					// play
+					case 1:
+						// do nothing
+						break;
+					
+					// PAUSED
+					case 2:
+						// do nothing
+						break;
+					
+					// BUFFERING
+					case 3:
+						// do nothing
+						break;
+				}
+			}
+			
+			/**
+			 * Video Player Error event handler
+			 * This event is fired when an error in the player occurs.
+			 */
+			protected function onPlayerError(event:Event):void {
+				trace("Player error:", Object(event).data);
+			}
+			
+			/**
+			 * Play Video
+			 * @param	videoID		The YouTube video ID to play
+			 */
+			public function playVideo(videoID:String) : void {
+				// Loads the specified video's thumbnail 
+				// and prepares the player to play the video
+				player.cueVideoById(videoID);
+				
+				// You can also use:
+				// loadVideoById
+				// cueVideoByUrl
+				
+				// More info: 
+				// http://code.google.com/apis/youtube/flash_api_reference.html#Functions
+			}
+			
+			/**
+			 * Dispose
+			 * Help garbage collector to remove everything from memory
+			 */
+			public function dispose():void {
+				try {
+					loader.contentLoaderInfo.removeEventListener(Event.INIT, onLoaderInit);
+					loader.content.removeEventListener("onReady", onPlayerReady);
+					loader.content.removeEventListener("onError", onPlayerError);
+					loader.content.removeEventListener("onStateChange", onPlayerStateChange);
+					
+					try {
+						player.stopVideo();
+						
+						// More info: http://code.google.com/apis/youtube/flash_api_reference.html#SpecialFunctions
+						player.destroy();
+					} catch (e:Error) { trace("error")}
+					
+					removeElement(swfLoader)
+					swfLoader = null;
+					player = null;
+					
+					loader.unload();
+					loader = null;
+				} catch (err:Error) {
+					trace(this.className+'.dispose().1 err='+err.toString()+'\n'+err.getStackTrace());
+				}
+			}
+			
+			/**
+			 * Back To Home
+			 */
+			private function deactivate():void {
+				dispose();
+				
+				// Enable the system to dropping into an idle mode.
+				NativeApplication.nativeApplication.systemIdleMode = SystemIdleMode.NORMAL;
+			}
+			
+			protected function vgroup1_initializeHandler(event:FlexEvent):void 	{
+				_this = this;
+				this.init();
+			}
+			
+		]]>
+	</fx:Script>
+</s:VGroup>

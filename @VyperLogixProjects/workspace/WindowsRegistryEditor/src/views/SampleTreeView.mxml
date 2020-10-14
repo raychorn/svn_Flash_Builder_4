@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				layout="absolute" width="100%" height="100%" showCloseButton="true" 
+				xmlns:renderers="controls.renderers.*" creationComplete="titlewindow1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import controls.launcher.NativeFileLauncher;
+			
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			private var __data__:Object = {};
+			
+			private var _launcherPopUp:NativeFileLauncher;
+
+			public static var _this:SampleTreeView;
+			
+			private var __utility__:String;
+			
+			public function get utility():String {
+				return this.__utility__;
+			}
+			
+			public function set utility(utility:String):void {
+				if (this.__utility__ == utility) {
+					this.__utility__ = utility;
+				}
+			}
+
+			protected function treeSample_itemClickHandler(event:ListEvent):void {
+			}
+
+			protected function treeSample_changeHandler(event:ListEvent):void {
+			}
+
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void {
+				this.__data__.label = 'root';
+				this.__data__.desc = 'item';
+				this.__data__.plural = 's';
+				var aChild:Object = {'label':'level1'};
+				this.__data__.children = [aChild];
+			}
+
+			protected function treeSample_creationCompleteHandler(event:FlexEvent):void {
+				Tree(event.currentTarget).dataProvider = this.__data__;
+			}
+
+			private function popUp_file_editor_for(fileName:String):void {
+				var _this:SampleTreeView = this;
+				this._launcherPopUp = PopUpManager.createPopUp(this, NativeFileLauncher, true) as NativeFileLauncher;
+				this._launcherPopUp.width = 700;
+				this._launcherPopUp.height = 170;
+				this._launcherPopUp.title = fileName;
+				this._launcherPopUp.dataProvider = fileName;
+				this._launcherPopUp.showCloseButton = true;
+				this._launcherPopUp.addEventListener(CloseEvent.CLOSE, 
+					function (event:CloseEvent):void {
+						PopUpManager.removePopUp(_this._launcherPopUp);
+						_this._launcherPopUp = null;
+					}
+				);
+				trace(this.className+'.popUp_file_editor_for().1 --> fileName='+fileName);
+				PopUpManager.centerPopUp(this._launcherPopUp);
+			}
+
+			protected function btn_launcher_clickHandler(event:MouseEvent):void {
+				this.popUp_file_editor_for(this.utility);
+			}
+
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup width="100%" height="100%">
+			<mx:Tree id="treeSample" labelField="label" showDataTips="true" dataTipField="tooltip" showRoot="true" width="100%" height="100%" itemRenderer="controls.renderers.CustomTreeItemRenderer" change="treeSample_changeHandler(event)" itemClick="treeSample_itemClickHandler(event)" creationComplete="treeSample_creationCompleteHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup width="100%" height="100%">
+			<s:Button id="btn_launcher" label="Launcher..." click="btn_launcher_clickHandler(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+</mx:TitleWindow>

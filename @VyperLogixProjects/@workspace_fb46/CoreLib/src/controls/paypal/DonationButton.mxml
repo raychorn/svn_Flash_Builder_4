@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="100%" height="100%" currentState="icon">
+	<s:states>
+		<mx:State name="icon"/>
+		<mx:State name="no_icon"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ObjectUtils;
+			import com.adobe.serialization.json.JSON;
+			import com.benstucki.utilities.IconUtility;
+			
+			import controls.paypal.events.DonationClickedEvent;
+
+			[Event(name="donationClicked", type="controls.paypal.events.DonationClickedEvent")]		
+
+			public var payment_url:String = 'https://www.paypal.com/cgi-bin/webscr';
+			public var button_url:String = 'https://www.paypalobjects.com/WEBSCR-640-20110401-1/en_US/i/btn/btn_donateCC_LG.gif';
+			
+			private var params:Object = {
+				cmd:'_s-xclick',
+				hosted_button_id:'NZDUV4RWSJBJG'
+			};
+			
+			private function navigate_to_paypal():void {
+				var datum:*;
+				var keys:Array;
+				var request:URLRequest = new URLRequest(this.payment_url); 
+				request.method = URLRequestMethod.POST;
+				var vars:URLVariables = new URLVariables();
+				for (var prop:String in this.params) {
+					datum = this.params[prop];
+					if ( (datum is String) && (datum.length > 0) ) {
+						keys = ObjectUtils.keys(datum);
+						if (keys.length == 0) {
+							vars[prop] = datum;
+						} else {
+							vars[prop] = com.adobe.serialization.json.JSON.encode(datum);
+						}
+					}
+				}
+				request.data = vars;
+				navigateToURL(request,'_blank'); 				
+			}
+			
+			private function get paypal_button_icon():Class {
+				return IconUtility.getClass(this.btn,this.button_url,this.btn.height,this.btn.height);
+			}
+
+			private function handle_btn_event():void {
+				this.navigate_to_paypal();
+				this.dispatchEvent(new DonationClickedEvent(DonationClickedEvent.TYPE_DONATION_CLICKED));
+			}
+			
+			protected function btn_clickHandler(event:MouseEvent):void {
+				this.handle_btn_event();
+			}
+
+
+			protected function btn_touchTapHandler(event:TouchEvent):void {
+				this.handle_btn_event();
+			}
+
+		]]>
+	</fx:Script>
+	<s:Button id="btn" icon.icon="{this.paypal_button_icon}" width="100%" height="100%" click="btn_clickHandler(event)" touchTap="btn_touchTapHandler(event)"/>
+</s:Group>

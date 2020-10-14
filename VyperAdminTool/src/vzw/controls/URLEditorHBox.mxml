@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox 
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="100%" styleName="URLEditorHBox"
+	xmlns:controls="vzw.controls.*">
+	<mx:states>
+		<mx:State name="loggedIn">
+		</mx:State>
+	</mx:states>
+	<mx:Script>
+		<![CDATA[
+			import vzw.utils.ObjectExplainer;
+			import vzw.menu.builder.MenuController;
+			import mx.collections.ArrayCollection;
+
+			[Bindable]
+			private var _dataProvider:Array = [];
+
+			[Bindable]
+			private var _combo_domain_dataProvider:ArrayCollection = new ArrayCollection();
+
+			[Bindable]
+			private var _onChangeCallback_combo_domain:Function = MenuController.dummy;
+
+			[Bindable]
+			private var _validate_valueCallback:Function = MenuController.dummy;
+
+			[Bindable]
+			private var _onChangeCallback_url_edit:Function = MenuController.dummy;
+
+			[Bindable]
+			private var _relax_validations:Boolean = true;
+
+			[Bindable]
+			public var categoryPosition:int;
+			
+			[Bindable]
+			public var itemPosition:int;
+
+			public function set dataProvider(dataProvider:Array):void {
+				if (this._dataProvider != dataProvider) {
+					this._dataProvider = dataProvider;
+					//trace(this.className+'.dataProvider() setter --> \n'+(new ObjectExplainer(dataProvider)).explainThisWay('\n'));
+				}
+			}
+			
+			public function get dataProvider():Array {
+				return (this._dataProvider) ? this._dataProvider : [];
+			}
+
+			public function set combo_domain_dataProvider(dataProvider:ArrayCollection):void {
+				if (this._combo_domain_dataProvider != dataProvider) {
+					//trace(this.className+'.combo_domain_dataProvider() !');
+					this._combo_domain_dataProvider = dataProvider;
+				}
+			}
+			
+			public function get combo_domain_dataProvider():ArrayCollection {
+				return (this._combo_domain_dataProvider) ? this._combo_domain_dataProvider : (new ArrayCollection());
+			}
+
+			public function set onChangeCallback_combo_domain(onChangeCallback_combo_domain:Function):void {
+				if (this._onChangeCallback_combo_domain != onChangeCallback_combo_domain) {
+					this._onChangeCallback_combo_domain = onChangeCallback_combo_domain;
+				}
+			}
+			
+			public function get onChangeCallback_combo_domain():Function {
+				return (this._onChangeCallback_combo_domain is Function) ? this._onChangeCallback_combo_domain : MenuController.dummy;
+			}
+			
+			private function onCallLater_rolesEditor():void {
+				//trace(this.className+'.onCallLater_rolesEditor().1 ### --> this._validate_valueCallback='+this._validate_valueCallback);
+				this.rolesEditor.onValidate_valueCallback = this._validate_valueCallback;
+			}
+			
+			public function set onValidate_valueCallback(onValidate_valueCallback:Function):void {
+				if (this._validate_valueCallback != onValidate_valueCallback) {
+					//trace(this.className+'.onValidate_valueCallback().1 ### --> onValidate_valueCallback='+onValidate_valueCallback);
+					this._validate_valueCallback = onValidate_valueCallback;
+				}
+			}
+			
+			public function get onValidate_valueCallback():Function {
+				return (this._validate_valueCallback is Function) ? this._validate_valueCallback : MenuController.dummy;
+			}
+			
+			public function set onChangeCallback_url_edit(onChangeCallback_url_edit:Function):void {
+				if (this._onChangeCallback_url_edit != onChangeCallback_url_edit) {
+					var isDummyFunction:Boolean = MenuController.isDummyFunction(this._onChangeCallback_url_edit);
+					//trace(this.className+'.onChangeCallback_url_edit().1 ### --> isDummyFunction='+isDummyFunction);
+					this._onChangeCallback_url_edit = onChangeCallback_url_edit;
+				}
+			}
+			
+			public function get onChangeCallback_url_edit():Function {
+				return (this._onChangeCallback_url_edit is Function) ? this._onChangeCallback_url_edit : MenuController.dummy;
+			}
+			
+			public function set relax_validations(relax_validations:Boolean):void {
+				if (this._relax_validations != relax_validations) {
+					this._relax_validations = relax_validations;
+				}
+			}
+			
+			public function get relax_validations():Boolean {
+				return (this._relax_validations is Boolean) ? this._relax_validations : false;
+			}
+			
+			public function get asObject():Object {
+				var sources:Array = [
+										this.rolesEditor,
+										this.options
+									];
+				var obj:Object = {};
+				var aSource:*;
+				for (var i:String in sources) {
+					aSource = sources[i];
+					obj[aSource.id] = aSource.asObject;
+				}
+				return obj;
+			}
+
+			private function dataProvider_for(name:String):* {
+				var value:* = ( (this._dataProvider is Array) && (this._dataProvider.length > 0) ) ? this._dataProvider[0][name] : null;
+				//trace(this.className+'.dataProvider_for('+name+') --> '+(new ObjectExplainer(value)).explainThisWay()+'\n');
+				return value;
+			}
+			
+			private function onCreationComplete_rolesEditor():void {
+				var isDummyFunction:Boolean = MenuController.isDummyFunction(this._validate_valueCallback);
+				//trace(this.className+'.onCreationComplete_rolesEditor().1 ### --> isDummyFunction='+isDummyFunction);
+				this.rolesEditor.onValidate_valueCallback = this._validate_valueCallback;
+				var value:* = {};
+				try {
+					value = this.dataProvider_for('rolesEditor');
+				}  catch (err:Error) {}
+				this.rolesEditor.dataProvider = value;
+				this.rolesEditor.combo_domain_dataProvider = this._combo_domain_dataProvider;
+			}
+			
+			private function onCreationComplete_options():void {
+				var value:* = {};
+				try {
+					value = this.dataProvider_for('options');
+				}  catch (err:Error) {}
+				this.options.dataProvider = value;
+			}
+		]]>
+	</mx:Script>
+	<mx:Spacer width="5"/>
+	<mx:VBox id="vbox1" width="100%">
+		<controls:RolesEditor id="rolesEditor" categoryPosition="{this.categoryPosition}" itemPosition="{this.itemPosition}" onChangeCallback_combo_domain="{this._onChangeCallback_combo_domain}" onValidate_valueCallback="{this._validate_valueCallback}" onChangeCallback_url_edit="{this._onChangeCallback_url_edit}" relax_validations="{this._relax_validations}" creationComplete="onCreationComplete_rolesEditor()"/>
+		<controls:AdminOptionsHBox id="options" currentState="{this.currentState}" creationComplete="onCreationComplete_options()"/>
+	</mx:VBox>
+</mx:HBox>

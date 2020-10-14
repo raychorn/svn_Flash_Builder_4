@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group 
+	width="400" height="300"
+	xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:mx="library://ns.adobe.com/flex/mx">
+
+	<!-- background -->
+	<s:Rect 
+		left="100" right="0" top="0" bottom="0"
+		radiusX="5"
+		radiusY="5">
+		<s:fill>
+			<s:SolidColor color="0xCCCCCC"/>
+		</s:fill>
+	</s:Rect>
+
+	<!-- arrow -->
+	<s:Path verticalCenter="0" data="M 0 50 L 0 100 L 100 100 Z">
+		<s:fill>
+			<s:SolidColor color="0x000000"/>
+		</s:fill>
+	</s:Path>
+
+</s:Group>

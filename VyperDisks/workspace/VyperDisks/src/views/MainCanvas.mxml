@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   width="100%" height="100%" styleName="MainCanvas" minWidth="1024" minHeight="768" 
+		   xmlns:controls="controls.*" currentState="html"
+		   xmlns:views="views.*" 
+		   horizontalScrollPolicy="off"
+		   creationComplete="canvas1_creationCompleteHandler(event)" 
+		   resize="canvas1_resizeHandler(event)">
+	<mx:states>
+		<s:State name="State1"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace controls "controls.*";
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel.ttf");
+			fontFamily: NeoSansIntel;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Light.ttf");
+			fontFamily: NeoSansIntelLight;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium2;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/CALIBRI.TTF");
+			fontFamily: Calibri;
+			embedAsCFF: false;
+		}
+		
+		.build_number {
+			color: #ff0000;
+			fontFamily: NeoSansIntelMedium;
+			fontSize: 16;
+			backgroundColor: #474747;
+		}
+		
+		.MainCanvas {
+			backgroundColor: #474747;
+		}
+		
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import mx.effects.Move;
+			import mx.effects.Resize;
+			import mx.events.EffectEvent;
+			import mx.events.ResizeEvent;
+			import mx.events.FlexEvent;
+
+			protected function canvas1_resizeHandler(event:ResizeEvent):void {
+			}
+
+			protected function canvas1_creationCompleteHandler(event:FlexEvent):void {
+			}
+			
+			private function get screen_dimensions_label_text():String {
+				return (Screen.mainScreen.bounds.width-50)+'x'+(Screen.mainScreen.bounds.height-5);
+			}
+			
+			protected function btn_resize_clickHandler(event:MouseEvent):void {
+				var _this:* = this;
+				var w:Number;
+				var h:Number;
+				var btn:Button = event.currentTarget as Button;
+				var toks:Array = btn.id.split('_');
+				if (toks[toks.length-1] == '0000') {
+					w = Screen.mainScreen.bounds.width;
+					h = Screen.mainScreen.bounds.height;
+				} else {
+					toks = toks[toks.length-1].split('x');
+					w = Number(toks[0]);
+					h = Number(toks[toks.length-1]);
+				}
+				
+				var resize:Resize = new Resize(this.parentApplication);
+				resize.duration = 1000;
+				resize.widthFrom = this.parentApplication.width;
+				resize.widthTo = w;
+				resize.heightFrom = this.parentApplication.height;
+				resize.heightTo = h;
+				resize.addEventListener(EffectEvent.EFFECT_END, function (event:*):void {
+					_this.parentApplication.nativeWindow.x = 0;
+					_this.parentApplication.nativeWindow.y = 0;
+				});
+				resize.play();
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox styleName="main_vbox" width="100%" height="100%">
+	</mx:VBox>
+	<mx:Canvas id="debugger" x="{this.parentApplication.width - this.debugger.width-5}" y="0" width="650" borderStyle="solid" borderColor="#000000" backgroundColor="#00ffff" backgroundAlpha="0.5" toolTip="This panel will be removed before going to final Production." visible="{this.parentApplication.is_debugging}" includeInLayout="{this.parentApplication.is_debugging}">
+		<mx:HBox width="100%" horizontalAlign="left">
+			<mx:HBox backgroundColor="silver">
+				<mx:Label text="Build: {this.parentApplication.build_number}" color="#ff0000" fontFamily="NeoSansIntelMedium" fontSize="16" fontWeight="bold"/>
+			</mx:HBox>
+			<mx:Spacer width="5"/>
+			<mx:Label text="{this.parentApplication.width},{this.parentApplication.height}"/>
+			<mx:HBox>
+				<mx:Spacer width="5"/>
+				<mx:Button id="btn_800x600" label="800x600" click="btn_resize_clickHandler(event)" visible="false" includeInLayout="false"/>
+				<mx:Button id="btn_1024x768" label="1024x768" click="btn_resize_clickHandler(event)"/>
+				<mx:Button id="btn_1280x1024" label="1280x1024" click="btn_resize_clickHandler(event)"/>
+				<mx:Button id="btn_0000" label="Full {this.screen_dimensions_label_text}" click="btn_resize_clickHandler(event)"/>
+			</mx:HBox>
+		</mx:HBox>
+	</mx:Canvas>
+</mx:Canvas>

@@ -1,0 +1,502 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   width="100%" height="100%" 
+		   xmlns:nativeApplicationUpdater="com.riaspace.nativeApplicationUpdater.*" 
+		   initialize="onInit(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<nativeApplicationUpdater:NativeApplicationUpdater
+		   id="updater"
+		   updateURL="{this.updater_url}"
+		   json_decoder="{com.adobe.serialization.json.JSON.decode}"
+		   isNewerVersionFunction="{isNewerFunction}"
+		   
+		   initialized="updater_initializedHandler(event)"
+		   updateStatus="updater_updateStatusHandler(event)"
+		   
+		   isOSWindows="{CapabilitiesUtils.isOSWindows}"
+		   isOSMac="{CapabilitiesUtils.isOSMac}"
+		   isOSLinux="{CapabilitiesUtils.isOSLinux}"
+		   
+		   error="updater_errorHandler(event)"
+		   downloadError="updater_errorHandler(event)"
+		   updateError="updater_errorHandler(event)"
+		   cannotPerformUpdate="updater_cannotPerformUpdateHandler(event)"
+		/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import air.update.events.DownloadErrorEvent;
+			import air.update.events.StatusUpdateEvent;
+			import air.update.events.UpdateEvent;
+			
+			import application.events.CannotPerformUpdateEvent;
+			import application.events.CompletedNativeApplicationUpdaterEvent;
+			import application.events.OnSysTrayMenuInitEvent;
+			import application.events.SplashCompletedEvent;
+			
+			import com.CapabilitiesUtils;
+			import com.DebuggerUtils;
+			import com.StringUtils;
+			import com.adobe.serialization.json.JSON;
+			import com.riaspace.nativeApplicationUpdater.events.CannotPerformUpdateEvent;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.splash.SplashMovie;
+			import controls.updater.UpdaterView;
+			
+			import flash.desktop.DockIcon;
+			import flash.desktop.NativeApplication;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.effects.Move;
+			import mx.effects.Resize;
+			import mx.events.CloseEvent;
+			import mx.events.EffectEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.components.TextArea;
+			
+			import utils.APIHelper;
+
+			public var open_application_callback:Function;
+			
+			public var mainScreen:Screen = Screen.mainScreen;
+			public var screenBounds:Rectangle = mainScreen.bounds;
+			
+			private var _this:application.NativeApplicationUpdater;
+
+			private var updaterPopUp:UpdaterView;
+			
+			private var dock:DockIcon;
+			public var systray:SystemTrayIcon;
+
+			private var creditsCommand:NativeMenuItem = new NativeMenuItem("Credits");
+			private var exitCommand:NativeMenuItem = new NativeMenuItem("Exit");
+			
+			public function get splashPopUp():* {
+				var splashPopUp:*;
+				try {splashPopUp = this.parentApplication['splashPopUp'];} 
+					catch (err:Error) {trace(DebuggerUtils.getFunctionName(err)+'.1 --> Is there supposed to be a splashPopUp ?');}
+				return splashPopUp;
+			}
+			
+			public function set splashPopUp(splashPopUp:*):void {
+				if (this.splashPopUp != splashPopUp) {
+					try {this.parentApplication['splashPopUp'] = splashPopUp;} 
+					catch (err:Error) {trace(DebuggerUtils.getFunctionName(err)+'.1 --> Is there supposed to be a splashPopUp ?');}
+				}
+			}
+			
+			// BEGIN - Auto-Updater Code...
+			[Bindable]
+			protected var downloading:Boolean = false;
+			
+			[Bindable]
+			public var no_choice:Boolean = false;
+			
+			private var is_application_already_open:Boolean = false;
+			
+			public var update_interval_ms:Number = 1000; // * 60 * 60 * 24;
+			
+			protected function isNewerFunction(currentVersion:String, updateVersion:String):Boolean {
+				var c_num:Number = StringUtils.version_as_number(currentVersion);
+				var u_num:Number = StringUtils.version_as_number(updateVersion);
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> c_num='+c_num+', u_num='+u_num);
+				return c_num < u_num;
+			}
+			
+			protected function updater_errorHandler(event:ErrorEvent):void {
+				//AlertPopUp.surpriseNoOkay(event.text,'Auto-Updater Warning');
+			}
+			
+			public function get updater_url():String {
+				return this.parentApplication.domain+APIHelper.updater_endpoint;
+			}
+			
+			protected function updater_initializedHandler(event:UpdateEvent):void {
+				// When Updater is initialized you can call checkNow function
+				this.updater.checkNow();
+			}
+			
+			private function remove_updater_popUp():void {
+				if (this.updaterPopUp) {
+					PopUpManager.removePopUp(this.updaterPopUp);
+					this.updaterPopUp = null;
+				}
+			}
+			
+			protected function updater_updateStatusHandler(event:StatusUpdateEvent):void {
+				if (event.available) {
+					event.preventDefault();
+					trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> currentState='+this.currentState);
+					this.updaterPopUp = PopUpManager.createPopUp(this.splashPopUp, UpdaterView, true) as UpdaterView;
+					this.updaterPopUp.width = this.width - 20;
+					this.updaterPopUp.height = this.height - 20;
+					this.updaterPopUp.title = 'Updating to version ' + this.updater.updateVersion;
+					this.updaterPopUp.updateVersion = this.updater.updateVersion;
+					this.updaterPopUp.prgBar.source = this.updater;
+					this.updaterPopUp.prgBar.visible = this.updaterPopUp.prgBar.includeInLayout = this.downloading;
+					this.updaterPopUp.logo.source = FlexGlobals.topLevelApplication.appProxy.splashLogoAnimationCls;
+					this.updaterPopUp.includeInLayout = true;
+					this.updaterPopUp.no_choice = this.no_choice;
+					this.updaterPopUp.details.addEventListener(FlexEvent.CREATION_COMPLETE, 
+						function (event:FlexEvent):void {
+							var details:TextArea = TextArea(event.currentTarget);
+							details.text = _this.updater.updateVersion;
+							details.text += '\n' + _this.updater.updateDescription;
+						}
+					);
+					this.updaterPopUp.btnNo.addEventListener(MouseEvent.CLICK, 
+						function (event:MouseEvent):void {
+							_this.remove_updater_popUp();
+							_this.btnNo_clickHandler(event);
+						}
+					);
+					this.updaterPopUp.btnYes.addEventListener(MouseEvent.CLICK, 
+						function (event:MouseEvent):void {
+							_this.btnYes_clickHandler(event);
+						}
+					);
+					PopUpManager.centerPopUp(this.updaterPopUp);
+					this.updater.addEventListener(UpdateEvent.BEFORE_INSTALL, 
+						function (event:UpdateEvent):void {
+							setTimeout(NativeApplication.nativeApplication.exit, 2000);
+						});
+				} else {
+					//AlertPopUp.infoNoOkay("Your application is up to date!",'INFO');
+					this.application_is_up_to_date();
+				}
+			}
+			
+			protected function btnYes_clickHandler(event:MouseEvent):void {
+				this.downloading = true;
+				this.updaterPopUp.prgBar.visible = this.updaterPopUp.prgBar.includeInLayout = this.downloading;
+				this.updaterPopUp.hbox_buttons.visible = this.updaterPopUp.hbox_buttons.includeInLayout = false;
+				this.updater.addEventListener(DownloadErrorEvent.DOWNLOAD_ERROR, updater_downloadErrorHandler);
+				this.updater.addEventListener(UpdateEvent.DOWNLOAD_COMPLETE, updater_downloadCompleteHandler);
+				if (NativeProcess.isSupported) {
+					this.updater.downloadUpdate();
+				} else {
+					this.confirm_manual_updater();
+				}
+			}
+			
+			private function application_is_up_to_date():void {
+				if (this.open_application_callback is Function) {
+					try {
+						this.open_application_callback();
+					} catch (err:Error) {
+						trace(DebuggerUtils.getFunctionName(err)+'.1 --> ERROR='+err.toString()+'\n'+err.getStackTrace());
+					}
+				}
+				this.remove_updater_popUp();
+				this.dispatchEvent(new CompletedNativeApplicationUpdaterEvent(CompletedNativeApplicationUpdaterEvent.TYPE_COMPLETED_NATIVE_APPLICATION_UPDATER));
+			}
+			
+			protected function btnNo_clickHandler(event:MouseEvent):void {
+				this.dispatchEvent(new application.events.CannotPerformUpdateEvent(application.events.CannotPerformUpdateEvent.TYPE_CANNOT_PERFORM_UPDATE));
+			}
+			
+			private function updater_downloadCompleteHandler(event:UpdateEvent):void {
+				// When update is downloaded install it.
+				this.updater.installUpdate();
+			}
+			
+			private function updater_downloadErrorHandler(event:DownloadErrorEvent):void {
+				//AlertPopUp.surpriseNoOkay("Error downloading update file, try again later.", 'Auto-Updater Warning');
+			}
+			
+			public function get ms_since_last_update_check():Number {
+				var ms:Number = 0;
+				var today:Date = new Date();
+				var last_update_check:Date = FlexGlobals.topLevelApplication.appProxy.mySO.data.__last_update_check;
+				if (last_update_check is Date) {
+					ms = today.milliseconds - last_update_check.milliseconds;
+				} else {
+					ms = this.update_interval_ms+1;
+					FlexGlobals.topLevelApplication.appProxy.mySO.data.__last_update_check = today;
+					FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+				}
+				return ms;
+			}
+
+			protected function updater_cannotPerformUpdateHandler(event:com.riaspace.nativeApplicationUpdater.events.CannotPerformUpdateEvent):void {
+				this.remove_updater_popUp();
+				/*
+				AlertPopUp.surpriseConfirm('Unable to perform the installation because... '+event.error.toString(),'WARNING', 
+				function (event:CloseEvent):void {
+				_this.dispatchEvent(new application.events.CannotPerformUpdateEvent(application.events.CannotPerformUpdateEvent.TYPE_CANNOT_PERFORM_UPDATE));
+				});
+				*/
+			}
+			
+			private function confirm_manual_updater():void {
+				this.remove_updater_popUp();
+				/*
+				AlertPopUp.surpriseConfirm('An update is available however you must install it from the web.\nDownload and install the Enterprise Version to get automated updates.\nClick Yes to exit the application and browse to the updated website othersie click No to continue using this out-dated version of the application.','WARNING', 
+				function (event:CloseEvent):void {
+				if ( (event.detail == Alert.OK) || (event.detail == Alert.YES) ) {
+				navigateToURL(new URLRequest(FlexGlobals.topLevelApplication.insecure_public_domain),"_blank");
+				setTimeout(FlexGlobals.topLevelApplication.closeApplicaton,2000);
+				} else {
+				_this.dispatchEvent(new application.events.CannotPerformUpdateEvent(application.events.CannotPerformUpdateEvent.TYPE_CANNOT_PERFORM_UPDATE));
+				}
+				}
+				);
+				*/
+			}
+			
+			// END  - Auto-Updater Code...
+
+			public function do_updater():void {
+				this.updater.updateURL = this.updater_url;
+				this.updater.initialize();
+			}
+			
+			private function closeApp(e:Event):void {
+				this.closeApplicaton();
+			}
+			
+			public function _closeApplicaton():void {
+			}
+			
+			public function closeApplicaton():void {
+				this._closeApplicaton();
+				this.parent['isLoggedIn'] = false;
+				NativeApplication.nativeApplication.exit();
+			}
+			
+			public function applicationExit():void {
+				var exitingEvent:Event = new Event(Event.EXITING, false, true);
+				if (!exitingEvent.isDefaultPrevented()) {
+					this.closeApplicaton();
+				}
+				NativeApplication.nativeApplication.dispatchEvent(exitingEvent);
+			}
+			
+			private function iconLoadComplete(e:Event):void {
+				NativeApplication.nativeApplication.icon.bitmaps=[e.target.content.bitmapData];
+			}
+			
+			private function undock(e:Event):void {
+				this.stage.nativeWindow.restore();
+			}
+			
+			private function createIconMenu(_sysTray:Boolean):NativeMenu {
+				var _this:* = this;
+				var iconMenu:NativeMenu = new NativeMenu();
+				var copyrightCommand:NativeMenuItem;
+				var _copyrightMessage:String;
+				trace(this.className+'.createIconMenu().1 Checking for _copyrightMessage #1 !!!');
+				try {_copyrightMessage = FlexGlobals.topLevelApplication.AppNameSpace._copyrightMessage;} catch (err:Error) {}
+				if (_copyrightMessage is String) {
+					copyrightCommand = new NativeMenuItem(_copyrightMessage);
+					/*
+					copyrightCommand.addEventListener(Event.SELECT, 
+						function (event:*):void {
+							AlertPopUp.infoNoOkay('(c). Copyright, Vyper Logix Corp., All Rights Reserved...\nhttp://www.VyperLogixCorp.Com',_copyrightMessage);
+						}
+					);
+					*/
+					iconMenu.addItem(copyrightCommand);
+				} else {
+					//AlertPopUp.surpriseNoOkay('1. Missing the "_copyrightMessage" from the Top-Level Application Class.','WARNING');
+					return iconMenu;
+				}
+				iconMenu.addItem(new NativeMenuItem("", true));
+				//iconMenu.addItem(this.creditsCommand);
+				this.creditsCommand.addEventListener(Event.SELECT, function (event:Event):void {
+					//AlertPopUp.infoNoOkay(_this._creditsMessage,'Credits');
+				});
+				if (_sysTray) {
+					//iconMenu.addItem(new NativeMenuItem("", true));
+					//iconMenu.addItem(this.exitCommand);
+					//this.exitCommand.addEventListener(Event.SELECT, this.closeApp);
+				}
+				return iconMenu;
+			}
+			
+			private function trayIcon(_sysTray:Boolean, _dock:Boolean):void {
+				if (_sysTray) {
+					FlexGlobals.topLevelApplication.icon.contentLoaderInfo.addEventListener(Event.COMPLETE, this.iconLoadComplete);
+					var app_icon_url:String;
+					try {app_icon_url = FlexGlobals.topLevelApplication['app_icon_url'];} catch (err:Error) {}
+					if (app_icon_url is String) {
+						FlexGlobals.topLevelApplication.icon.load(new URLRequest(app_icon_url));
+					} else {
+						//AlertPopUp.surpriseNoOkay('Missing the "app_icon_url" from the Top-Level Application Class.','WARNING');
+						return;
+					}
+					this.systray=NativeApplication.nativeApplication.icon as SystemTrayIcon;
+					var _copyrightMessage:String;
+					trace(this.className+'.trayIcon().1 Checking for _copyrightMessage #2 !!!');
+					try {_copyrightMessage = FlexGlobals.topLevelApplication.AppNameSpace._copyrightMessage;} catch (err:Error) {}
+					if (_copyrightMessage is String) {
+						this.systray.tooltip=_copyrightMessage;
+					} else {
+						//AlertPopUp.surpriseNoOkay('2. Missing the "_copyrightMessage" from the Top-Level Application Class.','WARNING');
+						return;
+					}
+					this.systray.menu=this.createIconMenu(_sysTray);
+					this.dispatchEvent(new application.events.OnSysTrayMenuInitEvent(application.events.OnSysTrayMenuInitEvent.TYPE_ON_SYSTRAY_MENU_INIT,this.systray.menu));
+				}
+				if (_dock) {
+					FlexGlobals.topLevelApplication.icon.contentLoaderInfo.addEventListener(Event.COMPLETE, this.iconLoadComplete);
+					var app_icon128_url:String;
+					try {app_icon128_url = FlexGlobals.topLevelApplication['app_icon128_url'];} catch (err:Error) {}
+					if (app_icon_url is String) {
+						FlexGlobals.topLevelApplication.icon.load(new URLRequest(app_icon128_url));
+					} else {
+						//AlertPopUp.surpriseNoOkay('Missing the "app_icon128_url" from the Top-Level Application Class.','WARNING');
+					}
+					NativeApplication.nativeApplication.addEventListener(InvokeEvent.INVOKE, undock);
+					this.dock=NativeApplication.nativeApplication.icon as DockIcon;
+					this.dock.menu=this.createIconMenu(_sysTray);
+				}
+			}
+			
+			public function init_trayIcon():void {
+				var supportsSystemTrayIcon:Boolean = NativeApplication.supportsSystemTrayIcon;
+				var supportsDockIcon:Boolean = NativeApplication.supportsDockIcon;
+				this.trayIcon(supportsSystemTrayIcon, supportsDockIcon);
+			}
+			
+			public function popUpSplashMovie():void {
+				if (0) {
+					this.splashPopUp = PopUpManager.createPopUp(this, SplashMovie, true) as SplashMovie;
+					this.splashPopUp.x = 0;
+					this.splashPopUp.y = 0;
+					this.splashPopUp.styleName = 'splash_movie_canvas';
+					this.splashPopUp.width = FlexGlobals.topLevelApplication.nativeWindow.width;
+					this.splashPopUp.height = FlexGlobals.topLevelApplication.nativeWindow.height;
+				}
+			}
+			
+			public function resize_stage():void {
+				var _this:application.NativeApplicationUpdater = this;
+				var resize:Resize = new Resize(this);
+				var move:Move = new Move(this);
+
+				this.mainScreen = Screen.mainScreen;
+				this.screenBounds = this.mainScreen.bounds;
+				
+				resize.widthFrom = this.parentApplication.nativeWindow.width;
+				resize.widthTo = this.screenBounds.width - 100;
+				resize.heightFrom = this.parentApplication.nativeWindow.height;
+				resize.heightTo = this.screenBounds.height - 100;
+				resize.addEventListener(EffectEvent.EFFECT_END, function (event:*):void {
+					_this.parentApplication.nativeWindow.width = resize.widthTo;
+					_this.parentApplication.nativeWindow.height = resize.heightTo;
+				});
+				resize.duration = 1000;
+				
+				move.xFrom = this.parentApplication.nativeWindow.x;
+				move.xTo = 50;
+				move.yFrom = this.parentApplication.nativeWindow.y;
+				move.yTo = 50;
+				move.addEventListener(EffectEvent.EFFECT_END, function (event:*):void {
+					_this.parentApplication.nativeWindow.x = move.xTo;
+					_this.parentApplication.nativeWindow.y = move.yTo;
+				});
+				move.duration = 1000;
+				
+				resize.play();
+				move.play();
+			}
+			
+			public function open_application():void {
+				var _this:application.NativeApplicationUpdater = this;
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> this.splashPopUp='+this.splashPopUp);
+				try {
+					if (!this.splashPopUp) {
+						this.init_trayIcon();
+						
+						this.parentApplication._icon.addEventListener(Event.COMPLETE,function():void {
+							NativeApplication.nativeApplication.icon.bitmaps = _this.parentApplication._icon.bitmaps;
+						});
+						this.parentApplication._icon.loadImages();
+						
+						this.parentApplication.nativeWindow.width = Capabilities.screenResolutionX - 100;
+						this.parentApplication.nativeWindow.height = Capabilities.screenResolutionY - 100;
+						this.parentApplication.nativeWindow.x = (Capabilities.screenResolutionX - this.parentApplication.nativeWindow.width) / 2;
+						this.parentApplication.nativeWindow.y = (Capabilities.screenResolutionY - this.parentApplication.nativeWindow.height) / 2;
+						
+						//this.popUpSplashMovie();
+						
+						//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 --> this.splashPopUp.width='+this.splashPopUp.width+', this.splashPopUp.height='+this.splashPopUp.height);
+						
+						this.addEventListener(SplashCompletedEvent.TYPE_SPLASH_COMPLETED, function (event:SplashCompletedEvent):void {
+							_this.remove_updater_popUp();
+							_this.resize_stage();
+						});
+						FlexGlobals.topLevelApplication.nativeWindow.minSize = new Point(1024,768);
+						FlexGlobals.topLevelApplication.nativeWindow.stage.addEventListener(FullScreenEvent.FULL_SCREEN,
+							function(event:FullScreenEvent):void {
+								trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.3 --> width='+FlexGlobals.topLevelApplication.nativeWindow.width+', height='+FlexGlobals.topLevelApplication.nativeWindow.height);
+								if (_this.splashPopUp) {
+									_this.splashPopUp.width = FlexGlobals.topLevelApplication.nativeWindow.width;
+									_this.splashPopUp.height = FlexGlobals.topLevelApplication.nativeWindow.height;
+								}
+								FlexGlobals.topLevelApplication.appProxy.mySO.data.isFullScreen = event.fullScreen;
+								FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+								if (_this.splashPopUp) {
+									_this.splashPopUp.menuBar.errorString = (event.fullScreen) ? '(Hint: Hit the ESCape key to escape from Full Screen mode.)' : '';
+								}
+								trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.3a --> FlexGlobals.topLevelApplication.nativeWindow.stage.displayState='+FlexGlobals.topLevelApplication.nativeWindow.stage.displayState+', StageDisplayState.FULL_SCREEN='+StageDisplayState.FULL_SCREEN+', StageDisplayState.NORMAL='+StageDisplayState.NORMAL);
+							}
+						);
+						FlexGlobals.topLevelApplication.nativeWindow.addEventListener(NativeWindowBoundsEvent.RESIZE, 
+							function(event:NativeWindowBoundsEvent):void {
+								trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.4 --> width='+FlexGlobals.topLevelApplication.nativeWindow.width+', height='+FlexGlobals.topLevelApplication.nativeWindow.height);
+								if (_this.splashPopUp) {
+									_this.splashPopUp.width = FlexGlobals.topLevelApplication.nativeWindow.width;
+									_this.splashPopUp.height = FlexGlobals.topLevelApplication.nativeWindow.height;
+								}
+							}
+						);
+						var isFullScreen:Boolean = true;
+						if (FlexGlobals.topLevelApplication.appProxy.mySO is SharedObject) {
+							isFullScreen = (FlexGlobals.topLevelApplication.appProxy.mySO.data.isFullScreen is Boolean) ? FlexGlobals.topLevelApplication.appProxy.mySO.data.isFullScreen : isFullScreen;
+						}
+						if (isFullScreen) {
+							FlexGlobals.topLevelApplication.nativeWindow.stage.displayState = StageDisplayState.FULL_SCREEN_INTERACTIVE;
+						}
+						this.is_application_already_open = true;
+					}
+				} catch (err:Error) {
+					trace(this.className+'.'+DebuggerUtils.getFunctionName(err)+' --> '+err.toString()+'\n'+err.getStackTrace());
+					//var popUp:* = AlertPopUp.surpriseNoOkay(err.toString()+'\n'+err.getStackTrace().substr(0,1024),'ERROR in '+this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.');
+					//popUp.width = 700;
+					//popUp.height = 500;
+				}
+			}
+			
+			public function _onCreationComplete_appProxy():void {
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				//this.open_application_callback = this.open_application;
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 --> this.ms_since_last_update_check='+this.ms_since_last_update_check+', this.update_interval_ms='+this.update_interval_ms);
+				var isUpdateAvailable:Boolean = (this.ms_since_last_update_check >= this.update_interval_ms);
+				if ( (NativeProcess.isSupported) && (isUpdateAvailable) ) {
+					this.do_updater();
+				} else {
+					if (isUpdateAvailable) {
+						this.confirm_manual_updater();
+					} else {
+						this.open_application();
+						this.application_is_up_to_date();
+					}
+				}
+			}
+			
+			protected function onInit(event:FlexEvent):void {
+				_this = this;
+			}
+			
+		]]>
+	</fx:Script>
+</mx:Canvas>

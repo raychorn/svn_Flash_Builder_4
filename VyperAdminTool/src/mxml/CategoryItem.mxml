@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" 
+	verticalScrollPolicy="off" horizontalScrollPolicy="off"
+	width="{categoryWidth}" height="100%" creationComplete="init()" 
+	mouseEnabled="false" borderStyle="solid" cornerRadius="1" alpha="1.0">
+	
+	<mx:Canvas id="imgBackground" mouseEnabled="false" verticalScrollPolicy="off" horizontalScrollPolicy="off" width="{categoryWidth}" height="100%" alpha="1"> </mx:Canvas>
+	<mx:Canvas id="imgHighlight" mouseEnabled="false" verticalScrollPolicy="off" horizontalScrollPolicy="off" width="{categoryWidth}" height="100%" alpha="{_currentAlpha}"> </mx:Canvas>
+	<mx:Canvas id="container" mouseChildren="false" width="{categoryWidth}" height="35" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		<mx:VBox id="labelContainer" width="100%" height="100%" mouseEnabled="false" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+			<mx:Label id="category_label" width="100%" height="100%" htmlText="{htmlText}" mouseEnabled="false" styleName="CategoryItemLabel"></mx:Label>
+		</mx:VBox>
+	</mx:Canvas>
+	
+	<mx:Canvas id="categoryWrapper" mouseChildren="false" buttonMode="true" 
+		useHandCursor="true" backgroundColor="#00FF00" backgroundAlpha="0.0" 
+		verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+		width="{categoryWidth}" height="100%" alpha="0"> </mx:Canvas>
+	
+	<mx:Canvas id="adminIcon">
+	</mx:Canvas>
+	
+	<mx:Script>
+		<![CDATA[
+			import utils.displayObject.RotateGraphics;
+			import libs.utils.ErrorMessages;
+			import mx.controls.Image;
+			import utils.displayObject.DuplicateImage;
+			import utils.displayObject.LoopIterator;
+			import libs.vo.GlobalsVO;
+			import utils.strings.Strings;
+			import utils.graphics.SnapshotDisplayObject;		// To take a graphic snapshot of the new menu container
+			
+			public var categoryPosition:int=-1;		// Selected Category
+			public var target:String;				// Data Model click target type
+			public var url:String;
+			
+			
+			[Bindable]
+			public var categoryWidth:Number = 0;	// Category Item width
+
+			[Bindable]
+			public var _categoryWidth:Number = 0;	// Category Item width override. Used by Admin Tool.
+			
+			[Bindable]
+			public var htmlText:String;				// Category Item Text
+			
+			[Bindable]
+			public var scaleContent:Boolean;		// Resize the graphic assets
+			
+			[Bindable]
+			public var maintainAspectRatio:Boolean;	// Resize the graphic assets
+			
+			[Bindable]
+			private var _currentAlpha:Number = 0;		// Mouse Over alpha effect
+			
+			[Bindable]
+			public var overRideSelect:Boolean = false;	// External Flash vars will tell this Category to stay highlighted
+			
+			public var currentData:Object;
+			
+			private var _iterator:LoopIterator;		// Fade Effect
+			
+			[Bindable]
+			private var _reflectionAlpha:Number = 0;			
+			
+			public var menuItems:Array;
+			public var menuToolTip:String;
+
+			private const P1:String = "image_categoryItemMouseOutAsset";		// Background asset
+			private const P2:String = "image_categoryItemMouseOverAsset";		// Highlight asset
+			private const P3:String = "categoryItemWidth";
+			private const P4:String = "categoryFadeStart";
+			private const P5:String = "categoryFadeEnd";
+			private const P6:String = "categoryFadeInSpeed";
+			private const P7:String = "categoryFadeInStep";
+			private const P8:String = "categoryFadeOutSpeed";
+			private const P9:String = "categoryFadeOutStep";
+			private const P10:String = "categoryItemScaleContent";
+			private const P11:String = "categoryItemMaintainAspectRatio";
+			
+			
+			private var isAdmin:Boolean = true;
+			private var _gCatAssets:Object = new Object();
+			
+			
+			
+			
+			
+			/* private function snapShot():void {
+				// Try to take a picture of the Category Text
+          		RotateGraphics.flipVertical(effectContainer.addChild(new SnapshotDisplayObject().takeSnapshot(container)));
+          		effectContainer.y += Number(GlobalsVO.getCSSProperty("categoryReflectionY"));
+          		//effectContainer.x += this._categoryWidth + this.adminIcon.width;
+			} */
+			
+			
+			
+			
+			/**
+			 * Initialize the cateogry to the
+			 * correct width that is defined in
+			 * the CSS
+			 */
+			 
+			public function init():void {
+				
+				if(categoryPosition==1) {
+					
+				}
+				
+				/* If the admin tool is used, 
+				 * then shift over the text field */
+				if(GlobalsVO.getGlobal("MenuController").isAdminTool) {
+					category_label.setStyle("paddingLeft",Number(GlobalsVO.getCSSProperty("categoryAdminShift")));
+				} 
+				//else {
+					//category_label.setStyle("paddingLeft",Number(GlobalsVO.getCSSProperty("categoryPadLeft")));
+				//}
+				if(GlobalsVO.ISLoggedOut) {
+					category_label.setStyle("paddingTop",Number(GlobalsVO.getCSSProperty("categoryPadTop")));
+					category_label.mouseEnabled = false;
+				} else {
+					category_label.visible = true;
+					category_label.setStyle("textAlign","center");
+				}
+				
+				
+				adminIcon.includeInLayout = false;
+				container.mouseEnabled = false;
+				
+				scaleContent = Strings.strToBool(GlobalsVO.getCSSProperty(P10));
+				maintainAspectRatio = Strings.strToBool(GlobalsVO.getCSSProperty(P11));
+				
+				_reflectionAlpha = Number(GlobalsVO.getCSSProperty("reflectAlpha"));
+				
+				// Fade Effect
+				_iterator = new LoopIterator();
+				
+				// Set the initial alpha state of category button
+				_currentAlpha = Number(GlobalsVO.getCSSProperty(P4));
+				
+				// The "categoryWidth" is defined in the CSS and GlobalsVO
+				categoryWidth = Number(GlobalsVO.getCSSProperty(P3+categoryPosition));
+				categoryWidth += this._categoryWidth;
+				
+				
+				// Load Background Image
+				var asset:Object;					// Asset Object
+				var img:Image;						// New image var
+				var errorFlag:int = 0;
+								// Error condition for graphic layers
+				//if(GlobalsVO.ISLoggedOut) {
+					// If Logout State
+					asset = DuplicateImage.validate(GlobalsVO.getGlobal("image_categoryItemMouseOutAsset"),this);
+				//} 
+//				else {
+//					if(overRideSelect) {
+//						// If pre-selected category
+//						asset = DuplicateImage.validate(GlobalsVO.getGlobal("categoryImages")[categoryPosition].button_2,this);
+//					} else {
+//						// If Login State
+//						try {
+//							asset = DuplicateImage.validate(GlobalsVO.getGlobal("categoryImages")[categoryPosition].button_0,this);
+//						} catch(e:Error) {
+//							asset = DuplicateImage.validate(null,this);
+//							new ErrorMessages(asset.image,asset.error);
+//						}
+//					}
+//				}
+				
+				// If Error
+				if(asset.error != null) {
+					img = DuplicateImage.copy(asset.image,scaleContent,maintainAspectRatio);
+					new ErrorMessages(img,asset.error);
+					errorFlag = 1; // Notify to paste on top most level
+					// Otherwise
+				} else {
+					// Catch missing graphic asset error message	
+					if(GlobalsVO.ISLoggedOut) {
+						img = DuplicateImage.copy(asset.image,scaleContent,maintainAspectRatio);
+						img.width = categoryWidth;
+					} else {
+						img = DuplicateImage.copy(asset.image,false,true);
+					}			
+				}
+				
+				imgBackground.addChild(img);
+				
+				
+				
+				
+				
+				// Load Highlight Image
+				//if(GlobalsVO.ISLoggedOut) {
+					// If Logout State
+					asset = DuplicateImage.validate(GlobalsVO.getGlobal("image_categoryItemMouseOverAsset"),this);
+//				} else {
+//					// If Login State
+//					try {
+//							asset = DuplicateImage.validate(GlobalsVO.getGlobal("categoryImages")[categoryPosition].button_1,this);
+//						} catch(e:Error) {
+//							asset = DuplicateImage.validate(null,this);
+//							new ErrorMessages(asset.image,asset.error);
+//						}
+//				}
+				
+				// If Error
+				if(asset.error != null) {
+					img = DuplicateImage.copy(asset.image,scaleContent,maintainAspectRatio);
+					new ErrorMessages(img,asset.error);
+					errorFlag = 1; // Notify to paste on top most level
+					// Otherwise
+				} else {
+					// Catch missing graphic asset error message	
+					//if(GlobalsVO.ISLoggedOut) {
+						img = DuplicateImage.copy(asset.image,scaleContent,maintainAspectRatio);
+						img.width = categoryWidth;
+					//} else {
+						
+						//trace("################################ 2");
+						//img = DuplicateImage.copy(asset.image,true,false);
+						//img.width = categoryWidth;
+					//}			
+				}
+				
+				imgHighlight.addChild(img);
+				
+				/* Move the top most graphic to the right
+				 * to expose the bottom graphic layer
+				 * to set the user know */
+				if(errorFlag == 1) img.x += 10;
+
+				/* To keep the highlight based
+				 * on the flashvars */
+				if(GlobalsVO.ISLoggedOut) {
+					if(overRideSelect) onMouseOver();
+				}
+				
+				/* if (GlobalsVO.ISLoggedOut == false) {
+					snapShot();
+				} */
+				
+				
+				if(GlobalsVO.DEVMODE) new ErrorMessages(this, url+" , "+target);
+			}
+			
+			
+			
+			
+			/**
+			 * Accessibility, get the current selected
+			 * instance from this class
+			 * @see Accessibility_Model:talk()
+			 */
+			 
+			public function getDataByAccessibility(instance:*):Object {
+				return {name:htmlText, value:url, target:target};
+			}	
+			
+			
+			
+			
+			
+			/**
+			 * If the user scrols the mouse over
+			 * this component, then fade in
+			 * @param e:Event - N/A
+			 * @return void
+			 */
+			
+			public function onMouseOver():void {
+				
+				
+				
+				_iterator.stop();
+      			_iterator.init({from:_currentAlpha,
+      						   _to:Number(GlobalsVO.getCSSProperty(P5)),
+      						   speed:int(GlobalsVO.getCSSProperty(P6)),
+      						   step:Number(GlobalsVO.getCSSProperty(P7))});
+
+      			_iterator.addEventListener(Event.CHANGE,onChange);
+				if (GlobalsVO.ISLoggedOut == false) {
+	      			_iterator.addEventListener(Event.COMPLETE,onComplete);
+				}
+      			_iterator.play();
+      			
+				if (!GlobalsVO.ISLoggedOut) {
+	      			category_label.setStyle("color","#FF0000");
+				}
+			}
+			
+
+			
+			/**
+			 * If the user selects a different category
+			 * Then call this method, to cause
+			 * the fade out effect.
+			 * @param e:Event - N/A
+			 * @return void
+			 * @see MenuController.as
+			 */
+			
+			public function onMouseOut():void {
+				// Stay Highlighted based on Flashvar parameters
+				if(GlobalsVO.ISLoggedOut) {
+					if(overRideSelect) return;
+				}
+				
+				_iterator.stop();
+      			_iterator.init({from:_currentAlpha,
+      						   _to:Number(GlobalsVO.getCSSProperty(P4)),
+      						   speed:int(GlobalsVO.getCSSProperty(P8)),
+      						   step:Number(GlobalsVO.getCSSProperty(P9))});
+      			_iterator.addEventListener(Event.CHANGE,onChange);
+				if (GlobalsVO.ISLoggedOut == false) {
+	      			_iterator.addEventListener(Event.COMPLETE,onComplete);
+				}
+      			_iterator.play();
+      			
+				if (!GlobalsVO.ISLoggedOut) {
+	      			category_label.setStyle("color","#FFFFFF");
+				}
+			}
+			
+			
+			
+			
+			/**
+			 * Set new value for tween effect
+			 * @param value:Number - The image alpha value
+			 * from the tweener fade in effect
+			 * @return - void
+			 */
+			 
+			private function onChange(e:Event):void {
+				_currentAlpha = e.currentTarget.value;
+			}
+			
+			
+			
+			
+			private function onComplete(e:Event):void {
+				_currentAlpha = e.currentTarget.value;
+				_iterator.removeEventListener(Event.CHANGE,onChange);
+      			_iterator.removeEventListener(Event.COMPLETE,onComplete);
+				
+				if(_currentAlpha < 0) _currentAlpha = 0;
+				if(_currentAlpha > 1) _currentAlpha = 1;
+			}
+		]]>
+	</mx:Script>
+</mx:Canvas>

@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   minWidth="900" minHeight="500" width="100%" height="100%" 
+			   creationComplete="application1_creationCompleteHandler(event)" xmlns:views="vyperlogix.views.*">
+	<s:layout>
+		<s:HorizontalLayout/>
+	</s:layout>
+	<fx:Style source="FlashGames.css"/>
+	<fx:Script>
+		<![CDATA[
+			import Tiles.Tile;
+			import Tiles.TileRenderer;
+			
+			import adobe.serialization.json.JSON;
+			import adobe.serialization.json.JSONDecoder;
+			
+			import mx.controls.Image;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import sockets.DataLoader;
+			
+			import vyperlogix.DomainUtils;
+			
+			import vzw.controls.Alert.AlertPopUp;
+			import vzw.utils.EzHTTPService;
+			
+			[Bindable]
+			private var data:Array = [];
+
+			private var aTile:Tile;
+			
+			private var _url:Object;
+
+			private var ezREST:EzHTTPService = new EzHTTPService(false,false);
+
+			protected function application1_creationCompleteHandler(event:FlexEvent):void {
+				var url:String = FlexGlobals.topLevelApplication.url;
+				if ( (url.indexOf('127.0.0.1') > -1) && (url.indexOf(':') == -1) && (url.indexOf('?') == -1) ) {
+					url += '?d=/games/flashJPG.json';
+				}
+				this._url = DomainUtils.parseDomain(url);
+				
+				var _this:* = this;
+				try {
+					var d:String = this._url['args']['d'];
+					if (d is String) {
+						var jsonURL:String = this._url['domain']+d;
+						AlertPopUp.infoNoOkay('jsonURL=('+jsonURL+')','DEBUG');
+						trace('init() :: jsonURL=('+jsonURL+')');
+						this.ezREST.send(jsonURL,
+							function (event:ResultEvent):void {
+								trace('1 :: event=('+event+')');
+								var data:Object = event.result[0];
+								var num:int = data['numImages'];
+								if (num is int) {
+									var symbol:String = data['symbol'];
+									var keyName:String = data['keyName'];
+									var domain:String = data['domain'];
+									var aKey:String;
+									var anItem:String;
+									var coords:Array;
+									var items:Array;
+									var anObj:Object;
+									var selector:String;
+									var url:String;
+									if ( (symbol is String) && (keyName is String) && (domain is String) ) {
+										for (var i:int = 0; i < num; i++) {
+											aKey = keyName.replace(symbol,i.toString());
+											anItem = data[aKey];
+											if (anItem is String) {
+												anObj = {};
+												items = anItem.split(',');
+												anObj['title'] = ((items.length > 1) ? items[0].split('.')[0] : anItem.split('.')[0]);
+												if (items.length > 2) {
+													coords = items[1].split('x');
+													anObj['size'] = new Point(Number(coords[0]),Number(coords[coords.length-1]));
+													items.splice(1,1);
+												}
+												if (items.length > 2) {
+													anObj['type'] = items[1];
+													items.splice(1,1);
+												}
+												if (items.length > 2) {
+													anObj['backgroundColor'] = ((items[1] == 'white') ? 0xffffff : ((items[1] == 'black') ? 0x000000 : 0xffffff));
+													items.splice(1,1);
+												}
+												for (var j:String in items) {
+													selector = (items[j].indexOf('.swf') > -1) ? 'flash' : 'image';
+													url = domain+items[j];
+													anObj[selector] = url;
+													trace('title='+anObj['title']+', selector='+selector+', url='+url);
+												}
+												_this.data.push(anObj);
+											}
+										}
+										_this.scroller.dataProvider = _this.data;
+									} else {
+										if ((symbol is String) == false) {
+											trace('WARNING :: There is a problem with the JSON data stream... Missing the symbol.');
+										} else if ((keyName is String) == false) {
+											trace('WARNING :: There is a problem with the JSON data stream... Missing the keyName.');
+										} else if ((domain is String) == false) {
+											trace('WARNING :: There is a problem with the JSON data stream... Missing the domain.');
+										}
+									}
+								} else {
+									trace('WARNING :: There is a problem with the JSON data stream... Missing the number of items.');
+								}
+							},
+							this.ezREST.jsonResultType
+						);
+					}
+				} catch (err:Error) {
+					trace('ERROR :: '+err.toString());
+				}
+			}
+			
+			private function tileList_itemClick(evt:ListEvent):void {
+				var _this:* = this;
+				this.aTile = new Tile();
+				this.aTile.imageWidth = (this.aTile.width = FlexGlobals.topLevelApplication.width - 50) - 50;
+				this.aTile.imageHeight = (this.aTile.height = FlexGlobals.topLevelApplication.height - 50) - 60;
+				this.aTile.dataProvider = evt.itemRenderer['dataProvider'];
+				this.aTile.maintainAspectRatio = true;
+				this.aTile.btnCloseClickCallback = function (event:MouseEvent):void {
+					PopUpManager.removePopUp(_this.aTile);
+				};
+				this.aTile.setStyle("addedEffect", image_addedEffect);
+				this.aTile.setStyle("removedEffect", image_removedEffect);
+				PopUpManager.addPopUp(this.aTile, this, true);
+			}
+
+			protected function numRows_changeHandler(event:Event):void {
+				var stepper:HSlider = event.currentTarget as HSlider;
+				//this.tileList.rowCount = stepper.value;
+			}
+
+			protected function numCols_changeHandler(event:Event):void {
+				var stepper:HSlider = event.currentTarget as HSlider;
+				//this.tileList.columnCount = stepper.value;
+			}
+
+			private function formatDataTip(reason:String,val:String,target:*):String {
+				return reason+': Minimum: '+target.minimum+' <= (Current) ' + val.toString() + ' <= Maximum: ' + target.maximum;
+			}
+
+			private function myRowDataTipFunc(val:String):String {
+				return this.formatDataTip('Rows',val,this.numRows);
+			}
+			
+			private function myColDataTipFunc(val:String):String {
+				return this.formatDataTip('Cols',val,this.numCols);
+			}
+
+			protected function tileList_creationCompleteHandler(event:FlexEvent):void {
+				//var tileList:TileList = event.currentTarget as TileList;
+				trace(1.0);
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:WipeDown id="image_addedEffect" startDelay="100" />
+		
+		<mx:Parallel id="image_removedEffect">
+			<mx:Zoom />
+			<mx:Fade />
+		</mx:Parallel>
+	</fx:Declarations>
+	<mx:Panel id="panel" title="Flash Games and Demos :: (Click on an Image to see the Flash !)" width="{this.width-10}" height="{this.height-10}" styleName="GameTiles">
+		<mx:VBox width="100%" includeInLayout="false" visible="false">
+			<mx:HBox width="100%">
+				<mx:Spacer height="5"/>
+				<mx:VBox>
+					<mx:Spacer height="3"/>
+					<s:Label text="Rows:" verticalAlign="bottom"/>
+				</mx:VBox>
+				<s:HSlider id="numRows" value="2" stepSize="1" minimum="2" maximum="4" showDataTip="true" dataTipFormatFunction="myRowDataTipFunc" dataTipPrecision="1" liveDragging="true" change="numRows_changeHandler(event)"/>
+				<mx:VRule height="20"/>
+				<mx:VBox>
+					<mx:Spacer height="3"/>
+					<s:Label text="Cols:" verticalAlign="bottom"/>
+				</mx:VBox>
+				<s:HSlider id="numCols" value="2" stepSize="1" minimum="2" maximum="4" showDataTip="true" dataTipFormatFunction="myColDataTipFunc" dataTipPrecision="1" liveDragging="true" change="numCols_changeHandler(event)"/>
+			</mx:HBox>
+		</mx:VBox>
+		<views:VertScroller id="scroller" width="100%" height="100%" verticalScrollPolicy="on" layout="{VertScroller.LAYOUT_VERTICAL}"/>
+	</mx:Panel>
+</s:Application>

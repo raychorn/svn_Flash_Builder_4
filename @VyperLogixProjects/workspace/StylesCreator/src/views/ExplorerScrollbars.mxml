@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox width="100%" height="100%" xmlns:mx="http://www.adobe.com/2006/mxml" verticalScrollPolicy="off" xmlns:views="views.*">
+	
+	<mx:HBox width="100%" height="100%">
+
+
+
+	<mx:VBox height="100%" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="STYLE CONTROLS"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+		<mx:Form styleName="noPadding">
+
+		<mx:FormItem label="Corner Radius">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="16"
+						value="4"
+						id="myCornerRadius"
+						
+						snapInterval="1"
+						change="setValue('cornerRadius', event.target.value, 'number');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				</mx:FormItem>
+
+		<mx:FormItem label="Border Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xB7BABC" id="myBorderColor"
+								close="setValue('borderColor', event.target.selectedColor, 'color')"/>
+		</mx:FormItem>
+		
+		<mx:FormItem label="Highlight Alphas">
+				<mx:HBox>
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value=".30"
+						id="highlightAlpha1"
+						
+						snapInterval=".01"
+						change="myScrollBar.setStyle('highlightAlphas',[highlightAlpha1.value, highlightAlpha2.value]);
+						myHScrollBar.setStyle('highlightAlphas',[highlightAlpha1.value, highlightAlpha2.value]);
+						setArrayCSS('highlightAlphas', highlightAlpha1.value, highlightAlpha2.value, false)"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="0"
+						id="highlightAlpha2"
+						
+						snapInterval=".01"
+						change="myScrollBar.setStyle('highlightAlphas',[highlightAlpha1.value, highlightAlpha2.value]);
+						myHScrollBar.setStyle('highlightAlphas',[highlightAlpha1.value, highlightAlpha2.value]);
+						setArrayCSS('highlightAlphas', highlightAlpha1.value, highlightAlpha2.value, false)"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+					</mx:HBox>
+				</mx:FormItem>
+	<mx:Box styleName="conditionalBox" width="275" toolTip="Note: This is an array of four colors, the second two being the fill colors on roll over.">
+				<mx:HBox width="100%">
+				<mx:Box width="100%" horizontalAlign="left" paddingLeft="5" paddingTop="5">
+				<mx:Image id="alert" source="@Embed('assets/alert.png')" />	
+				</mx:Box>
+				
+				<mx:Form styleName="conditionalForm"  >
+				
+					<mx:FormItem label="Fill Alphas">
+					<mx:HBox  horizontalGap="2">
+					<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".60"
+								id="myFillAlpha1"
+								
+								snapInterval=".01"
+								change="myScrollBar.setStyle('fillAlphas', [myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value]);
+								myHScrollBar.setStyle('fillAlphas', [myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value, false);"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".40"
+								id="myFillAlpha2"
+								snapInterval=".01"
+								change="myScrollBar.setStyle('fillAlphas', [myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value]);
+								myHScrollBar.setStyle('fillAlphas', [myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value, false);"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".75"
+								id="myFillAlpha3"
+								snapInterval=".01"
+								change="myScrollBar.setStyle('fillAlphas', [myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value]);
+								myHScrollBar.setStyle('fillAlphas', [myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value, false);"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".65"
+								id="myFillAlpha4"
+								snapInterval=".01"
+								change="myScrollBar.setStyle('fillAlphas', [myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value]);
+								myHScrollBar.setStyle('fillAlphas', [myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value, false);"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							</mx:HBox>
+						</mx:FormItem>
+						<mx:FormItem label="Fill Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="fill1" height="23" width="35" selectedColor="0xFFFFFF"
+								close="myScrollBar.setStyle('fillColors', [fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor]);
+								myHScrollBar.setStyle('fillColors', [fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor]);
+								setArrayFourCSS('fillColors', fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor, true);
+								"/>
+								<mx:ColorPicker id="fill2" height="23" width="35" selectedColor="0xCCCCCC"
+								close="myScrollBar.setStyle('fillColors', [fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor]);
+								myHScrollBar.setStyle('fillColors', [fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor]);
+								setArrayFourCSS('fillColors', fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor, true);
+								"/>
+								<mx:ColorPicker id="fill3" height="23" width="35" selectedColor="0xFFFFFF"
+								close="myScrollBar.setStyle('fillColors', [fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor]);
+								myHScrollBar.setStyle('fillColors', [fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor]);
+								setArrayFourCSS('fillColors', fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor, true);
+								"/>
+								<mx:ColorPicker id="fill4" height="23" width="35" selectedColor="0xEEEEEE"
+								close="myScrollBar.setStyle('fillColors', [fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor]);
+								myHScrollBar.setStyle('fillColors', [fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor]);
+								setArrayFourCSS('fillColors', fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor, true);
+								"/>
+							
+							</mx:HBox>
+						</mx:FormItem>
+						
+				
+				
+				</mx:Form>
+				</mx:HBox>
+				</mx:Box>
+		
+			<mx:FormItem label="Theme Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x009DFF" id="myThemeColor"
+								close="setValue('themeColor', event.target.selectedColor, 'color')"/>
+		</mx:FormItem>
+						
+		<mx:FormItem label="Track Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="track1" height="23" width="70" selectedColor="0x94999B"
+								close="myScrollBar.setStyle('trackColors', [track1.selectedColor, track2.selectedColor]);
+								myHScrollBar.setStyle('trackColors', [track1.selectedColor, track2.selectedColor]);
+								setArrayCSS('trackColors', track1.selectedColor, track2.selectedColor, true);
+								"/>
+								<mx:ColorPicker id="track2" height="23" width="70" selectedColor="0xE7E7E7"
+								close="myScrollBar.setStyle('trackColors', [track1.selectedColor, track2.selectedColor]);
+								myHScrollBar.setStyle('trackColors', [track1.selectedColor, track2.selectedColor]);
+								setArrayCSS('trackColors', track1.selectedColor, track2.selectedColor, true);"/>
+							</mx:HBox>
+						</mx:FormItem>
+
+
+
+
+		</mx:Form>
+		</mx:Box>
+		<mx:Box width="100%" paddingRight="5" paddingBottom="5" horizontalAlign="right">
+			<mx:LinkButton label="Restore Defaults" click="restoreDefaults()" styleName="undoLink" />
+		</mx:Box>
+	</mx:VBox>
+
+
+<!-- Sandbox -->
+<mx:VBox height="100%" width="100%" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="STYLE CONTROLS"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+	<mx:VBox width="100%" height="150" backgroundColor="#FFFFFF" backgroundAlpha=".4" verticalGap="0" horizontalAlign="right" paddingRight="0" paddingTop="0" paddingBottom="0" >
+			<mx:VScrollBar id="myScrollBar" height="100%" minScrollPosition="0" lineScrollSize="1" pageScrollSize="10" maxScrollPosition="10" 
+           		repeatDelay="50" repeatInterval="50" scrollPosition="5" pageSize="25"  />
+			<mx:HBox width="100%" horizontalGap="0">
+				<mx:HScrollBar id="myHScrollBar" width="100%" minScrollPosition="0" lineScrollSize="1" pageScrollSize="10" maxScrollPosition="10" 
+           			repeatDelay="50" repeatInterval="50" scrollPosition="5" pageSize="25"  />
+				<mx:Spacer width="15" />
+			</mx:HBox>
+			</mx:VBox> 
+</mx:Box>
+	</mx:VBox>
+
+
+<!-- CSS -->
+<mx:VBox height="100%" width="315" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="STYLE CONTROLS"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+		
+			<mx:TextArea id="myCSS" width="100%" height="100%" styleName="cssTextArea"	/>
+		</mx:Box>
+</mx:VBox>
+
+	<mx:Script source="as/scrollbars.as" /> 
+	</mx:HBox>
+</mx:VBox>
+
+
+
+

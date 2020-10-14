@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  width="100%" height="100%" 
+		  currentState="neutral" horizontalAlign="left" 
+		  initialize="hgroup1_initializeHandler(event)" 
+		  creationComplete="hgroup1_creationCompleteHandler(event)" 
+		  stateChangeComplete="hgroup2_stateChangeCompleteHandler(event)"
+		  xmlns:timers="controls.timers.*" xmlns:labels="controls.labels.*">
+	<s:states>
+		<mx:State name="neutral"/>
+		<mx:State name="start"/>
+		<mx:State name="stop"/>
+		<mx:State name="editing"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="CancelTimerEvent", type="controls.timers.events.CancelTimerEvent")]
+		[Event(name="CloseEditorEvent", type="controls.timers.events.CloseEditorEvent")]
+		[Event(name="OpenEditorEvent", type="controls.timers.events.OpenEditorEvent")]
+		[Event(name="TimerTickEvent", type="controls.timers.events.TimerTickEvent")]
+		[Event(name="TimerCompletedEvent", type="controls.timers.events.TimerCompletedEvent")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.TimeUtils;
+			
+			import mx.events.FlexEvent;
+			
+			import controls.timers.events.CancelTimerEvent;
+			import controls.timers.events.ChangeTimerAspectEvent;
+			import controls.timers.events.CloseEditorEvent;
+			import controls.timers.events.OpenEditorEvent;
+			import controls.timers.events.TimerCompletedEvent;
+			import controls.timers.events.TimerTickEvent;
+			
+			private var _this:TimerWidget;
+			
+			private var __timer__:TimerProxy = new TimerProxy();
+			
+			private var __delayed_timer__:Timer = new Timer(750);
+			private var __delayed__:Array = [];
+			
+			[Bindable]
+			private var __can_edit__:Boolean = false;
+			
+			private static var __timers__:Object = {};
+			
+			private var __states__:Array = [];
+			
+			private var __is_vertical__:Boolean;
+			
+			[Bindable]
+			private var __image_width__:int;
+			
+			[Bindable]
+			private var __image_height__:int;
+			
+			[Bindable]
+			private var __image_scale_mode__:String;
+			
+			[Bindable]
+			private var __data__:*;
+			
+			public function get image_scale_mode():String {
+				return this.__image_scale_mode__;
+			}
+			
+			public function set image_scale_mode(scaleMode:String):void {
+				if (this.__image_scale_mode__ != scaleMode) {
+					this.__image_scale_mode__ = scaleMode;
+				}
+			}
+			
+			public function get image_width():int {
+				return this.__image_width__;
+			}
+			
+			public function set image_width(width:int):void {
+				if (this.__image_width__ != width) {
+					this.__image_width__ = width;
+				}
+			}
+			
+			public function get image_height():int {
+				return this.__image_height__;
+			}
+			
+			public function set image_height(height:int):void {
+				if (this.__image_height__ != height) {
+					this.__image_height__ = height;
+				}
+			}
+			
+			public function get is_vertical():Boolean {
+				return this.__is_vertical__;
+			}
+			
+			public function set is_vertical(is_vertical:Boolean):void {
+				if (this.__is_vertical__ != is_vertical) {
+					this.__is_vertical__ = is_vertical;
+					if (is_vertical) {
+						if (this.lbl) {
+							this.lbl.visible = this.lbl.includeInLayout = false;;
+						}
+						if (this.lblV) {
+							this.lblV.visible = this.lblV.includeInLayout = true;;
+						}
+					} else {
+						if (this.lbl) {
+							this.lbl.visible = this.lbl.includeInLayout = true;;
+						}
+						if (this.lblV) {
+							this.lblV.visible = this.lblV.includeInLayout = false;;
+						}
+					}
+				}
+			}
+			
+			public function get data():* {
+				return this.__data__;
+			}
+			
+			public function set data(data:*):void {
+				if (this.__data__ != data) {
+					this.__data__ = data;
+					this.__timer__.data = data;
+					this.widget = this;
+					if (this.image) {
+						this.image.source = this.__data__['image'];
+					}
+					if (this.lbl) {
+						this.lbl.label_text = this.__data__['info'];
+					}
+					if (this.lblV) {
+						this.lblV.label_text = this.__data__['info'];
+					}
+					if ( (this.target) && (this.aspect) ) {
+						try {
+							this.target[this.aspect] = data;
+						} catch (err:Error) {}
+					}
+				}
+			}
+			
+			public function get editable():Boolean {
+				return this.__can_edit__;
+			}
+			
+			public function set editable(editable:Boolean):void {
+				if (this.__can_edit__ != editable) {
+					this.__can_edit__ = editable;
+				}
+				this.hgroup_start.visible = this.hgroup_start.includeInLayout = editable;
+				this.hgroup_stop.visible = this.hgroup_stop.includeInLayout = editable;
+				this.hgroup_edit.visible = this.hgroup_edit.includeInLayout = editable;
+				this.hgroup_cancel.visible = this.hgroup_cancel.includeInLayout = editable;
+			}
+			
+			public function get target():* {
+				return ( (this.__data__) && (this.__data__['target']) );
+			}
+			
+			public function get aspect():String {
+				return ( (this.__data__) && (this.__data__['aspect']) );
+			}
+			
+			public function get widget():* {
+				return ( (this.__data__) && (this.__data__['widget']) );
+			}
+			
+			public function set widget(widget:*):void {
+				if (this.__data__) {
+					if (this.__data__['widget'] != widget) {
+						this.__data__['widget'] = widget;
+					}
+				}
+			}
+			
+			public function get time():String {
+				return ( (this.__data__) && (this.__data__['time']) );
+			}
+			
+			public function set time(time:String):void {
+				if (this.__data__) {
+					if (this.__data__['time'] != time) {
+						this.__data__['time'] = time;
+					}
+				}
+			}
+			
+			public function get uuid():String {
+				return ( (this.__data__) && (this.__data__['uuid']) );
+			}
+			
+			public function set uuid(uuid:String):void {
+				if (this.__data__) {
+					if (this.__data__['uuid'] != uuid) {
+						this.__data__['uuid'] = uuid;
+					}
+				}
+			}
+			
+			public function get milliseconds():Number {
+				return ( (this.__data__) && (this.__data__['milliseconds']) );
+			}
+			
+			public function set milliseconds(milliseconds:Number):void {
+				if (this.__data__) {
+					if (this.__data__['milliseconds'] != milliseconds) {
+						this.__data__['milliseconds'] = milliseconds;
+					}
+				}
+			}
+			
+			private function remove_timer_event_handler():void {
+				var timer:TimerProxy = this.__timer__;
+				if ( (timer is TimerProxy) && (timer.running) ) {
+					if (__timers__[this.uuid]) {
+						__timers__[this.uuid] = null;
+					}
+					timer.removeEventListener(TimerEvent.TIMER, handle_timer_event);
+					timer.stop();
+					this.currentState = 'stop';
+				}
+			}
+			
+			public function handle_timer_event(event:TimerEvent):void {
+				var __is__:Boolean = TimeUtils.all_zeros(this.time);
+				if (__is__) {
+					this.image.source = this.data['image'];
+					this.lbl.label_text = this.data['info'];
+					this.lbl.text = this.time;
+					this.lblV.label_text = this.data['info'];
+					this.lblV.text = this.time;
+					this.stop_timer();
+				} else {
+					var value:String = TimerProcessor.reduce_time_spec_by_one_second((this.lbl.text.length > 0) ? this.lbl.text : this.time);
+					this.image.source = this.data['image'];
+					this.image.enabled = true;
+					this.lbl.label_text = this.data['info'];
+					this.lbl.text = value;
+					this.lbl.enabled = true;
+					this.lblV.label_text = this.data['info'];
+					this.lblV.text = value;
+					this.lblV.enabled = true;
+					this.time = value;
+					this.milliseconds = TimerProcessor.parse_date_to_milliseconds(value);
+					__is__ = TimeUtils.all_zeros(value);
+					if (__is__) {
+						//this.currentState = 'neutral';
+						this.remove_timer_event_handler();
+						this.stop_timer();
+						this.dispatchEvent(new TimerCompletedEvent(TimerCompletedEvent.TYPE_TIMER_COMPLETED));
+					} else if (__timers__[this.uuid] == null) {
+						this.remove_timer_event_handler();
+					} else {
+						this.__can_edit__ = true;
+					}
+				}
+				this.dispatchEvent(new TimerTickEvent(TimerTickEvent.TYPE_TIMER_TICK));
+			}
+
+			private function establish_timer_specifics(time:String,correction:Number=0.0):void {
+			}
+			
+			protected function establish_timer_event_handler():void {
+				var timer:TimerProxy = this.__timer__;
+				if ( (timer is TimerProxy) && (!timer.running) ) {
+					this.establish_timer_specifics(this.time);
+					if (__timers__[this.uuid] == null) {
+						__timers__[this.uuid] = data;
+					}
+					timer.addEventListener(TimerEvent.TIMER, handle_timer_event);
+					timer.start();
+					this.currentState = 'start';
+				}
+			}
+			
+			public function start_timer():void {
+				if (!this.__timer__.running) {
+					this.establish_timer_event_handler();
+				}
+			}
+
+			protected function hgroup1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+			}
+			
+			protected function btnCancel_clickHandler(event:MouseEvent):void {
+				this.remove_timer_event_handler();
+				this.dispatchEvent(new CancelTimerEvent(CancelTimerEvent.TYPE_CANCEL_TIMER));
+			}
+			
+			protected function btnStart_clickHandler(event:MouseEvent):void {
+				this.establish_timer_specifics(this.lbl.text,0);
+				this.start_timer();
+				this.currentState = 'start';
+			}
+			
+			protected function stop_timer():void {
+				var timer:TimerProxy = this.__timer__;
+				timer.stop();
+				this.currentState = 'stop';
+				__timers__[this.uuid] = null;
+				this.remove_timer_event_handler();
+			}
+			
+			protected function btnStop_clickHandler(event:MouseEvent):void {
+				this.stop_timer();
+			}
+			
+			private function handle_popup_editor_close(event:MouseEvent):void {
+				this.editorCanvas.visible = false;
+				this.time = this.lbl.text;
+				this.currentState = this.__states__.pop();
+				this.dispatchEvent(new CloseEditorEvent(CloseEditorEvent.TYPE_CLOSE_EDITOR));
+			}
+			
+			private function popUp_Editor():void {
+				if (this.currentState != 'editing') {
+					this.editorCanvas.visible = true;
+					this.editor.value = this.lbl.text;
+					this.__states__.push(this.currentState);
+					this.currentState = 'editing';
+					this.dispatchEvent(new OpenEditorEvent(OpenEditorEvent.TYPE_OPEN_EDITOR));
+				}
+			}
+			
+			private function handle_edit_click():void {
+				if (this.editable) {
+					var timer:TimerProxy = this.__timer__;
+					if (timer.running) {
+						this.stop_timer();
+					}
+					this.popUp_Editor();
+				}
+			}
+			
+			protected function btnEdit_clickHandler(event:MouseEvent):void {
+				this.handle_edit_click();
+			}
+			
+			protected function lbl_clickHandler(event:MouseEvent):void {
+				this.handle_edit_click();
+			}
+			
+			protected function editor_creationCompleteHandler(event:FlexEvent):void {
+				this.editor.btnClose.addEventListener(MouseEvent.CLICK, this.handle_popup_editor_close);
+			}
+			
+			protected function editor_changeTimerDaysHandler(event:ChangeTimerAspectEvent):void {
+				var toks:Array = this.lbl.text.split(':');
+				if (toks.length < 4) {
+					for (var i:int = 0; i < 4-toks.length; i++) {
+						toks.splice(0,0,0);
+					}
+				}
+				var val:String = event.value.toString();
+				toks[0] = ((val.length < 2) ? '0' : '') + val;
+				this.lbl.text = toks.join(':');
+			}
+			
+			protected function editor_changeTimerHoursHandler(event:ChangeTimerAspectEvent):void {
+				var toks:Array = this.lbl.text.split(':');
+				var val:String = event.value.toString();
+				toks[1] = ((val.length < 2) ? '0' : '') + val;
+				this.lbl.text = toks.join(':');
+			}
+			
+			protected function editor_changeTimerMinutesHandler(event:ChangeTimerAspectEvent):void {
+				var toks:Array = this.lbl.text.split(':');
+				var val:String = event.value.toString();
+				toks[2] = ((val.length < 2) ? '0' : '') + val;
+				this.lbl.text = toks.join(':');
+			}
+			
+			protected function editor_changeTimerSecondsHandler(event:ChangeTimerAspectEvent):void {
+				var toks:Array = this.lbl.text.split(':');
+				var val:String = event.value.toString();
+				toks[3] = ((val.length < 2) ? '0' : '') + val;
+				this.lbl.text = toks.join(':');
+			}
+			
+			protected function handle_delayed_events():void {
+				var aFunc:Function;
+				while (this.__delayed__.length > 0) {
+					aFunc = this.__delayed__.pop();
+					trace(this.className+'.lbl_creationCompleteHandler.1 --> this.__delayed__.length='+this.__delayed__.length);
+					if (aFunc is Function) {
+						this.callLater(aFunc);
+						trace(this.className+'.lbl_creationCompleteHandler.2 --> aFunc='+aFunc);
+					}
+				}
+				if (this.__delayed__.length == 0) {
+					if (this.__delayed_timer__.running) {
+						trace(this.className+'.lbl_creationCompleteHandler.3 --> this.__delayed_timer__.stop() !!!');
+						this.__delayed_timer__.stop();
+					}
+				}
+			}
+			
+			protected function hgroup1_creationCompleteHandler(event:FlexEvent):void {
+				if (!this.__delayed_timer__.running) {
+					this.__delayed_timer__.addEventListener(TimerEvent.TIMER,
+						function (event:TimerEvent):void {
+							_this.handle_delayed_events();
+						}
+					);
+					trace(this.className+'.hgroup1_creationCompleteHandler.1 --> this.__delayed_timer__.start() !!!');
+					this.__delayed_timer__.start();
+					this.toolTip = this.data['tooltip'];
+				}
+			}
+			
+			protected function hgroup2_stateChangeCompleteHandler(event:FlexEvent):void {
+				trace('(###) hgroup2_stateChangeCompleteHandler.1 --> currentState='+this.currentState);
+			}
+			
+			protected function lbl_creationCompleteHandler(event:FlexEvent):void {
+				this.lbl.label.styleName = 'TimerWidgetLabel';
+				this.lbl.lbl.styleName = 'TimerWidgetLbl';
+			}
+			
+			protected function lblV_creationCompleteHandler(event:FlexEvent):void {
+				this.lblV.label.styleName = 'TimerWidgetLabel';
+				this.lblV.lbl.styleName = 'TimerWidgetLbl';
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup
+		visible.neutral="true" includeInLayout.neutral="true"
+		visible.start="true" includeInLayout.start="true"
+		visible.stop="true" includeInLayout.stop="true"
+		visible.editing="false" includeInLayout.editing="false">
+		<s:HGroup>
+			<s:HGroup id="hgroup_start">
+				<s:Button 
+					id="btnStart" 
+					label="(@)" 
+					visible.neutral="false" includeInLayout.neutral="false" 
+					visible.start="false" includeInLayout.start="false" 
+					visible.stop="true" includeInLayout.stop="true" 
+					click="btnStart_clickHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup id="hgroup_stop">
+				<s:Button 
+					id="btnStop" 
+					label="(#)" 
+					visible.neutral="{this.__can_edit__}" includeInLayout.neutral="{this.__can_edit__}" 
+					visible.start="{this.__can_edit__}" includeInLayout.start="{this.__can_edit__}" 
+					visible.stop="false" includeInLayout.stop="false" 
+					click="btnStop_clickHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup id="hgroup_edit">
+				<s:Button 
+					id="btnEdit" 
+					label="(*)" 
+					visible.neutral="false" includeInLayout.neutral="false" 
+					visible.start="false" includeInLayout.start="false" 
+					visible.stop="true" includeInLayout.stop="true" 
+					click="btnEdit_clickHandler(event)"/>
+			</s:HGroup>
+		</s:HGroup>
+	</s:VGroup>
+	<s:VGroup id="container" 
+			  width="100%" 
+			  paddingTop.neutral="0"
+			  paddingTop.start="0"
+			  paddingTop.stop="0"
+			  paddingTop.editing="-80"
+			  paddingLeft="10" paddingRight="10"
+			  >
+		<s:HGroup width="100%" paddingLeft="10" paddingTop="{(this.height/2)-5}" paddingRight="10" paddingBottom="10" verticalAlign="middle">
+			<s:Image id="image" width="{this.__image_width__}" height="{this.__image_height__}" scaleMode="{this.__image_scale_mode__}" enabled="false"/>
+			<s:Group id="imageContainer" width="{this.__image_width__}" height="{this.__image_height__}" enabled="false" visible="false" includeInLayout="{this.imageContainer.visible}"/>
+			<labels:LabelLabel id="lbl" width="100%" enabled="false" click="lbl_clickHandler(event)" creationComplete="lbl_creationCompleteHandler(event)"/>
+			<labels:LabelLabelV id="lblV" width="100%" enabled="{this.lbl.enabled}" click="lbl_clickHandler(event)" creationComplete="lblV_creationCompleteHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup id="editorCanvas" width="100%" height="180" visible="false" includeInLayout="{this.editorCanvas.visible}">
+			<timers:TimeEditor id="editor" 
+							   width="100%" height="180"
+							   changeTimerDays="editor_changeTimerDaysHandler(event)" 
+							   changeTimerHours="editor_changeTimerHoursHandler(event)" 
+							   changeTimerMinutes="editor_changeTimerMinutesHandler(event)" 
+							   changeTimerSeconds="editor_changeTimerSecondsHandler(event)" 
+							   creationComplete="editor_creationCompleteHandler(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+	<s:VGroup>
+		<s:HGroup id="hgroup_cancel">
+			<s:Button id="btnCancel" 
+					  label="(-)" 
+					  visible.neutral="true" includeInLayout.neutral="true" 
+					  visible.start="true" includeInLayout.start="true" 
+					  visible.stop="true" includeInLayout.stop="true" 
+					  visible.editing="false" includeInLayout.editing="false" 
+					  click="btnCancel_clickHandler(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:HGroup>

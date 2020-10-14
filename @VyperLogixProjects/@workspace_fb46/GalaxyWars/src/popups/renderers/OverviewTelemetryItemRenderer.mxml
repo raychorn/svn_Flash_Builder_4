@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true">
+	<fx:Declarations>
+	</fx:Declarations>
+	<s:states>
+		<mx:State name="normal" />
+		<mx:State name="hovered" />
+		<mx:State name="selected" />
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.ObjectUtils;
+			
+			import mx.core.FlexGlobals;
+			
+			private var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+
+			private var __data__:Object;
+			
+			public override function get data():Object {
+				return this.__data__;
+			}
+			
+			public override function set data(data:Object):void {
+				app.log = this.className+'.(set) data.1 --> data='+DebuggerUtils.explainThis(data);
+				if (this.__data__ != data) {
+					this.__data__ = data;
+					var item:*;
+					var tooltip:String;
+					var keys:Array = ObjectUtils.keys(data);
+					for (var i:int = 0; i < keys.length; i++) {
+						this.keyname.text = keys[i];
+						item = data[keys[i]];
+						tooltip = item['tooltip'];
+						this.value.text = (item['value'] != null) ? item['value'] : item;
+						if (tooltip) {
+							this.toolTip = tooltip;
+						}
+						break;
+					}
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<s:Rect left="0" right="0" top="0" bottom="0">
+		<s:stroke>
+			<mx:SolidColorStroke color="0xCCCCCC" joints="round" weight="2"/>
+		</s:stroke>
+		<s:fill>
+			<mx:SolidColor color="0x999999" alpha="0" alpha.hovered="0.2"
+						  alpha.selected="0.6" />
+		</s:fill>
+	</s:Rect>
+	<s:VGroup width="100%" paddingLeft="5" paddingTop="5" paddingRight="5" paddingBottom="5">
+		<s:HGroup width="100%">
+			<s:HGroup>
+				<s:Label id="keyname" text="???" styleName="OverviewTelemetryItemLabel"/>
+			</s:HGroup>
+			<s:HGroup>
+				<s:Label id="value" text="???" styleName="OverviewTelemetryItemLabel"/>
+			</s:HGroup>
+		</s:HGroup>
+	</s:VGroup>
+</s:ItemRenderer>

@@ -1,0 +1,652 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:controls="com.HAL.controls.*" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   xmlns:socketViews="com.HAL.sockets.views.*"
+					   initialize="windowedapplication1_initializeHandler(event)"
+					   creationComplete="windowedapplication1_creationCompleteHandler(event)"
+					   minWidth="700" minHeight="500">
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style source="css/styles.css"/>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.HAL.Alert.AlertPopUp;
+			import com.HAL.controls.HtmlToolTip;
+			import com.HAL.controls.ListGridCanvas;
+			import com.HAL.controls.events.OnlineStatusChangedEvent;
+			import com.HAL.sockets.events.ConnectionClosedEvent;
+			import com.HAL.sockets.events.ConnectionEstablishedEvent;
+			import com.HAL.sockets.events.ConnectionRetryEvent;
+			import com.HAL.sockets.events.ConnectionTimeoutEvent;
+			import com.HAL.sockets.events.DataReceivedEvent;
+			import com.HAL.sockets.events.IOErrorHandledEvent;
+			import com.HAL.utils.ArrayCollectionUtils;
+			import com.HAL.utils.ArrayUtils;
+			import com.HAL.utils.LicenseUtils;
+			import com.HAL.utils.Misc;
+			import com.HAL.utils.StringUtils;
+			import com.HAL.utils.XMLObjectUtils;
+			import com.HAL.views.PackagesView;
+			import com.ObjectUtils;
+			
+			import events.ClickedTileEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.XMLListCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			import mx.events.StateChangeEvent;
+			import mx.managers.PopUpManager;
+			import mx.managers.ToolTipManager;
+			
+			import spark.collections.Sort;
+			import spark.layouts.TileOrientation;
+			
+			private var _menuBarCollection:ArrayCollection;
+			
+			private var _this:WindowsTestAutomation;
+			
+			[Bindable]
+			private var _packagesView:PackagesView;
+			
+			private var _current_archive_name:String = '';
+			
+			private var _commandsDictionary:Object = {};
+			
+			private var _queue:ArrayCollection;
+			
+			private var _cacheCallbacks:Object = {};
+			
+			public const _const_shutdown_symbol:String = 'SHUTDOWN';
+			
+			private var _list_of_expected_commands:Array = [_const_shutdown_symbol]; 
+			
+			[Bindable]
+			private var __isConnected__:Boolean = false;
+			
+			[Bindable]
+			private var __items__:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var __orientation__:String = TileOrientation.ROWS;
+			
+			[Bindable]
+			private var __rows__:int = 4;
+			
+			[Bindable]
+			private var __cols__:int = 4;
+			
+			private function updateCanvasLabel():void {
+				//				if (this.canvas01) {
+				//					var toks:Array = this.canvas01.label.split(' ');
+				//					toks.pop();
+				//					toks.push('(' + this.current_archive_name + '::' + this.current_package_name + ')');
+				//					this.canvas01.label = toks.join(' ');
+				//				}
+			}
+			
+			public function set current_archive_name(name:String):void {
+				this._current_archive_name = name;
+				this.updateCanvasLabel();
+			}
+			
+			[Bindable]
+			public function get current_archive_name():String {
+				return ((this._current_archive_name.length > 0) ? this._current_archive_name : 'NO_SELECTION');
+			}
+			
+			[Bindable]
+			public var menuData:Array = [
+				{label: "File", data: "top", children: [
+					{label: "Open", data: "openFile", enabled: false},
+					{type: "separator"},
+					{label: "Exit", data: "exitApp", enabled: true, type: "normal"} 
+				]},
+				{label: "Help", data: "top", children: [
+					{label: "About", data: "aboutInfo", enabled: true},
+					{type: "separator"},
+					{label: "About {LicenseUtils.licenseLevel}", data: "aboutLicense", type: "normal"} 
+				]} 
+			];
+			
+			private function onOnlineStatusChanged(event:OnlineStatusChangedEvent):void {
+				var cssDecl:CSSStyleDeclaration = FlexGlobals.topLevelApplication.styleManager.getStyleDeclaration('mx|ApplicationControlBar');
+				if (cssDecl) {
+					var fillColors:Array = cssDecl.getStyle('fillColors');
+					var fillAlphas:Array = cssDecl.getStyle('fillAlphas');
+					fillAlphas[0]= fillAlphas[1] = event.alpha;
+					fillColors[0] = event.color;
+					cssDecl.setStyle('fillColors', fillColors);
+					cssDecl.setStyle('fillAlphas', fillAlphas);
+				}
+				this.__isConnected__ = this.socketsManager.isConnected;
+				trace('onOnlineStatusChanged() --> color='+event.color+', status='+event.status+', this.socketsManager.isConnected='+this.__isConnected__);
+			}
+			
+			private function onCreationCompleteOnlineStatusCanvas():void {
+				this.onlineStatusIndicator.addEventListener(OnlineStatusChangedEvent.TYPE_ONLINE_STATUS_CHANGED, onOnlineStatusChanged);
+			}
+			
+			private function get isCurrentArchiveValid():Boolean {
+				return ( (this.current_archive_name.length > 0) && (this.current_archive_name.indexOf('.exe') > -1) );
+			}
+			
+			private function refreshMenuBarMenu():void {
+				var menu:ArrayCollection = ArrayCollection(this.menuBar.dataProvider);
+				menu[0]['children'][0]['enabled'] = (this.socketsManager) ? !this.socketsManager.isConnected : false;
+				menu[1]['enabled'] = 'true';
+				var nodes:Array = menu[1]['children'];
+				var i:int;
+				var node:Object;
+				var data:String;
+				for (i = 0; i < nodes.length; i++) {
+					node = nodes[i];
+					data = String(node['data']);
+				}
+			}
+			
+			private function onCreationCompleteAppMenuBar():void {
+				this.refreshMenuBarMenu();
+			}
+			
+			private function initMenuBar():void {
+				this._menuBarCollection = new ArrayCollection(this.menuData);
+			}
+			
+			public function get menuBarCollection():ArrayCollection {
+				if (this._menuBarCollection == null) {
+					this.initMenuBar(); 
+				}
+				return this._menuBarCollection;
+			}
+			
+			private function onItemClickMenuBar(event:*):void {
+				var i:int;
+				var j:int;
+				var packageObj:Object;
+				var archObj:Object;
+				var popUp:Alert;
+				var data:String = event.item['data'];
+				if (data != "top") {
+					var item:String = event.item['data'];
+					switch (item) {
+						case "openFile":
+							this.socketsManager.Initialize();
+							break;
+						
+						case "aboutInfo":
+							popUp = AlertPopUp.info('Sample App\n\nSampleApp has been published by Vyper Logix Corp. (c). Copyright 2012, Vyper Logix Corp, All Rights Reserved.', "Info :: SampleApp - {LicenseUtils.licenseLevel} License");
+							popUp.styleName = 'InfoAlert';
+							break;
+						
+						case "aboutLicense":
+							switch (LicenseUtils.licenseLevel) {
+								case LicenseUtils.LICENSE_TRIAL:
+									break;
+								
+								case LicenseUtils.LICENSE_STANDARD:
+									break;
+								
+								case LicenseUtils.LICENSE_PRO:
+									break;
+								
+								case LicenseUtils.LICENSE_ENTERPRISE:
+									break;
+							}
+							popUp = AlertPopUp.info('Not yet Implemented !', "Info :: {LicenseUtils.licenseLevel} License");
+							popUp.styleName = 'InfoAlert';
+							break;
+						
+						case "debugWindow":
+							this.socketsManagerPanel.visible = ((this.socketsManagerPanel.visible) ? false : true);
+							this.socketsManagerPanel.height = ((this.socketsManagerPanel.visible) ? 200 : 0);
+							break;
+					}
+				}        
+			}
+			
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void {
+			}
+			
+			private function onStateChange(event:StateChangeEvent):void {
+				if (event.newState == 'FolderNavigatorState') {
+				}
+			}
+			
+			protected function windowedapplication1_initializeHandler(event:FlexEvent):void {
+				this._this = this;
+				ToolTipManager.toolTipClass = HtmlToolTip;
+				this.maxWidth = flash.system.Capabilities.screenResolutionX;
+				this.maxHeight = flash.system.Capabilities.screenResolutionY;
+				this.initMenuBar();
+				this.socketsManager.onlineStatusCanvas = this.onlineStatusIndicator;
+				this.addEventListener(StateChangeEvent.CURRENT_STATE_CHANGE, onStateChange);
+				
+				Misc.systemManager = this.systemManager;
+			}
+			
+			private function onCloseConnectionTimeoutErrorDialog(event:CloseEvent):void {
+				if (event.detail == Alert.OK) {
+					this.exit();
+				}
+			}
+			
+			private function onConnectionTimeout(event:ConnectionTimeoutEvent):void {
+				var popup:Alert = AlertPopUp.error("Unable to start this application at this time.\n\nThis Application was not designed to be launched\nfrom the Installer.\n\nTry clicking on one of the application shortcuts\nto launch this application.\n\nYou may be able to get\nTechnical Support at http://www.VyperLogix.Com.\n\nClose this instance of the Application\nand re-launch to begin using this Application.","Application Start-up ERROR Recovery Notice", onCloseConnectionTimeoutErrorDialog);
+				PopUpManager.centerPopUp(popup);
+				popup.defaultButton['enabled'] = true;
+				popup.styleName = 'ErrorAlert';
+			}
+			
+			private function collapseCollectionOfObjectsIntoSingleObject(source:ArrayCollection):Object {
+				var i:int;
+				var obj:Object = {};
+				var o:Object;
+				for (i = 0; i < source.length; i++) {
+					o = source.getItemAt(i);
+					for (var n:* in o) {
+						obj[n] = o[n];
+					}
+				}
+				return obj;
+			}
+			
+			private function dataToString(data:*,isCSV:Boolean=false):String {
+				var i:int;
+				var s:String = '';
+				if (data is ArrayCollection) {
+					for (i = 0; i < data.length; i++) {
+						s += data.getItemAt(i);
+						if ( (isCSV) && (i < (data.length-1)) ) {
+							s += ',';
+						}
+					}
+				} else if (data is Object) {
+					s += '{'
+					var list:Array = [];
+					for (var name:String in data) {
+						if (name != 'children') {
+							list.push(name + '=' + data[name]);
+						}
+					}
+					s += list.join(',');
+					s += ',';
+					s += 'children=[';
+					try {
+						var children:Array = data['children'];
+						for (i = 0; i < children.length; i++) {
+							s += this.dataToString(children[i],isCSV);
+						}
+					} catch (err:Error) { }
+					s += ']}\n'
+				}
+				return s;
+			}
+			
+			private function executeCommandFromQueue():void {
+				var aFunc:Function;
+				if ( (this._queue) && (this._queue.length > 0) ) {
+					aFunc = this._queue.removeItemAt(0) as Function;
+					if (aFunc is Function) {
+						try {
+							aFunc();
+						} catch (err:Error) { }
+					}
+				}
+			}
+			
+			private function findCachedCallbackForItem(item:String):Object {
+				for (var n:String in this._cacheCallbacks) {
+					var pItem:String = ArrayUtils.pruneEmptyItems(item.split(File.separator)).join(File.separator);
+					var pN:String = ArrayUtils.pruneEmptyItems(n.split(File.separator)).join(File.separator);
+					if (pN == pItem) {
+						return this._cacheCallbacks[n];
+					}
+				}
+				return null;
+			}
+			
+			private function makeContentsIntoCollectionOfObjects(data:Object,isCSV:Boolean=false):ArrayCollection {
+				var i:int;
+				var obj:Object;
+				var ac:ArrayCollection = new ArrayCollection();
+				var children:Array = data['children'];
+				var aChild:Object;
+				if (isCSV) {
+					aChild = children[0];
+					var values:Array;
+					var names:Array = aChild['value'].split(',');
+					ArrayUtils.trimAll(names);
+					for (i = 1; i < children.length; i++) {
+						aChild = children[i];
+						obj = {};
+						values = aChild['value'].split(',');
+						for (var j:int = 0; j < values.length; j++) {
+							obj[names[j]] = values[j];
+						}
+						ac.addItem(obj);
+					}
+				} else {
+					for (i = 0; i < children.length; i++) {
+						aChild = children[i];
+						obj = {};
+						obj[aChild['name']] = aChild['value'];
+						ac.addItem(obj);
+					}
+				}
+				return ac;
+			}
+			
+			private function onDataReceived(event:DataReceivedEvent):void {
+				var i:int;
+				var isCSV:Boolean = false;
+				var isNumber:Boolean = false;
+				var popup:Alert;
+				var ac:ArrayCollection;
+				var obj:Object;
+				var fname:String;
+				var current_target:ListGridCanvas;
+				var nodeType:String = 'UNKNOWN';
+				var nodeName:String = 'UNKNOWN';
+				var nodeValue:* = '';
+				var fn:String;
+				var keys:Array;
+				var isXML:Boolean = false;
+				try {
+					try {
+						nodeType = event.data['type'];
+						nodeName = event.data['name'];
+						nodeValue = event.data['value'];
+						if ( (nodeType == null) && (nodeName == null) && (nodeValue == null) ) {
+							var error:Error = new Error('JSON needs to be handled...');
+							throw error;
+						}
+						isXML = true;
+					} catch (err:Error) {
+						keys = ObjectUtils.keys(event.data);
+						nodeType = 'JSON';
+						nodeName = null;
+						nodeValue = null;
+						if (keys.length > 0) {
+							nodeName = keys[0];
+							nodeValue = event.data[nodeName];
+							nodeName = nodeName.toLowerCase();
+						}
+						isXML = false;
+					}
+					switch (nodeName) {
+						case 'commands':
+							var value:*;
+							if (isXML) {
+								var aChild:Object;
+								var aName:String;
+								var toks:Array;
+								var children:Array = event.data['children'] as Array;
+								var namesFromServer:Array = [];
+								for (i = 0; i < children.length; i++) {
+									aChild = children[i];
+									aName = aChild['name'];
+									value = aChild['value'];
+									if ( (value is String) && (value.length > 0) && (value.indexOf('=') > -1) ) {
+										toks = value.split('=');
+										value = toks[toks.length-1];
+										if (StringUtils.isStringNumeric(value)) {
+											value = uint(value);
+										}
+									}
+									this._commandsDictionary[aName] = value;
+									namesFromServer.push(aName);
+								}
+							} else {
+								var isArray:Boolean = (nodeValue is Array);
+								if (!isArray) {
+									nodeValue = [nodeValue];
+								}
+								for (i = 0; i < nodeValue.length; i++) {
+									aChild = nodeValue[i];
+									keys = ObjectUtils.keys(aChild);
+									if (keys.length > 0) {
+										value = aChild[keys[0]];
+										if (StringUtils.isStringNumeric(value)) {
+											value = uint(value);
+										}
+										this._commandsDictionary[keys[0]] = value;
+									}
+								}
+							}
+							
+							var anItem:*;
+							for (var key:* in this._commandsDictionary) {
+								value = this._commandsDictionary[key];
+								if (ArrayCollectionUtils.findIndexOfItem(this.__items__,'name',key) == -1) {
+									this.__items__.addItem({'name':key,'value':value});
+								}
+							}
+							this.executeCommandFromQueue();
+							break;
+						
+						case 'csv':
+							isCSV = true;
+							break;
+						
+						case 'number':
+							isNumber = true;
+						case 'boolean':
+							ac = this.makeContentsIntoCollectionOfObjects(event.data,isCSV);
+							obj = this.collapseCollectionOfObjectsIntoSingleObject(ac);
+							obj.source = ArrayUtils.pruneEmptyItems(obj.source.split(File.separator)).join(File.separator);
+							var oTarget:Object = this.findCachedCallbackForItem(obj.source);
+							try {
+								var oFunc:Function = oTarget.obj[oTarget.methodName];
+								obj.item = ((isNumber) ? Number(obj.item) : ((obj.item.toLowerCase() == 'true') ? true : false));
+								obj.currentTarget = oTarget;
+								oFunc(obj);
+							} catch (err:Error) {
+								popup = AlertPopUp.error(err.message,"CallBack ERROR in 'boolean' case for onDataReceived()");
+								PopUpManager.centerPopUp(popup);
+								popup.styleName = 'ErrorAlert';
+							}
+							break;
+						
+						case 'license':
+							LicenseUtils.licenseLevel = event.data['value'];
+							break;
+						
+						case 'LicenseLevels':
+							ac = this.makeContentsIntoCollectionOfObjects(event.data,isCSV);
+							obj = this.collapseCollectionOfObjectsIntoSingleObject(ac);
+							LicenseUtils.licenseLevels = obj;
+							break;
+						
+						case 'null':
+							break;
+						
+						case 'error':
+							var errorTitle:String = 'APPLICATION ERROR';
+							XMLObjectUtils.flattenChildrenIntoNodeValue(event.data);
+							if (event.data['value'] is Array) {
+								var _ar:Array = event.data['value'];
+								errorTitle = StringUtils.replaceAll(_ar[0],'<br>', '\n');
+								nodeValue = StringUtils.replaceAll(_ar[_ar.length-1],'<br>', '\n');
+							} else {
+								nodeValue = event.data['value'];
+								nodeValue = StringUtils.replaceAll(nodeValue,'<br>', '\n');
+							}
+							popup = AlertPopUp.error(nodeValue,errorTitle);
+							PopUpManager.centerPopUp(popup);
+							popup.styleName = 'ErrorAlert';
+							break;
+						
+						default:
+							popup = AlertPopUp.info(this.dataToString(event.data,true) + "\n\n(" + nodeType + ")","Unknown Response");
+							PopUpManager.centerPopUp(popup);
+							popup.styleName = 'InfoAlert';
+							break;
+					}
+				} catch (err:Error) {
+					popup = AlertPopUp.error("Report this error to the Technical Support folks at http://www.VyperLogix.Com.\n\n(" + nodeType + ")\n\n" + err.message,"Application Error");
+					PopUpManager.centerPopUp(popup);
+					popup.styleName = 'ErrorAlert';
+				}
+				this.onlineStatusIndicator.isOnline = true;
+				this.enabled = true;	// handle the scenario where we disabled the GUI while the server is busy...
+			}
+			
+			private function onConnectionClosed(event:ConnectionClosedEvent):void {
+				this.onlineStatusIndicator.isConnected = false;
+			}
+			
+			private function onConnectionEstablished(event:ConnectionEstablishedEvent):void {
+				this.onlineStatusIndicator.isConnected = true;
+			}
+			
+			private function onIOErrorHandled(event:IOErrorHandledEvent):void {
+				this.onlineStatusIndicator.isOnline = false;
+			}
+			
+			private function onConnectionRetry(event:ConnectionRetryEvent):void {
+				this.onlineStatusIndicator.isConnected = false;
+				this.onlineStatusIndicator.toolTip = 'Retrying the Connection.';
+			}
+			
+			private function onCreationCompleteSocketsManager():void {
+				this.socketsManager.addEventListener(ConnectionTimeoutEvent.TYPE_CONNECTION_TIMEOUT, onConnectionTimeout);
+				this.socketsManager.addEventListener(DataReceivedEvent.TYPE_DATA_RECEIVED, onDataReceived);
+				this.socketsManager.addEventListener(ConnectionEstablishedEvent.TYPE_CONNECTION_ESTABLISHED, onConnectionEstablished);
+				this.socketsManager.addEventListener(IOErrorHandledEvent.TYPE_IOERROR_HANDLED, onIOErrorHandled);
+				this.socketsManager.addEventListener(ConnectionClosedEvent.TYPE_CONNECTION_CLOSED, onConnectionClosed);
+				this.socketsManager.addEventListener(ConnectionRetryEvent.TYPE_CONNECTION_RETRY, onConnectionRetry);
+			}
+			
+			protected function portNum_changeHandler(event:Event):void {
+				var spinner:Spinner = event.currentTarget as Spinner;
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 '+spinner.value);
+			}
+			
+			protected function items_creationCompleteHandler(event:FlexEvent):void {
+				var target:List = event.currentTarget as List;
+				trace(this.className+'.items_creationCompleteHandler().1 --> target.width='+target.width+', target.height='+target.height);
+				trace(this.className+'.items_creationCompleteHandler().2 --> __items__='+DebuggerUtils.explainThis(this.__items__.source));
+				
+				target.addEventListener(ClickedTileEvent.TYPE_CLICKED_TILE, 
+					function (event:ClickedTileEvent):void {
+						trace(this.className+'.items_creationCompleteHandler().3 --> socketsManager.sendCommandToSocket !!!');
+						_this.socketsManager.sendCommandToSocket(event.value['name']);
+					}
+				);
+			}
+			
+		]]>
+	</fx:Script>
+	<!--
+	<mx:ApplicationControlBar id="appBar" x="0" y="0" width="100%" dock="true">
+	<s:VGroup width="100%" height="100%">
+	<s:HGroup width="100%">
+	<mx:MenuBar id="menuBar" labelField="label" dataProvider="{this.menuBarCollection}" itemClick="onItemClickMenuBar(event)" creationComplete="onCreationCompleteAppMenuBar()"/>
+	<s:HGroup width="100%" horizontalAlign="center">
+	<s:Label styleName="ApplicationTitleBarLabel" text="Sample v1.0 {LicenseUtils.licenseLevel}"/>
+	</s:HGroup>
+	<controls:OnlineStatusCanvas id="onlineStatusIndicator" width="30" height="30" creationComplete="onCreationCompleteOnlineStatusCanvas()"/>
+	</s:HGroup>
+	<s:HGroup width="100%">
+	<s:HGroup>
+	<s:HGroup paddingTop="5">
+	<s:Label styleName="ApplicationTitleBarLabel" text="IP Address: {this.ipAddress.text}"/>
+	</s:HGroup>
+	<s:TextInput id="ipAddress" width="70" text="{this.socketsManager.DEFAULT_IP_ADDRESS}"/>
+	</s:HGroup>
+	<s:HGroup>
+	<s:HGroup paddingTop="5">
+	<s:Label styleName="ApplicationTitleBarLabel" text="Port: {this.portNum.value}"/>
+	</s:HGroup>
+	<s:Spinner id="portNum" minimum="40000" maximum="65535" value="{this.socketsManager.port}" change="portNum_changeHandler(event)"/>
+	</s:HGroup>
+	<s:HGroup>
+	<s:HGroup paddingTop="5">
+	<s:Label styleName="ApplicationTitleBarLabel" text="IsConnected: {this.__isConnected__}"/>
+	</s:HGroup>
+	</s:HGroup>
+	</s:HGroup>
+	<s:HGroup width="100%" height="0">
+	<mx:Panel id="socketsManagerPanel" width="100%" height="0" headerHeight="50" visible="false">
+	<s:VGroup width="100%" verticalAlign="top">
+	<socketViews:SocketConnectionManager id="socketsManager" width="100%" height="100%" port="{this.portNum.value}" ipAddress="{this.ipAddress.text}" creationComplete="onCreationCompleteSocketsManager()"/>
+	</s:VGroup>
+	</mx:Panel>
+	</s:HGroup>
+	</s:VGroup>
+	</mx:ApplicationControlBar>
+	-->
+	<s:VGroup id="canvas" width="100%" height="100%">
+		<s:List id="items" width="100%" height="100%" dataProvider="{this.__items__}" creationComplete="items_creationCompleteHandler(event)">
+			<s:layout>
+				<s:TileLayout 
+					orientation="{__orientation__}" 
+					horizontalGap="0" 
+					verticalGap="0" 
+					requestedRowCount="{__rows__}" 
+					requestedColumnCount="{__cols__}"
+					/>
+			</s:layout>
+			<s:itemRenderer>
+				<fx:Component>
+					<s:ItemRenderer>
+						<fx:Script>
+							<![CDATA[
+								import events.ClickedTileEvent;
+								
+								import mx.core.FlexGlobals;
+								import mx.events.FlexEvent;
+								
+								private function get get_tooltip():* {
+									return '<b>'+data['name']+'</b>';
+								}
+								
+								protected function hgroup1_creationCompleteHandler(event:FlexEvent):void {
+									var target:HGroup = event.currentTarget as HGroup;
+									target.toolTip = get_tooltip;
+								}
+								
+								protected function label1_creationCompleteHandler(event:FlexEvent):void {
+									var label:Label = event.currentTarget as Label;
+									label.text = data['name'];
+								}
+								
+								protected function hgroup1_clickHandler(event:MouseEvent):void {
+									event.currentTarget.dispatchEvent(new ClickedTileEvent(ClickedTileEvent.TYPE_CLICKED_TILE,data));
+								}
+								
+							]]>
+						</fx:Script>
+						<s:states>
+							<mx:State name="normal" />
+							<mx:State name="hovered" />
+							<mx:State name="selected" />
+						</s:states>
+						<s:Rect left="0" right="0" top="0" bottom="0">
+							<s:stroke>
+								<mx:SolidColorStroke color="0xCCCCCC" joints="round" weight="2"/>
+							</s:stroke>
+							<s:fill>
+								<mx:SolidColor color="0x999999" alpha="0" alpha.hovered="0.2" alpha.selected="0.6" />
+							</s:fill>
+						</s:Rect>
+						<s:HGroup width="100%" paddingTop="10" paddingLeft="10" paddingRight="10" paddingBottom="10" click="hgroup1_clickHandler(event)" creationComplete="hgroup1_creationCompleteHandler(event)">
+							<s:Label text="" creationComplete="label1_creationCompleteHandler(event)"/>
+						</s:HGroup>
+					</s:ItemRenderer>
+				</fx:Component>
+			</s:itemRenderer>
+		</s:List>
+	</s:VGroup>
+</s:WindowedApplication>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group add="addHandler()"
+		 preinitialize="preinitializeHandler()"
+		 removedFromStage="removeHandler()"
+		 xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:charts="com.adobe.dashboard.view.charts.*"
+		 xmlns:images="assets.images.*">
+
+	<fx:Metadata>
+		[Style(name="chartCornerRadius", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="chartPaddingTop", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="chartPaddingBottom", type="Number", format="Length", inherit="no",  minValue="0.0")]
+		[Style(name="chartPaddingLeft", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="chartPaddingRight", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="paddingLeft", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="paddingRight", type="Number", format="Length", inherit="no", minValue="0.0")]
+	</fx:Metadata>
+
+	<fx:Declarations>
+		<s:CurrencyFormatter id="currencyFormatter"
+							 currencySymbol="$"
+							 fractionalDigits="0"
+							 useCurrencySymbol="true"/>
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.dashboard.model.AppModel;
+			import com.adobe.dashboard.presenter.YearToDatePresenter;
+
+			[Bindable]
+			public var presenter:YearToDatePresenter;
+
+			[Bindable]
+			public var barHeight:int=80;
+
+			[Bindable]
+			public var showChevron:Boolean=true;
+
+
+			//
+			// Protected Methods
+			//
+
+			protected function addListeners():void
+			{
+				presenter.chartOverviewPresenter.addEventListener(Event.CHANGE, chartOverviewChangeHandler, false, 0, true);
+			}
+
+			protected function removeListeners():void
+			{
+				presenter.chartOverviewPresenter.removeEventListener(Event.CHANGE, chartOverviewChangeHandler);
+			}
+
+
+			//
+			// Event Handlers
+			//
+
+			protected function preinitializeHandler():void
+			{
+				presenter=AppModel.getInstance().yearToDatePresenter;
+			}
+
+			protected function addHandler():void
+			{
+				addListeners();
+
+				// Get the overview data
+				presenter.getMyGrossYearByMonthChartData(true);
+			}
+
+			protected function chartOverviewChangeHandler(event:Event):void
+			{
+				// do nothing atm
+			}
+
+			protected function removeHandler():void
+			{
+				removeListeners();
+			}
+		]]>
+	</fx:Script>
+
+	<!-- progress bars -->
+	<s:VGroup left="{getStyle('paddingLeft')}"
+			  right="{getStyle('paddingRight')}"
+			  top="16"
+			  bottom="0"
+			  gap="14">
+
+		<s:Label styleName="labelStyle"
+				 text="Year to Date"/>
+
+		<charts:ProgressChart id="yearToDateSalesChart"
+							  width="100%"
+							  height="{barHeight}"
+							  cornerRadius="{getStyle('chartCornerRadius')}"
+							  paddingBottom="{getStyle('chartPaddingBottom')}"
+							  paddingLeft="{getStyle('chartPaddingLeft')}"
+							  paddingRight="{getStyle('chartPaddingRight')}"
+							  paddingTop="{getStyle('chartPaddingTop')}"
+							  section1ColorList="{ [ 0xFFC066, 0xEE9922, 0xD97621 ]}"/>
+	</s:VGroup>
+</s:Group>

@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%" creationComplete="init()">
+		<mx:HBox id="iconContainer">
+			<mx:VBox id="imgContainer" width="{_componentWidth}" height="{_componentHeight}"
+				verticalScrollPolicy="off" horizontalScrollPolicy="off" added="setWidth()">
+			</mx:VBox>
+		</mx:HBox>
+		<mx:Script>
+			<![CDATA[
+				import mx.controls.Menu;
+				import vzw.utils.GUID;
+				import models.Menu_Model;
+				import mx.events.FlexEvent;
+				import vzw.menu.builder.MenuController;
+				import mx.core.Application;
+				import mx.controls.ToolTip;
+				import communication.WebServices;
+				import libs.utils.ErrorMessages;
+				import mx.controls.Image;
+				import utils.displayObject.DuplicateImage;
+				import libs.vo.GlobalsVO;
+				
+				[Bindable]
+				private var _componentWidth:Number;
+			
+				[Bindable]
+				public var _componentHeight:Number;
+		
+				public var currentData:Object;
+
+				public var menuItems:Array;
+				public var menuToolTip:String;
+
+				private var _mcr:*;
+				private var headerData:*;
+				private var img:Image;
+				private var _tabOrder:int;
+				private var _isAdmin:Boolean = Boolean(GlobalsVO.getGlobal(GlobalsVO.ISADMIN));
+				
+				private const ACCESS_NAME:String = "Verizon Wireless Logo Graphic";
+				private const P1:String = "image_logoAsset";		// Background asset
+				private const MCR:String = "MenuController";
+
+		
+				/**
+				 * Initialize and get the background
+				 * image from GlobalsVO
+				 */
+				 		
+				public function init():void {
+					
+		   			this._mcr = GlobalsVO.getGlobal(MCR);
+	  
+					// Set focus listener and it's tab priority
+					_tabOrder = GlobalsVO.INIT_TAB_LOGO;
+					
+					// Set focus listener and it's tab priority
+					GlobalsVO.addFocus(imgContainer,_tabOrder++);
+					
+					var model:Menu_Model = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL);
+					headerData = model.getHeaderData(GlobalsVO.LOGO);
+					this.currentData = model.headerData.data.logo[model.headerData.name];
+					
+					// Load Logo Graphic Asset
+					var asset:Object = DuplicateImage.validate(GlobalsVO.getGlobal(P1),this);
+					img = DuplicateImage.copy(asset.image,false,true);
+					
+					img.mouseChildren = false;
+					img.buttonMode = true;
+					img.useHandCursor = true;
+					
+					// Catch missing graphic asset error message
+					if(asset.error != null) {
+						new ErrorMessages(img,asset.error);
+					}
+					
+					
+					if (this._isAdmin) {
+						var onCreationCompleteHandler:Function = GlobalsVO.getGlobal(GlobalsVO.EDITABLELOGOICON_onCreationComplete);
+						if (onCreationCompleteHandler is Function) {
+							var e:* = {'currentTarget':this};
+							onCreationCompleteHandler(e);
+						}
+					}
+					imgContainer.addChild(img);
+					
+					// Setup mouse listeners for the new tabContainer
+					img.addEventListener(MouseEvent.MOUSE_OVER,onMouse);
+					img.addEventListener(MouseEvent.CLICK,onMouse);
+					
+					_componentWidth = img.width;
+
+					if (GlobalsVO.ISLoggedOut == false) {
+						_componentHeight = img.height;
+					}
+					
+				}
+				
+				
+				
+				
+				
+				/**
+				 * Accessibility, get the current selected
+				 * instance from this class
+				 * @see Accessibility_Model:talk()
+				 */
+				 
+				public function getDataByAccessibility(instance:*):Object {
+					//trace("############### LOGO: "+instance);
+					headerData[0].name = ACCESS_NAME;
+					headerData[0].component = this;
+					return headerData[0];
+				}		
+
+
+				
+				
+				
+				/**
+				 * Set the correct width
+				 * Needed for accessibility feature
+				 */
+				 
+				private function setWidth():void {
+					try {
+						_componentWidth = img.width;
+					} catch(e:Error){}
+					try {
+						if (GlobalsVO.ISLoggedOut == false) {
+							_componentHeight = img.height;
+						}
+					} catch(e:Error){}
+				}
+				
+				
+				
+				/**
+				 * Check the array with the current
+				 * selected component to see if the
+				 * component should be styled differently
+				 * @param:MouseEvent - Any mouse event
+				 */
+				private function onMouse(e:MouseEvent):void {
+					switch(e.type) {
+						
+						case MouseEvent.MOUSE_OVER :
+							if(GlobalsVO.DEVMODE) new ErrorMessages(this,headerData[0].value+" , "+GlobalsVO.PAGE_TYPE);
+						break;
+						case MouseEvent.CLICK :
+			      			if ( (this._mcr) && (this._mcr.onMouseClickMenuLogo_callback) ) {
+			      				this._mcr.onMouseClickMenuLogo_callback(e, this);
+			      			}
+						break;
+					}
+				}
+			]]>
+	</mx:Script>
+</mx:Canvas>

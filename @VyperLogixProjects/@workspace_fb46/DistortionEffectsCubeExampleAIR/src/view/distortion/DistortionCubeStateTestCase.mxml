@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:mxeffects="com.adobe.ac.mxeffects.*">
+
+    <mx:Script>
+        <![CDATA[
+            import flash.filters.BlurFilter;
+            import mx.effects.easing.Sine;
+            import com.adobe.ac.mxeffects.CubeRotate;
+            import com.adobe.ac.mxeffects.DistortionConstants;
+
+            [Bindable]
+            private var cubeHorizontalBlur:BlurFilter;
+
+            [Bindable]
+            private var cubeVerticalBlur:BlurFilter;
+
+            [Bindable]
+            private var effectDuration:Number = 400;
+        ]]>
+    </mx:Script>
+
+
+    <mx:transitions>
+        <mx:Transition fromState=""
+            toState="Panel 1"
+            effect="{ introTopanel1 }"/>
+        <mx:Transition fromState="Panel 1"
+            toState="Panel 2"
+            effect="{ panel1Topanel2 }"/>
+        <mx:Transition fromState="Panel 2"
+            toState="Panel 1"
+            effect="{ panel2Topanel1 }"/>
+
+        <!-- THIS TRANSITION IS THE ONE I AM NOT SURE HOW TO EXECUTE -->
+        <mx:Transition fromState="Panel 1"
+            toState="Panel 3"
+            effect="{ panel1Topanel3 }"/>
+
+    </mx:transitions>
+
+    <mx:Sequence id="introTopanel1"
+        duration="{effectDuration}">
+        <mxeffects:CubeRotate 
+            direction="TOP"
+            target="{ introVBox }"
+            siblings="{ [ panel1 ] }"
+            blur="{cubeVerticalBlur}"
+            easingFunction="{Sine.easeInOut}"/>
+
+        <mx:RemoveChildAction target="{ introVBox }"/>
+        <mx:AddChildAction target="{ panel1 }"/>
+    </mx:Sequence>
+
+    <mx:Sequence id="panel1Topanel2"
+        duration="{effectDuration}">
+        <mxeffects:CubeRotate 
+            direction="RIGHT"
+            target="{ panel1 }"
+            siblings="{ [ panel2 ] }"
+            blur="{cubeHorizontalBlur}"
+            easingFunction="{Sine.easeInOut}"/>
+
+        <mx:AddChildAction target="{ panel2 }"/>
+        <mx:RemoveChildAction target="{ panel1 }"/>
+    </mx:Sequence>
+
+    <mx:Sequence id="panel2Topanel1"
+        duration="{effectDuration}">
+        <mxeffects:CubeRotate 
+            direction="LEFT"
+            target="{ panel2 }"
+            siblings="{ [ panel1 ] }"
+            blur="{cubeHorizontalBlur}"
+            easingFunction="{Sine.easeInOut}"/>
+
+        <mx:AddChildAction target="{ panel1 }"/>
+        <mx:RemoveChildAction target="{ panel2 }"/>
+    </mx:Sequence>
+
+    <!-- THIS TRANSITION SEQUENCE IS THE ONE I AM NOT SURE HOW TO EXECUTE -->
+    <!--
+         TypeError: Error #1009: Cannot access a property or method of a null object reference.
+         at com.adobe.ac.mxeffects.effectClasses::DistortBaseInstance/::findContainer()
+         at com.adobe.ac.mxeffects.effectClasses::DistortBaseInstance/com.adobe.ac.mxeffects.effectClasses:DistortBaseInstance::initializeProperties()
+         at com.adobe.ac.mxeffects.effectClasses::DistortBaseInstance/play()
+    -->
+    <mx:Sequence id="panel1Topanel3"
+        duration="{effectDuration}">
+        <mxeffects:CubeRotate 
+            direction="RIGHT"
+            target="{ panel1 }"
+            siblings="{ [ panel1, panel3 ] }"
+            duration="4000"
+            blur="{cubeHorizontalBlur}"
+            easingFunction="{Sine.easeInOut}"/>
+
+        <mx:AddChildAction target="{ panel3 }"/>
+        <mx:RemoveChildAction target="{ panel1 }"/>
+    </mx:Sequence>
+
+    <mx:states>
+        <mx:State name="Panel 1">
+            <mx:RemoveChild target="{introVBox}"/>
+            <mx:AddChild relativeTo="{panelVBox}"
+                position="firstChild">
+                <mx:Panel id="panel1"
+                    width="600" height="600"
+                    title="Assets">
+                </mx:Panel>
+            </mx:AddChild>
+        </mx:State>
+        <mx:State name="Panel 2">
+            <mx:RemoveChild target="{introVBox}"/>
+            <mx:AddChild relativeTo="{panelVBox}"
+                position="firstChild">
+                <mx:Panel id="panel2"
+                    width="600" height="600"
+                    title="Client">
+                </mx:Panel>
+            </mx:AddChild>
+        </mx:State>
+        <mx:State name="Panel 3">
+            <mx:RemoveChild target="{introVBox}"/>
+            <mx:AddChild relativeTo="{panelVBox}"
+                position="firstChild">
+                <mx:Panel id="panel3"
+                    width="600" height="600"
+                    title="Customers">
+                </mx:Panel>
+            </mx:AddChild>
+        </mx:State>
+    </mx:states>
+
+    <mx:HBox 
+        x="0" y="0" width="100%" height="100%"
+        horizontalGap="0">
+
+        <mx:VBox id="panelVBox"
+            width="100%" height="100%"
+            horizontalAlign="center"
+            verticalAlign="middle">
+            <mx:VBox id="introVBox"
+                width="600" height="600"
+                backgroundColor="#0080c0"
+                borderStyle="solid"
+                cornerRadius="6"
+                horizontalAlign="center"
+                verticalAlign="middle">
+                <mx:Text id="introText"
+                    width="100%" height="100%"
+                    textAlign="center"
+                    text="Intro Text and Stuff Here - TOP OF CUBE"/>
+            </mx:VBox>
+        </mx:VBox>
+        <mx:VBox id="panelShelf"
+            width="120" height="100%"
+            horizontalAlign="center"
+            paddingTop="10">
+            <mx:Button 
+                width="100" height="100"
+                label="Panel 1"
+                click="{currentState = 'Panel 1';}"/>
+            <mx:Button 
+                width="100" height="100"
+                label="Panel 2"
+                click="{currentState = 'Panel 2';}"/>
+            <mx:Button 
+                width="100" height="100"
+                label="Panel 3"
+                click="{currentState = 'Panel 3';}"/>
+        </mx:VBox>
+
+    </mx:HBox>
+
+</mx:Canvas>

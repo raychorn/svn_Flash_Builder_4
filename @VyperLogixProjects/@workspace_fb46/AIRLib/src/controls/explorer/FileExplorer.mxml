@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		xmlns:mx="library://ns.adobe.com/flex/mx"
+		width="100%" height="100%" 
+		initialize="vgroup2_initializeHandler(event)"
+		creationComplete="group1_creationCompleteHandler(event)" 
+		xmlns:resizers="controls.resizers.*" xmlns:labels="controls.labels.*" xmlns:components="controls.explorer.components.*">
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		
+		._dirsList_ {
+			color: #000000;
+			fontFamily: "Verdana";
+			fontSize: 10;
+			textDecoration: none;
+		}
+		
+	</fx:Style>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import controls.resizers.events.ResizerClosedEvent;
+			import controls.resizers.events.ResizerOpenedEvent;
+			import controls.resizers.events.ResizerUpdatedEvent;
+			
+			import flash.filesystem.File;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+
+			private var _this:FileExplorer;
+			
+			private var __file__:File;
+			
+			[Bindable]
+			[Embed(source="assets/folder_48x48.png")]
+			public static var folderIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="assets/folder_open_48x48.png")]
+			public static var folderOpenedIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="assets/document_icon_48x48.png")]
+			public static var documentIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="assets/missing-image_48x48.png")]
+			public static var missingImageIconClass:Class;
+			
+			private function get_files_from_folder(file:File):Array {
+				var _files:Array = file.getDirectoryListing();
+				var files:Array = [];
+				var aFile:File;
+				for (var i:int = 0; i < _files.length; i++) {
+					aFile = _files[i];
+					files.push(aFile);
+				}
+				return files;
+			}
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void {
+				if (this.__file__ == null) {
+					this.__file__ = File.documentsDirectory;
+					var _files:Array = this.__file__.getDirectoryListing();
+					var files:Array = [];
+					var aFile:File;
+					for (var i:int = 0; i < _files.length; i++) {
+						aFile = _files[i];
+						if (aFile.isDirectory) {
+							files.push(aFile);
+						}
+					}
+					this.dirs.dataProvider = new ArrayCollection(files);
+					this.tiles.visible = this.tiles.includeInLayout = true;
+					trace(this.className+'.group1_creationCompleteHandler.1 --> !!!');
+				}
+			}
+			
+			protected function splitLeft_resizerUpdatedHandler(event:ResizerUpdatedEvent):void {
+				this.splitRight.slider_value = 100 - event.value;
+				this.canvasLeft.percentWidth = event.value;
+				this.canvasRight.percentWidth = this.splitRight.slider_value;
+				this.splitRight.slider_has_changed();
+				this.parentApplication.put_SO_value('canvasLeft.percentWidth',this.canvasLeft.percentWidth);
+				this.parentApplication.put_SO_value('canvasRight.percentWidth',this.canvasRight.percentWidth);
+				trace(this.className+'.splitLeft_resizerUpdatedHandler.1 --> event.value='+event.value+', leftValue='+this.splitLeft.slider_value+', rightValue='+this.splitRight.slider_value);
+			}
+			
+			protected function splitRight_resizerUpdatedHandler(event:ResizerUpdatedEvent):void {
+				this.splitLeft.slider_value = 100 - event.value;
+				this.canvasRight.percentWidth = event.value;
+				this.canvasLeft.percentWidth = this.splitLeft.slider_value;
+				this.splitLeft.slider_has_changed();
+				this.parentApplication.put_SO_value('canvasLeft.percentWidth',this.canvasLeft.percentWidth);
+				this.parentApplication.put_SO_value('canvasRight.percentWidth',this.canvasRight.percentWidth);
+				trace(this.className+'.splitRight_resizerUpdatedHandler.1 --> event.value='+event.value+', leftValue='+this.splitLeft.slider_value+', rightValue='+this.splitRight.slider_value);
+			}
+			
+			protected function splitLeft_resizerOpenedHandler(event:ResizerOpenedEvent):void {
+				this.splitRight._openSplitter();
+			}
+			
+			protected function splitRight_resizerOpenedHandler(event:ResizerOpenedEvent):void {
+				this.splitLeft._openSplitter();
+			}
+			
+			protected function splitLeft_resizerClosedHandler(event:ResizerClosedEvent):void {
+				this.splitLeft.percentWidth = this.splitLeft.slider_value;
+				this.splitRight._closeSplitter();
+				this.splitRight.percentWidth = this.splitRight.slider_value;
+				trace(this.className+'.splitLeft_resizerClosedHandler.1 --> this.splitRight.slider_value='+this.splitRight.slider_value);
+			}
+			
+			protected function splitRight_resizerClosedHandler(event:ResizerClosedEvent):void {
+				this.splitRight.percentWidth = this.splitRight.slider_value;
+				this.splitLeft._closeSplitter();
+				this.splitLeft.percentWidth = this.splitLeft.slider_value;
+				trace(this.className+'.splitRight_resizerClosedHandler.1 --> this.splitLeft.slider_value='+this.splitLeft.slider_value);
+			}
+			
+			protected function dirs_changeHandler(event:IndexChangeEvent):void {
+				var aFile:File = List(event.currentTarget).dataProvider.getItemAt(event.newIndex) as File;
+				var files:Array = this.get_files_from_folder(aFile);
+				this.splitLeft._closeSplitter();
+				this.splitRight._closeSplitter();
+				this.canvasRight.items.dataProvider = new ArrayCollection(files);
+			}
+			
+			protected function items_changeHandler(event:IndexChangeEvent):void {
+				var aFile:File = List(event.currentTarget.items).dataProvider.getItemAt(event.newIndex) as File;
+				this.splitLeft._closeSplitter();
+				this.splitRight._closeSplitter();
+			}
+			
+			protected function vgroup2_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				var value:Number;
+				value = Number(this.parentApplication.get_SO_value_by_name('canvasLeft.percentWidth'));
+				if (value is Number) {
+					this.splitLeft.slider_value = ((isNaN(value)) ? 50 : value);
+					trace(this.className+'.vgroup2_initializeHandler.1 --> this.splitLeft.slider_value='+this.splitLeft.slider_value);
+				}
+				value = Number(this.parentApplication.get_SO_value_by_name('canvasRight.percentWidth'));
+				if (value is Number) {
+					this.splitRight.slider_value = ((isNaN(value)) ? 50 : value);
+					trace(this.className+'.vgroup2_initializeHandler.2 --> this.splitRight.slider_value='+this.splitRight.slider_value);
+				}
+				this.update_splitters_using(this.splitLeft.slider_value,this.splitRight.slider_value);
+			}
+			
+			protected function update_splitters_using(leftValue:Number=0.0,rightValue:Number=0.0):void {
+				if ( (leftValue > 0.0) && (rightValue == 0.0) ) {
+					rightValue = 100 - leftValue;
+				} else if ( (leftValue == 0.0) && (rightValue > 0.0) ) {
+					leftValue = 100 - rightValue;
+				}
+				if (leftValue == 0) {
+					rightValue = rightValue / 2;
+					leftValue = 100 - rightValue;
+				} else if (rightValue == 0.0) {
+					leftValue = leftValue / 2;
+					rightValue = 100 - leftValue;
+				}
+				this.canvasLeft.percentWidth = this.splitLeft.slider_value = this.splitLeft.percentWidth = leftValue;
+				this.canvasRight.percentWidth = this.splitRight.slider_value = this.splitRight.percentWidth = rightValue;
+				trace('(+++) '+this.className+'.update_splitters_using.1 --> splitLeft.percentWidth='+this.splitLeft.percentWidth+', splitRight.percentWidth='+this.splitRight.percentWidth);
+			}
+			
+			protected function splitLeft_creationCompleteHandler(event:FlexEvent):void {
+				this.update_splitters_using(this.splitLeft.slider_value,0.0);
+				trace('(+++) '+this.className+'.splitLeft_creationCompleteHandler.1 --> splitLeft.percentWidth='+this.splitLeft.percentWidth+', splitRight.percentWidth='+this.splitRight.percentWidth);
+			}
+			
+			protected function splitRight_creationCompleteHandler(event:FlexEvent):void {
+				this.update_splitters_using(0.0,this.splitRight.slider_value);
+				trace('(+++) '+this.className+'.splitRight_creationCompleteHandler.1 --> splitLeft.percentWidth='+this.splitLeft.percentWidth+', splitRight.percentWidth='+this.splitRight.percentWidth);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup width="100%" horizontalAlign="right">
+			<resizers:MobilePaneSplitter id="splitLeft" 
+										 width="100%" 
+										 paddingLeft="5" paddingRight="5" 
+										 slider_min="10" slider_max="90" 
+										 thumb_button_styleName="MobilePaneSplitterThumbButton"
+										 slider_value="{this.canvasLeft.percentWidth}" 
+										 resizerUpdated="splitLeft_resizerUpdatedHandler(event)" 
+										 resizerOpened="splitLeft_resizerOpenedHandler(event)" 
+										 resizerClosed="splitLeft_resizerClosedHandler(event)" 
+										 creationComplete="splitLeft_creationCompleteHandler(event)"/>
+			<resizers:MobilePaneSplitter id="splitRight" 
+										 width="100%" 
+										 paddingLeft="5" paddingRight="5" 
+										 slider_min="10" slider_max="90"
+										 thumb_button_styleName="MobilePaneSplitterThumbButton"
+										 slider_value="{this.canvasRight.percentWidth}" 
+										 resizerUpdated="splitRight_resizerUpdatedHandler(event)" 
+										 resizerOpened="splitRight_resizerOpenedHandler(event)" 
+										 resizerClosed="splitRight_resizerClosedHandler(event)" 
+										 creationComplete="splitRight_creationCompleteHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup id="tiles" width="100%" height="100%" visible="false" styleName="_dirsList_" includeInLayout="false">
+			<s:VGroup id="canvasLeft" width="50%" height="100%">
+				<s:List id="dirs" width="100%" height="100%" labelField="name" change="dirs_changeHandler(event)"/>
+			</s:VGroup>
+			<components:FileExplorerDetailsPane id="canvasRight" width="100%" height="100%" change="items_changeHandler(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:VGroup>

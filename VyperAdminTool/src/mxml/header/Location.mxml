@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+	width="100%" height="{componentHeight}" verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+	creationComplete="init()">
+		<mx:states>
+			<mx:State name="loggedin">
+				<mx:SetProperty target="{container}" name="horizontalGap" value="{locationGap}"/>
+			</mx:State>
+		</mx:states>
+		<mx:HBox id="container" verticalAlign="middle" horizontalGap="{locationGap}"
+			paddingTop="3" verticalScrollPolicy="off" horizontalScrollPolicy="off"
+			horizontalAlign="right" width="100%" height="{componentHeight}"
+			>
+		</mx:HBox>
+
+		<mx:Script>
+			<![CDATA[
+				import mxml.header.utils.ClickableLabel;
+				import mx.collections.errors.CursorError;
+				import mx.managers.CursorManager;
+				import communication.WebServices;
+				import models.Menu_Model;
+				import libs.utils.ErrorMessages;
+				import mx.controls.Label;
+				import mx.controls.Image;
+				import utils.displayObject.DuplicateImage;
+				import libs.vo.GlobalsVO;
+				import libs.utils.ExtendedChars;
+				
+				[Bindable]
+				public var locationPadR:Number;
+				
+				[Bindable]
+				public var componentHeight:Number;
+								
+				[Bindable]
+				private var tabWidth:Number;
+				
+				[Bindable]
+				private var locationGap:Number;
+				
+				private var _mcr:*;
+				public var currentData:Object;
+				private var lobCount:int;
+				private var arr:Array;
+				private var _divider:Image;
+				private var _tabBackground:Image;
+				private var _currentSelect:Object;
+				private var _tabOrder:int;
+				private var _extVars:Object;
+				private var _title:String;
+				private var _locationName:String;
+				private var _coverageLocator:String;
+				private var _localCoverage:Array;
+				private var _companyName:String;
+				private var _isAdmin:Boolean = Boolean(GlobalsVO.getGlobal(GlobalsVO.ISADMIN));
+				private var _model:Menu_Model = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL);
+				
+				// Graphic Assets
+				private const P1:String = "image_locDivAsset";		// Divider asset
+				
+				// Style Mode
+				private const MODE:String = "select";
+				private const DIVIDER_WIDTH:Number = 1;			// Tab Divider witth
+
+				// Mouse
+				private const S1:String = "HeaderLocationNormal";
+				private const S2:String = "HeaderLocationSelect";
+				private const S3:String = "HeaderLocationMouseOut";
+				private const S4:String = "HeaderLocationCompanyName";
+				private const MCR:String = "MenuController";
+				
+				public function init():void {
+		   			this._mcr = GlobalsVO.getGlobal(MCR);
+
+					parseData();
+					
+					// Get Tab order
+					_tabOrder = GlobalsVO.INIT_TAB_LOCATION;
+					
+					componentHeight = Number(GlobalsVO.getCSSProperty("headerLocationH"));
+					
+					// Gather data
+					arr = [{name:unescape(_extVars.CITY)+","+unescape(_extVars.STATE), target:_localCoverage[1].target,value:_localCoverage[1].value},
+						   {name:_localCoverage[2].name, target:_localCoverage[2].target, value:_localCoverage[2].value}];
+					
+					// Set gap between each link
+					locationGap = Number(GlobalsVO.getCSSProperty("headerLocationGap"));
+					
+					// Right justify container
+					locationPadR = Number(GlobalsVO.getCSSProperty("headerLocationPadR"));
+					
+					this.currentState = (GlobalsVO.ISLoggedOut) ? '' : 'loggedin';
+					
+					// Create new label links
+					_companyName = _extVars[GlobalsVO.COMPANY_NAME];
+					if(_companyName is String && _companyName != null) createCompanyName();
+					
+					if ( (_isAdmin) || (Number(_extVars[GlobalsVO.ZIP_DISPLAY] !=0)) ) {
+						_zip_F = true;
+						createLabelLink();
+					}
+					
+					
+				}
+				
+				private var _zip_F:Boolean = false;
+				
+				
+				
+				
+				
+				/**
+				 * Accessibility, get the current selected
+				 * instance from this class
+				 * @see Accessibility_Model:talk()
+				 */
+				 
+				public function getDataByAccessibility(instance:*):Object {
+					for(var i:int = 0; i<arr.length; ++i) {
+						if(instance.name.toString() == arr[i].component.name.toString()) {
+							return arr[i];
+						}
+					}
+					
+					return null;
+				}		
+				
+				
+				
+				public function createCompanyName():void {
+					var cnl:Label = new Label();
+					cnl.htmlText = unescape(_companyName);
+					cnl.styleName = S4;
+					GlobalsVO.setStyle(cnl);
+					container.addChild(cnl);
+					if(Number(_extVars[GlobalsVO.ZIP_DISPLAY] !=0)) {
+						addDivider();
+					}
+				}
+				
+				
+				/**
+				 * Create new location link
+				 */
+				 
+				public function createLabelLink():void {
+					var l:*;
+					l = new Label();
+					l.mouseChildren = false;
+					l.buttonMode = true;
+					l.useHandCursor = true;
+					arr[lobCount].label = l;
+					l.htmlText = _localCoverage[0].name;
+					GlobalsVO.setStyle(l);
+					container.addChild(l);
+					l.styleName = S1;
+						
+					var model:Menu_Model = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL);
+					var ar:Array = model.headerData.data.localeCoverage[model.headerData.name];
+					var onCreationCompleteHandler:Function = GlobalsVO.getGlobal(GlobalsVO.EDITABLELOCATION_onCreationComplete);
+						
+					/* Iterate through the array of objects
+					 * and setup the line of business tabs */
+					for(lobCount=0; lobCount<arr.length;++lobCount) {
+
+						// Add new label field to the hBox
+						l = new ClickableLabel();
+						l.mouseChildren = false;
+						l.buttonMode = true;
+						l.useHandCursor = true;
+						l.styleName = S2;
+						l.htmlText = arr[lobCount].name.toString();
+						arr[lobCount].label = l;
+						
+						// Add new tabContainer to the array
+						arr[lobCount].component = l;
+						arr[lobCount].mode = null;
+						
+						// Define the textfield with the text title
+						GlobalsVO.setStyle(l);
+						
+						if ( (this._isAdmin) && (onCreationCompleteHandler is Function) ) {
+							l.currentData = ar[lobCount];
+							var e:* = {'currentTarget':l};
+							onCreationCompleteHandler(e);
+						}
+						// Setup mouse listeners for the new tabContainer
+						l.addEventListener(MouseEvent.MOUSE_OVER,onMouse);
+						l.addEventListener(MouseEvent.MOUSE_OUT,onMouse);
+						l.addEventListener(MouseEvent.CLICK,onMouse);
+						
+						// Add the new tabContainer to the main container
+						container.addChild(l);
+						GlobalsVO.addFocus(l,_tabOrder++);
+						
+						// Add a divider to the end of the tab
+						if(lobCount <= arr.length-2) addDivider();
+					}
+					
+				}
+				
+				
+				
+				/**
+				 * Add graphic devider to location feature
+				 */
+				 
+				private function addDivider():void {
+					var c:Canvas = new Canvas();
+					var asset:Object = DuplicateImage.validate(GlobalsVO.getGlobal(P1),this);
+					var divider:Image = DuplicateImage.copy(asset.image,false,false);
+					if(asset.error != null) new ErrorMessages(divider,asset.error);
+					c.addChild(divider);
+					divider.y = Number(GlobalsVO.getCSSProperty("headerLocationDivY"));
+					container.addChild(c);
+					divider.height = componentHeight;
+					divider.width = DIVIDER_WIDTH;
+				}
+				
+				
+				
+				
+				
+				private function parseData():void {
+					// Get External Flash Vars
+					_extVars = GlobalsVO.getGlobal(GlobalsVO.EXTERNALVARS);
+					
+					// Get Header Data
+					_localCoverage = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL).getHeaderData("localeCoverage",false);
+					var a:Array = ( (_localCoverage is Array) && (_localCoverage.length >= 3) ) ? String(_localCoverage[2].value).split("&") : [];
+					if ( (_localCoverage is Array) && (_localCoverage.length >= 3) ) {
+						_localCoverage[2].value = a[0];
+					}
+					
+					for(var i:int = 0; i<a.length; ++i) {
+						var subArray:Array = String(a[i]).split("=");
+						
+						if(String(subArray[0]).toLowerCase().indexOf("zip") > -1) _localCoverage[2].value += "&"+subArray[0]+"="+_extVars.ZIPCODE;
+						if(String(subArray[0]).toLowerCase().indexOf("city") > -1) _localCoverage[2].value += "&"+subArray[0]+"="+_extVars.CITY;
+						if(String(subArray[0]).toLowerCase().indexOf("state") > -1) _localCoverage[2].value += "&"+subArray[0]+"="+_extVars.STATE;
+						if(String(subArray[0]).toLowerCase().indexOf("maptype") > -1) _localCoverage[2].value += "&"+a[a.length-1];
+					}
+				}
+				
+				
+				
+				/**
+				 * Check the array with the current
+				 * selected component to see if the
+				 * component should be styled differently
+				 * @param:MouseEvent - Any mouse event
+				 */
+				private function onMouse(e:MouseEvent):void {
+					var i:int=0;
+					switch(e.type) {
+						
+						case MouseEvent.MOUSE_OVER :
+							for(; i<arr.length; ++i) { 
+								if(arr[i].component == e.currentTarget) {
+									onHighlight(_currentSelect = arr[i],e);
+								}
+							}
+									
+						break;
+						
+						
+						case MouseEvent.MOUSE_OUT :
+							for(; i<arr.length; ++i)  
+								if(arr[i].component == e.currentTarget)
+									onHighlight(arr[i],e);
+									
+						break;
+						
+						case MouseEvent.CLICK :
+			      			if ( (this._mcr) && (this._mcr.onMouseClickMenuLocation_callback) ) {
+			      				this._mcr.onMouseClickMenuLocation_callback(e, e.currentTarget);
+			      			}
+						break;
+					}
+				}
+				
+				
+				
+				
+				/**
+				 * Based on the component match, determine
+				 * if the component should be styled differently
+				 */
+				 
+				private function onHighlight(item:Object,e:MouseEvent):void {
+					switch(e.type) {
+						case MouseEvent.MOUSE_OVER:
+							item.useHandCursor = true;
+							item.mode == MODE ? item.label.styleName = S2 : item.label.styleName = S2;
+							GlobalsVO.setStyle(item.label);
+						break;
+						case MouseEvent.MOUSE_OUT:
+							item.mode == MODE ? item.label.styleName = S3 : item.label.styleName = S3;
+							GlobalsVO.setStyle(item.label);
+						break;
+					}
+				}
+			]]>
+	</mx:Script>
+</mx:Canvas>

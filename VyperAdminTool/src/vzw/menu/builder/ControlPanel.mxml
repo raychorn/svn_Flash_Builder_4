@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel 
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	styleName="SmartControlPanelContainer"
+	width="100%" height="100%" 
+	currentState="LoggedOut"
+	xmlns:login="vzw.controls.login.*" creationComplete="onCreationComplete()">
+	<mx:states>
+		<mx:State name="LoggedOut">
+			<mx:SetProperty target="{btnSaveMenuAs}" name="enabled" value="false"/>
+			<mx:SetProperty target="{btn_menuChoice}" name="enabled" value="false"/>
+			<mx:AddChild relativeTo="{hbox12}" position="lastChild">
+				<mx:Button label="Login" id="btnLogin" click="performLogin()"/>
+			</mx:AddChild>
+			<mx:SetProperty target="{btn_colors}" name="labelPlacement" value="right"/>
+			<mx:SetProperty target="{btn_colors}" name="label" value="Colors..."/>
+		</mx:State>
+		<mx:State name="LoggedIn">
+			<mx:AddChild relativeTo="{hbox12}" position="lastChild">
+				<mx:Button label="Logout" id="btnLogout" width="0" click="performLogout()" creationComplete="onCreationComplete_buttonHandler(event)"/>
+			</mx:AddChild>
+		</mx:State>
+		<mx:State name="LoggingIn" basedOn="LoggedOut">
+			<mx:AddChild relativeTo="{vbox1}" position="lastChild">
+				<login:LoginCanvas width="100%" height="100%" id="logingCanvas"/>
+			</mx:AddChild>
+			<mx:SetProperty target="{btnLogin}" name="enabled" value="false"/>
+		</mx:State>
+		<mx:State name="PublishOnly">
+			<mx:SetProperty target="{this.btnPublishMenu}" name="enabled" value="false"/>
+			<mx:RemoveChild target="{this.panel_title}"/>
+			<mx:RemoveChild target="{this.btnSaveMenuAs}"/>
+			<mx:RemoveChild target="{this.btn_menuChoice}"/>
+			<mx:RemoveChild target="{this.versionNumber}"/>
+			<mx:RemoveChild target="{this.hbox_release}"/>
+			<mx:RemoveChild target="{this.intro_text}"/>
+			<mx:RemoveChild target="{this.hbox_colorPicker}"/>
+			<mx:SetProperty target="{this.hbox2}" name="percentWidth" value="100"/>
+		</mx:State>
+	</mx:states>
+	<mx:Script>
+		<![CDATA[
+			import vzw.controls.colorPicker.ColorSelectEvent;
+			import vzw.controls.colorPicker.ColorSwatchCanvas;
+			import mx.managers.PopUpManager;
+			import vzw.controls.colorPicker.ColorChooser;
+			import vzw.utils.ObjectExplainer;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Menu;
+			import mx.events.CloseEvent;
+			import vzw.controls.SmartCheckBox;
+			import mx.controls.CheckBox;
+			import mx.events.FlexEvent;
+			import vzw.controls.login.events.LogoutCompletedEvent;
+			import vzw.controls.login.events.LoginCompletedEvent;
+			import com.hurlant.util.Hex;
+			import com.hurlant.crypto.hash.MD5;
+			import vzw.controls.login.events.LoginRequestedEvent;
+			import mx.logging.Log;
+			import vzw.menu.builder.events.MenuChangedEvent;
+			import vzw.controls.Alert.AlertPopUp;
+        	import vzw.menu.builder.MenuController;
+        	
+        	private const intro_text_symbol:String = 'To start, select a Global Nav release from the list below. You can either make changes to the selected release or save it under a new release date to start a new GN release.';
+        	
+        	public var IsWmsDev:Boolean = false;
+        	public var HasUserID:Boolean = false;
+
+			[Bindable]
+        	public var VersionNumber:String = "MISSING";
+        	
+        	private var _colorChooser:ColorSwatchCanvas;
+        	
+        	private function onCreationComplete():void {
+        		this.verticalScrollPolicy = "off";
+        		this.horizontalScrollPolicy = "off";
+        		try {
+        			var isShown:Boolean = this.IsWmsDev && (this.HasUserID == false);
+
+	        		this.panel_title.visible = this.panel_title.includeInLayout = isShown;
+        		} catch (e:Error) {}
+        	}
+
+        	private function onCreationComplete_buttonHandler(event:FlexEvent):void {
+        		var button:Button = event.currentTarget as Button;
+        		if (button.id != 'btnPublishMenu') {
+	        		try {
+		        		//this.hbox_special.visible = button.visible = this.IsWmsDev && (this.HasUserID == false);
+					} catch (e:Error) {}
+        		}
+        	}
+        	
+            private function onCreationCompleteMenuChoiceBtn():void {
+            	MenuController.getMenus();
+            }
+
+			private function onClick_btnDeleteSelectedMenu(event:Event):void {
+				AlertPopUp.confirm('Are you sure you want to delete ' + MenuController._currentSelectedMenu.name + ' ?','Confirmation',MenuController.performMenuDelete);
+			}
+			
+			private function onClick_btnPublishSelectedMenu(event:Event):void {
+				function intent_to_publish(event:CloseEvent):void {
+					var envs:Array = envs_list.getChildren();
+					var cb:SmartCheckBox;
+					var ar:Array = [];
+					var _envs:String = '';
+					for (var i:String in envs) {
+						cb = envs[i] as SmartCheckBox;
+						if (cb.selected) {
+							ar.push(cb.label);
+							cb.selected = false;
+						}
+					}
+					_envs = ar.join('|');
+					MenuController.performMenuPublish({detail:event.detail,envs:_envs});
+				}
+				AlertPopUp.confirm('Are you sure you want to publish ' + MenuController._currentSelectedMenu.name + ' ?','Confirmation',intent_to_publish);
+			}
+
+			private function performLogin():void {
+				var prevState:String = this.currentState;
+				var prevHeight:Number = this.parent.height;
+				
+				function revertLoggingIn():void {
+					currentState = prevState;
+					parent.height = prevHeight;
+					logingCanvas.btn_Cancel.removeEventListener(MouseEvent.CLICK, revertLoggingIn);
+					logingCanvas.removeEventListener(LoginRequestedEvent.TYPE_LOGIN_REQUESTED, handle_loginRequested);
+				}
+
+				function handle_loginRequested(event:LoginRequestedEvent):void {
+					var srcs:Array = [
+						Hex.fromString(event.password),
+					];
+					var md5:MD5 = new MD5;
+					var src:ByteArray = Hex.toArray(srcs[0]);
+					var digest:ByteArray = md5.hash(src);
+					var password:String = Hex.fromString(digest.toString());
+					revertLoggingIn();
+					currentState = 'LoggedIn';
+					dispatchEvent(new LoginCompletedEvent(LoginCompletedEvent.TYPE_LOGIN_COMPLETED,event.username,password));
+				}
+			
+				this.currentState = 'LoggingIn';
+				this.parent.height = 300;
+				this.logingCanvas.btn_Register.visible = false;
+				this.logingCanvas.addEventListener(LoginRequestedEvent.TYPE_LOGIN_REQUESTED, handle_loginRequested);
+				this.logingCanvas.label_PasswordStrength.visible = false;
+				this.logingCanvas.btn_Cancel.addEventListener(MouseEvent.CLICK, revertLoggingIn);
+			}
+			
+			private function performLogout():void {
+				this.currentState = 'LoggedOut';
+				dispatchEvent(new LogoutCompletedEvent(LogoutCompletedEvent.TYPE_LOGOUT_COMPLETED));
+			}
+			
+			private function get areAnyEnvsChecked():Boolean {
+				var children:Array = this.envs_list.getChildren();
+				var aChild:SmartCheckBox;
+				var numChecked:int = 0;
+				for (var i:String in children) {
+					aChild = children[i];
+					if (aChild.selected) {
+						numChecked++;
+					}
+				}
+				return (numChecked > 0);
+			}
+			
+			private function onEnvChange(event:*):void {
+				var cb:SmartCheckBox = event.currentTarget as SmartCheckBox;
+				var id:String = cb.id;
+				var isChecked:Boolean = cb.selected;
+				if (isChecked && !this.isPublishButtonEnabled) {
+					cb.selected = false;
+				}
+				this.btnPublishMenu.enabled = this.isPublishButtonEnabled && this.areAnyEnvsChecked;
+				//trace('### onEnvChange().1 this.btnPublishMenu.enabled='+this.btnPublishMenu.enabled);
+			}
+
+			public function refresh_envs():void {
+				this.envs_list.removeAllChildren();
+				var anEnv:Object;
+				var cb:SmartCheckBox;
+				var dp:Object;
+				for ( var i:String in MenuController.envsList) {
+					anEnv = MenuController.envsList[i];
+					cb = new SmartCheckBox();
+					cb.id = 'cb_env';
+					cb.selected = false;
+					cb.label = anEnv.label;
+					cb['dataProvider'] = anEnv;
+					cb.addEventListener(Event.CHANGE,this.onEnvChange);
+					this.envs_list.addChild(cb);
+				}
+				this.btnPublishMenu.enabled = this.isPublishButtonEnabled && this.areAnyEnvsChecked;
+				//trace('### refresh_envs().1 this.btnPublishMenu.enabled='+this.btnPublishMenu.enabled);
+				this.envs_list.enabled = this.isPublishButtonEnabled;
+				//trace('### refresh_envs().2 this.envs_list.enabled='+this.envs_list.enabled);
+			}
+			
+			private function onCreationComplete_envs_list_handler(event:*):void {
+				this.refresh_envs();
+			}
+			
+			private function get saveAsButtonEnabled():Boolean {
+				var menu:* = this.btn_menuChoice.popUp;
+        		var dataProvider:ArrayCollection = (menu != null) ? menu.dataProvider as ArrayCollection : null;
+        		//trace(this.className + '.saveAsButtonEnabled.1 --> dataProvider='+((dataProvider is ArrayCollection) ? (new ObjectExplainer(dataProvider.source)).explainThisWay() : 'NULL (EMPTY)'));
+        		var isDataProviderEmpty:Boolean = ((dataProvider is ArrayCollection) && (dataProvider.length <= 1));
+        		//trace(this.className + '.saveAsButtonEnabled.2 --> isDataProviderEmpty='+isDataProviderEmpty);
+				return (isDataProviderEmpty) || ((dataProvider is ArrayCollection) && (dataProvider.length > 0) && (MenuController._currentSelectedMenu.name is String) && (MenuController._currentSelectedMenu.name.length > 0));
+			}
+			
+			public function refresh_btnSaveMenuAs():void {
+				var menu:* = this.btn_menuChoice.popUp;
+        		var dataProvider:ArrayCollection = (menu != null) ? menu.dataProvider as ArrayCollection : null;
+        		var isDataProviderEmpty:Boolean = ((dataProvider is ArrayCollection) && (dataProvider.length == 1));
+        		var is_saveAsButtonEnabled:Boolean = this.saveAsButtonEnabled;
+        		var isPublishButtonEnabled:Boolean = this.isPublishButtonEnabled;
+				this.btnSaveMenuAs.enabled = (isDataProviderEmpty || this.saveAsButtonEnabled);
+				this.btnSaveMenuAs.toolTip = (isDataProviderEmpty) ? 'Click this button to save the production menu from 03-28-2010 as a new menu.' : (((MenuController._currentSelectedMenu != null) && (MenuController._currentSelectedMenu.name is String)) ? 'Click this button to save the menu from ' + MenuController._currentSelectedMenu.name + ' as a new menu.' : this.btnSaveMenuAs.toolTip);
+				this.btn_menuChoice.toolTip = (isDataProviderEmpty) ? 'There are no Menu Releases in the database however you are currently viewing the production menu from 03-28-2010.' : 'Choose the Menu Release you want to work with. ' + (((MenuController._currentSelectedMenu != null) && (MenuController._currentSelectedMenu.name is String)) ? MenuController._currentSelectedMenu.name + ' is the currently selected menu.' : '');
+			}
+			
+			private function onCreationComplete_btnSaveMenuAs(event:FlexEvent):void {
+				this.refresh_btnSaveMenuAs();
+			}
+			
+			private function get isPublishButtonEnabled():Boolean {
+				//trace('### isPublishButtonEnabled().1 MenuController._currentSelectedMenu='+MenuController._currentSelectedMenu);
+				//if (MenuController._currentSelectedMenu != null) {trace('### isPublishButtonEnabled().2 MenuController._currentSelectedMenu.name='+MenuController._currentSelectedMenu.name);}
+				var isEnabled:Boolean = (MenuController._currentSelectedMenu != null) && (MenuController._currentSelectedMenu.name is String) && (MenuController._currentSelectedMenu.name.length > 0);
+				//trace('### isPublishButtonEnabled().3 isEnabled='+isEnabled);
+				return isEnabled;
+			}
+			
+			private function dismissColorChooser():void {
+				PopUpManager.removePopUp(this._colorChooser);
+			}
+			
+			private function onColorSelected(event:ColorSelectEvent):void {
+				var widget:ColorChooser = event.currentTarget as ColorChooser;
+				var color:String = widget.selectedColor;
+				//trace('### onColorSelected().1 --> color='+color);
+				MenuController.mySO.data.color = color;
+				MenuController.mySO.flush();
+				MenuController.applyNewColorScheme(color);
+				this.dismissColorChooser();
+			}
+			
+			private function onClick_btn_colors(event:MouseEvent):void {
+				this._colorChooser = PopUpManager.createPopUp(MenuController.parent, ColorSwatchCanvas, true) as ColorSwatchCanvas;
+				this._colorChooser.id = 'color_chooser_canvas';
+				this._colorChooser.colors.addEventListener(ColorSelectEvent.COLOR_SELECTED,onColorSelected);
+				this._colorChooser.btn_dismiss.addEventListener(MouseEvent.CLICK,function (event:MouseEvent):void {dismissColorChooser()});
+				PopUpManager.centerPopUp(this._colorChooser);
+			}
+			
+			private function onCreationComplete_btn_colors(event:FlexEvent):void {
+				var btn:Button = event.currentTarget as Button;
+				btn.setStyle('icon',MenuController.adminColorPickerIcon);
+			}
+		]]>
+	</mx:Script>
+    <mx:VBox height="100%" id="vbox1" paddingTop="0">
+    	<mx:HBox id="hbox1">
+	    	<mx:HBox id="hbox12">
+	    		<mx:VBox id="vbox21" width="100%">
+				    <mx:Label id="panel_title" text="There {((MenuController._numMenus == 0) || (MenuController._numMenus == -1) || (MenuController._numMenus > 1)) ? 'are' : 'is'} {(MenuController._numMenus == 0) ? 'No' : MenuController._numMenus} menu{((MenuController._numMenus == 0) || (MenuController._numMenus == -1) || (MenuController._numMenus > 1)) ? 's' : ''}."/>
+				    <mx:Label id="intro_text" styleName="ControlPanelIntroText" paddingTop="-8" text="{this.intro_text_symbol}"/>
+				    <mx:HBox paddingLeft="10">
+				    	<mx:VBox width="100%">
+					    	<mx:HBox>
+							    <mx:PopUpButton id="btn_menuChoice" name="btn_menuChoice" label="Choose Menu" toolTip="Choose the Menu Release you want to work with." creationComplete="onCreationCompleteMenuChoiceBtn()"/>
+							    <mx:Spacer width="10"/>
+							    <mx:Button id="btnSaveMenuAs" label="Save New GN" enabled="false" toolTip="This button is disabled until a Menu Release has been selected." creationComplete="onCreationComplete_btnSaveMenuAs(event)"/>
+							    <mx:VBox width="100%" paddingTop="-0">
+							    	<mx:HBox paddingTop="-5">
+							    		<mx:Label id="versionNumber" htmlText="{MenuController.VersionNumber + '/' + this.VersionNumber}" color="#0000FF"/>
+							    	</mx:HBox>
+								    <mx:HBox id="hbox_release" paddingTop="-5" horizontalAlign="left" width="100%">
+									    <mx:Label styleName="BottomControlPanelTitle" text="Global Nav Release: "/>
+									    <mx:Label id="label_release" styleName="BottomControlPanelTitle" text=""/>
+								    </mx:HBox>
+							    </mx:VBox>
+							    <mx:HBox id="hbox_colorPicker">
+									<mx:Button id="btn_colors" label="Preferences..." labelPlacement="right" creationComplete="onCreationComplete_btn_colors(event)" click="onClick_btn_colors(event)"/>
+							    </mx:HBox>
+					    	</mx:HBox>
+				    	</mx:VBox>
+				    	<mx:HBox id="hbox2" width="0">
+							<mx:Tile id="envs_list" 
+							    direction="horizontal" 
+							    borderStyle="none" fontSize="10"
+							    paddingTop="0" paddingBottom="0" 
+							    paddingRight="1" paddingLeft="1" 
+							    verticalGap="1" horizontalGap="1" 
+							    width="670" height="100%" creationComplete="onCreationComplete_envs_list_handler(event)">
+							</mx:Tile>
+						    <mx:HBox id="hbox_publish" width="100%" paddingTop="5" paddingRight="5" horizontalAlign="left">
+							    <mx:Button id="btnPublishMenu" enabled="{this.isPublishButtonEnabled}" label="Publish" toolTip="Publish {(MenuController._currentSelectedMenu.name is String) ? MenuController._currentSelectedMenu.name : '___'} ?" click="onClick_btnPublishSelectedMenu(event)" creationComplete="onCreationComplete_buttonHandler(event)"/>
+						    </mx:HBox>
+				    	</mx:HBox>
+			    	</mx:HBox>
+	    		</mx:VBox>
+	    	</mx:HBox>
+    	</mx:HBox>
+    </mx:VBox>
+</mx:Panel>

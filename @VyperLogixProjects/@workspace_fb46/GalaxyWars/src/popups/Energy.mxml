@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" 
+			   initialize="titlewindow1_initializeHandler(event)" xmlns:controls="popups.controls.*">
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import factories.FusionFactory;
+			import factories.ResourceFactory;
+			import factories.SolarFactory;
+			import factories.SolarSatelliteFactory;
+			import factories.editors.FusionBuilder;
+			import factories.editors.SolarBuilder;
+			import factories.editors.SolarSatelliteBuilder;
+			
+			private var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+
+			private var _this:Energy;
+			
+			public static function get is_building_by_id():String {
+				return ResourcesGroup.is_building_by_id;
+			}
+			
+			public static function set is_building_by_id(is_building_by_id:String):void {
+				if (ResourcesGroup.is_building_by_id != is_building_by_id) {
+					ResourcesGroup.is_building_by_id = is_building_by_id;
+				}
+			}
+			
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				this.closeButton.visible = this.closeButton.includeInLayout = false;
+			}
+			
+			public function refresh_panel_titles():void {
+				this.energy.refresh_panel_titles();
+			}
+			
+			public function signal_completion_of_timer(id:String):void {
+				this.energy.signal_completion_of_timer(id);
+			}
+			
+			protected function energy_creationCompleteHandler(event:FlexEvent):void {
+				var group:ResourcesGroup = event.currentTarget as ResourcesGroup;
+				group.currentState = 'fancy';
+
+				if (!app.premium_account) {
+					this.energy.signal_disabled_for_others_besides(is_building_by_id);
+				}
+			}
+			
+			private function handle_energy_for_timer():void {
+				var s_level:int = SolarFactory.current_level;
+				var s_cost:* = SolarFactory.current_level_upgrade_cost;
+				var s_enabled:Boolean = ResourceFactory.has_resources_using(s_cost);
+				app.log = '(+++) '+this.className+'-->'+DebuggerUtils.getFunctionName(new Error())+', s_level='+s_level+', s_cost='+s_cost+', s_enabled='+s_enabled;
+				
+				var f_level:int = FusionFactory.current_level;
+				var f_cost:* = FusionFactory.current_level_upgrade_cost;
+				var f_enabled:Boolean = ResourceFactory.has_resources_using(f_cost);
+				app.log = '(+++) '+this.className+'-->'+DebuggerUtils.getFunctionName(new Error())+', f_level='+f_level+', f_cost='+f_cost+', f_enabled='+f_enabled;
+				
+				var ss_level:int = SolarSatelliteFactory.current_level;
+				var ss_cost:* = SolarSatelliteFactory.current_level_upgrade_cost;
+				var ss_enabled:Boolean = ResourceFactory.has_resources_using(ss_cost);
+				app.log = '(+++) '+this.className+'-->'+DebuggerUtils.getFunctionName(new Error())+', ss_level='+ss_level+', ss_cost='+ss_cost+', ss_enabled='+ss_enabled;
+				
+				this.energy.building_panels_vgroup1.enabled = (s_enabled);
+				app.log = '(+++) '+this.className+'-->'+DebuggerUtils.getFunctionName(new Error())+', '+this.energy.building_panels_vgroup1.id+'='+this.energy.building_panels_vgroup1.enabled;
+				this.energy.building_panels_vgroup2.enabled = f_enabled;
+				app.log = '(+++) '+this.className+'-->'+DebuggerUtils.getFunctionName(new Error())+', '+this.energy.building_panels_vgroup2.id+'='+this.energy.building_panels_vgroup2.enabled;
+				this.energy.building_panels_vgroup3.enabled = ss_enabled;
+				app.log = '(+++) '+this.className+'-->'+DebuggerUtils.getFunctionName(new Error())+', '+this.energy.building_panels_vgroup3.id+'='+this.energy.building_panels_vgroup3.enabled;
+			}
+			
+			public function handle_timer_event(event:TimerEvent):void {
+				app.log = '(+++) '+this.className+'-->'+DebuggerUtils.getFunctionName(new Error());
+				this.handle_energy_for_timer();
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<controls:ResourcesGroup 
+			id="energy"
+			
+			resource_label1="Solar" paddingLeft1="10" paddingTop1="-20" width1="130" height1="160" 
+			factory1="{SolarFactory}" builder1="{SolarBuilder}" building_container_name1="{SolarFactory.name}" building_resource_image1="{Images.solarBuildingImageClass}"
+
+			resource_label2="Fusion" paddingLeft2="10" paddingTop2="-20" width2="130" height2="160" 
+			factory2="{FusionFactory}" builder2="{FusionBuilder}" building_container_name2="{FusionFactory.name}" building_resource_image2="{Images.fusionBuildingImageClass}"
+
+			resource_label3="Satellites" paddingLeft3="10" paddingTop3="-20" width3="130" height3="160"
+			factory3="{SolarSatelliteFactory}" builder3="{SolarSatelliteBuilder}" building_container_name3="{SolarSatelliteFactory.name}" building_resource_image3="{Images.solarSatelliteImageClass}" 
+
+			creationComplete="energy_creationCompleteHandler(event)"
+			/>
+	</s:VGroup>
+</s:TitleWindow>

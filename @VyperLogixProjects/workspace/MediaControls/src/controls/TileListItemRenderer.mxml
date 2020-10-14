@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   xmlns:controls="controls.*"
+		   width="{TileListItemRenderer.cell_width}" height="{TileListItemRenderer.cell_height}"
+		   styleName="document_list_detail" 
+		   horizontalAlign="center" verticalAlign="middle"
+		   paddingTop="2" paddingBottom="2" paddingLeft="2" paddingRight="2" >
+	<fx:Script>
+		<![CDATA[
+			import flash.filters.GlowFilter;
+			
+			import mx.core.FlexGlobals;
+			import mx.managers.CursorManager;
+			import mx.managers.PopUpManager;
+			
+			private var popUp:*;
+			
+			[Bindable]
+			public static var cell_width:Number = 276;
+			
+			[Bindable]
+			public static var cell_height:Number = 85;
+			
+			private var tips:Object = {
+				'AFStudyGuideIcon' : '27 Amazing Facts Study Guides, enjoyed all over the world',
+				'AudioIcon' : 'Audio File, Questions and answers from the hit radio program Bible Answers Live',
+				'BookIcon' : 'A huge library of books, including 44 booklets by trusted Bible experts, an electronic health magazine, plus these timeless works: Steps to Christ, Acts of the Apostles, and more!',
+				'KidStudyGuideIcon' : 'Kids Study Guide, topical study guides for kids, called Amazing Adventure',
+				'StoraclesIcon' : '24 Storacles of Prophecy Bible lessons, providing new biblical insights',
+				'VideoIcon' : '30 videos totaling over 25 hours of life-changing Bible teaching'
+			};
+			
+			public override function set data(data:Object):void {
+				super.data = data;
+				for (var i:String in this.tips) {
+					if (String(data.data.image).toLowerCase().indexOf(i.toLowerCase()) > -1) {
+						this.anImage.toolTip = this.tips[i];
+						break;
+					}
+				}
+			}
+
+			protected function vbox1_mouseOverHandler(event:MouseEvent):void {
+				var filter:GlowFilter = new GlowFilter(0xFF0000);
+				filter.alpha = 0.8;
+				filter.blurX = 10;
+				filter.blurY = 10;
+				filter.strength = 5;
+				VBox(event.currentTarget).filters = [filter];
+			}
+
+			protected function vbox1_mouseOutHandler(event:MouseEvent):void {
+				VBox(event.currentTarget).filters = [];
+			}
+			
+			protected function onClick_vbox_0(event:MouseEvent):void {
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%" styleName="docs_listItem" mouseOver="vbox1_mouseOverHandler(event)" mouseOut="vbox1_mouseOutHandler(event)" click="onClick_vbox_0(event)">
+		<mx:HBox width="100%" horizontalAlign="left" borderStyle="none" borderColor="0xFF0000">
+			<mx:Image id="anImage" scaleContent="false" source="{'data/'+data.data.image}"/>
+			<mx:VBox width="100%" height="100%" borderStyle="none" borderColor="0x0000FF" horizontalAlign="left" verticalAlign="top">
+				<mx:Label id="aLabel" styleName="docs_listItemTitle" width="100%" text="{data.label}" textAlign="left"/>
+				<controls:MultiLineLabel id="someText" width="{this.width - this.anImage.width - 20}" htmlText="{data.data.text}" paddingTop="-10" textAlign="left"/>
+			</mx:VBox>
+		</mx:HBox>
+	</mx:VBox>
+</mx:VBox>

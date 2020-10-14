@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   width="100%" height="100%"
+			   backgroundColor="#FFFFFF" 
+			   creationComplete="titlewindow1_creationCompleteHandler(event)" 
+			   initialize="titlewindow1_initializeHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.events.TextOperationEvent;
+			
+			[Bindable]
+			private var __dataProvider__:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var __labelField__:String = 'text';
+			
+			public function get dataProvider():ArrayCollection {
+				return this.__dataProvider__;
+			}
+			
+			public function set _dataProvider(dataProvider:ArrayCollection):void {
+				if (this.__dataProvider__ != dataProvider) {
+					for (var i:int=0; i < dataProvider.length; i++) {
+						this.__dataProvider__.addItem(dataProvider.getItemAt(i));
+					}
+				}
+			}
+			
+			public function get labelField():String {
+				return this.__labelField__;
+			}
+			
+			public function set labelField(labelField:String):void {
+				if (this.__labelField__ != labelField) {
+					this.__labelField__ = labelField;
+					this.status.labelField = labelField;
+				}
+			}
+			
+			public function reset():void {
+				this.__dataProvider__.removeAll();
+			}
+			
+			public function set dataProvider(dataProvider:ArrayCollection):void {
+				this.reset();
+				this.__dataProvider__ = dataProvider;
+			}
+			
+			public function set text(text:String):void {
+				if ( (text is String) && (text.length > 0) ) {
+					var item:Object = {};
+					item[this.labelField] = text;
+					this.__dataProvider__.addItem(item);
+				}
+			}
+			
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void {
+			}
+			
+			private function handle_close_event(event:CloseEvent):void {
+				this.removeEventListener(CloseEvent.CLOSE, handle_close_event);
+				PopUpManager.removePopUp(this);
+			}
+			
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void {
+				this.addEventListener(CloseEvent.CLOSE, handle_close_event);
+			}
+			
+			protected function incrementSlider_changeHandler(event:Event):void {
+				var target:HSlider = event.currentTarget as HSlider;
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> value='+this.incrementSlider.value);
+				this.status.selectedIndex = target.value;
+			}
+			
+		]]>
+	</fx:Script>
+		<s:VGroup width="100%" height="100%" verticalAlign="top" horizontalAlign="center" styleName="StatusBackground">
+			<s:HGroup id="incrementGroup" width="100%" visible="false" includeInLayout="false">
+				<s:Label id="incrementLabel" text="{this.incrementSlider.value}" paddingLeft="5" paddingRight="0" paddingTop="5"/>
+				<s:HSlider id="incrementSlider" 
+						   width="100%" 
+						   liveDragging="true" 
+						   maximum="{this.status.dataProvider.length}" 
+						   skinClass="skins.HSliderCustomSkin" 
+						   height="25" 
+						   showDataTip="true"
+						   minimum="1" 
+						   value="1"
+						   change="incrementSlider_changeHandler(event)"
+						   />
+				<s:Label id="maximumLabel" text="{this.incrementSlider.maximum}" paddingLeft="0" paddingRight="5" paddingTop="5"/>
+			</s:HGroup>
+			<s:HGroup width="100%" height="100%">
+				<s:List id="status" 
+						styleName="ErrorList"
+						alternatingItemColors="[#ffffff,#ffffff]"
+						labelField="text"
+						height="100%" width="100%" 
+						borderVisible="true" 
+						dataProvider="{this.__dataProvider__}"
+						verticalScrollPolicy="auto" horizontalScrollPolicy="auto" 
+					>
+					<s:layout>
+						<s:VerticalLayout useVirtualLayout="false" requestedMinRowCount="1"/>
+					</s:layout>
+				</s:List>
+			</s:HGroup>
+			<s:HGroup width="100%" paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="10">
+				<s:Button id="btnClose" label="(Close)" width="100%"/>
+			</s:HGroup>
+		</s:VGroup>
+</s:TitleWindow>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  width="100%" height="100%" currentState="label"
+		  paddingLeft="5" paddingRight="5" paddingTop="5" xmlns:mx="library://ns.adobe.com/flex/mx">
+	<s:states>
+		<mx:State name="textarea"/>
+		<mx:State name="label"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			[Bindable]
+			public var label_styleName:String;
+
+			[Bindable]
+			public var text_styleName:String;
+		]]>
+	</fx:Script>
+	<s:HGroup>
+		<s:Label id="label" styleName="{this.label_styleName}"/>
+	</s:HGroup>
+	<s:HGroup>
+		<s:Label id="text" 
+				 styleName="{this.text_styleName}" 
+				 visible.textarea="false" includeInLayout.textarea="false" 
+				 visible.label="true" includeInLayout.label="true"
+				 />
+		<s:TextArea id="textArea" width="{this.width-10}"
+					styleName="{this.text_styleName}" editable="false"
+					visible.textarea="true" includeInLayout.textarea="true" 
+					visible.label="false" includeInLayout.label="false"
+					/>
+	</s:HGroup>
+</s:HGroup>

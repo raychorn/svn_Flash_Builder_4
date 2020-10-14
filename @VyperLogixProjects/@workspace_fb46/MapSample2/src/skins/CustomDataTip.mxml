@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" height="100%" 
+		 minWidth="40" minHeight="24">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			[Bindable] 
+			private var _data:*;
+			
+			public function set data(data:*):void {
+				_data = data;
+			}
+			
+			[Bindable] 
+			public function get data():* {
+				return this._data;
+			}
+		]]>
+	</fx:Script>
+	<s:Rect top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="haloBlue" alpha="0.9"/>
+		</s:fill>
+		<s:filters>
+			<s:DropShadowFilter angle="90" color="0x999999" distance="3"/>
+		</s:filters>
+	</s:Rect>
+	<s:HGroup verticalAlign="middle">
+		<mx:Text id="labelElement" text="{data}"
+				 horizontalCenter="0" verticalCenter="1"
+				 left="5" right="5" top="5" bottom="5"
+				 textAlign="center" 
+				 fontWeight="normal" color="black" fontSize="11" />
+	</s:HGroup>
+</s:Group>

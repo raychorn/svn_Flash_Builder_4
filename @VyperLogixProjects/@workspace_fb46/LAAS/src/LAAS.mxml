@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TabbedViewNavigatorApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+								  xmlns:s="library://ns.adobe.com/flex/spark" 
+								  applicationDPI="160">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			import spark.components.VGroup;
+			
+			import utils.AIRHelper;
+			
+			private var __url__:String = 'https://appgate.mphasis.com/uniquesigb4d932d0b5255f7dd85c69da19c1be08/uniquesig0/InternalSite/InstallAndDetect.asp?resource_id=53AF16EE7F7746368837D6B45F2D8257&login_type=8&site_name=mphasis&secure=1&orig_url=https%3a%2f%2fappgate.mphasis.com/uniquesigef5f61478a3d311d1e78f42326e4f9d21710f7d374c5c5ac901a38bcac743d62/uniquesig1%2fLAAS%2fGeneral%2ffrmOnsiteAttendance.aspx';
+			
+			protected function button1_clickHandler(event:MouseEvent):void {
+				AIRHelper.navigate_to_url(this.__url__,'_blank');
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:navigators>
+		<s:ViewNavigator width="100%" height="100%" label="Mphasis/HP">
+			<s:titleContent>
+				<s:Label text="(c).Ray.C.Horn@hp.com"/>
+			</s:titleContent>
+			<s:actionContent>
+				<s:Button id="btn_laas" label="Click to LAAS" click="button1_clickHandler(event)"/>
+			</s:actionContent>
+		</s:ViewNavigator>	
+	</s:navigators>
+</s:TabbedViewNavigatorApplication>

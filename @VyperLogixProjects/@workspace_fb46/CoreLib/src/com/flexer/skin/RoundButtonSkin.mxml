@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<s:SparkSkin 
+    xmlns:fx="http://ns.adobe.com/mxml/2009" 
+    xmlns:s="library://ns.adobe.com/flex/spark" 
+    minWidth="60" minHeight="60" 
+    alpha.disabled="0.5" xmlns:mx="library://ns.adobe.com/flex/mx"> 
+ 
+    <fx:Metadata> 
+        [HostComponent("spark.components.Button")] 
+    </fx:Metadata> 
+    
+    <fx:Script> 
+        <![CDATA[         
+            static private const exclusions:Array = ["labelElement"]; 
+            override public function get colorizeExclusions():Array {return exclusions;} 
+        ]]>        
+    </fx:Script> 
+    
+    <s:states> 
+        <mx:State name="up" /> 
+        <mx:State name="over" /> 
+        <mx:State name="down" /> 
+        <mx:State name="disabled" /> 
+    </s:states> 
+    
+	<s:Ellipse width="100%" height="100%">
+	
+		<s:stroke>
+	    	<mx:SolidColorStroke color="#cccccc" alpha="1" weight="1" /> 
+	    </s:stroke> 
+	    
+        <s:fill.up> 
+           <mx:RadialGradient> 
+              <mx:entries>  
+                     <mx:GradientEntry color="0x0000AA" ratio="0" alpha=".5"/> 
+                     <mx:GradientEntry color="0xAAAAAA" ratio="0.8" alpha=".5"/> 
+              </mx:entries> 
+         </mx:RadialGradient> 
+        </s:fill.up>  
+        
+        <s:fill.over>  
+         <mx:RadialGradient> 
+              <mx:entries>  
+                     <mx:GradientEntry color="0xAA0000" ratio="0" alpha=".5"/> 
+                     <mx:GradientEntry color="0xAAAAAA" ratio="0.8" alpha=".5"/> 
+              </mx:entries> 
+         </mx:RadialGradient> 
+        </s:fill.over>  
+        
+        <s:fill.down>  
+         <mx:RadialGradient> 
+              <mx:entries>  
+                     <mx:GradientEntry color="0x00AA00" ratio="0" alpha=".5"/> 
+                     <mx:GradientEntry color="0xAAAAAA" ratio="0.9" alpha=".5"/> 
+              </mx:entries> 
+         </mx:RadialGradient> 
+        </s:fill.down> 
+        
+	</s:Ellipse>
+ 
+	<s:Label id="labelElement" 
+			 textAlign="center" 
+			 color="0x000099"
+			 horizontalCenter="0" verticalCenter="1" 
+			 left="25" right="10" top="2" bottom="2"/> 
+    
+</s:SparkSkin>

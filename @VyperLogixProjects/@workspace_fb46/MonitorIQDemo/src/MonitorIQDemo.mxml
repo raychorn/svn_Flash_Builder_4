@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TabbedViewNavigatorApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+								  xmlns:s="library://ns.adobe.com/flex/spark"
+								  applicationDPI="160">
+	<fx:Style source="styles.css"/>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+
+	<s:ViewNavigator width="100%" height="100%" label="FlowPlayer Demo 1" firstView="views.MonitorIQYouTubeDemoView2"/>
+
+	<s:ViewNavigator width="100%" height="100%" label="YouTube Demo 2" firstView="views.MonitorIQYouTubeDemoView2"/>
+	
+	<s:ViewNavigator width="100%" height="100%" label="YouTube Demo 1" firstView="views.MonitorIQYouTubeDemoView"/>
+
+	<s:ViewNavigator width="100%" height="100%" label="Local MP4 Demo" firstView="views.MonitorIQMP4DemoView"/>
+	
+</s:TabbedViewNavigatorApplication>

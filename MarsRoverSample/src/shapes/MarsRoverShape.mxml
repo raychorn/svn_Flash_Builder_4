@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				initialize="canvas1_initializeHandler(event)" 
+				borderColor="#000000" borderStyle="solid">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.core.IVisualElement;
+			import mx.events.FlexEvent;
+			
+			import vzw.utils.ArrayUtils;
+			import vzw.utils.StringUtils;
+			
+			[Bindable]
+			private var _pt:Point = new Point(0,0);
+			
+			[Bindable]
+			private var _radius:Number = 0;
+			
+			[Bindable]
+			private var _direction:String = '';
+			
+			public var northDirection:String = 'N';
+			public var southDirection:String = 'S';
+			public var eastDirection:String = 'E';
+			public var westDirection:String = 'W';
+
+			private var _validDirections:String = 'NSEW';
+
+			public var leftCommand:String = 'L';
+			public var rightCommand:String = 'R';
+			public var moveCommand:String = 'M';
+			
+			private var _validCommands:String = 'LRM';
+			
+			public var callback:Function;
+			public var refreshCallback:Function;
+			
+			public function get pt():Point {
+				return this._pt;
+			}
+			
+			private function doMove():void {
+				if (this._direction == this.northDirection) {
+					this._pt.y += 1;
+				} else if (this._direction == this.eastDirection) {
+					this._pt.x += 1;
+				} else if (this._direction == this.southDirection) {
+					this._pt.y -= 1;
+				} else if (this._direction == this.westDirection) {
+					this._pt.x -= 1;
+				}
+			}
+			
+			public function set direction(direction:String):void {
+				this._direction = ( (this._validDirections.indexOf(direction) > -1) && (this._validCommands.indexOf(direction) == -1) ) ? direction : this._direction;
+			}
+			
+			public function get direction():String {
+				return this._direction;
+			}
+			
+			public function set spin(direction:String):void {
+				this._direction = ( (this._validDirections.indexOf(direction) > -1) && (this._validCommands.indexOf(direction) == -1) ) ? direction : this._direction;
+			}
+			
+			public function set doCommand(command:String):void {
+				if (command == this.leftCommand) {
+					if (this._direction == this.northDirection) {
+						this.spin = this.westDirection;
+					} else if (this._direction == westDirection) {
+						this.spin = this.southDirection;
+					} else if (this._direction == this.southDirection) {
+						this.spin = this.eastDirection;
+					} else if (this._direction == this.eastDirection) {
+						this.spin = this.northDirection;
+					}
+				} else if (command == this.rightCommand) {
+					if (this._direction == this.northDirection) {
+						this.spin = this.eastDirection;
+					} else if (this._direction == this.eastDirection) {
+						this.spin = this.southDirection;
+					} else if (this._direction == this.southDirection) {
+						this.spin = this.westDirection;
+					} else if (this._direction == this.westDirection) {
+						this.spin = this.northDirection;
+					}
+				} else if (command == this.moveCommand) {
+					this.doMove();
+				}
+			}
+
+			private function refreshParent():void {
+				if (this.refreshCallback is Function) {
+					try { this.refreshCallback() } 
+					catch (err:Error) {this.callback('ERROR.1.1: '+err.toString()+'\n'+err.getStackTrace())}
+				}
+			}
+			
+			private function set debugMessage(someText:String):void {
+				if (this.callback is Function) {
+					try { this.callback(someText) } 
+					catch (err:Error) {this.callback('ERROR.1: '+err.toString()+'\n'+err.getStackTrace())}
+				}
+			}
+			
+			public function set command(command:String):void {
+				var toks:Array = command.split(' ');
+				this.debugMessage = '@@@.1 ('+toks.length+') --> '+toks.toString();
+				var aTok:String;
+				var isNumeric:Boolean;
+				var items:Array = [];
+				var tests:Array = [];
+				var aPt:Point;
+				var aBool:Boolean;
+				var aCmd:String;
+				while (toks.length > 0) {
+					aTok = toks.shift();
+					if (aTok.length > 1) {
+						this.debugMessage = '@@@.1a ('+aTok.length+') --> '+aTok;
+						try {
+							for (var i:int = 0; i < aTok.length; i++) {
+								aCmd = aTok.substr(i,1);
+								this.debugMessage = '@@@.1b ('+aCmd.length+') --> '+aCmd;
+								if (this._validCommands.indexOf(aCmd) > -1) {
+									this.debugMessage = '@@@.1b1 ('+aCmd.length+') --> '+aCmd;
+									this.doCommand = aCmd;
+									this.refreshParent();
+									this.debugMessage = '@@@.1b2 --> ('+this._pt+') '+this._direction;
+								}
+							}
+						} catch (err:Error) {this.debugMessage = 'ERROR.11: '+err.toString()}
+					} else {
+						isNumeric = StringUtils.isStringNumeric(aTok);
+						tests.push(isNumeric);
+						items.push(aTok);
+						this.debugMessage = '@@@.2 ('+aTok.length+') --> ('+isNumeric+') '+aTok;
+						if ( (tests.length == 2) && (tests[0] is Boolean) && (tests[0] == true) && (tests[1] is Boolean) && (tests[1] == true) ) {
+							aPt = new Point(items.shift(),items.shift());
+							aBool = tests.shift();
+							aBool = tests.shift();
+							this.debugMessage = '@@@.3 --> ('+aPt+') '+this._direction;
+							this._pt.x = aPt.x;
+							this._pt.y = aPt.y;
+							this.drawShape(this._pt.x,this._pt.y,this._radius);
+							this.refreshParent();
+						} else if (this._validDirections.indexOf(aTok) > -1) {
+							this.debugMessage = '@@@.4 --> ('+aTok+')';
+							this.direction = aTok;
+							this.debugMessage = '@@@.4a --> ('+this._pt+') '+this._direction;
+							this.refreshParent();
+						} else if (this._validCommands.indexOf(aTok) > -1) {
+							this.debugMessage = '@@@.5 --> ('+aTok+')';
+							this.doCommand = aTok;
+							this.refreshParent();
+							this.debugMessage = '@@@.5a --> ('+this._pt+') '+this._direction;
+						}
+					}
+				}
+			}
+
+			protected function canvas1_initializeHandler(event:FlexEvent):void {
+			}
+			
+			public function drawShape(x:Number,y:Number,radius:Number):void {
+				var gr:Graphics = this.graphics;
+				gr.clear();
+				//gr.beginFill(0xFFCC00);
+				this._radius = radius;
+				//gr.drawCircle(x*100, y*100, radius);
+			}
+
+		]]>
+	</fx:Script>
+</mx:Canvas>

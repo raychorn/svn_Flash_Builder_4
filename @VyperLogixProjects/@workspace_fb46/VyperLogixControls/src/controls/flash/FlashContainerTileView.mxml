@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%" 
+		  xmlns:google="controls.google.*" 
+		  resize="vgroup1_resizeHandler(event)" 
+		  creationComplete="view1_creationCompleteHandler(event)" 
+		  xmlns:flash="controls.flash.*" xmlns:viewers="controls.viewers.*"
+		  >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.GUID;
+			
+			import controls.Alert.AlertPopUp;
+			
+			import mobile.MobileDebuggerUtils;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.layouts.TileOrientation;
+			
+			[Bindable]
+			private var __items__:ArrayCollection = new ArrayCollection();
+			
+			private var __has_initialized_items__:Boolean = false;
+			
+			[Bindable]
+			private var __orientation__:String = TileOrientation.ROWS;
+			
+			[Bindable]
+			private var __player_controls__:ArrayCollection = new ArrayCollection(['Play','Pause']);
+			
+			[Bindable]
+			private var __rows__:int = 4;
+			
+			[Bindable]
+			private var __cols__:int = 4;
+			
+			[Bindable]
+			private var __swf__:String = null;
+			
+			[Bindable]
+			public var __captions_plugin__:String = null;
+			
+			[Bindable]
+			private var __channels__:Object = {};
+			
+			[Bindable]
+			private var __data__:Object = {};
+			
+			public function get captions_plugin():String {
+				return this.__captions_plugin__;
+			}
+			
+			public function set captions_plugin(captions_plugin:String):void {
+				if (this.__captions_plugin__ != captions_plugin) {
+					this.__captions_plugin__ = captions_plugin;
+				}
+			}
+			
+			public function get data():* {
+				return this.__data__;
+			}
+			
+			public function set data(data:*):void {
+				if (this.__data__ != data) {
+					this.__data__ = data;
+				}
+			}
+			
+			public function get swf():String {
+				return this.__swf__;
+			}
+			
+			public function set swf(swf:String):void {
+				if (this.__swf__ != swf) {
+					this.__swf__ = swf;
+				}
+			}
+			
+			public function get channels():Object {
+				return this.__channels__;
+			}
+			
+			public function set channels(channels:Object):void {
+				if (this.__channels__ != channels) {
+					this.__channels__ = channels;
+				}
+			}
+			
+			private function get get_current_name():String {
+				return (this.__items__.length+1).toString();
+			}
+			
+			public function set configs(configs:Array):void {
+				this.__items__.removeAll();
+				
+				var channels:Array = [];
+				for (var j:String in this.__channels__) {
+					channels.push(this.__channels__[j]);
+				}
+				
+				for (var i:int = 0; i < configs.length; i++) {
+					this.__items__.addItem(
+						{	'name':get_current_name,
+							'GUID':GUID.create(),
+							'target':this,
+							'rows':__rows__,
+							'cols':__cols__,
+							'url':configs[i],
+							'channels':new ArrayCollection(channels),
+							'channame':this.__data__['channame'],
+							'loudness':this.__data__['loudness'],
+							'swf':this.__swf__,
+							'config':'{"playerId":"'+get_current_name+'","playlist":[{"url":"'+configs[i]+'","playerId":"'+get_current_name+'","scaling":"fit"}],"captions_plugin":{"url":"/videoplayers/flowplayer.content-3.2.0.swf"},"audio_levels_plugin":{"url":"/videoplayers/flowplayer.content-3.2.0.swf","bottom":"25","right":"5","width":"100"}'+this.__captions_plugin__+'}'
+						}
+					); // 1
+				}
+			}
+//		'config':'{"playerId":"'+get_current_name+'","playlist":[{"url":"'+configs[i]+'","playerId":"'+get_current_name+'","scaling":"fit"}],"captions_plugin":{url:"/videoplayers/flowplayer.content-3.2.0.swf",top:0,left:0,width:"100%",height:height-30,padding:0,opacity:0.5,zIndex:1,border:0,borderRadius:0,backgroundColor:"#000000",backgroundGradient:"none",html:"<span class="captions_text"><br><br><br>Initializing...</span>",style:{".captions_text": { height:32, border:"solid 1px #ffffff", textAlign:"center", fontWeight:"bold", color:"#eeeeee"},".message_info":{textAlign:"center"}}}'+this.__captions_plugin__+'}'
+
+			protected function initialize_items_list():void {
+				if (!this.__has_initialized_items__) {
+					this.__has_initialized_items__ = true;
+				}
+			}
+			
+			protected function view1_creationCompleteHandler(event:FlexEvent):void {
+				this.initialize_items_list();
+			}
+			
+			private function refresh_items():void {
+				this.items.enabled = false;
+				this._width_.enabled = false;
+				this._height_.enabled = false;
+				var player:*;
+				for (var i:int = 0; i < this.__items__.length; i++) {
+					player = this.__items__.getItemAt(i)['player'];
+					if (player) {
+						player['width'] = this._width_.value;
+						player['height'] = this._height_.value;
+					}
+				}
+				this.items.enabled = true;
+				this._width_.enabled = true;
+				this._height_.enabled = true;
+			}
+			
+			protected function _width__changeHandler(event:Event):void {
+				var target:HSlider = event.currentTarget as HSlider;
+				var aspect:Number = this.width/this.height;
+				this._height_.value = target.value / aspect;
+				this.callLater(refresh_items,[]);
+			}
+			
+			protected function _height__changeHandler(event:Event):void {
+				var target:VSlider = event.currentTarget as VSlider;
+				this.callLater(refresh_items,[]);
+			}
+			
+			protected function orientationC_changeHandler(event:Event):void {
+				var target:RadioButton = event.currentTarget as RadioButton;
+				this.__orientation__ = target.label;
+			}
+			
+			protected function orientationR_changeHandler(event:Event):void {
+				var target:RadioButton = event.currentTarget as RadioButton;
+				this.__orientation__ = target.label;
+			}
+			
+			protected function _rows__changeHandler(event:Event):void {
+				var target:HSlider = event.currentTarget as HSlider;
+				this.__rows__ = target.value;
+				this.orientationR.selected = true;
+				this.__orientation__ = this.orientationC.label;
+			}
+			
+			protected function _cols__changeHandler(event:Event):void {
+				var target:HSlider = event.currentTarget as HSlider;
+				this.__cols__ = target.value;
+				this.orientationC.selected = true;
+				this.__orientation__ = this.orientationR.label;
+			}
+			
+			protected function btns_changeHandler(event:IndexChangeEvent):void {
+				var item:*;
+				var i:int;
+				var target:ButtonBar = event.currentTarget as ButtonBar;
+				if (target.selectedItem.toString().toLowerCase() == 'pause') {
+					for (i = 0; i < this.__items__.length; i++) {
+						item = this.__items__.getItemAt(i);
+						item.player.pause();
+					}
+				} else if (target.selectedItem.toString().toLowerCase() == 'play') {
+					for (i = 0; i < this.__items__.length; i++) {
+						item = this.__items__.getItemAt(i);
+						item.player.play();
+					}
+				}
+			}
+			
+			protected function vgroup1_resizeHandler(event:ResizeEvent):void {
+			}
+			
+			protected function items_creationCompleteHandler(event:FlexEvent):void {
+				var target:List = event.currentTarget as List;
+				if (this.__items__.length == 0) {
+					this.initialize_items_list();
+				}
+			}
+			
+			protected function btn_help_clickHandler(event:MouseEvent):void {
+				//AlertPopUp.surpriseNoOkay('Hover over the area to the right of each video to see the YouTube Video ID.\n\nClick on the area to the right of each video to see the YouTube Video in a separate browser window.','HELP');
+			}
+			
+		]]>
+	</fx:Script>
+	<s:HGroup paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0">
+		<s:HGroup paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0" visible="false" includeInLayout="false">
+			<s:HSlider id="_width_" 
+					   height="30" width="{this.width-this.orientationsContainer.width-50-30}" 
+					   value="300" minimum="1" maximum="{this.width}" 
+					   skinClass="controls.skins.CustomMobileHSliderSkin" 
+					   change="_width__changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0" visible="false" includeInLayout="false">
+			<s:HGroup paddingTop="10">
+				<s:Label text="Rows:"/>
+			</s:HGroup>
+			<s:HSlider id="_rows_" 
+					   height="30" width="250" 
+					   value="4" minimum="2" maximum="10" 
+					   skinClass="controls.skins.CustomMobileHSliderSkin" 
+					   change="_rows__changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0" visible="false" includeInLayout="false">
+			<s:HGroup paddingTop="10">
+				<s:Label text="Cols:"/>
+			</s:HGroup>
+			<s:HSlider id="_cols_" 
+					   height="30" width="250" 
+					   value="4" minimum="2" maximum="10" 
+					   skinClass="controls.skins.CustomMobileHSliderSkin" 
+					   change="_cols__changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup id="orientationsContainer" paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0" visible="false" includeInLayout="false">
+			<s:HGroup paddingLeft="10" paddingTop="0" paddingRight="10" paddingBottom="10">
+				<s:RadioButton id="orientationC" groupName="orientations" selected="true" label="{TileOrientation.COLUMNS}" change="orientationC_changeHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup paddingLeft="10" paddingTop="0" paddingRight="10" paddingBottom="10">
+				<s:RadioButton id="orientationR" groupName="orientations" selected="false" label="{TileOrientation.ROWS}" change="orientationR_changeHandler(event)"/>
+			</s:HGroup>
+		</s:HGroup>
+		<s:HGroup id="playerControlsContainer" paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0" visible="false" includeInLayout="false">
+			<s:ButtonBar id="btns" selectedIndex="1" dataProvider="{this.__player_controls__}" change="btns_changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup id="helpContainer" paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0" visible="false" includeInLayout="false">
+			<s:Button id="btn_help" label="(?)" click="btn_help_clickHandler(event)"/>
+		</s:HGroup>
+	</s:HGroup>
+	<s:HGroup width="100%" height="100%" paddingLeft="10" paddingRight="10">
+		<s:HGroup paddingLeft="10" paddingRight="20" paddingTop="10" paddingBottom="10" visible="false" includeInLayout="false">
+			<s:VSlider id="_height_" 
+					   skinClass="controls.skins.CustomMobileVSliderSkin"
+					   height="{this.height-100}" width="30" 
+					   value="150" minimum="1" maximum="{this.height}" 
+					   change="_height__changeHandler(event)"/>
+		</s:HGroup>
+		<s:List id="items" width="100%" height="100%" dataProvider="{this.__items__}" creationComplete="items_creationCompleteHandler(event)">
+			<s:layout>
+				<s:TileLayout 
+					orientation="{__orientation__}" 
+					horizontalGap="0" 
+					verticalGap="0" 
+					requestedRowCount="{__rows__}" 
+					requestedColumnCount="{__cols__}"
+					/>
+			</s:layout>
+			<s:itemRenderer>
+				<fx:Component>
+					<s:ItemRenderer>
+						<fx:Script>
+							<![CDATA[
+								import com.ArrayCollectionUtils;
+								import com.ObjectUtils;
+								
+								import controls.Alert.AlertPopUp;
+								
+								import core.SWFHelper;
+								
+								import mobile.MobileDebuggerUtils;
+								
+								import mx.controls.advancedDataGridClasses.AdvancedDataGridColumn;
+								import mx.events.FlexEvent;
+								
+								import utils.AIRHelper;
+								
+								[Bindable]
+								public var __dataGridColumns__:Array = [];
+								
+								private function get get_tooltip():* {
+									return '<b>'+data['url']+'</b>';
+								}
+								
+								private function get _url():* {
+									return data['url'];
+								}
+								
+								private function get loudness():* {
+									return data['loudness'];
+								}
+								
+								private function get has_loudness():Boolean {
+									return (loudness != null);
+								}
+								
+								private function get width_value():Number {
+									return ((data['target'] && data['target']['_width_']) ? data['target']['_width_']['value'] : 150);
+								}
+								
+								private function get height_value():Number {
+									return ((data['target'] && data['target']['_height_']) ? data['target']['_height_']['value'] : 100);
+								}
+								
+								protected function hgroup1_creationCompleteHandler(event:FlexEvent):void {
+									var target:HGroup = event.currentTarget as HGroup;
+									target.toolTip = get_tooltip;
+								}
+								
+								protected function player_creationCompleteHandler(event:FlexEvent):void {
+									var p:FlashContainer = event.currentTarget as FlashContainer;
+									p.width = data.target.width/data.cols;
+									p.height = data.target.height/data.rows;
+									p.swf = data.swf;
+									p.config = data.config;
+									p.setupPlayerLoader();
+									var player:* = p.player;
+									info.text += '\n(1).'+typeof(player)+', '+((player) ? true : false);
+									if (player) {
+										info.text += '\n(1.1).'+typeof(player);
+//										player.addEventListener("onCuepoint", 
+//											function (event:*):void {
+//												info.text = event.toString();
+//											}
+//										);
+									}
+								}
+								
+								protected function channels_creationCompleteHandler(event:FlexEvent):void {
+									var target:DropDownList = event.currentTarget as DropDownList;
+									target.dataProvider = data.channels;
+									var i:int = ArrayCollectionUtils.findIndexOfItem(data.channels,'channame',data.channame);
+									if (i > -1) {
+										target.selectedIndex = i;
+									} else {
+										//AlertPopUp.surpriseNoOkay('channame='+data.channame+'\n'+MobileDebuggerUtils.explainThis(data.channels),'DEBUG.01');
+									}
+								}
+								
+								protected function viewer_creationCompleteHandler(event:FlexEvent):void {
+									viewer.data = data;
+								}
+								
+							]]>
+						</fx:Script>
+						<s:states>
+							<mx:State name="normal" />
+							<mx:State name="hovered" />
+							<mx:State name="selected" />
+						</s:states>
+						<s:Rect left="0" right="0" top="0" bottom="0">
+							<s:stroke>
+								<mx:SolidColorStroke color="0xCCCCCC" joints="round" weight="2"/>
+							</s:stroke>
+							<s:fill>
+								<mx:SolidColor color="0x999999" alpha="0" alpha.hovered="0.2" alpha.selected="0.6" />
+							</s:fill>
+						</s:Rect>
+						<s:VGroup width="100%" height="100%">
+							<s:HGroup horizontalAlign="left">
+								<s:HGroup horizontalAlign="left">
+									<s:HGroup paddingTop="10" paddingLeft="5">
+										<s:Label text="Channels:"/>
+									</s:HGroup>
+									<s:HGroup paddingTop="5" paddingLeft="5" paddingRight="5">
+										<s:DropDownList id="channels" labelField="channame" creationComplete="channels_creationCompleteHandler(event)"/>
+									</s:HGroup>
+								</s:HGroup>
+								<s:HGroup horizontalAlign="left" visible="{has_loudness}" includeInLayout="{has_loudness}">
+									<s:HGroup paddingTop="10" paddingLeft="5">
+										<s:Label text="Loudness:"/>
+									</s:HGroup>
+									<s:HGroup paddingTop="5" paddingLeft="5" paddingRight="5">
+										<s:CheckBox id="cb_loudness" selected="false"/>
+									</s:HGroup>
+								</s:HGroup>
+							</s:HGroup>
+							<s:HGroup horizontalAlign="left" width="100%">
+								<s:TextArea id="info" width="100%" height="50" editable="false"/>
+							</s:HGroup>
+							<s:HGroup width="100%" creationComplete="hgroup1_creationCompleteHandler(event)">
+								<flash:FlashContainer id="player" creationComplete="player_creationCompleteHandler(event)"/>
+							</s:HGroup>
+							<s:HGroup width="100%">
+								<s:VGroup width="100%" height="100%">
+									<s:TextArea width="100%" height="100%" editable="false" text="{MobileDebuggerUtils.explainThis(ObjectUtils.keys(data))}"/>
+									<viewers:VerticalObjectViewer id="viewer" width="100%" height="100%" creationComplete="viewer_creationCompleteHandler(event)"/>
+								</s:VGroup>
+							</s:HGroup>
+						</s:VGroup>
+					</s:ItemRenderer>
+				</fx:Component>
+			</s:itemRenderer>
+		</s:List>
+	</s:HGroup>
+</s:VGroup>

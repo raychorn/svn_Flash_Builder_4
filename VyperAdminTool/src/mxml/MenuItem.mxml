@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="100%" height="{itemHeight}" 
+	verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+	creationComplete="init()">
+
+	
+	<mx:Canvas id="imgHighlight" width="{menuContainerWidth}" height="{itemHeight}" alpha="{_currentAlpha}"></mx:Canvas>
+	<mx:Canvas id="lImg"></mx:Canvas>
+	
+	<!--The MenuItem (Style) is set from the Menu.mxml class Using GlobalsVO.setStyle-->
+	<mx:HBox id="menuItem" width="100%" height="100%" mouseChildren="false" buttonMode="true" 
+		useHandCursor="true" verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+		mouseOver="onMouseOver(event)" click="onMouseClick(event)" styleName="MenuItem">
+		<mx:Canvas id="menuItemText"/>
+	</mx:HBox>
+	
+	<mx:Canvas id="rImg"></mx:Canvas>
+	<mx:Canvas id="rImg2"></mx:Canvas>
+	<mx:Script>
+		<![CDATA[
+			/*
+			 * MenuItem MXML Class
+			 * @author Ryan C. Knaggs
+			 * @date 09/18/2009
+			 * @version 1.1
+			 * @description: Designed to display
+			 * @version 1.2 - Added second icon
+			 * the individual menu items that
+			 * will display in the menu container
+			 * @see InitializeMenu_View
+			 */
+			 
+			import libs.utils.ErrorMessages;
+			import libs.utils.GtextField;
+			import mx.controls.Label;
+			import mx.events.FlexEvent;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Image;
+			import utils.displayObject.LoopIterator;
+			import utils.displayObject.DuplicateImage;
+			import utils.strings.Strings;
+			import libs.vo.GlobalsVO;
+			
+			private var _mcr:*;
+			public var menuLevel:int;
+			public var menuItemID:int;
+			public var currentData:Object;
+			public var menuPosition:int;		
+			public var hOrientation:String;			// To determine if the menu should show the arrow on the left or right
+			public var vOrientation:String;			// To determine where to set the y axis for the sub-menu
+			public var shift:Number;				// Required to set the textfields proportionately
+			public var menuItemLabel:String;		// Menu item text field
+			public var url:String;					// User select to navigate to a landing page
+			public var target:String;				// Target for the new page graphics
+			public var errorMsg:String;				// To determine if the copy right and or other graphics successfully load
+			public var missingImageMsg:String;		// Missing the symbol glyphs graphics from the menuitem text
+			
+			[Bindable]
+			public var menuContainerWidth:Number;
+			
+			[Bindable]
+			public var menuItemStyle:String;		// CSS style for applying a category style or sub-menu style
+			
+			[Bindable]
+			public var itemHeight:Number;			// To determine the menuitem height
+			
+			[Bindable]
+			public var scaleContent:Boolean;		// Resize the graphic assets
+			
+			[Bindable]
+			public var maintainAspectRatio:Boolean;	// Resize the graphic assets
+			
+			[Bindable]
+			private var _currentAlpha:Number;		// Mouse Over alpha effect
+
+			private var _isAdmin:Boolean = GlobalsVO.getGlobal(GlobalsVO.ISADMIN);
+			
+			public var menuItems:Array;
+			public var menuToolTip:String;
+
+			private var iterator:LoopIterator;		// Fade Effect
+			private var _css:Function;				// Short hand for GlobalsVO.getCSSProperty function
+			private var i1:Image; 					// Left image for this component
+			private var i2:Image;					// Right image for this component
+			private var i3:Image;					// Right image for this component
+			private var i4:Image;					// Right image for this component
+			private var errorImage:int;				
+			private var e1:ErrorMessages;
+			private var e2:ErrorMessages;
+			
+			private const RIGHT:String = "right";							// hOrientation
+			
+			private const LARROWN:String = "image_arrowLNAsset";					// Left arrow asset normal
+			private const LARROWH:String = "image_arrowLHAsset";					// Left arrow asset highlight
+			private const RARROWN:String = "image_arrowRNAsset";					// Right arrow asset normal
+			private const RARROWH:String = "image_arrowRHAsset";					// Right arrow asset highlight
+			
+			private const ITEMHEIGHT:String = "menuItemHeight";				// This component height
+			private const FADESTART:String = "menuItemFadeStart";			// Fade start alpha
+			private const FADEEND:String = "menuItemFadeEnd";				// Fade end alpha
+			private const FADEINSPEED:String = "menuItemFadeInSpeed";		// Fade in effect speed
+			private const FADEOUTSPEED:String = "menuItemFadeOutSpeed";		// Fade out effect speed
+			private const FADEINSTEP:String = "menuItemFadeInStep";			// Fade in skip by X
+			private const FADEOUTSTEP:String = "menuItemFadeOutStep";		// Fade out skip by X
+			private const PADLGX:String = "menuItemPadLGX";					// Left arrow padding x axis
+			private const PADLGY:String = "menuItemPadLGY";					// Left arrow padding y axis
+			private const PADRGX:String = "menuItemPadRGX";					// Right arrow padding x axis
+			private const PADRGX2:String = "menuItemPadRGX2";				// Right arrow padding x axis with new page graphic
+			private const PADRGY:String = "menuItemPadRGY";					// Right arrow padding y axis
+			private const HIGHLIGHT:String = "image_menuItemMouseOverAsset";		// Highlight asset
+			private const MISC:String = "menuItemScaleContent";				// Image scaling for graphics
+			private const MIMAR:String = "menuItemMaintainAspectRatio";		// Image aspect ratio
+			private const NPNA:String = "image_newPageNAsset";					// New page graphics symbol normal
+			private const NPHA:String = "image_newPageHAsset";					// New page graphics symbol highlight
+			private const NPSXP:String = "newPageSymbolXPadding";			// New page X padding
+			private const NPSYP:String = "newPageSymbolYPadding";			// New page Y padding
+			
+			private const MCR:String = "MenuController";
+			
+			public function init():void {
+				
+	   			this._mcr = GlobalsVO.getGlobal(MCR);
+	   			
+				missingImageMsg = null;
+				
+				// Alias for getCssProperty
+				this._css = GlobalsVO.getCSSProperty;
+				
+				// Setup the image scale
+				scaleContent = Strings.strToBool(_css(MISC));
+				maintainAspectRatio = Strings.strToBool(_css(MIMAR));
+			
+				var asset:Object = DuplicateImage.validate(GlobalsVO.getGlobal(HIGHLIGHT),this);
+				var img:Image = DuplicateImage.copy(asset.image,scaleContent,maintainAspectRatio);
+				
+				// If Error
+				if(asset.error != null) {
+					this.errorImage = 1;
+					new ErrorMessages(img,asset.error);
+				}
+				
+				img.width = this.width;
+				imgHighlight.addChild(img);
+				img.width = menuContainerWidth;
+				
+				// Create a new textfield
+				makeTextField(shift);
+				
+				// Fade Effect
+				iterator = new LoopIterator();
+				
+				// Set the initial alpha state of category button
+				_currentAlpha = Number(_css(FADESTART));
+				
+				// Re-Size menu item height from CSS
+				this.itemHeight = Number(_css(ITEMHEIGHT));
+				
+				//target = "_blank";
+				
+				// Position Arrow Graphic based on model data
+				var m:* = currentData[GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL).menuData.name];
+				if ( (m is Array) && (m.length > 0) ) {
+					var xpos:Number = 0;
+					
+					if(hOrientation==RIGHT) {
+						if(target == '_blank') {
+							insertNewPageGraphic(0);
+							initGraphic([RARROWN,RARROWH],rImg);
+							xpos = menuContainerWidth - Number(_css(PADRGX));
+							// Set position and padding for right graphic
+							rImg.x = xpos;
+							rImg.y = itemHeight / 2 - lImg.height / 2 + Number(_css(PADRGY));
+						} else {
+							initGraphic([RARROWN,RARROWH],rImg);
+							xpos = menuContainerWidth - Number(_css(PADRGX2));
+							// Set position and padding for right graphic
+							rImg.x = xpos;
+							rImg.y = itemHeight / 2 - lImg.height / 2 + Number(_css(PADRGY));
+						}
+					} else {
+						initGraphic([LARROWN,LARROWH],lImg);
+						// Set position and padding for left graphic
+						lImg.x = Number(_css(PADLGX)) + ((this._isAdmin) ? 15 : 0);
+						lImg.y = (itemHeight / 2 - lImg.height / 2) + Number(_css(PADLGY));
+					}
+				} else { // so there is no sub-menu...
+					if(target == '_blank') {
+						insertNewPageGraphic(0); // New page Special Graphic no arrows
+					}
+				}
+				
+				// If background image is missing
+				if(errorImage > 0) menuItem.x += 10;
+				
+				if(GlobalsVO.DEVMODE) new ErrorMessages(this, url+" , "+target);
+			}
+			
+			
+			
+			
+			/**
+			 * Accessibility, get the current selected
+			 * instance from this class
+			 * @see Accessibility_Model:talk()
+			 */
+			 
+			public function getDataByAccessibility(instance:*):Object {
+				return {name:menuItemLabel, value:url, target:target};
+			}	
+			
+			
+
+			
+			/**
+			 * This is the special new page
+			 * graphics insertion
+			 */
+			 
+			private function insertNewPageGraphic(offset:Number):void {
+				/* Get the special new page graphic
+				 * that has loaded earlier and insert
+				 * into THIS menuitem */
+				initGraphic([NPNA,NPHA],rImg2);
+				
+				/* Set position and padding for the 
+				 * special new page graphic on the right */
+				var xpos:Number = menuContainerWidth + Number(GlobalsVO.getCSSProperty(NPSXP));
+				xpos += offset;
+				rImg2.x = xpos; 
+				rImg2.y = itemHeight / 2 - lImg.height / 2  + Number(GlobalsVO.getCSSProperty(NPSYP));
+			}
+
+
+
+
+			
+			/**
+			 * Build a new text field and place
+			 * inside the menuItemText canvas component
+			 * This will read the special HTML code
+			 * for Copyright, Trademark and Registered Trademark
+			 * symbols and insert the approprate graphic
+			 * after the text
+			 */
+			 
+			private function makeTextField(shift:Number):void {
+				var gtf:GtextField = new GtextField(menuItemText);
+				gtf.addData(onImageError,menuItemLabel,menuItemStyle,shift);
+			}
+			
+			
+			
+			/**
+			 * The only way to capture the missing
+			 * image from the menuitem is to setup
+			 * a callback form here to the GTextfield
+			 * If the Gtextfield reports that the 
+			 * "CopyRight and other symbol Glyphs"
+			 * didn't properly load, then this method
+			 * will be invoked and store the error message
+			 * for this menu item.
+			 * @see InitializeMenu_View
+			 * @see MenuController
+			 */
+			 
+			public function onImageError(missingImageMsg:String):void {
+				this.missingImageMsg = missingImageMsg;
+			}
+			
+			
+			
+			/**
+			 * This is mainly used to insert the arrow graphics
+			 * Insert new graphics either on
+			 * the left or right of the menu
+			 * @param assets:Array - The two assets that will
+			 * display the normal and highlight graphic
+			 * that was pre-loaded from the AppController
+			 * @param instance:* - To place the new loaded
+			 * graphic into
+			 */
+			
+			private function initGraphic(assets:Array, instance:*):void {
+				
+				var asset:Object = DuplicateImage.validate(GlobalsVO.getGlobal(assets[0]),this);
+				var img:Image = DuplicateImage.copy(asset.image,scaleContent,maintainAspectRatio);
+				
+				if(instance.toString().toLowerCase().indexOf("rimg2") == -1) {
+					// If Error
+					if(asset.error != null) {
+						e1 = new ErrorMessages(img,asset.error);
+					}
+					i1 = instance.addChild(img);
+					
+					asset = DuplicateImage.validate(GlobalsVO.getGlobal(assets[1]),this);
+					img = DuplicateImage.copy(asset.image,scaleContent,maintainAspectRatio);
+					// If Error
+					if(asset.error != null) {
+						e2 = new ErrorMessages(img,asset.error);
+					}
+					
+					
+					i2 = instance.addChild(img);
+					
+					// Initially Set the alpha for the highlighted image
+					i2.alpha = Number(_css(FADESTART));
+				} else {
+					// If Error
+					if(asset.error != null) {
+						e1 = new ErrorMessages(img,asset.error);
+					}
+					i3 = instance.addChild(img);
+					
+					asset = DuplicateImage.validate(GlobalsVO.getGlobal(assets[1]),this);
+					img = DuplicateImage.copy(asset.image,scaleContent,maintainAspectRatio);
+					// If Error
+					if(asset.error != null) {
+						e2 = new ErrorMessages(img,asset.error);
+					}
+					
+					
+					i4 = instance.addChild(img);
+					
+					// Initially Set the alpha for the highlighted image
+					i4.alpha = Number(_css(FADESTART));
+					
+				}
+			}
+			
+			
+			private function onMouseClick(event:MouseEvent):void {
+      			if ( (this._mcr) && (this._mcr.onMouseClickMenuItem_callback) ) {
+      				this._mcr.onMouseClickMenuItem_callback(event, this);
+      			}
+			}
+
+		
+			/**
+			 * User mouse over this object
+			 * @param e:Event - This object
+			 */
+			
+			public function onMouseOver(e:Event=null):void {
+				iterator.stop();
+      			iterator.init({from:_currentAlpha,
+      						   _to:Number(_css(FADEEND)),
+      						   speed:int(_css(FADEINSPEED)),
+      						   step:Number(_css(FADEINSTEP))});
+      						   
+      			iterator.addEventListener(Event.CHANGE,onChange);
+      			if ( (this._mcr) && (this._mcr.onMouseOverMenuItem_callback) ) {
+      				this._mcr.onMouseOverMenuItem_callback(e, this);
+      			}
+      			iterator.play();
+			}
+			
+			
+			
+			
+			
+			
+			/**
+			 * User mouse out this object
+			 * @param e:Event - This object
+			 */
+			 
+			public function onMouseOut():void {
+				iterator.stop();				
+      			iterator.init({from:_currentAlpha,
+      						   _to:Number(_css(FADESTART)),
+      						   speed:int(_css(FADEOUTSPEED)),
+      						   step:Number(_css(FADEOUTSTEP))});
+      						   
+      			iterator.addEventListener(Event.CHANGE,onChange);
+      			iterator.play();
+			}
+			
+			
+			
+			
+			
+			/**
+			 * Set new value for tween effect
+			 * This will cause the HBox
+			 * background color to fade in or out
+			 * @param value:Number - The alpha value
+			 */
+			 
+			private function onChange(e:Event):void {
+				_currentAlpha = e.currentTarget.value;
+				if(i2 != null) {
+					i2.alpha = _currentAlpha;
+				}
+				if(i4 != null) {
+					i4.alpha = _currentAlpha;
+				}
+			}
+		]]>
+	</mx:Script>
+</mx:Canvas>

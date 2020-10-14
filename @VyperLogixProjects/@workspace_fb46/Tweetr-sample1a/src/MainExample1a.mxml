@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   minWidth="955" minHeight="600" 
+			   applicationComplete="application1_applicationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.swfjunkie.tweetr.Tweetr;
+			import com.swfjunkie.tweetr.data.objects.StatusData;
+			import com.swfjunkie.tweetr.events.TweetEvent;
+			
+			import controls.Alert.AlertPopUp;
+			
+			import mx.controls.Alert;
+			import mx.controls.Menu;
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			
+			private var tweetr:Tweetr;
+			
+			[Bindable] 
+			public var menuData:Array = [
+				{label: "Tweetr", children: [
+					{label: "Get Public TimeLine", "function":getPublicTimeLine, enabled: true},
+					{label: "Get Current Trends", type: "normal", "function":getCurrentTrends, enabled: true} 
+				]},
+				/*
+				{label: "MenuItem B", type: "check", toggled: true},
+				{label: "MenuItem C", type: "check", toggled: false},
+				{type: "separator"},
+				{label: "MenuItem D", children: [
+					{label: "SubMenuItem D-1", type: "radio", 
+						groupName: "g1"},
+					{label: "SubMenuItem D-2", type: "radio", 
+						groupName: "g1", toggled: true}, 
+					{label: "SubMenuItem D-3", type: "radio", 
+						groupName: "g1"} 
+				]} */
+			];
+
+			/**
+			 * A Simple example of how to use the Tweetr API
+			 * @author Sandro Ducceschi [swfjunkie.com, Switzerland]
+			 */
+			
+			public function init():void {
+				// create a new tweetr instance
+				this.tweetr = new Tweetr();
+				// since we are using it on the web, set 
+				// the serviceHost to the tweetr php-proxy
+				this.tweetr.serviceHost = "near-by.info/proxy/";
+				
+				// add event listeners
+				this.tweetr.addEventListener(TweetEvent.COMPLETE, handleLoad);
+				this.tweetr.addEventListener(TweetEvent.FAILED, handleFail);
+			}
+			
+			/**
+			 * @private
+			 * If everything goes well, we get an event with an
+			 * array full of StatusData Objects
+			 */
+			private function handleLoad(event:TweetEvent):void {
+				// we'll create a simple array with a object
+				// containing the tweet and who sent it.
+				var arr:Array = [];
+				for(var i:int = 0; i < event.responseArray.length; i++)
+				{
+					var statusData:StatusData = event.responseArray[i];
+					var obj:Object = {};
+					obj.text =  statusData.text;
+					obj.from =  statusData.user.screenName;
+					arr.push(obj);
+				}
+				// then pass it to the datagrid
+				datagrid.dataProvider = arr;
+			}
+			
+			/**
+			 * @private
+			 * If something go wrong, show an alert window with the info
+			 */ 
+			private function handleFail(event:TweetEvent):void {
+				Alert.show(event.info,"Epic Fail");
+			}
+			
+			protected function application1_applicationCompleteHandler(event:FlexEvent):void {
+				init();
+			}
+			
+			private function getPublicTimeLine(menu_item:Object):void {
+				try {
+					this.tweetr.getPublicTimeLine();
+				} catch (err:Error) {
+					//AlertPopUp.surpriseNoOkay(err.toString(),'ERROR.'+DebuggerUtils.getFunctionName(err)+'.1');
+				}
+			}
+			
+			private function getCurrentTrends(menu_item:Object):void {
+				try {
+					this.tweetr.currentTrends();
+				} catch (err:Error) {
+					//AlertPopUp.surpriseNoOkay(err.toString(),'ERROR.'+DebuggerUtils.getFunctionName(err)+'.1');
+				}
+			}
+			
+			private function createAndShow():void {
+				var myMenu:Menu = Menu.createMenu(null, menuData, true);
+				myMenu.labelField="label";
+				myMenu.show(10, 10);
+				myMenu.addEventListener(MenuEvent.ITEM_CLICK,
+					function (event:MenuEvent):void {
+						var item:Object = event.item;
+						if (item['function'] is Function) {
+							try {
+								item['function'](item);
+							} catch (err:Error) {
+								//AlertPopUp.surpriseNoOkay(err.toString(),'ERROR.'+DebuggerUtils.getFunctionName(err)+'.1');
+							}
+						} else if ( (item['label'] is String) && (item['label']) ) {
+							//AlertPopUp.surpriseNoOkay('Cannot determine what to do at this point since there is no function associated with "'+item['label']+'".','WARNING.'+DebuggerUtils.getFunctionName(new Error())+'.1');
+						} else {
+							//AlertPopUp.surpriseNoOkay('Cannot determine what to do at this point since there is no function.','WARNING.'+DebuggerUtils.getFunctionName(new Error())+'.1');
+						}
+						var ii:int = -1;
+					}
+				);
+			}			
+		]]>
+	</fx:Script>
+	<mx:Panel title="Latest Tweets from the Public Timeline" width="100%">
+		<s:VGroup width="100%" height="100%">
+			<s:HGroup width="100%">
+				<mx:Button id="myButton" label="Open Menu" click="createAndShow();"/>		
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<mx:DataGrid id="datagrid" width="100%" minHeight="400">
+					<mx:columns>
+						<mx:DataGridColumn headerText="Tweet" dataField="text"/>
+						<mx:DataGridColumn headerText="@user" width="150" dataField="from"/>
+					</mx:columns>
+				</mx:DataGrid>
+			</s:HGroup>
+		</s:VGroup>
+	</mx:Panel>    
+</s:Application>

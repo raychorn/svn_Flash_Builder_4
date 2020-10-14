@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Graphic version="2.0" viewHeight="48" viewWidth="48" ai:appVersion="15.0.2.399" ATE:version="1.0.0" flm:version="1.0.0" d:id="1" d:using="" xmlns="http://ns.adobe.com/fxg/2008" xmlns:ATE="http://ns.adobe.com/ate/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:flm="http://ns.adobe.com/flame/2008">
+  <Library/>
+  <Group ai:artboardActive="1" ai:artboardIndex="0" ai:seqID="1" d:layerType="page" d:pageHeight="48" d:pageWidth="48" d:type="layer" d:userLabel="Artboard 1">
+    <Group ai:objID="2970a900" ai:seqID="2" d:id="2" d:type="layer" d:userLabel="Layer 1">
+      <Path x="4" y="6" winding="nonZero" ai:objID="29a69a90" ai:seqID="3" data="M20 0 0 17 8 17 8 34 32 34 32 17 40 17 20 0ZM24 31.9756 16 31.9756 16 20.9756 24 20.9756 24 31.9756Z">
+        <fill>
+          <SolidColor color="#FFFFFF"/>
+        </fill>
+      </Path>
+    </Group>
+  </Group>
+  <Private>
+      <ai:PrivateElement d:ref="#1">
+        <ai:SaveOptions>
+          <ai:Dict data="I expandBlendsOption 5 I versionKey 2 B aiEditCap 1 I preserveGradientPolicy 4 B includeSymbol 0 B writeImages 1 B downsampleLinkedImages 0 I preserveFilterPolicy 3 I preserveTextPolicy 4 I rasterizeResolution 72 B includeObjectOutsideArtboard 0 B includeXMP 0 "/>
+        </ai:SaveOptions>
+        <ai:DocData base="home_icon_minimal.assets/images" rulerCanvasDiffH="10.5" rulerCanvasDiffV="10.5">
+          <ai:DocRasterSettings>
+            <ai:Dict data="I dpi. 72 B alis 0 B spot 0 B mask 0 R padd 36 I colr 4 "/>
+          </ai:DocRasterSettings>
+        </ai:DocData>
+        <ai:AutoGenImageList>
+          <ai:Dict/>
+        </ai:AutoGenImageList>
+      </ai:PrivateElement>
+      <ai:PrivateElement flm:hashcode="12EA6B1C062AC9826C493CAE61452179" d:ref="#2">
+        <ai:LayerOptions color="5 79.31 257 128.502" preview="0"/>
+      </ai:PrivateElement>
+    </Private>
+  </Graphic>

@@ -1,0 +1,455 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   width="100%" height="100%" 
+		   verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+		   creationComplete="canvas1_creationCompleteHandler(event)">
+	<fx:Metadata>
+		[Event(name="completedUserLogin", type="vyperlogix.events.CompletedUserLoginEvent")]
+	</fx:Metadata>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import application.events.CannotPerformUpdateEvent;
+			
+			import com.DebuggerUtils;
+			import com.EzHTTPService;
+			import com.ObjectUtils;
+			import com.StringUtils;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.login.LoginPanel;
+			import controls.login.events.ActivationCompletedEvent;
+			import controls.login.events.ChangePasswordEvent;
+			import controls.login.events.LoginCompletedEvent;
+			import controls.login.events.LoginRequestedEvent;
+			import controls.login.events.RegisterCompletedEvent;
+			import controls.login.events.ResendActivationEvent;
+			
+			import core.SWFHelper;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import utils.APIHelper;
+			
+			import vyperlogix.events.CompletedUserLoginEvent;
+			import vyperlogix.events.RequestedUserLoginEvent;
+			import vyperlogix.events.SuperUserLoggedInEvent;
+
+			public const const_panel_title:String = 'User Registration and Self-Help Kiosk';
+
+			private var __user:Object = {};
+			
+			public var callback:Function;
+			
+			public var container:DisplayObject;
+			
+			public var loginPanelClass:Class = LoginPanel;
+			
+			private var __api__:Object = {};
+			
+			private var __air_version__:String = '';
+			private var __version__:String = '';
+			
+			private const blog_rest_post_rssfeed_symbol:String = 'blog_rest_post_rssfeed';
+			private const blog_rest_get_rssfeeds_symbol:String = 'blog_rest_get_rssfeeds';
+			private const blog_rest_remove_rssfeed_symbol:String = 'blog_rest_remove_rssfeed';
+			
+			private var __foreign_apis__:Array = [
+				blog_rest_post_rssfeed_symbol,
+				blog_rest_get_rssfeeds_symbol,
+				blog_rest_remove_rssfeed_symbol
+			]; 
+			
+			public var ezREST:EzHTTPService = new EzHTTPService(false,false);
+			
+			private function get __isLoggedIn():Boolean {
+				var isLoggedIn:Boolean = false;
+				try {isLoggedIn = FlexGlobals.topLevelApplication['appProxy']['isLoggedIn'];} catch (err:Error) {}
+				return isLoggedIn;
+			}
+			
+			private function set __isLoggedIn(isLoggedIn:Boolean):void {
+				try {FlexGlobals.topLevelApplication['appProxy']['isLoggedIn'] = isLoggedIn;} catch (err:Error) {}
+			}
+			
+			private function issue_callback(value:*):void {
+				if (this.callback is Function) {
+					try {
+						this.callback(value);
+					} catch (err:Error) {AlertPopUp.surpriseNoOkay(err.toString(),'WARNING');}
+				}
+			}
+			
+			public function get isLoggedIn():Boolean {
+				if (FlexGlobals.topLevelApplication.appProxy.mySO is SharedObject) {
+					this.__user = FlexGlobals.topLevelApplication.appProxy.user;
+					var isApi:Boolean = true;
+					try {
+						var keys:Array = ObjectUtils.keys(this.__api__);
+						var _isApi:Boolean = ObjectUtils.isEmpty(this.__api__);
+						for (var i:String in this.__foreign_apis__) {
+							if (keys.indexOf(this.__foreign_apis__[i]) == -1) {
+								isApi = false;
+								break;
+							}
+						}
+						isApi = ( (isApi) && (!_isApi) );
+					} catch (err:Error) {}
+					this.__isLoggedIn = false;
+					try {
+						this.__isLoggedIn = FlexGlobals.topLevelApplication.appProxy.isLoggedIn && (this.__air_version__.length > 0);
+						this.issue_callback(this.__isLoggedIn);
+					} catch (err:Error) {
+						AlertPopUp.surpriseNoOkay(err.toString(),'WARNING');
+					}
+				} else {
+					AlertPopUp.surpriseNoOkay('Something went rather wrong... Seems like someone forgot something in '+this.className+'.isLoggedIn().1 like make sure mySO has been iitialized !  Duh !','ERROR');
+				}
+				return this.__isLoggedIn;
+			}
+			
+			private function handle_login_request():void {
+				var _this:LicenseManagement = this;
+				if (this.container is DisplayObject) {
+					var popup:* = PopUpManager.createPopUp(this.container, this.loginPanelClass, false);
+					popup.x = 5;
+					popup.y = 0;
+					try {
+						popup.y = FlexGlobals.topLevelApplication.appProxy.splashPopUp.menuBar.height + 10;
+					} catch (err:Error) {}
+					popup.width = 600;
+					popup.height = 300;
+
+					FlexGlobals.topLevelApplication.appProxy.isLoggedIn = false;
+					FlexGlobals.topLevelApplication.appProxy.user = {};
+					FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+
+					popup.callback = function (value:*):void {
+						popup.login.title_panel = _this.const_panel_title;
+						popup.login.panel_Login.styleName = 'LoginPanel';
+						popup.addEventListener(LoginRequestedEvent.TYPE_LOGIN_REQUESTED,function (event:LoginRequestedEvent):void {
+							popup.enabled = false;
+							DebuggerUtils._trace(DebuggerUtils.getFunctionName(new Error())+'.LoginRequestedEvent.TYPE_LOGIN_REQUESTED --> '+event.toString());
+							var toks:Array = FlexGlobals.topLevelApplication.appProxy.app_title.split(' :: ');
+							var title:String = toks[0];
+							FlexGlobals.topLevelApplication.title = title+' :: Contacting the Cloud (Login)...'
+							var url:String = FlexGlobals.topLevelApplication.domain+APIHelper.login_user_endpoint;
+							DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> url='+url);
+							_this.ezREST.post(url,{'username':event.username,'password':event.password}, 
+								function (event:ResultEvent):void {
+									var response:*;
+									try {
+										response = (event.result is String) ? event.result : event.result.getItemAt(0);
+										DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 event='+event.toString());
+										_this.__isLoggedIn = (ObjectUtils.has_key(response,'isLoggedIn')) ? response['isLoggedIn'] : '';
+										_this.__isLoggedIn = (_this.__isLoggedIn is Boolean) ? _this.__isLoggedIn : false;
+										_this.__user = (ObjectUtils.has_key(response,'user')) ? response['user'] : '';
+										_this.__user = (_this.__user is Object) ? _this.__user : {};
+										
+										var errorMsg:String;
+										errorMsg = (ObjectUtils.has_key(response,'error')) ? response['error'] : '';
+										popup.login.panel_Login.errorString = (errorMsg is String) && (errorMsg.length > 0) ? errorMsg : '';
+										popup.login.control_bar_message = popup.login.panel_Login.errorString;
+										popup.login.controlBar_messages.styleName = (popup.login.panel_Login.errorString.length > 0) ? 'ErrorMessages' : 'ImportantMessage';
+
+										FlexGlobals.topLevelApplication.appProxy.isLoggedIn = _this.__isLoggedIn;
+										FlexGlobals.topLevelApplication.appProxy.user = _this.__user;
+										FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+
+										popup.enabled = true;
+										if (_this.__isLoggedIn) {
+											FlexGlobals.topLevelApplication.title = title+' :: Login Accepted... Welcome Back, '+_this.__user['name'];
+											popup.login.title_panel = _this.const_panel_title+' :: Login Accepted';
+											PopUpManager.removePopUp(popup);
+											_this.dispatchEvent(new CompletedUserLoginEvent(CompletedUserLoginEvent.TYPE_COMPLETED_USER_LOGIN,{}));
+											FlexGlobals.topLevelApplication.appProxy.dispatchEvent(new CompletedUserLoginEvent(CompletedUserLoginEvent.TYPE_COMPLETED_USER_LOGIN,{}));
+										} else {
+											FlexGlobals.topLevelApplication.title = title+' :: Login Rejected... '+errorMsg;
+											popup.login.title_panel = _this.const_panel_title+' :: Login Rejected';
+											popup.login.control_bar_message = popup.login.panel_Login.errorString + ' :: Are you sure you are a Registered User who has completed the Account Activation process ?  If not, then kindly Register as a new User and then Activate your new User Account.';
+										}
+									} catch (e:Error) {
+										var stackTrace:String = e.getStackTrace();
+										AlertPopUp.errorNoOkay(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR');
+									}
+							}, ezREST.jsonResultType);
+						});
+						popup.addEventListener(LoginCompletedEvent.TYPE_LOGIN_COMPLETED,function (event:LoginRequestedEvent):void {
+							DebuggerUtils._trace(DebuggerUtils.getFunctionName(new Error())+'LoginCompletedEvent.TYPE_LOGIN_COMPLETED --> '+event.toString());
+						});
+						popup.addEventListener(RegisterCompletedEvent.TYPE_REGISTER_COMPLETED, function (event:RegisterCompletedEvent):void {
+							DebuggerUtils._trace(DebuggerUtils.getFunctionName(new Error())+'RegisterCompletedEvent.TYPE_REGISTER_COMPLETED --> '+event.toString());
+							popup.enabled = false;
+							var toks:Array = FlexGlobals.topLevelApplication.appProxy.app_title.split(' :: ');
+							var title:String = toks[0];
+							FlexGlobals.topLevelApplication.title = title+' :: Contacting the Cloud (Register)...'
+							var url:String = FlexGlobals.topLevelApplication.domain+APIHelper.register_user_endpoint;
+							DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> url='+url);
+							_this.ezREST.post(url,event.datum, 
+								function (event:ResultEvent):void {
+									var response:*;
+									try {
+										response = (event.result is String) ? event.result : event.result.getItemAt(0);
+										DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 event='+event.toString());
+										
+										var errorMsg:String = '';
+										try {
+											errorMsg = (ObjectUtils.has_key(response,'error')) ? response['error'] : '';
+											popup.login.panel_Login.errorString = (errorMsg is String) && (errorMsg.length > 0) ? errorMsg : '';
+											popup.login.control_bar_message = popup.login.panel_Login.errorString;
+											popup.login.controlBar_messages.styleName = (popup.login.panel_Login.errorString.length > 0) ? 'ErrorMessages' : 'ImportantMessage';
+										} catch (err:Error) {
+											popup.login.panel_Login.errorString = err.toString()+' '+err.getStackTrace();
+											popup.login.control_bar_message = popup.login.panel_Login.errorString;
+											popup.login.controlBar_messages.styleName = (popup.login.panel_Login.errorString.length > 0) ? 'ErrorMessages' : 'ImportantMessage';
+											trace(_this.className+'.'+DebuggerUtils.getFunctionName(err)+'.ERROR '+err.toString()+', Reason: '+err.getStackTrace());
+										}
+										
+										popup.enabled = true;
+										DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 --> popup.login.panel_Login.errorString.length='+popup.login.panel_Login.errorString.length);
+										if (popup.login.panel_Login.errorString.length == 0) {
+											FlexGlobals.topLevelApplication.title = title+' :: Registration Accepted...';
+											popup.login.title_panel = _this.const_panel_title+' :: Registration Accepted';
+											//popup.login.registerControl_1.widget_fullName.txt_fullName.text = '';
+											//popup.login.registerControl_1.widget_emailAddress.txt_emailAddress.text = '';
+											popup.login.registerControl_1.widget_password.txt_Password.text = '';
+											popup.login.registerControl_1.widget_password2.txt_Password.text = '';
+											popup.login.control_bar_message = 'Next: Copy-n-Paste the Activation Key from the EMail you should have received and then return to Login after successful Account Activation.';
+											popup.login.controlBar_messages.styleName = 'ImportantMessage';
+										} else {
+											FlexGlobals.topLevelApplication.title = title+' :: Registration Rejected... '+errorMsg;
+											popup.login.title_panel = _this.const_panel_title+' :: Registration Rejected';
+											popup.login.control_bar_message = 'Status: Registration Rejected. ['+popup.login.panel_Login.errorString+']';
+											popup.login.controlBar_messages.styleName = 'ErrorMessages';
+										}
+									} catch (e:Error) {
+										var stackTrace:String = e.getStackTrace();
+										AlertPopUp.errorNoOkay(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR');
+									}
+								}, ezREST.jsonResultType);
+						});
+						popup.addEventListener(ActivationCompletedEvent.TYPE_ACTIVATION_COMPLETED,
+							function (event:ActivationCompletedEvent):void {
+								DebuggerUtils._trace(DebuggerUtils.getFunctionName(new Error())+'ActivationCompletedEvent.TYPE_ACTIVATION_COMPLETED --> '+event.toString());
+								popup.enabled = false;
+								var toks:Array = FlexGlobals.topLevelApplication.appProxy.app_title.split(' :: ');
+								var title:String = toks[0];
+								FlexGlobals.topLevelApplication.title = title+' :: Contacting the Cloud (Activate)...'
+								var url:String = FlexGlobals.topLevelApplication.domain+APIHelper.activate_endpoint;
+								DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> url='+url);
+								_this.ezREST.post(url,{'username':event.datum.username,'activation_key':event.datum.activation_key}, 
+									function (event:ResultEvent):void {
+										var response:*;
+										try {
+											response = (event.result is String) ? event.result : event.result.getItemAt(0);
+											DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 event='+event.toString());
+											
+											var errorMsg:String;
+											errorMsg = (ObjectUtils.has_key(response,'error')) ? response['error'] : '';
+											popup.login.panel_Login.errorString = (errorMsg is String) && (errorMsg.length > 0) ? errorMsg : '';
+											popup.login.control_bar_message = popup.login.panel_Login.errorString;
+											popup.login.controlBar_messages.styleName = (popup.login.panel_Login.errorString.length > 0) ? 'ErrorMessages' : 'ImportantMessage';
+											
+											popup.enabled = true;
+											DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 --> popup.login.panel_Login.errorString.length='+popup.login.panel_Login.errorString.length);
+											if (popup.login.panel_Login.errorString.length == 0) {
+												FlexGlobals.topLevelApplication.title = title+' :: Activation Accepted...';
+												popup.login.title_panel = _this.const_panel_title+' :: Activation Accepted';
+//												popup.login.widget_emailAddress.txt_emailAddress.text = '';
+//												popup.login.widget_activationCode.txt_activationCode.text = '';
+												popup.login.control_bar_message = 'Next: You may now Login using your Username and Password.';
+												popup.login.controlBar_messages.styleName = 'ImportantMessage';
+											} else {
+												FlexGlobals.topLevelApplication.title = title+' :: Activation Rejected... '+errorMsg;
+												popup.login.title_panel = _this.const_panel_title+' :: Activation Rejected';
+												popup.login.control_bar_message = 'Status: Activation Rejected (Invalid Activation Code or Already Activated).';
+												popup.login.controlBar_messages.styleName = 'ErrorMessages';
+											}
+										} catch (e:Error) {
+											var stackTrace:String = e.getStackTrace();
+											AlertPopUp.errorNoOkay(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR');
+										}
+									}, ezREST.jsonResultType);
+							}
+						);
+						popup.addEventListener(ResendActivationEvent.TYPE_RESEND_ACTIVATION,
+							function (event:ResendActivationEvent):void {
+								DebuggerUtils._trace(DebuggerUtils.getFunctionName(new Error())+'ResendActivationEvent.TYPE_RESEND_ACTIVATION --> '+event.toString());
+								popup.enabled = false;
+								var toks:Array = FlexGlobals.topLevelApplication.appProxy.app_title.split(' :: ');
+								var title:String = toks[0];
+								FlexGlobals.topLevelApplication.title = title+' :: Contacting the Cloud (Reactivate)...'
+								var url:String = FlexGlobals.topLevelApplication.domain+APIHelper.reactivate_endpoint;
+								DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> url='+url);
+								_this.ezREST.post(url,event.datum, 
+									function (event:ResultEvent):void {
+										var response:*;
+										try {
+											response = (event.result is String) ? event.result : event.result.getItemAt(0);
+											DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 event='+event.toString());
+											
+											var errorMsg:String;
+											errorMsg = (ObjectUtils.has_key(response,'error')) ? response['error'] : '';
+											popup.login.panel_Login.errorString = (errorMsg is String) && (errorMsg.length > 0) ? errorMsg : '';
+											popup.login.control_bar_message = popup.login.panel_Login.errorString;
+											popup.login.controlBar_messages.styleName = (popup.login.panel_Login.errorString.length > 0) ? 'ErrorMessages' : 'ImportantMessage';
+											
+											popup.enabled = true;
+											DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 --> popup.login.panel_Login.errorString.length='+popup.login.panel_Login.errorString.length);
+											if (popup.login.panel_Login.errorString.length == 0) {
+												FlexGlobals.topLevelApplication.title = title+' :: Activation ReSent...';
+												popup.login.title_panel = _this.const_panel_title+' :: Activation ReSent';
+												popup.login.reactivateControl_2.widget_emailAddress.txt_emailAddress.text = '';
+												popup.login.control_bar_message = 'Next: Copy-n-Paste the Activation Key from the EMail you should have received and then return to Login after successful Account Activation.';
+												popup.login.controlBar_messages.styleName = 'ImportantMessage';
+											} else {
+												FlexGlobals.topLevelApplication.title = title+' :: Activation Rejected... '+errorMsg;
+												popup.login.title_panel = _this.const_panel_title+' :: Activation Rejected';
+												popup.login.control_bar_message = 'Status: Activation Rejected. ['+popup.login.panel_Login.errorString+']';
+												popup.login.controlBar_messages.styleName = 'ErrorMessages';
+											}
+										} catch (e:Error) {
+											var stackTrace:String = e.getStackTrace();
+											AlertPopUp.errorNoOkay(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR');
+										}
+									}, ezREST.jsonResultType);
+							}
+						);
+						popup.addEventListener(ChangePasswordEvent.TYPE_CHANGE_PASSWORD,
+							function (event:ChangePasswordEvent):void {
+								DebuggerUtils._trace(DebuggerUtils.getFunctionName(new Error())+'ChangePasswordEvent.TYPE_CHANGE_PASSWORD --> '+event.toString());
+								popup.enabled = false;
+								var toks:Array = FlexGlobals.topLevelApplication.appProxy.app_title.split(' :: ');
+								var title:String = toks[0];
+								FlexGlobals.topLevelApplication.title = title+' :: Contacting the Cloud (Change Password)...'
+								var url:String = FlexGlobals.topLevelApplication.domain+APIHelper.chgpassword_endpoint;
+								DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> url='+url);
+								_this.ezREST.post(url,event.datum, 
+									function (event:ResultEvent):void {
+										var response:*;
+										try {
+											response = (event.result is String) ? event.result : event.result.getItemAt(0);
+											DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 event='+event.toString());
+											
+											var errorMsg:String;
+											errorMsg = (ObjectUtils.has_key(response,'error')) ? response['error'] : '';
+											popup.login.panel_Login.errorString = (errorMsg is String) && (errorMsg.length > 0) ? errorMsg : '';
+											popup.login.control_bar_message = popup.login.panel_Login.errorString;
+											popup.login.controlBar_messages.styleName = (popup.login.panel_Login.errorString.length > 0) ? 'ErrorMessages' : 'ImportantMessage';
+											
+											popup.enabled = true;
+											DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 --> popup.login.panel_Login.errorString.length='+popup.login.panel_Login.errorString.length);
+											if (popup.login.panel_Login.errorString.length == 0) {
+												FlexGlobals.topLevelApplication.title = title+' :: Password Changed...';
+												popup.login.title_panel = _this.const_panel_title+' :: Password Changed';
+												popup.login.changePasswordControl_3.widget_emailAddress.txt_emailAddress.text = '';
+												popup.login.changePasswordControl_3.widget_old_password.txt_Password.text = '';
+												popup.login.changePasswordControl_3.widget_password.txt_Password.text = '';
+												popup.login.changePasswordControl_3.widget_password2.txt_Password.text = '';
+												popup.login.control_bar_message = 'Next: You may begin using your new password AFTER you retrieve the email you should have just received AND you click on the link to perform the password change.';
+												popup.login.controlBar_messages.styleName = 'ImportantMessage';
+											} else {
+												FlexGlobals.topLevelApplication.title = title+' :: Password Change Rejected... '+errorMsg;
+												popup.login.title_panel = _this.const_panel_title+' :: Password Change Rejected';
+												popup.login.control_bar_message = 'Status: Password Change Rejected. ['+popup.login.panel_Login.errorString+']';
+												popup.login.controlBar_messages.styleName = 'ErrorMessages';
+											}
+										} catch (e:Error) {
+											var stackTrace:String = e.getStackTrace();
+											AlertPopUp.errorNoOkay(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR');
+										}
+									}, ezREST.jsonResultType);
+							}
+						);
+						FlexGlobals.topLevelApplication.appProxy.dispatchEvent(new RequestedUserLoginEvent(RequestedUserLoginEvent.TYPE_REQUESTED_USER_LOGIN,popup));
+					}
+				} else {
+					AlertPopUp.surpriseNoOkay('Programming error in '+this.className+'.handle_login_request().1 Cannot determine how to popup the Login Panel because no parent was specified... Doh !','ERROR');
+				}
+			}
+			
+			public function check_login():void {
+				var _isLoggedIn:Boolean = this.isLoggedIn;
+				if (!_isLoggedIn) {
+					handle_login_request();
+				}
+			}
+
+			protected function canvas1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:LicenseManagement = this;
+				var toks:Array = FlexGlobals.topLevelApplication.appProxy.app_title.split(' :: ');
+				var title:String = toks[0];
+				FlexGlobals.topLevelApplication.title = title+' :: Contacting the Cloud (Get User)...'
+				var url:String = FlexGlobals.topLevelApplication.domain+APIHelper.get_user_endpoint;
+				DebuggerUtils._trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> url='+url);
+				this.ezREST.post(url,{}, function (event:ResultEvent):void {
+						var response:*;
+						try {
+							response = (event.result is String) ? event.result : event.result.getItemAt(0);
+
+							DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> response='+DebuggerUtils.explainThis(response));
+							
+							DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1a event='+event.toString());
+							_this.__api__ = (ObjectUtils.has_key(response,'__api__')) ? response['__api__'] : '';
+							_this.__air_version__ = (ObjectUtils.has_key(response,'air_version')) ? response['air_version'] : '';
+							_this.__isLoggedIn = (ObjectUtils.has_key(response,'isLoggedIn')) ? response['isLoggedIn'] : '';
+							_this.__user = (ObjectUtils.has_key(response,'user')) ? response['user'] : '';
+							_this.__user = (_this.__user is Object) ? _this.__user : {};
+
+							FlexGlobals.topLevelApplication.appProxy.isLoggedIn = _this.__isLoggedIn;
+							FlexGlobals.topLevelApplication.appProxy.mySO.data.__air_version__ = _this.__air_version__;
+							FlexGlobals.topLevelApplication.appProxy.mySO.data.__api__ = _this.__api__;
+							FlexGlobals.topLevelApplication.appProxy.user = _this.__user;
+							FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+							
+							DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2a --> _this.__isLoggedIn='+_this.__isLoggedIn);
+							DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2b --> _this.__air_version__='+_this.__air_version__);
+							DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2c --> _this.__api__='+DebuggerUtils.explainThis(_this.__api__));
+							DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2d --> _this.__user='+DebuggerUtils.explainThis(_this.__user));
+							
+							function handle_login_process():void {
+								if (!_this.__isLoggedIn) {
+									FlexGlobals.topLevelApplication.title = title+' :: Login Authorized...'
+									_this.check_login();
+								} else {
+									FlexGlobals.topLevelApplication.title = title+' :: Login Accepted... Welcome Back, '+_this.__user['name'];
+									_this.dispatchEvent(new CompletedUserLoginEvent(CompletedUserLoginEvent.TYPE_COMPLETED_USER_LOGIN,{}));
+									FlexGlobals.topLevelApplication.appProxy.dispatchEvent(new CompletedUserLoginEvent(CompletedUserLoginEvent.TYPE_COMPLETED_USER_LOGIN,{}));
+									if (_this.__user.is_superuser) {
+										FlexGlobals.topLevelApplication.appProxy.dispatchEvent(new SuperUserLoggedInEvent(SuperUserLoggedInEvent.TYPE_SUPER_USER_LOGGED_IN));
+									}
+								}
+							}
+							
+							var v:String = _this.parentApplication.appProxy.build_number;
+							var c_num:Number = StringUtils.version_as_number(v);
+							var u_num:Number = StringUtils.version_as_number(_this.__air_version__);
+							DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2e --> c_num='+c_num+', u_num='+u_num);
+							if ( (!SWFHelper.is_web_based) && (c_num < u_num) ) {
+								DebuggerUtils._trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2f --> do_updater() !');
+								_this.parentApplication.appProxy.addEventListener(CannotPerformUpdateEvent.TYPE_CANNOT_PERFORM_UPDATE, 
+									function (event:CannotPerformUpdateEvent):void {
+										handle_login_process();
+									}
+								);
+								_this.parentApplication.appProxy.do_updater();
+							} else {
+								handle_login_process();
+							}
+						} catch (e:Error) {
+							var stackTrace:String = e.getStackTrace();
+							AlertPopUp.errorNoOkay(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR');
+						}
+					}, ezREST.jsonResultType);
+			}
+
+		]]>
+	</fx:Script>
+</mx:Canvas>

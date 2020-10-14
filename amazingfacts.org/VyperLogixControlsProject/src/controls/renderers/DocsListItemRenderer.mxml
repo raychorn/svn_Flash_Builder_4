@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas  xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			xmlns:s="library://ns.adobe.com/flex/spark" 
+			xmlns:mx="library://ns.adobe.com/flex/mx" 
+			width="100%" 
+			horizontalScrollPolicy="off" verticalScrollPolicy="off"
+			creationComplete="canvas1_creationCompleteHandler(event)">
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		.docs_list_item_highlight {
+			fontFamily: Calibri;
+			fontSize: 17pt;
+			fontWeight: bold;
+			color: #0000ff;
+		}
+		
+		.docs_list_item_lolight {
+			fontFamily: Calibri;
+			fontSize: 16pt;
+			color: #000000;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var __data:*;
+			
+			[Bindable]
+			private var __item_label_styleName:String;
+			
+			public override function set data(data:Object):void {
+				if (this.__data != data) {
+					this.__data = data;
+				}
+			}
+
+			protected function canvas1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:* = this;
+				this.item_label.buttonMode = this.item_label.useHandCursor = true;
+				this.mouseChildren = false;
+				this.addEventListener(MouseEvent.MOUSE_OVER, function (event:MouseEvent):void {
+					_this.__item_label_styleName = 'docs_list_item_highlight';
+				});
+				this.addEventListener(MouseEvent.MOUSE_OUT, function (event:MouseEvent):void {
+					_this.__item_label_styleName = 'docs_list_item_lolight';
+				});
+				this.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+					var p:* = _this.parentDocument;
+					if (p) {
+						p.docsList.selectedItem = _this.__data;
+					}
+				});
+			}
+
+		]]>
+	</fx:Script>
+	<mx:Label id="item_label" x="0" y="0" styleName="{this.__item_label_styleName}" text="{this.__data.title}" height="25"/>
+</mx:Canvas>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<view:CubeSide xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:view="view.cube.*"
+    title="Login">
+
+    <view:sideContent>
+
+        <mx:Form>
+
+            <mx:FormItem label="Username">
+                <mx:TextInput/>
+            </mx:FormItem>
+
+            <mx:FormItem label="Password">
+                <mx:TextInput displayAsPassword="true"/>
+            </mx:FormItem>
+
+            <mx:FormItem>
+                <mx:Button label="Login"/>
+            </mx:FormItem>
+
+            <mx:LinkButton label="Forgotten Password? Click Here."/>
+            <mx:LinkButton label="Not Registered? Click Here."/>
+
+        </mx:Form>
+
+    </view:sideContent>
+
+</view:CubeSide>

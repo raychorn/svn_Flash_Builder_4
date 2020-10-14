@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		title="HomeView">
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" paddingTop="10"/>
+	</s:layout>
+	
+	<s:Label text="Press the phone Menu button, or the button below to open the ViewMenu!"
+			 textAlign="center" width="90%"/>
+	
+	<s:Button label="Open ViewMenu" click="openViewMenu(event)"/>
+	
+	<s:viewMenuItems>
+		<s:ViewMenuItem label="Copy" click="doNothing(event)" icon="@Embed(source='assets/copy.png')"/>
+		<s:ViewMenuItem label="Cut" click="doNothing(event)" icon="@Embed(source='assets/cut.png')"/>
+		<s:ViewMenuItem label="Paste" click="doNothing(event)" icon="@Embed(source='assets/paste.png')"/>
+		<s:ViewMenuItem label="Undo" click="doNothing(event)" icon="@Embed(source='assets/undo.png')"/>
+		<s:ViewMenuItem label="Options" click="doNothing(event)" icon="@Embed(source='assets/options.png')"/>
+	</s:viewMenuItems>
+	
+	<fx:Script>
+		<![CDATA[
+			protected function openViewMenu(event:MouseEvent):void
+			{
+				this.parentApplication.viewMenuOpen = true;
+			}
+			
+			protected function doNothing(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				
+			}
+		]]>
+	</fx:Script>
+	
+</s:View>

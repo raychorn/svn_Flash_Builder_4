@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:sides="view.sides.*">
+
+    <mx:Script>
+        <![CDATA[
+            import mx.core.UIComponent;
+            import mx.core.IFlexDisplayObject;
+            import mx.managers.PopUpManager;
+            import mx.containers.TitleWindow;
+            import mx.core.Application;
+            import flash.display.DisplayObject;
+
+            import com.adobe.ac.mxeffects.Flip;
+            import com.adobe.ac.mxeffects.DistortionConstants;
+
+            import view.sides.LoginPopup;
+            import view.sides.RegistrationPopup;
+
+            private var loginPopup:LoginPopup;
+
+            private var registrationPopup:RegistrationPopup;
+
+            private function flip():void
+            {
+                var parent:DisplayObject = DisplayObject(Application.application);
+
+                var front:IFlexDisplayObject = PopUpManager.createPopUp(parent, LoginPopup,
+                                                                        false);
+                var back:IFlexDisplayObject = PopUpManager.createPopUp(parent, RegistrationPopup,
+                                                                       false);
+                back.visible = false;
+
+                loginPopup = LoginPopup(front);
+                loginPopup.addEventListener(Event.CHANGE, flipIn);
+                registrationPopup = RegistrationPopup(back);
+                registrationPopup.addEventListener(Event.CHANGE, flipOut);
+            }
+
+            private function flipIn(event:Event):void
+            {
+                registrationPopup.x = loginPopup.x;
+                registrationPopup.y = loginPopup.y;
+
+                var e:Flip = new Flip(loginPopup);
+                e.buildMode = DistortionConstants.POPUP;
+                e.siblings = [ registrationPopup ];
+                e.direction = DistortionConstants.LEFT;
+                e.duration = 2000;
+                e.play();
+            }
+
+            private function flipOut(event:Event):void
+            {
+                loginPopup.x = registrationPopup.x;
+                loginPopup.y = registrationPopup.y;
+
+                var e:Flip = new Flip(registrationPopup);
+                e.buildMode = DistortionConstants.POPUP;
+                e.siblings = [ loginPopup ];
+                e.direction = DistortionConstants.RIGHT;
+                e.duration = 2000;
+                e.play();
+            }
+        ]]>
+    </mx:Script>
+
+    <mx:Button click="flip();"/>
+
+</mx:VBox>

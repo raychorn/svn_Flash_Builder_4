@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   minWidth="800" minHeight="600" 
+					   resize="windowedapplication1_resizeHandler(event)"
+					   applicationComplete="windowedapplication1_applicationCompleteHandler(event)" 
+					   xmlns:googlemaps="com.google_maps.*" xmlns:Alert="controls.Alert.*">
+	<fx:Style source="styles.css"/>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.google.maps.Map;
+			import com.google_maps.HeatMapForGoogleMaps;
+			import com.vyperlogix.GoogleCloudOperation;
+			import com.vyperlogix.GoogleMapsService;
+			import com.widgets.HeatMapControlPanel;
+			
+			import controls.Alert.AlertAlternative;
+			import controls.Alert.SurpiseImage;
+			
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			
+			private var is_using_control_panel:Boolean = Capabilities.isDebugger;
+			
+			[Bindable]
+			public var isDebugger:Boolean = Capabilities.isDebugger;
+			
+			[Bindable]
+			public static var url_google_maps:String = 'http://www.smithmicro.com';
+			
+			[Bindable]
+			public static var google_maps_api_key:String = 'ABQIAAAAmwzRmeVGHsXlchx4-mnPJhSYo8ARVewGun5VsPlPlrmHlqyhYRRbfivFBWQjFjYo6ssoQkuK_lCQVQ';
+
+			[Bindable]
+			public var report_url:String;
+			
+			private var aMap:HeatMapForGoogleMaps;
+			
+			private function add_control_panel_to_map():void {
+				var _this:MapsSample1 = this;
+				this.aMap.control_panel = new HeatMapControlPanel();
+				this.aMap.control_panel.x = 0;
+				this.aMap.control_panel.y = 0;
+				this.aMap.control_panel.width = this.aMap.width;
+				this.aMap.control_panel.addEventListener(FlexEvent.CREATION_COMPLETE, 
+					function (event:FlexEvent):void {
+						var timer:Timer = new Timer(500);
+						timer.addEventListener(TimerEvent.TIMER, 
+							function (event:TimerEvent):void {
+								timer.stop();
+								_this.aMap.currentState = 'shrink';
+							}
+						);
+						timer.start();
+					}
+				);
+				this.aMap.stateChange_callback = function (event:FlexEvent):void {
+					if (_this.aMap.currentState == 'shrink') {
+						_this.aMap.currentState = 'shrunk';
+					}
+				};
+				this.aMap.addElementAt(this.aMap.control_panel,0);
+			}
+
+			protected function windowedapplication1_applicationCompleteHandler(event:FlexEvent):void {
+				var _this:MapsSample1 = this;
+				var onCreationComplete_timer:Timer = new Timer(150);
+				var guard_timer:Timer = new Timer(1000);
+				AlertAlternative.init(this.stage);
+				GoogleCloudOperation._timeout = 30;
+				this.aMap = new HeatMapForGoogleMaps();
+				this.aMap.width = this.width;
+				this.aMap.height = this.height;
+				this.aMap.url_google_maps = url_google_maps;
+				this.aMap.google_maps_api_key = google_maps_api_key;
+				if (this.is_using_control_panel) {
+					this.aMap.addEventListener(FlexEvent.CREATION_COMPLETE, 
+						function (event:FlexEvent):void {
+							onCreationComplete_timer.addEventListener(TimerEvent.TIMER, 
+								function (event:TimerEvent):void {
+									onCreationComplete_timer.stop();
+									trace(DebuggerUtils.getFunctionName(new Error())+'.1a --> onCreationComplete_timer.stop() !!!');
+									if (guard_timer.running) {
+										guard_timer.stop();
+										trace(DebuggerUtils.getFunctionName(new Error())+'.1b --> guard_timer.stop() !!!');
+									}
+									_this.add_control_panel_to_map();
+								}
+							);
+							trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> onCreationComplete_timer.start() !!!');
+							onCreationComplete_timer.start();
+						}
+					);
+				}
+				this.addElement(this.aMap);
+				guard_timer.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						guard_timer.stop();
+						trace(DebuggerUtils.getFunctionName(new Error())+'.2a --> guard_timer.stop() !!!');
+						if (onCreationComplete_timer.running) {
+							onCreationComplete_timer.stop();
+							trace(DebuggerUtils.getFunctionName(new Error())+'.2b --> onCreationComplete_timer.stop() !!!');
+						}
+						_this.add_control_panel_to_map();
+					}
+				);
+				guard_timer.start();
+				trace(DebuggerUtils.getFunctionName(new Error())+'.2 --> guard_timer.start() !!!');
+			}
+			
+			protected function windowedapplication1_resizeHandler(event:ResizeEvent):void {
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 RESIZED !!!');
+				if (this.aMap is HeatMapForGoogleMaps) {
+					this.aMap.width = this.width;
+					this.aMap.height = this.height;
+					if (this.aMap.control_panel) {
+						this.aMap.control_panel.width = this.aMap.width;
+						trace(DebuggerUtils.getFunctionName(new Error())+'.2 RESIZED --> this.aMap.control_panel.width='+this.aMap.control_panel.width);
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+</s:WindowedApplication>

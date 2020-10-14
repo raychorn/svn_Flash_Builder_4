@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  width="100%" height="100%" horizontalAlign="center"
+		  creationComplete="hgroup1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(type="spark.events.IndexChangeEvent", name="change")]
+		[Event(name="itemClick", type="mx.events.ItemClickEvent")]
+		[Event(name="specificButtonClick", type="controls.MediaPresentation.events.SpecificButtonClickEvent")]
+		[Event(name="selectedTabFromList", type="controls.MediaPresentation.DropDownList.events.SelectedTabFromListEvent")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import controls.MediaPresentation.DropDownList.events.SelectedTabFromListEvent;
+			import controls.MediaPresentation.events.SpecificButtonClickEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.events.ItemClickEvent;
+			import mx.events.ResizeEvent;
+			
+			import spark.components.Button;
+			import spark.events.IndexChangeEvent;
+			
+			private var __is_created__:Boolean = false;
+			
+			private var __dataProvider__:ArrayCollection;
+			
+			private var __tabsDataProvider__:ArrayCollection;
+			
+			public var labelField:String = 'label';
+
+			[Bindable]
+			private var __custom_button_width__:Number = 270;
+			
+			[Bindable]
+			public var button_width:Number = 30;
+			
+			[Bindable]
+			public var button_height:Number = 30;
+			
+			public function get dataProvider():ArrayCollection {
+				return this.__dataProvider__;
+			}
+			
+			public function get tabsDataProvider():ArrayCollection {
+				return this.__tabsDataProvider__;
+			}
+			
+			public function set tabsDataProvider(tabsDataProvider:ArrayCollection):void {
+				if (this.__tabsDataProvider__ != tabsDataProvider) {
+					this.__tabsDataProvider__ = tabsDataProvider;
+				}
+			}
+			
+			public function get custom_button_width():Number {
+				return this.__custom_button_width__;
+			}
+			
+			public function get getChidren():Array {
+				var children:Array = [];
+				try {
+					for (var i:int = 0; i < this.dataProvider.length; i++) {
+						children.push(this.getElementAt(i));
+					}
+				} catch (err:Error) {}
+				return children;
+			}
+			
+			public function getIndexFor(label:String):int {
+				var item:Object;
+				for (var i:int = 0; i < this.dataProvider.length; i++) {
+					item = this.dataProvider.getItemAt(i);
+					if (label == item[this.labelField]) {
+						return i;
+					}
+				}
+				return -1;
+			}
+			
+			private function create_buttons():void {
+				var _this:CustomButtonBar = this;
+				if (this.__is_created__) {
+					this.removeAllElements();
+					if ( (this.dataProvider != null) && (this.dataProvider.length > 0) ) {
+						var btn:*;
+						var dp:*;
+						var __type__:Class;
+						var item:Object;
+						var klass:String;
+						for (var i:int = 0; i < this.dataProvider.length; i++) {
+							item = this.dataProvider.getItemAt(i);
+							__type__ = item['type'];
+							dp = item['dataProvider'];
+							if (__type__ != null) {
+								btn = new __type__();
+								btn.btnBarLabelField = this.labelField;
+								btn.btnBarDataProvider = dp;
+								try {btn.btnBar.enabled = false;} catch (err:Error) {}
+								if (item['labels']) {
+									btn.btn1.label = item['labels']['label1'];
+									btn.btn2.label = item['labels']['label2'];
+									btn.listLabelField = this.labelField;
+									btn.listDataProvider = this.__tabsDataProvider__;
+								} else {
+									try {
+										btn.label = item[this.labelField];
+									} catch (err:Error) {
+										btn.btn.label = item[this.labelField];
+									}
+								}
+								try {
+									if ( (item['width'] is int) || (item['width'] is Number) ) {
+										if (item['width'] is int) {
+											btn.width = int(item['width']);
+										} else if (item['width'] is Number) {
+											btn.width = Number(item['width']);
+										}
+									} else {
+										btn.percentWidth = 100;
+									}
+								} catch (err:Error) {
+									btn.percentWidth = 100;
+								}
+								btn.addEventListener(ResizeEvent.RESIZE, 
+									function (event:ResizeEvent):void {
+										var target:CustomButton = event.currentTarget as CustomButton;
+										if (target) {
+											_this.__custom_button_width__ = target.width;
+										}
+									}
+								);
+								btn.addEventListener(FlexEvent.CREATION_COMPLETE, 
+									function (event:FlexEvent):void {
+										var target:* = event.currentTarget;
+										try {
+											target.btn1.addEventListener(MouseEvent.CLICK, 
+												function (event:MouseEvent):void {
+													var btn:* = event.currentTarget;
+													if (btn is CustomButton) {
+														btn.btnBar.enabled = true;
+														_this.dispatchEvent(new IndexChangeEvent('change', event.bubbles, event.cancelable, -1, _this.getIndexFor(btn.label)));
+													} else {
+														var label:String = btn.label;
+														_this.dispatchEvent(new SpecificButtonClickEvent(SpecificButtonClickEvent.TYPE_SPECIFIC_BUTTON_CLICK,label));
+													}
+												}
+											);
+											target.btn2.addEventListener(MouseEvent.CLICK, 
+												function (event:MouseEvent):void {
+													var btn:* = event.currentTarget;
+													if (btn is CustomButton) {
+														btn.btnBar.enabled = true;
+														_this.dispatchEvent(new IndexChangeEvent('change', event.bubbles, event.cancelable, -1, _this.getIndexFor(btn.label)));
+													} else {
+														var label:String = btn.label;
+														_this.dispatchEvent(new SpecificButtonClickEvent(SpecificButtonClickEvent.TYPE_SPECIFIC_BUTTON_CLICK,label));
+													}
+												}
+											);
+										} catch (err:Error) {
+											//trace('(***) Error='+err.toString()+'\n'+err.getStackTrace());
+											target.btn.addEventListener(MouseEvent.CLICK, 
+												function (event:MouseEvent):void {
+													var btn:* = event.currentTarget;
+													if (btn is CustomButton) {
+														btn.btnBar.enabled = true;
+													}
+													var label:String = btn.label;
+													if ( (!label) || ( (label is String) && (label.length == 0) ) ) {
+														label = btn.parentDocument.label;
+													}
+													_this.dispatchEvent(new IndexChangeEvent('change', event.bubbles, event.cancelable, -1, _this.getIndexFor(btn.label)));
+												}
+											);
+										}
+										target.addEventListener(SelectedTabFromListEvent.TYPE_SELECTED_TAB_FROM_LIST, 
+											function (event:SelectedTabFromListEvent):void {
+												_this.dispatchEvent(new SelectedTabFromListEvent(SelectedTabFromListEvent.TYPE_SELECTED_TAB_FROM_LIST,event.item))
+											}
+										);
+									}
+								);
+							} else {
+								btn = new Button();
+								btn.label = item[this.labelField];
+								btn.width = this.button_width;
+								btn.height = this.button_height;
+								//btn.styleName = item['styleName'];
+								btn.addEventListener(MouseEvent.CLICK, 
+									function (event:MouseEvent):void {
+										var btn:* = event.currentTarget;
+										if (btn is CustomButton) {
+											btn.btnBar.enabled = true;
+										}
+										_this.dispatchEvent(new IndexChangeEvent('change', event.bubbles, event.cancelable, -1, _this.getIndexFor(btn.label)));
+									}
+								);
+							}
+							try {
+								btn.enabled = (item['enabled']) ? item['enabled'] : false;
+							} catch (err:Error) {}
+							this.addElement(btn);
+						}
+					}
+				}
+			}
+			
+			public function set dataProvider(dataProvider:ArrayCollection):void {
+				if (this.__dataProvider__ != dataProvider) {
+					this.__dataProvider__ = dataProvider;
+					this.create_buttons();
+				}
+			}
+			
+			protected function hgroup1_creationCompleteHandler(event:FlexEvent):void {
+				this.__is_created__ = true;
+				this.create_buttons();
+			}
+			
+		]]>
+	</fx:Script>
+</s:HGroup>

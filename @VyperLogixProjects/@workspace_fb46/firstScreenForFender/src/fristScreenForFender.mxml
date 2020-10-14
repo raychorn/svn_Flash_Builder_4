@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" initialize="initData();"
+			   minWidth="955" minHeight="600">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:HTTPService id="cva_get_summary_web_service_local" url="http://127.0.0.1:8888/cva/summary/" method="GET" showBusyCursor="true" result="cva_get_summary_web_service_resultHandler(event)" resultFormat="text" />
+		<s:HTTPService id="cva_get_summary_web_service_remote" url="http://16.83.121.28:8888/cva/summary/" method="GET" showBusyCursor="true" result="cva_get_summary_web_service_resultHandler(event)" resultFormat="text" />
+
+		<s:HTTPService id="cva_post_summary_web_service_local" url="http://127.0.0.1:8888/cva/summary/" method="POST" showBusyCursor="true" result="cva_get_summary_web_service_resultHandler(event)" resultFormat="text" />
+		<s:HTTPService id="cva_post_summary_web_service_remote" url="http://16.83.121.28:8888/cva/summary/" method="POST" showBusyCursor="true" result="cva_get_summary_web_service_resultHandler(event)" resultFormat="text" />
+
+		<s:HTTPService id="cva_delete_summary_web_service_local" url="http://127.0.0.1:8888/cva/summary/" method="DELETE" showBusyCursor="true" result="cva_get_summary_web_service_resultHandler(event)" resultFormat="text" />
+		<s:HTTPService id="cva_delete_summary_web_service_remote" url="http://16.83.121.28:8888/cva/summary/" method="DELETE" showBusyCursor="true" result="cva_get_summary_web_service_resultHandler(event)" resultFormat="text" />
+	</fx:Declarations>
+	
+	<s:layout> 
+		<s:VerticalLayout/> 
+	</s:layout> 
+
+	
+	
+	<fx:Script> 
+		<![CDATA[ 
+			import com.adobe.net.URI;
+			import com.adobe.serialization.json.JSONDecoder;
+			
+			import mx.collections.*;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.formatters.Formatter;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import org.httpclient.HttpClient;
+			import org.httpclient.HttpResponse;
+			import org.httpclient.events.HttpDataEvent;
+			import org.httpclient.events.HttpListener;
+			
+			import spark.components.Grid;
+			import spark.components.TitleWindow;
+			import spark.events.GridEvent;
+			import spark.events.GridSelectionEvent;
+			
+			private var eventGrid:Grid;
+			private var currentIndx:int; 
+			private var currentDataItem:Object;
+			
+			private var cva_get_summary_web_service:HTTPService;
+			private var cva_post_summary_web_service:HTTPService;
+			private var cva_delete_summary_web_service:HTTPService;
+			
+			private var dgArray:Array = [ 
+				//{vDisk:'vDisk1', Accelarated:true, OperationalStatus:true, MIP:'35%',SSD:'SSD1'}, 
+				//{vDisk:'vDisk2', Accelarated:false, OperationalStatus:false, MIP:'20%',SSD:'SSD2'}
+			]; 
+			
+			public function initData():void { 
+				if (0) {
+					this.cva_get_summary_web_service = this.cva_get_summary_web_service_local;
+					this.cva_post_summary_web_service = this.cva_post_summary_web_service_local;
+					this.cva_delete_summary_web_service = this.cva_delete_summary_web_service_local;
+				} else {
+					this.cva_get_summary_web_service = this.cva_get_summary_web_service_remote;
+					this.cva_post_summary_web_service = this.cva_post_summary_web_service_remote;
+					this.cva_delete_summary_web_service = this.cva_delete_summary_web_service_remote;
+				}
+				this.cva_get_summary_web_service.send();
+			} 
+			
+			private function handler_destroy_button(event:MouseEvent):void {
+				var btn:GridButton = event.target as GridButton;
+				var item:* = this.myGrid.dataProvider.getItemAt(btn.index);
+				if (item) {
+					Alert.show('Are you sure you want to remove '+item['vDisk']+' ?','REMOVE ?',(Alert.YES | Alert.NO), this,
+						function (event:CloseEvent):void {
+							if (event.detail == Alert.YES) {
+								var _toks:Array = [];
+								var toks:Array = cva_delete_summary_web_service.url.split('//');
+								var toks2:Array = toks[toks.length-1].split('/');
+								for (var i:int = 0; i < 3; i++) {
+									_toks[_toks.length] = toks2[i];
+								}
+								_toks[_toks.length] = item['uuid'];
+								_toks[_toks.length] = '';
+								toks[toks.length-1] = _toks.join('/').replace('//','/');
+								cva_delete_summary_web_service.url = toks.join('//');
+								trace('DELETE --> '+cva_delete_summary_web_service.url);
+
+								var client:HttpClient = new HttpClient();            
+								var uri:URI = new URI(cva_delete_summary_web_service.url);
+								var listener:HttpListener = new HttpListener();
+								listener.onData = cva_delete_summary_web_service_resultHandler;
+								client.listener = listener;
+								client.del(uri);
+							}
+						}
+					);
+				} else {
+					Alert.show('CANNOT REMOVE THIS ITEM --> ('+btn.index+')','WARNING');
+				}
+			}
+			
+			private function handler_edit_button(event:MouseEvent):void {
+				var btn:GridButton = event.target as GridButton;
+				var item:* = this.myGrid.dataProvider.getItemAt(btn.index);
+				if (item) {
+					var helpWindow:AddEditAccelaration = PopUpManager.createPopUp(this, AddEditAccelaration, true) as AddEditAccelaration;
+					helpWindow.webService = this.cva_post_summary_web_service;
+					helpWindow.vdisk_id.text = item['vDisk']; 
+					helpWindow.vdisk_uuid.text = item['uuid']; 
+					PopUpManager.centerPopUp(helpWindow);
+				} else {
+					Alert.show('CANNOT EDIT THIS ITEM --> ('+btn.index+')','WARNING');
+				}
+			}
+			
+			protected function cva_handle_summary_web_service_result(data:*):void {
+				var decoder:JSONDecoder = new JSONDecoder(data);
+				var blob:Object = decoder.getValue();
+				var vdisks:Array = blob.vdisks;
+				var anItem:*;
+				var i:int;
+				this.dgArray = [];
+				for (i = 0; i < vdisks.length; i++) {
+					anItem = vdisks[i];
+					this.dgArray[this.dgArray.length] = {vDisk:anItem['vdisk'], Accelarated:anItem['accelarated'], OperationalStatus:anItem['operationalStatus'], MIP:Number(anItem['mip'])*100.0+'%',SSD:anItem['ssd'],uuid:anItem['uuid'],destroy:{label:'(-)',index:i,handler:handler_destroy_button},edit:{label:'(*)',index:i,handler:handler_edit_button}};
+				}
+				this.myGrid.dataProvider = new ArrayCollection(this.dgArray);
+			}
+			
+			protected function cva_get_summary_web_service_resultHandler(event:*):void {
+				var data:String = String(event.result);
+				this.cva_handle_summary_web_service_result(data);
+			}
+			
+			protected function cva_delete_summary_web_service_resultHandler(event:HttpDataEvent):void {
+				var data:String = String(event.bytes.readUTFBytes(event.bytes.bytesAvailable));
+				this.cva_handle_summary_web_service_result(data);
+			}
+			
+			protected function btn_add_clickHandler(event:MouseEvent):void {
+				this.dgArray = this.myGrid.dataProvider.toArray();
+				this.dgArray[this.dgArray.length] = {vDisk:'UNKNOWN', Accelarated:null, OperationalStatus:null, MIP:null,SSD:null,uuid:null};
+				this.myGrid.dataProvider = new ArrayCollection(this.dgArray);
+
+				var item:* = this.myGrid.dataProvider.getItemAt(this.dgArray.length-1);
+
+				var helpWindow:AddEditAccelaration = PopUpManager.createPopUp(this, AddEditAccelaration, true) as AddEditAccelaration;
+				helpWindow.webService = this.cva_post_summary_web_service;
+				helpWindow.vdisk_id.text = item['vDisk']; 
+				helpWindow.vdisk_id.editable = true;
+				helpWindow.vdisk_uuid.text = item['uuid']; 
+				PopUpManager.centerPopUp(helpWindow);
+			}
+			
+		]]> 
+	</fx:Script> 
+	
+	<s:VGroup width="100%" height="100%" paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="10">
+		<s:HGroup width="100%">
+			<s:DataGrid id="myGrid" height="200" width="100%">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn dataField="uuid" visible="false"/>
+						<s:GridColumn dataField="vDisk"/>
+						<s:GridColumn dataField="Accelarated" itemRenderer="DGCheckBoxRenderer" width="150"/>
+						<s:GridColumn dataField="OperationalStatus" itemRenderer="OperationalStatusCheckBoxRenderer" width="150"/>
+						<s:GridColumn dataField="MIP"/>
+						<s:GridColumn dataField="SSD" width="100"/>
+						<s:GridColumn dataField="edit" headerText="Edit" width="80" itemRenderer="DGButton"/>
+						<s:GridColumn dataField="destroy" headerText="Remove" width="100" itemRenderer="DGButton"/>
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+		</s:HGroup>
+		<s:Button id="btn_add" label="(+)" click="btn_add_clickHandler(event)"/>
+		<s:HGroup width="100%">
+			<s:Label text="Selected index:"/> 
+			<s:TextArea id="selIndex" height="50"/> 
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<s:Label text="Selected Last Name:"/> 
+			<s:TextArea id="selLName" height="50"/> 
+		</s:HGroup>
+	</s:VGroup>
+</s:Application>

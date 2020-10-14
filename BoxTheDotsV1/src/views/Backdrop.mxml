@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			[Embed(source="/assets/backdrops/dunes-and-clouds.jpg")]
+			[Bindable]
+			private var imgBackground1Cls:Class;
+		]]>
+	</fx:Script>
+	<mx:Image id="image" source="{this.imgBackground1Cls}" scaleContent="true" alpha="0.5"/>
+</mx:Canvas>

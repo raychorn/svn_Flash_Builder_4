@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" 
+		   width="100%" height="100%" 
+		   creationComplete="canvas1_creationCompleteHandler(event)" xmlns:mob="openplug.elips.controls.*">
+	<mx:Style>
+	</mx:Style>
+	<mx:Script>
+		<![CDATA[
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			
+			import openplug.elips.controls.Alert;
+
+			[Bindable]
+			public var callback:Function;
+			
+			[Bindable]
+			[Embed(source="StarbucksLogo.png")]
+			public static var starbucksIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="checkin_64x64.png")]
+			public static var checkinIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="nearbyvenues_64x64.png")]
+			public static var venuesIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="starbucks-card.png")]
+			public static var starbucksCardIconClass:Class;
+
+			[Bindable]
+			private var symbol_starbucksCard_text:String = 'Someone will WIN One (1) Of these Starbucks\n Cards with $$$ at every drawing !!!';
+			
+			[Bindable]
+			private var symbol_starbucksCard_text2:String = 'Check-In to get YOURS !!!';
+			
+			protected function canvas1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:HomeView = this;
+				this.addEventListener(ResizeEvent.RESIZE, 
+					function (event:ResizeEvent):void {
+//						var s:String = '';
+//						trace(event.toString()+', width='+_this.width+', height='+_this.height+s);
+					}
+				);
+			}
+
+
+			protected function btn_checkin_touchTapHandler(event:TouchEvent):void {
+				var _this:HomeView = this;
+				Alert.show('Check-In Not Yet Implemented !','INFO',Alert.OK | Alert.CANCEL,this,
+					function (event:CloseEvent):void {
+						if (event.detail == Alert.OK) {
+							if (_this.callback is Function) {
+								try {_this.callback(event.detail)} 
+								catch (err:Error) {Alert.show('Cannot process your Check-In at this time.','WARNING',Alert.OK);}
+							}
+						}
+					}
+				);
+			}
+
+
+			protected function btn_venues_touchTapHandler(event:TouchEvent):void {
+				Alert.show('Venues Not Yet Implemented !','INFO',Alert.OK);
+			}
+
+		]]>
+	</mx:Script>
+	<mx:VBox id="logo_container" width="100%">
+		<mx:HBox width="100%" paddingLeft="5">
+			<mx:Image source="@Embed('VLC-header-world-05-11-2010b.png')" width="{this.width}"/>
+		</mx:HBox>
+	</mx:VBox>
+	<mx:Canvas x="0" y="{this.logo_container.height-40}" width="100%">
+		<!--
+		<mx:VBox width="100%" height="100%">
+			<mx:HBox width="100%" paddingLeft="5" horizontalAlign="center">
+				<mx:Text width="95%" textAlign="center" styleName="Text" text="{'\nPresents...'}"/>
+			</mx:HBox>
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:VBox width="30%" paddingLeft="5" height="100%" horizontalAlign="center" verticalAlign="middle">
+					<mx:HBox width="100%">
+						<mx:VBox id="vbox_checkin" width="50%" horizontalAlign="center">
+							<mx:Button id="btn_checkin" label="Check-in" labelPlacement="bottom" styleName="Text" icon="{checkinIconClass}" touchTap="btn_checkin_touchTapHandler(event)"/>
+						</mx:VBox>
+						<mx:VBox width="50%" horizontalAlign="center" visible="false" includeInLayout="false">
+							<mx:Button id="btn_venues" label="Find a Starbucks" labelPlacement="bottom" icon="{venuesIconClass}" touchTap="btn_venues_touchTapHandler(event)"/>
+						</mx:VBox>
+					</mx:HBox>
+				</mx:VBox>
+				<mx:HBox width="70%" horizontalAlign="right">
+					<mx:Image source="{starbucksIconClass}" scaleContent="false"/>
+				</mx:HBox>
+			</mx:HBox>
+			<mx:HBox width="100%" horizontalAlign="left">
+				<mob:Text id="lbl_starbucksCard" text="{this.symbol_starbucksCard_text}" styleName="Text"/>
+			</mx:HBox>
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Image source="{starbucksCardIconClass}" scaleContent="false"/>
+			</mx:HBox>
+			<mx:HBox width="100%" horizontalAlign="left">
+				<mob:Text id="lbl_starbucksCard2" text="{this.symbol_starbucksCard_text2}" styleName="Text"/>
+			</mx:HBox>
+		</mx:VBox>
+		-->
+	</mx:Canvas>
+</mx:Canvas>

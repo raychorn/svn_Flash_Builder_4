@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="200" currentState="normal">
+	<mx:states>
+		<mx:State name="State1"/>
+		<mx:State name="normal"/>
+		<mx:State name="search"/>
+		<mx:State name="filter"/>
+	</mx:states>
+	<fx:Declarations>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			
+			import utils.AIRHelper;
+			
+			[Embed(source="assets/images/about_us.png")]
+			[Bindable]
+			public var aboutUsCls:Class;
+			
+			[Embed(source="assets/images/bible-software.png")]
+			[Bindable]
+			public var bibleSoftwareCls:Class;
+
+			[Embed(source="assets/images/help.png")]
+			[Bindable]
+			public var helpCls:Class;
+
+			[Embed(source="assets/images/quit.png")]
+			[Bindable]
+			public var quitCls:Class;
+
+			[Embed(source="assets/images/search.png")]
+			[Bindable]
+			public var searchCls:Class;
+
+			[Embed(source="assets/images/home.png")]
+			[Bindable]
+			public var homeCls:Class;
+
+			[Embed(source="assets/icons/CheckBox.png")]
+			[Bindable]
+			public var checkboxCls:Class;
+			
+			[Bindable]
+			public var btn_removeFilter_onClick_handler:Function;
+			
+			[Bindable]
+			private var search_options_menu_data:ArrayCollection = new ArrayCollection();
+			
+			protected function btn_creationCompleteHandler(event:FlexEvent):void {
+				var btn:Button = event.currentTarget as Button;
+				btn.width -= 10;
+				btn.buttonMode = btn.useHandCursor = true;
+			}
+
+			protected function btn_removeFilter_clickHandler(event:MouseEvent):void {
+				if (this.btn_removeFilter_onClick_handler is Function) {
+					try {
+						this.btn_removeFilter_onClick_handler(event);
+					} catch (err:Error) {
+						//trace(this.className+'.btn_removeFilter_clickHandler().1 ERROR='+err.toString());
+					}
+				}
+			}
+
+
+			protected function list_options_creationCompleteHandler(event:FlexEvent):void {
+				this.search_options_menu_data.addItem({label:"Search Titles", data:"search_titles", icon:null});
+				this.search_options_menu_data.addItem({label:"Search Text", data:"search_text", icon:null});
+				this.search_options_menu_data.addItem({label:"Search Keywords", data:"search_keywords", icon:null});
+				this.search_options_menu_data.addItem({label:"Search All", data:"search_all", icon:this.checkboxCls});
+			}
+
+			protected function list_options_itemClickHandler(event:MenuEvent):void {
+				for (var i:String in this.search_options_menu_data.source) {
+					this.search_options_menu_data.source[i].icon = null;
+				}
+				AIRHelper.options['current_search_option'] = event.item.data;
+				trace(this.className+'.list_options_itemClickHandler().1 --> event.item.label='+event.item.label+', event.item.data='+event.item.data+', current_search_option='+AIRHelper.options['current_search_option']);
+				event.item.icon = this.checkboxCls;
+				this.dispatchEvent(new FlexEvent(FlexEvent.DATA_CHANGE));
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle">
+			<mx:Button id="btn_home" includeIn="normal" icon="{this.homeCls}" creationComplete="btn_creationCompleteHandler(event)"/>
+			<mx:Button id="btn_aboutUs" includeIn="normal" icon="{this.aboutUsCls}" creationComplete="btn_creationCompleteHandler(event)"/>
+			<mx:Button id="btn_bibleSoftware" includeIn="normal" icon="{this.bibleSoftwareCls}" creationComplete="btn_creationCompleteHandler(event)"/>
+			<mx:Button id="btn_help" includeIn="normal" icon="{this.helpCls}" creationComplete="btn_creationCompleteHandler(event)"/>
+			<mx:Button id="btn_quit" includeIn="normal" icon="{this.quitCls}" creationComplete="btn_creationCompleteHandler(event)"/>
+			<mx:Spacer width="20" includeIn="normal"/>
+			<s:TextInput id="txt_search" includeIn="filter,search" width="100%" enabled.filter="false"/>
+			<mx:Button id="btn_search" includeIn="search" icon="{this.searchCls}" creationComplete="btn_creationCompleteHandler(event)"/>
+			<mx:Button id="btn_removeFilter" includeIn="filter" label="Remove Filter" click="btn_removeFilter_clickHandler(event)"/>
+			<mx:Spacer width="5" includeIn="filter"/>
+			<mx:PopUpMenuButton id="list_options" includeIn="filter" label="*" width="40" styleName="docs_search_options" dataProvider="{this.search_options_menu_data}" labelField="label" iconField="icon" itemClick="list_options_itemClickHandler(event)" creationComplete="list_options_creationCompleteHandler(event)"/>
+			<mx:Spacer width="5" includeIn="normal"/>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Canvas>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel 
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	title="Search"
+	horizontalAlign="center" verticalAlign="middle">
+
+	<mx:Metadata>
+		[Event("change", type="mx.events.Event")]
+	</mx:Metadata>
+	
+	<mx:Form
+    	width="263" height="163"
+    	verticalScrollPolicy="off"
+    	horizontalScrollPolicy="off">
+		
+		<mx:FormItem label="Product A">
+			<mx:TextInput />
+		</mx:FormItem>
+		<mx:FormItem label="Purchase">
+			<mx:DateField />
+		</mx:FormItem>
+		<mx:FormItem label="Item No">
+			<mx:TextInput restrict="0-9" />
+		</mx:FormItem>
+		<mx:FormItem>
+			<mx:Button 
+				label="Advanced Search"
+				click="dispatchEvent( new Event( Event.CHANGE ) );" />
+		</mx:FormItem>
+		
+	</mx:Form>
+			
+</mx:Panel>

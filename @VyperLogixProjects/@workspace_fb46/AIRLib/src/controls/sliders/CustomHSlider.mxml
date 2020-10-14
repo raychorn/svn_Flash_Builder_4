@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HSlider xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			[Bindable]
+			private var __thumb_button_styleName__:String;
+
+			[Bindable]
+			public function get thumb_button_styleName():String {
+				return this.__thumb_button_styleName__;
+			}
+			
+			public function set thumb_button_styleName(thumb_button_styleName:String):void {
+				if (this.__thumb_button_styleName__ != thumb_button_styleName) {
+					this.__thumb_button_styleName__ = thumb_button_styleName;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+</s:HSlider>

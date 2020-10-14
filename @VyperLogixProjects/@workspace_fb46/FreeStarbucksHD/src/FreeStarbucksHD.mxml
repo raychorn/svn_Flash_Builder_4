@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ViewNavigatorApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							xmlns:s="library://ns.adobe.com/flex/spark" 
+							frameRate="24" firstView="views.HomeView"
+							splashScreenImage="@Embed('FreeStarbucks_1024x500.png')" 
+							splashScreenScaleMode="letterbox" 
+							splashScreenMinimumDisplayTime="100" 
+							backgroundColor="#ffffff" 
+							applicationDPI="160"
+							applicationComplete="mobileapplication1_applicationCompleteHandler(event)" 
+							xmlns:mx="library://ns.adobe.com/flex/mx"
+							>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.ErrorTipManager;
+			
+			import controls.Alert.AlertAlternative;
+			
+			import free4u.ApplicationProxy;
+			
+			import mx.events.FlexEvent;
+			
+			import spark.components.TextArea;
+			
+			import views.*;
+			
+			[Bindable]
+			public var app:ApplicationProxy;
+			
+			public function get is_loggedin():Boolean {
+				var is_loggedin:Boolean = false;
+				try {
+					is_loggedin = ( (this.app.user_data != null) && (this.app.user_data.isLoggedIn) );
+				} catch (err:Error) {}
+				return is_loggedin;
+			}
+			
+			private function handle_author_event():void {
+				if (this.app.is_menu_shown) {
+					this.app.dismiss_menuPanel();
+					this.navigator.pushView(CreditsView,{});
+				}
+			}
+			
+			private function handle_changelog_event():void {
+				if (this.app.is_menu_shown) {
+					this.app.dismiss_menuPanel();
+					this.navigator.pushView(ChangeLogView,{});
+				}
+			}
+			
+			private function handle_info_event():void {
+				if (this.app.is_menu_shown) {
+					this.app.dismiss_menuPanel();
+					this.navigator.pushView(InfoView,{});
+				}
+			}
+			
+			private function handle_feedback_event():void {
+				if (this.app.is_menu_shown) {
+					this.app.dismiss_menuPanel();
+					this.navigator.pushView(FeedbackView,{});
+				}
+			}
+			
+			protected function mobileapplication1_applicationCompleteHandler(event:FlexEvent):void {
+				var num:Number;
+				var _this:FreeStarbucksHD = this;
+				this.app = new ApplicationProxy();
+				this.addElement(this.app);
+				AlertAlternative.init(this.stage);
+				this.stage.addEventListener(KeyboardEvent.KEY_DOWN, 
+					function (event:KeyboardEvent):void {
+						try {
+							if (event.keyCode == Keyboard.BACK) {
+								event.preventDefault();
+								num = _this.app._navigator.length;
+								if ( (_this.app.isDebugger) && (_this.app.txt_status is TextArea) ) {
+									_this.app.txt_status.text = 'Back Pressed (num='+num+') !\n' + _this.app.txt_status.text;
+								}
+								if (_this.app.is_menu_shown) {
+									_this.app.dismiss_menuPanel();
+								} else if (num > 1) {
+									ErrorTipManager.hideAllErrorTips();
+								} else {
+									_this.app.nativeApplication.exit();
+								}
+							} else if (event.keyCode == Keyboard.MENU) {
+								event.preventDefault();
+								if (!_this.app.is_menu_shown) {
+									_this.app.popUp_menuPanel();
+								}
+							} else if (event.keyCode == Keyboard.SEARCH) {
+								event.preventDefault();
+								try {_this.app.menuPanel.parentDocument['handle_venues_event']();} 
+								catch (err:Error) {_this.app.error('ERROR.411: '+err.toString());}
+							}
+						} catch (err:Error) {
+							trace(DebuggerUtils.getFunctionName(err)+'.ERROR --> '+err.toString()+'\n'+err.getStackTrace());
+						}
+					}
+				);
+			}
+		]]>
+	</fx:Script>
+</s:ViewNavigatorApplication>

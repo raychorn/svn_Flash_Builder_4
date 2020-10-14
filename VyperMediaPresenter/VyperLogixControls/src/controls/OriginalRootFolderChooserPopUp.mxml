@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" creationComplete="panel1_creationCompleteHandler(event)" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  layout="absolute" 
+		  width="100%" height="100%" 
+		  xmlns:controls="controls.*" styleName="MainCanvas">
+	<mx:states>
+		<s:State name="State1"/>
+		<s:State name="Home"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ArrayCollectionUtils;
+			import com.CapabilitiesUtils;
+			import com.FileListUtils;
+			import com.ObjectUtils;
+			import com.StringUtils;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.events.FileListInitContextMenuEvent;
+			import controls.events.FolderNavigatorChangedEvent;
+			
+			import flash.filesystem.File;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.FileSystemEnumerationMode;
+			import mx.events.FileEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			
+			import utils.AIRHelper;
+			
+			[Bindable]
+			private var _homePath:String = '';
+			
+			[Bindable]
+			private var isInitialized:Boolean = false;
+
+			[Bindable]
+			private var _newPath:String = '';
+			
+			private var _removeable_drives:Object = {};
+
+			private var _fixed_drives:Object = {};
+
+			private var _storage_volume:StorageVolume;
+			
+			public var _ProphecyFoundations_xml:String = '';
+			
+			[Bindable]
+			private var hasFoundTarget:Boolean = false;
+
+			[Bindable]
+			private var hasDismountedMedia:Boolean = false;
+			
+			[Bindable]
+			private var isSearchingForMedia:Boolean = true;
+			
+			public var callback:Function = function ():void {};
+			
+			[Bindable]
+			public var headerCls:Class;
+			
+			private function onContextMenuItemSelect(event:ContextMenuEvent):void {
+				var cMenuItem:ContextMenuItem = ContextMenuItem(event.currentTarget);
+				if (cMenuItem.label == 'Home') {
+					this.onClickNavigateHomeButton();
+				} else if (cMenuItem.label == 'Up') {
+					this.onClickNavigateUpButton();
+				}
+			}
+
+			private function addCustomMenuItems(cMenu:ContextMenu):void {
+				var item:ContextMenuItem = new ContextMenuItem('Home');
+				cMenu.customItems.push(item);
+				item.addEventListener(ContextMenuEvent.MENU_ITEM_SELECT, onContextMenuItemSelect);
+				item = new ContextMenuItem('Up');
+				cMenu.customItems.push(item);
+				item.addEventListener(ContextMenuEvent.MENU_ITEM_SELECT, onContextMenuItemSelect);
+			}
+
+			private function getContextMenu():ContextMenu {
+				var cMenu:ContextMenu = new ContextMenu();
+				cMenu.hideBuiltInItems();
+				addCustomMenuItems(cMenu);
+				return cMenu;
+			}
+
+			public function initFileListContextMenu():void {
+				this.fileList.contextMenu = this.getContextMenu();
+			}
+
+			private function initFileSystemList():void {
+//				this.initFileListContextMenu();
+//				this.dispatchEvent(new FileListInitContextMenuEvent(FileListInitContextMenuEvent.TYPE_FILE_LIST_INIT_CONTEXT_MENU));
+			}
+
+			private function refreshNavigationButtons():void {
+				this.btn_navigateUp.enabled = (FileListUtils.isFileListAtRoot(this.fileList) == false);
+				var cMenu:ContextMenu = ContextMenu(this.fileList.contextMenu);
+				if (cMenu) {
+					var items:Array = cMenu.customItems;
+					var ac:ArrayCollection = new ArrayCollection(items);
+					var i:int = ArrayCollectionUtils.findIndexOfItem(ac,'label', 'Up');
+					var cMenuItem:ContextMenuItem;
+					if (i > -1) {
+						cMenuItem = items[i];
+						cMenuItem.enabled = this.btn_navigateUp.enabled;
+					}
+//					this.btn_navigateUp.styleName = ((this.btn_navigateUp.enabled) ? 'EnabledButton' : 'DisabledButton');
+//					this.btn_navigateUp.toolTip = ((this.btn_navigateUp.enabled) ? "Click this button to navigate to the parent folder for the currently selected folder." : 'This button has been disabled.  Navigate to a folder that is one level lower than the current folder to enable this button or Navigate to the HOME folder.');
+				}
+			}
+			
+			private function onClickNavigateHomeButton():void {
+				this.initFileSystemList();
+				this.refreshNavigationButtons();
+			}
+
+			private function onClickNavigateUpButton():void {
+				this.fileList.navigateUp();
+				this.refreshNavigationButtons();
+			}
+			
+			private function issueCallback_ifVolumeValid(fpath:String):void {
+				var aFile:File;
+				aFile = new File(StringUtils.appendSlashIfNecessary(fpath)+'data');
+				if ( (this.callback is Function) && (aFile.exists) && (aFile.isDirectory) ) {
+					try {
+						this.callback(aFile);
+					} catch (err:Error) {}
+				}
+			}
+
+			protected function panel1_creationCompleteHandler(event:FlexEvent):void {
+				var aFile:File;
+				var _this:OriginalRootFolderChooserPopUp = this;
+				var volumes:Vector.<StorageVolume> = StorageVolumeInfo.storageVolumeInfo.getStorageVolumes();
+				for each (var volume:StorageVolume in volumes) {
+					if (CapabilitiesUtils.isOSMac() || CapabilitiesUtils.isOSLinux()) {
+						if ( (volume.isRemovable) && (volume.rootDirectory.nativePath.toUpperCase().indexOf('PROPHECYFOUNDATIONS') > -1) ) {
+							this._removeable_drives[volume.drive] = volume.rootDirectory.nativePath;
+							this.issueCallback_ifVolumeValid(volume.rootDirectory.nativePath);
+							break;
+						}
+					} else if (CapabilitiesUtils.isOSWindows()) {
+						if ( (volume.isRemovable) && (volume.name.toUpperCase().indexOf('PROPHECYFOUNDATIONS') > -1) ) {
+							this._removeable_drives[volume.drive] = volume.rootDirectory.nativePath;
+							this.issueCallback_ifVolumeValid(volume.rootDirectory.nativePath);
+							break;
+						}
+					}
+				}
+				try {
+					this.removeableDrive.dataProvider = this.removeable_drive_list;
+					var keys:Array = ObjectUtils.keys(this._removeable_drives);
+					this.fileList.directory = new File(this._removeable_drives[keys[0]]);
+				} catch (err:Error) {}
+				StorageVolumeInfo.storageVolumeInfo.addEventListener(StorageVolumeChangeEvent.STORAGE_VOLUME_MOUNT, function (event:StorageVolumeChangeEvent):void {
+					_this.isSearchingForMedia = false;
+					_this.hasDismountedMedia = false;
+					_this._storage_volume = event.storageVolume;
+					//trace(_this.className+'.StorageVolumeChangeEvent.STORAGE_VOLUME_MOUNT.1 --> ',event.toString());
+					//trace(_this.className+'.StorageVolumeChangeEvent.STORAGE_VOLUME_MOUNT.2 --> ',event.rootDirectory.nativePath);
+					this.issueCallback_ifVolumeValid(event.storageVolume.rootDirectory.nativePath);
+				});
+				StorageVolumeInfo.storageVolumeInfo.addEventListener(StorageVolumeChangeEvent.STORAGE_VOLUME_UNMOUNT, function (event:StorageVolumeChangeEvent):void {
+					//trace(_this.className+'.StorageVolumeChangeEvent.STORAGE_VOLUME_UNMOUNT.1 --> ',event.toString());
+					_this.isSearchingForMedia = true;
+					_this.hasDismountedMedia = true;
+				});
+			}
+			
+			private function get removeable_drive_list():ArrayCollection {
+				var ar:Array = [];
+				for (var i:String in this._removeable_drives) {
+					ar.push({'label':i,'data':this._removeable_drives[i]});
+				}
+				return new ArrayCollection(ar);
+			}
+			
+			private function filterFunction(file:File):Boolean {
+				var s:String = file.name;
+				return true;
+			}
+
+			private function fileDataTip(item:*):String {
+				return item.name;
+			}
+
+			private function onChangeFileSystemList(event:ListEvent):void {
+				//trace(this.className+'.onChangeFileSystemList().1 --> '+event.toString());
+			}
+
+			private function onCreationCompleteFileSystemList():void {
+				this.isInitialized = true;
+				this.initFileSystemList();
+			}
+
+			private function _onDirectoryChangeFileSystemList(aFile:File):void {
+				var isRemoveable:Boolean = false;
+				//trace(this.className+'._onDirectoryChangeFileSystemList().1 --> '+aFile.toString());
+				if (aFile.isDirectory) {
+					var dname:String = aFile.nativePath.split(':')[0];
+					var keys:Array = ObjectUtils.keys(this._removeable_drives);
+					if (keys.indexOf(dname) > -1) {
+						isRemoveable = true;
+					}
+				}
+				if (isRemoveable) {
+					this._newPath = this.fileList.directory.nativePath;
+					var folders:ArrayCollection = this.fileList.dataProvider as ArrayCollection;
+					var aFile:File;
+					var fname:String;
+					var file:File;
+					for (var i:String in folders) {
+						file = folders[i];
+						fname = this._ProphecyFoundations_xml.replace(AIRHelper.default_prefix+'data',file.nativePath.replace('\\','/'));
+						aFile = new File(fname)
+						if ( (aFile.exists) && (!aFile.isDirectory) ) {
+							this.hasFoundTarget = true;
+							if (this.callback is Function) {
+								try {
+									var toks:Array = fname.split('/');
+									this.callback(toks.slice(0,toks.length-1).join('/'));
+								} catch (err:Error) {
+									//trace(this.className+'._onDirectoryChangeFileSystemList.ERROR --> '+err.toString());
+								}
+							}
+							//AlertPopUp.infoNoOkay('Found '+aFile.nativePath,'INFO');
+							break;
+						}
+					}
+					//trace(this.className+'._onDirectoryChangeFileSystemList().2 !');
+				} else if (this._storage_volume is StorageVolume) {
+					//this.fileList.directory = this._storage_volume.rootDirectory;
+				}
+			}
+			
+			private function onDirectoryChangeFileSystemList(event:FileEvent):void {
+				//this._onDirectoryChangeFileSystemList(event.file);
+				this.dispatchEvent(new FolderNavigatorChangedEvent(FolderNavigatorChangedEvent.TYPE_FOLDER_NAVIGATOR_CHANGED,this._newPath));
+			}
+			
+			private function onDirectoryChange_fileSystem(event:FileEvent):void {
+				var fileSys:FileSystemComboBox = event.currentTarget as FileSystemComboBox;
+				//trace(this.className+'.onDirectoryChange_fileSystem().1 --> '+fileSys.directory.nativePath);
+				this.fileList.directory = new File(fileSys.directory.nativePath);
+			}
+			
+			private function onChange_removeableDrive(event:*):void {
+				//trace(this.className+'.onChange_removeableDrive().1 --> '+event.toString());
+			}
+
+			protected function removeableDrive_creationCompleteHandler(event:FlexEvent):void {
+				var r:DropDownList = event.currentTarget as DropDownList;
+				r.dataProvider = this.removeable_drive_list;
+			}
+
+			private function get not_hasFoundTarget():Boolean {
+				return this.hasFoundTarget == false;
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox id="vbox1" height="100%" width="100%" visible="false" includeInLayout="false">
+		<mx:HBox width="100%" horizontalAlign="center" id="hbox1" paddingTop="5">
+			<mx:Button id="btn_navigateHome" includeIn="Home" toolTip="Click this button to navigate to the home folder, this is the folder you began with ({this._homePath})." width="25" click="onClickNavigateHomeButton()" icon="@Embed(source='assets/images/nav/images/navigateHome.gif')"/>
+			<mx:Button id="btn_navigateUp" includeIn="Home" enabled="{this.fileList.canNavigateUp}" toolTip="Click this button to navigate to the parent folder for the currently selected folder." width="25" click="onClickNavigateUpButton()" upIcon="@Embed(source='assets/images/nav/images/navigateUp.gif')" overIcon="@Embed(source='assets/images/nav/images/navigateUp.gif')" disabledIcon="@Embed(source='assets/images/nav/images/navigateUpDisabled.gif')"/>
+		</mx:HBox>
+		<mx:HBox width="100%" includeIn="State1">
+			<mx:Label text="Once you have properly located the required file this dialog will close and you may proceed."/>
+		</mx:HBox>
+		<mx:HBox width="100%" includeIn="State1">
+			<mx:Label text="You should begin by choosing the drive into which you inserted the media from which this program came."/>
+		</mx:HBox>
+		<mx:HBox width="100%" paddingLeft="5" includeIn="Home">
+			<mx:FileSystemComboBox id="fileSystem" width="{this.width-15}" directory="{this.fileList.directory}" directoryChange="onDirectoryChange_fileSystem(event)"/>
+		</mx:HBox>
+		<mx:HBox width="100%" includeIn="State1" paddingLeft="5">
+			<mx:Label text="Removeable Drives: "/>
+			<s:DropDownList id="removeableDrive" requireSelection="true" dataProvider="{this.removeable_drive_list}" labelField="label" change="onChange_removeableDrive(event)" creationComplete="removeableDrive_creationCompleteHandler(event)"/>
+		</mx:HBox>
+		<s:HGroup paddingLeft="5"> 
+			<mx:FileSystemHistoryButton label="Back" includeIn="Home"
+										dataProvider="{fileList.backHistory}" 
+										enabled="{fileList.canNavigateBack}" 
+										click="fileList.navigateBack();" 
+										itemClick="fileList.navigateBack(event.index)"/> 
+			<mx:FileSystemList id="fileList" width="100%" height="100%" dataTipFunction="fileDataTip" filterFunction="filterFunction" showHidden="false" enumerationMode="{FileSystemEnumerationMode.DIRECTORIES_ONLY}" change="onChangeFileSystemList(event)" directoryChange="onDirectoryChangeFileSystemList(event)" creationComplete="onCreationCompleteFileSystemList()"/>
+			<mx:FileSystemHistoryButton label="Forward" includeIn="Home"
+										dataProvider="{fileList.forwardHistory}" 
+										enabled="{fileList.canNavigateForward}" 
+										click="fileList.navigateForward();" 
+										itemClick="fileList.navigateForward(event.index)"/> 
+		</s:HGroup>
+		<mx:HBox width="100%" paddingLeft="5" visible="{this.not_hasFoundTarget}" includeInLayout="{this.not_hasFoundTarget}">
+			<mx:Label id="txt_warning1a" width="100%" text="WARNING: Cannot locate the files required by this application.  Please insert the media for this app and try again." styleName="warning_text"/>
+		</mx:HBox>
+		<mx:HBox width="100%" paddingLeft="5" visible="{this.hasDismountedMedia}" includeInLayout="{this.hasDismountedMedia}">
+			<mx:Label id="txt_warning2a" width="100%" text="NOTICE: Please insert the media for this application in your CD/DVD drive." styleName="warning_text"/>
+			<mx:HBox width="100%" paddingLeft="5" visible="{this.isSearchingForMedia}" includeInLayout="{this.isSearchingForMedia}">
+				<mx:SWFLoader id="busy0" source="@Embed(source='assets/activity/FireFoxRoller.swf')" scaleContent="true" width="50"/>
+			</mx:HBox>
+		</mx:HBox>
+	</mx:VBox>
+	<mx:Canvas id="image_canvas" x="0" y="0" width="100%">
+		<mx:VBox width="100%" height="100%" verticalAlign="top" horizontalScrollPolicy="off" verticalScrollPolicy="off">
+			<mx:Image id="header_image" width="100%" source="{this.headerCls}" scaleContent="false"/>
+			<controls:MultiLineLabel width="{this.width - 50}" height="100%" styleName="rootFolderChooserText" text="The DVD cannot be located.  You must eject it if you previously inserted it into a DVD drive. After you have ensured the DVD is not mounted in any drives you must insert it to continue..."/>
+			<mx:Spacer height="30"/>
+			<mx:HBox width="100%" paddingLeft="5" visible="{this.isSearchingForMedia}" includeInLayout="{this.isSearchingForMedia}">
+				<mx:Label id="txt_warning1" width="100%" styleName="rootFolderChooserText" text="Waiting... for you to either eject or mount your media..."/>
+			</mx:HBox>
+		</mx:VBox>
+	</mx:Canvas>
+</mx:Panel>

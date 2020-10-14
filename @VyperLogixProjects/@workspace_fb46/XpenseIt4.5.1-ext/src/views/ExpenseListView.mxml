@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:components="components.*"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:dao="dao.*"
+		xmlns:renderers="renderers.*"
+		title="Report Details"
+		creationComplete="creationCompleteHandler()">
+
+	<fx:Script>
+		<![CDATA[
+			import dao.Report;
+			
+			import events.ReportEvent;
+			
+			import mx.collections.ArrayCollection;
+			
+			protected function creationCompleteHandler():void
+			{
+				list.dataProvider = srv.getExpensesByReport(data as Report);
+				
+				// Refresh the expense list when an expense is saved somewhere else in the application
+				systemManager.addEventListener(ReportEvent.EXPENSE_SAVED, function(event:ReportEvent):void
+					{
+						list.dataProvider = srv.getExpensesByReport(data as Report);
+					});
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<dao:ExpenseReportDAO id="srv"/>
+		<s:CurrencyFormatter id="cf" useCurrencySymbol="true"/>
+	</fx:Declarations>
+
+	<s:navigationContent>
+		<s:Button skinClass="skins.BackButtonSkin" click="navigator.popView()"/>
+	</s:navigationContent>
+
+	<s:actionContent>
+		<s:Button skinClass="skins.ChartsButtonSkin" click="parentApplication.rightNav.pushView(ChartsView,data)"/>
+		<!--<s:Image source="@Embed('assets/Chart-32.png')" click="parentApplication.rightNav.pushView(ChartsView,data)"/>-->
+		<s:Button skinClass="skins.AddButtonSkin" click="dispatchEvent(new ReportEvent(ReportEvent.ADD_EXPENSE, data))"/>
+	</s:actionContent>
+	
+	<s:layout>
+		<s:VerticalLayout gap="0"/>
+	</s:layout>
+	
+	<s:SkinnableContainer styleName="header" width="100%">
+		<s:layout>
+			<s:VerticalLayout paddingLeft="8" paddingRight="8" verticalAlign="middle"/>
+		</s:layout>
+		<s:Label text="{data.title}" styleName="title"/>
+		<s:Label text="{data.description}" styleName="subtle"/>
+	</s:SkinnableContainer>
+	
+	<s:List id="list" width="100%" height="100%"
+			change="dispatchEvent(new ReportEvent(ReportEvent.EDIT_EXPENSE, list.selectedItem))">
+		<s:itemRenderer>
+			<fx:Component>
+				<renderers:ExpenseRenderer labelField="category" dateField="date" amountField="amount"/>
+			</fx:Component>
+		</s:itemRenderer>
+	</s:List>
+
+	<s:SkinnableContainer styleName="footer" width="100%">
+		<s:layout>
+			<s:HorizontalLayout verticalAlign="middle" paddingLeft="8" paddingRight="8"/>
+		</s:layout>
+		<s:Label text="Total:"/>
+		<s:Spacer width="100%"/>
+		<s:Label text="{cf.format(data.total)}" fontWeight="bold"/>
+	</s:SkinnableContainer>
+
+</s:View>

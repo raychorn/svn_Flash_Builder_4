@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" 
+			   initialize="titlewindow1_initializeHandler(event)"
+			   xmlns:custardbelly="custardbelly.container.*"
+			   xmlns:controls="popups.controls.*">
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import factories.CrystalFactory;
+			import factories.CrystalStorageDenFactory;
+			import factories.CrystalStorageFactory;
+			import factories.DeuteriumFactory;
+			import factories.DeuteriumStorageDenFactory;
+			import factories.DeuteriumStorageFactory;
+			import factories.MetalFactory;
+			import factories.MetalStorageDenFactory;
+			import factories.MetalStorageFactory;
+			import factories.editors.CrystalBuilder;
+			import factories.editors.CrystalStorageBuilder;
+			import factories.editors.CrystalStorageDenBuilder;
+			import factories.editors.DeuteriumBuilder;
+			import factories.editors.DeuteriumStorageBuilder;
+			import factories.editors.DeuteriumStorageDenBuilder;
+			import factories.editors.MetalBuilder;
+			import factories.editors.MetalStorageBuilder;
+			import factories.editors.MetalStorageDenBuilder;
+			
+			import handlers.ResourcesHandler;
+			
+			private var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+
+			private var _this:Resources;
+
+			private function handle_resources_for_timer():void {
+				var current_metal_data:* = ResourcesHandler.current_metal_data;
+				var current_crystal_data:* = ResourcesHandler.current_crystal_data;
+				var current_deuterium_data:* = ResourcesHandler.current_deuterium_data;
+
+				if (this.resources) {
+					var __is_premium__:Boolean = ( (app.premium_account) && (current_metal_data['m_level'] == 0) );
+					app.log = '(+++) '+this.className+' -->'+DebuggerUtils.getFunctionName(new Error())+', app.premium_account='+app.premium_account;
+					this.resources.building_panels_vgroup1.building_group.enabled = (__is_premium__) || (current_metal_data['m_enabled']);
+					app.log = '(+++) '+this.className+' -->'+DebuggerUtils.getFunctionName(new Error())+', '+this.resources.building_panels_vgroup1.id+'='+this.resources.building_panels_vgroup1.enabled;
+					this.resources.building_panels_vgroup2.building_group.enabled = current_crystal_data['c_enabled'];
+					app.log = '(+++) '+this.className+' -->'+DebuggerUtils.getFunctionName(new Error())+', '+this.resources.building_panels_vgroup2.id+'='+this.resources.building_panels_vgroup2.enabled;
+					this.resources.building_panels_vgroup3.building_group.enabled = current_deuterium_data['d_enabled'];
+					app.log = '(+++) '+this.className+' -->'+DebuggerUtils.getFunctionName(new Error())+', '+this.resources.building_panels_vgroup3.id+'='+this.resources.building_panels_vgroup3.enabled;
+				}
+			}
+			
+			private function handle_storage_for_timer():void {
+				var current_metal_storage_data:* = ResourcesHandler.current_metal_storage_data;
+				var current_crystal_storage_data:* = ResourcesHandler.current_crystal_storage_data;
+				var current_deuterium_storage_data:* = ResourcesHandler.current_deuterium_storage_data;
+				
+				if (this.storage) {
+					this.storage.building_panels_vgroup1.building_group.enabled = (current_metal_storage_data['ms_enabled']);
+					app.log = '(+++) ResourcesHandler-->'+DebuggerUtils.getFunctionName(new Error())+', '+this.storage.building_panels_vgroup1.id+'='+this.storage.building_panels_vgroup1.enabled;
+					this.storage.building_panels_vgroup2.building_group.enabled = current_crystal_storage_data['cs_enabled'];
+					app.log = '(+++) ResourcesHandler-->'+DebuggerUtils.getFunctionName(new Error())+', '+this.storage.building_panels_vgroup2.id+'='+this.storage.building_panels_vgroup2.enabled;
+					this.storage.building_panels_vgroup3.building_group.enabled = current_deuterium_storage_data['ds_enabled'];
+					app.log = '(+++) ResourcesHandler-->'+DebuggerUtils.getFunctionName(new Error())+', '+this.storage.building_panels_vgroup3.id+'='+this.storage.building_panels_vgroup3.enabled;
+				}
+			}
+			
+			private function handle_storage_den_for_timer():void {
+				var current_metal_storage_den_data:* = ResourcesHandler.current_metal_storage_den_data;
+				var current_crystal_storage_den_data:* = ResourcesHandler.current_crystal_storage_den_data;
+				var current_deuterium_storage_den_data:* = ResourcesHandler.current_deuterium_storage_den_data;
+				
+				if (this.underground) {
+					this.underground.building_panels_vgroup1.building_group.enabled = (current_metal_storage_den_data['md_enabled']);
+					app.log = '(+++) ResourcesHandler-->'+DebuggerUtils.getFunctionName(new Error())+', '+this.underground.building_panels_vgroup1.id+'='+this.underground.building_panels_vgroup1.enabled;
+					this.underground.building_panels_vgroup2.building_group.enabled = current_crystal_storage_den_data['cd_enabled'];
+					app.log = '(+++) ResourcesHandler-->'+DebuggerUtils.getFunctionName(new Error())+', '+this.underground.building_panels_vgroup2.id+'='+this.underground.building_panels_vgroup2.enabled;
+					this.underground.building_panels_vgroup3.building_group.enabled = current_deuterium_storage_den_data['dd_enabled'];
+					app.log = '(+++) ResourcesHandler-->'+DebuggerUtils.getFunctionName(new Error())+', '+this.underground.building_panels_vgroup3.id+'='+this.underground.building_panels_vgroup3.enabled;
+				}
+				
+			}
+
+			public function handle_timer_event(event:TimerEvent):void {
+				app.log = '(+++) '+this.className+' -->'+DebuggerUtils.getFunctionName(new Error());
+				this.handle_resources_for_timer();
+				this.handle_storage_for_timer();
+				this.handle_storage_den_for_timer();
+			}
+
+			public static function get is_building_by_id():String {
+				return ResourcesGroup.is_building_by_id;
+			}
+			
+			public static function set is_building_by_id(is_building_by_id:String):void {
+				if (ResourcesGroup.is_building_by_id != is_building_by_id) {
+					ResourcesGroup.is_building_by_id = is_building_by_id;
+				}
+			}
+			
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				this.closeButton.visible = this.closeButton.includeInLayout = false;
+			}
+			
+			public function refresh_panel_titles():void {
+				this.resources.refresh_panel_titles();
+			}
+
+			public function signal_completion_of_timer(id:String):void {
+				this.resources.signal_completion_of_timer(id);
+			}
+			
+			protected function resources_creationCompleteHandler(event:FlexEvent):void {
+				var group:ResourcesGroup = event.currentTarget as ResourcesGroup;
+				group.currentState = 'fancy';
+				
+				if ( ( (this.underground) && (group.id == this.underground.id) ) || ( (this.storage) && (group.id == this.storage.id) ) ) {
+					var msg:String = ( (this.underground) && (group.id == this.underground.id) ) ? 'PROTECTED DEN' : 'STORAGE';
+					
+					group.building_panels_vgroup1.building_image.vertical_text = msg;
+					group.building_panels_vgroup2.building_image.vertical_text = msg;
+					group.building_panels_vgroup3.building_image.vertical_text = msg;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:TabBar width="100%" dataProvider="{views}"/>
+	<custardbelly:CBViewStack id="views" width="100%" height="100%">
+		<s:NavigatorContent width="100%" height="100%" label="Resources">
+			<controls:ResourcesGroup 
+				id="resources"
+				
+				resource_label1="Metal Mine" paddingLeft1="10" paddingTop1="0" width1="130" height1="160"
+				factory1="{MetalFactory}" builder1="{MetalBuilder}" building_container_name1="{MetalFactory.name}" 
+				building_resource_image1="{Images.metalBuildingImageClass}" building_icon_image1="{Images.metalImageClass}"
+				
+				resource_label2="Crystal Mine" paddingLeft2="10" paddingTop2="0" width2="130" height2="160"
+				factory2="{CrystalFactory}" builder2="{CrystalBuilder}" building_container_name2="{CrystalFactory.name}" 
+				building_resource_image2="{Images.crystalBuildingImageClass}" building_icon_image2="{Images.crystalImageClass}" 
+				
+				resource_label3="Deuterium" paddingLeft3="10" paddingTop3="0" width3="130" height3="160"
+				factory3="{DeuteriumFactory}" builder3="{DeuteriumBuilder}" building_container_name3="{DeuteriumFactory.name}" 
+				building_resource_image3="{Images.deuteriumBuildingImageClass}" building_icon_image3="{Images.deuteriumImageClass}"
+				
+				creationComplete="resources_creationCompleteHandler(event)"
+				/>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" height="100%" label="Storage">
+			<controls:ResourcesGroup 
+				id="storage"
+				
+				resource_label1="Metal Storage" paddingLeft1="10" paddingTop1="0" width1="170" height1="160"
+				factory1="{MetalStorageFactory}" builder1="{MetalStorageBuilder}" building_container_name1="{MetalStorageFactory.name}" 
+				building_resource_image1="{Images.metalStorageImageClass}"
+				
+				resource_label2="Crystal Storage" paddingLeft2="10" paddingTop2="0" width2="170" height2="160"
+				factory2="{CrystalStorageFactory}" builder2="{CrystalStorageBuilder}" building_container_name2="{CrystalStorageFactory.name}" 
+				building_resource_image2="{Images.crystalStorageImageClass}" 
+				
+				resource_label3="Deuterium Storage" paddingLeft3="10" paddingTop3="0" width3="170" height3="160"
+				factory3="{DeuteriumStorageFactory}" builder3="{DeuteriumStorageBuilder}" building_container_name3="{DeuteriumStorageFactory.name}" 
+				building_resource_image3="{Images.deuteriumStorageImageClass}"
+				
+				creationComplete="resources_creationCompleteHandler(event)"
+				/>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" height="100%" label="Underground">
+			<controls:ResourcesGroup 
+				id="underground"
+				
+				resource_label1="Metal Den" paddingLeft1="10" paddingTop1="0" width1="170" height1="160"
+				factory1="{MetalStorageDenFactory}" builder1="{MetalStorageDenBuilder}" building_container_name1="{MetalStorageDenFactory.name}" 
+				building_resource_image1="{Images.metalStorageImageClass}"
+				
+				resource_label2="Crystal Den" paddingLeft2="10" paddingTop2="0" width2="170" height2="160"
+				factory2="{CrystalStorageDenFactory}" builder2="{CrystalStorageDenBuilder}" building_container_name2="{CrystalStorageDenFactory.name}" 
+				building_resource_image2="{Images.crystalStorageImageClass}" 
+				
+				resource_label3="Deuterium Den" paddingLeft3="10" paddingTop3="0" width3="170" height3="160"
+				factory3="{DeuteriumStorageDenFactory}" builder3="{DeuteriumStorageDenBuilder}" building_container_name3="{DeuteriumStorageDenFactory.name}" 
+				building_resource_image3="{Images.deuteriumStorageImageClass}"
+				
+				creationComplete="resources_creationCompleteHandler(event)"
+				/>
+		</s:NavigatorContent>
+	</custardbelly:CBViewStack>
+</s:TitleWindow>

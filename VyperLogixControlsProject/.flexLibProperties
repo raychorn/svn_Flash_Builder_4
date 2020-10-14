@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<flexLibProperties includeAllClasses="true" version="3">
+  <includeClasses>
+    <classEntry path="controls.SpecialUITextField"/>
+    <classEntry path="com.ImageUtils"/>
+    <classEntry path="vyperlogix.ImageDecoder"/>
+    <classEntry path="com.HTMLUtils"/>
+    <classEntry path="com.ContentCache"/>
+    <classEntry path="controls.MiniAIRWebServer"/>
+    <classEntry path="com.MathUtils"/>
+    <classEntry path="controls.VideoViewer"/>
+    <classEntry path="controls.MediaListPanel"/>
+    <classEntry path="controls.renderers.MediaCard"/>
+  </includeClasses>
+  <includeResources/>
+  <namespaceManifests/>
+</flexLibProperties>

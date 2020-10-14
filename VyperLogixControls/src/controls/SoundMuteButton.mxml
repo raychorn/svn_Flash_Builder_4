@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" currentState="sound" >
+	<mx:states>
+		<s:State name="State1"/>
+		<s:State name="sound"/>
+		<s:State name="mute"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			[Embed(source="assets/icons/sound_on_32x32.png")]
+			[Bindable]
+			public var soundOnCls:Class;
+			
+			[Embed(source="assets/icons/sound_off_32x32.gif")]
+			[Bindable]
+			public var SoundOffCls:Class;
+			
+			private function get getIconForState():Class {
+				//trace('(getIconForState).1 --> this.currentState='+this.currentState);
+				return (this.currentState == 'sound') ? this.soundOnCls : ((this.currentState == 'mute') ? this.SoundOffCls : null);
+			}
+			
+			public function get isStateSound():Boolean {
+				return this.currentState == 'sound';
+			}
+			
+			public function get isStateMute():Boolean {
+				return this.currentState == 'mute';
+			}
+			
+			public function set_sound_state():void {
+				this.currentState = 'sound';
+			}
+			
+			public function set_mute_state():void {
+				this.currentState = 'mute';
+			}
+			
+			public override function set currentState(state:String):void {
+				super.currentState = state;
+				if (this.btn) {
+					this.btn.source = this.getIconForState;
+				}
+			}
+
+			protected function btn_creationCompleteHandler(event:FlexEvent):void {
+				this.btn.buttonMode = this.btn.useHandCursor = true;
+			}
+
+		]]>
+	</fx:Script>
+	<mx:Image x="0" y="0" id="btn" source="{this.getIconForState}" creationComplete="btn_creationCompleteHandler(event)"/>
+</mx:Canvas>

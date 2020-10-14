@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" 
+		 creationComplete="group1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.MathUtils;
+			import com.ObjectUtils;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import utils.Images;
+
+			private var _this:ImageViewer;
+			
+			private var is_random:Boolean = false;
+			private var random_interval:Number = 1000;
+			private var timer:Timer;
+			
+			private static var _images_:Array = [
+				Images.Cloud01_small,
+				Images.Cloud_05_small,
+				Images.Cloud_06_small,
+				Images.Cloud_07_small,
+				Images.Cloud_08_small,
+				Images.Cloud_09_small,
+				Images.Cloud_10_small,
+				Images.Cloud_11_small,
+				Images.Cloud_12_small,
+				Images.Cloud_13_small,
+				Images.Cloud_14_small,
+				Images.Cloud_15_small,
+				Images.Cloud_16_small,
+				Images.Cloud_1q0o_small,
+				Images.Cloud_6ga7_small,
+				Images.Cloud_8cm4_small,
+				Images.Cloud_9mi2_small,
+				Images.Cloud_b5ez_small,
+				Images.Cloud_c3a7_small,
+				Images.Cloud_c48w_small,
+				Images.Cloud_e4y0_small,
+				Images.Cloud_fk3l_small,
+				Images.Cloud_i3ow_small,
+				Images.Cloud_lbt9x_small,
+				Images.Cloud_m8iw_small,
+				Images.Cloud_rain_j2z_small,
+				Images.Cloud_s92i_small,
+				Images.Cloud_sl8w_small,
+				Images.Cloud_t3oi_small,
+				Images.Cloud_x02k_small,
+				Images.Cloud_xa8a_small,
+				Images.Cloud_z20w_small,
+				Images.Cloud01_small,
+				Images.Cloud02_small,
+				Images.Cloud03_small,
+				Images.Cloud04_small,
+				Images.Clouds_06z_small,
+				Images.Clouds_0o5y_small,
+				Images.Clouds_1q7_small,
+				Images.Clouds_1qax_small,
+				Images.Clouds_1qm_small,
+				Images.Clouds_1qo_small,
+				Images.Clouds_1yp0_small,
+				Images.Clouds_2lq7_small,
+				Images.Clouds_3ap1_small,
+				Images.Clouds_3sly_small,
+				Images.Clouds_4x3l_small,
+				Images.Clouds_5xl3_small,
+				Images.Clouds_6e8w_small,
+				Images.Clouds_6r4c_small,
+				Images.Clouds_6xo1_small,
+				Images.Clouds_76zt_small,
+				Images.Clouds_7e2b_small,
+				Images.Clouds_8c4_small,
+				Images.Clouds_8ne9_small,
+				Images.Clouds_92w3_small,
+				Images.Clouds_93e4_small,
+				Images.Clouds_9ay3_small,
+				Images.Clouds_9s0q_small,
+				Images.Clouds_9v2k_small,
+				Images.Clouds_a0o1_small,
+				Images.Clouds_ak8j_small,
+				Images.Clouds_ay7_small,
+				Images.Clouds_b65n_small,
+				Images.Clouds_b6zw_small,
+				Images.Clouds_bx61_small,
+				Images.Clouds_c7ql_small,
+				Images.Clouds_chm8_small,
+				Images.Clouds_city_5t1_small,
+				Images.Clouds_f9o3_small,
+				Images.Clouds_fm9q_small,
+				Images.Clouds_fsy8_small,
+				Images.Clouds_fx3w_small,
+				Images.Clouds_g49w_small,
+				Images.Clouds_g5p0_small,
+				Images.Clouds_g6h5_small,
+				Images.Clouds_h01q_small,
+				Images.Clouds_h6b4_small,
+				Images.Clouds_i8m8_small,
+				Images.Clouds_i8s_small,
+				Images.Clouds_j8j5_small,
+				Images.Clouds_jwn6_small,
+				Images.Clouds_l3sk_small,
+				Images.Clouds_l6v8_small,
+				Images.Clouds_lake_i9r_small,
+				Images.Clouds_lo0w_small,
+				Images.Clouds_m6n7_small,
+				Images.Clouds_mal2_small,
+				Images.Clouds_mu4u_small,
+				Images.Clouds_n7t5_small,
+				Images.Clouds_nvh5_small,
+				Images.Clouds_q83j_small,
+				Images.Clouds_qc1x_small,
+				Images.Clouds_u5d0_small,
+				Images.Clouds_u76t_small,
+				Images.Clouds_uan3_small,
+				Images.Clouds_uqpw_small,
+				Images.Clouds_v5t5_small,
+				Images.Clouds_v5t5_small1,
+				Images.Clouds_v6q0_small,
+				Images.Clouds_vap2_small,
+				Images.Clouds_vek8_small,
+				Images.Clouds_x2y2_small,
+				Images.Clouds_xp3k_small,
+				Images.Clouds_y0o2_small,
+				Images.Clouds_zrw9_small,
+				Images.Rainbow_8d3_small,
+				Images.Rainbow_g5y_small,
+				Images.Rainbow_sl3_small
+			];
+			
+			private static var __images__:ArrayCollection = new ArrayCollection(_images_);
+			
+			[Bindable]
+			private var current_image:* = __images__.getItemAt(0);
+			
+			private var __available__:Object = {};
+			
+			public function get random():Boolean {
+				return this.is_random;
+			}
+			
+			public function set random(random:Boolean):void {
+				if (this.is_random != random) {
+					this.is_random = random;
+					this.restart_timer();
+				}
+			}
+			
+			public function get interval():Number {
+				return this.random_interval;
+			}
+
+			private function restart_timer():void {
+				//trace(DebuggerUtils.getFunctionName(new Error())+'.1 this.timer='+this.timer);
+				if (this.timer) {
+					//trace(DebuggerUtils.getFunctionName(new Error())+'.2 this.timer.running='+this.timer.running);
+					if (this.timer.running == false) {
+						//trace(DebuggerUtils.getFunctionName(new Error())+'.3 !!');
+						this.run_timer();
+					} else {
+						//trace(DebuggerUtils.getFunctionName(new Error())+'.4 !!');
+						this.timer.stop();
+						this.run_timer();
+					}
+				}
+			}
+			
+			public function set interval(random_interval:Number):void {
+				if (this.random_interval != random_interval) {
+					this.random_interval = random_interval;
+					this.restart_timer();
+				}
+			}
+			
+			private function run_timer():void {
+				this.timer = new Timer(this.random_interval);
+				//trace(DebuggerUtils.getFunctionName(new Error())+'.1 this.random_interval='+this.random_interval);
+				this.timer.addEventListener(TimerEvent.TIMER,
+					function(event:TimerEvent):void {
+						var keys:Array = ObjectUtils.keys(_this.__available__);
+						//trace(DebuggerUtils.getFunctionName(new Error())+'.2 keys.length='+keys.length);
+						if (keys.length == 0) {
+							_this.reset_avaialble_items();
+							//trace(DebuggerUtils.getFunctionName(new Error())+'.3 _this.reset_avaialble_items() !!!');
+							keys = ObjectUtils.keys(_this.__available__);
+							//trace(DebuggerUtils.getFunctionName(new Error())+'.4 keys.length='+keys.length);
+						}
+						var i:Number = MathUtils.randRange(0,keys.length-1);
+						//trace(DebuggerUtils.getFunctionName(new Error())+'.5 i='+i);
+						var k:int = keys[i];
+						//trace(DebuggerUtils.getFunctionName(new Error())+'.6 k='+i);
+						_this.current_image = _this.__available__[k];
+						delete _this.__available__[k];
+					}
+				);
+				this.timer.start();
+			}
+			
+			private function reset_avaialble_items():void {
+				for (var i:String in _images_) {
+					this.__available__[i] = _images_[i];
+				}
+			}
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void {
+				_this = this;
+				this.reset_avaialble_items();
+				//trace(DebuggerUtils.getFunctionName(new Error())+'.1 this.is_random='+this.is_random+', this.random_interval='+this.random_interval);
+				if ( (this.is_random) && (this.random_interval > 0) ) {
+					this.run_timer();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Image id="image" width="100%" height="100%" source="{this.current_image}"/>
+</s:Group>

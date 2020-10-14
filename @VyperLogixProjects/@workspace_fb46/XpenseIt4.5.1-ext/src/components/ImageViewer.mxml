@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Image xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 creationComplete="creationCompleteHandler()">
+	
+	<fx:Script>
+		<![CDATA[
+
+			protected function creationCompleteHandler():void
+			{
+				Multitouch.inputMode = MultitouchInputMode.GESTURE;
+				
+				addEventListener(TransformGestureEvent.GESTURE_PAN, function(event:TransformGestureEvent):void {
+					x += event.offsetX;
+					y += event.offsetY;
+				});
+				
+				addEventListener(TransformGestureEvent.GESTURE_ZOOM, function(event:TransformGestureEvent):void {
+					transformAround(new Vector3D(event.localX, event.localY, 0), new Vector3D(scaleX * event.scaleX, scaleY * event.scaleY, 0));
+				});
+				
+				addEventListener(TransformGestureEvent.GESTURE_ROTATE, function(event:TransformGestureEvent):void {
+					transformAround(new Vector3D(width/2, height/2, 0), null, new Vector3D(0, 0, rotationZ + event.rotation));
+				});
+				
+			}
+			
+		]]>
+	</fx:Script>
+
+</s:Image>

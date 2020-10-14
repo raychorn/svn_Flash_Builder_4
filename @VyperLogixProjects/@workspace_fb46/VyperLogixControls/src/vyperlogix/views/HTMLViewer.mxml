@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%"
+		  title="Terms and Conditions" 
+		  creationComplete="titlewindow1_creationCompleteHandler(event)">
+	<s:states>
+		<mx:State name="State1"/>
+		<mx:State name="INFORMATION_ONLY"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			import spark.components.TitleWindow;
+			
+			public static var htmlClass:Class;
+			
+			private function get getHTML():String {
+				try {
+					var data:ByteArray = new HTMLViewer.htmlClass();
+					data.position = 0;
+					return data.readUTFBytes(data.length);
+				} catch (err:Error) {}
+				return '';
+			}
+
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void {
+				var t:TitleWindow = event.currentTarget as TitleWindow;
+				t.closeButton.visible = false;
+			}
+
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%">
+		<mx:Spacer width="5" height="5"/>
+		<s:HGroup width="100%" height="100%">
+			<mx:Spacer width="5"/>
+			<s:RichText id="termsHTML" x="5" text="{this.getHTML}" width="100%" height="100%"/>
+		</s:HGroup>
+		<mx:Spacer height="5"/>
+	</s:VGroup>
+</s:TitleWindow>

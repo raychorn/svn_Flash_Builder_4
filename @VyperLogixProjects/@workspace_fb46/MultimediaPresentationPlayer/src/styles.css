@@ -1,0 +1,162 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+
+@font-face {
+	src: url("/assets/fonts/_LDS_sui generis_free.ttf");
+	fontFamily: Generis;
+	embedAsCFF: false;
+}
+
+@font-face {
+	src: url("/assets/fonts/arial.ttf");
+	fontFamily: Arial;
+	embedAsCFF: false;
+}
+
+@font-face {
+	src: url("/assets/fonts/CALIBRI.TTF");
+	fontFamily: CALIBRI;
+	embedAsCFF: false;
+}
+
+@font-face {
+	src: url("/assets/fonts/CALIBRIB.TTF");
+	fontFamily: CALIBRIB;
+	embedAsCFF: false;
+}
+
+@font-face {
+	src: url("/assets/fonts/CALIBRII.TTF");
+	fontFamily: CALIBRII;
+	embedAsCFF: false;
+}
+
+@font-face {
+	src: url("/assets/fonts/CALIBRIZ.TTF");
+	fontFamily: CALIBRIZ;
+	embedAsCFF: false;
+}
+
+@font-face {
+	src: url("/assets/fonts/DroidSans.ttf");
+	fontFamily: DroidSans;
+	embedAsCFF: false;
+}
+
+@font-face {
+	src: url("/assets/fonts/DroidSans-Bold.ttf");
+	fontFamily: DroidSansBold;
+	embedAsCFF: false;
+}
+
+@font-face {
+	src: url("/assets/fonts/GARA.TTF");
+	fontFamily: GARA;
+	embedAsCFF: false;
+}
+
+@font-face {
+	src: url("/assets/fonts/NeoSansIntel.ttf");
+	fontFamily: NeoSansIntel;
+	embedAsCFF: false;
+}
+
+@font-face {
+	src: url("/assets/fonts/NeoSansIntel-Italic.ttf");
+	fontFamily: NeoSansIntelItalic;
+	embedAsCFF: false;
+}
+
+@font-face {
+	src: url("/assets/fonts/NeoSansIntel-Light.ttf");
+	fontFamily: NeoSansIntelLight;
+	embedAsCFF: true;
+}
+
+@font-face {
+	src: url("/assets/fonts/NeoSansIntel-LightItalic.ttf");
+	fontFamily: NeoSansIntelLightItalic;
+	embedAsCFF: false;
+}
+
+@font-face {
+	src: url("/assets/fonts/NeoSansIntel-Medium.ttf");
+	fontFamily: NeoSansIntelMedium;
+	embedAsCFF: true;
+}
+
+@font-face {
+	src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+	fontFamily: NeoSansIntelMedium2;
+	embedAsCFF: false;
+}
+
+@font-face {
+	src: url("/assets/fonts/pf_ronda_seven.ttf");
+	fontFamily: pf_ronda_seven;
+	embedAsCFF: false;
+}
+
+@font-face {
+	src: url("/assets/fonts/VenusRising.ttf");
+	fontFamily: VenusRising;
+	embedAsCFF: true;
+}
+
+@font-face {
+	src: url("/assets/fonts/verdana.ttf");
+	fontFamily: Verdana;
+	embedAsCFF: true;
+}
+
+s|ActionBar {
+	titleAlign: left;
+}
+
+s|ActionBar #titleDisplay {
+	color: #66FFFF; /* default color is white */
+	fontSize: 16;
+	fontFamily: "Verdana";
+}
+
+s|TabbedViewNavigator #tabBar {
+	/* chromeColor: #703A00; */
+	color: #66FFFF; /* default color is white */
+	fontFamily: "DroidSansBold";
+	fontSize: 18;
+	iconPlacement: right;
+	textDecoration: none;
+}
+
+.TitleNameLabel {
+	fontFamily: "DroidSansBold";
+	fontSize: 18;
+}
+
+.TitleCopyrightLabel {
+	fontFamily: "DroidSansBold";
+	fontSize: 14;
+}
+
+.TitleDescrLabel {
+	fontFamily: "DroidSansBold";
+	fontSize: 14;
+}
+
+.DirsList {
+	color: #000000;
+	fontFamily: "Verdana";
+	fontSize: 12;
+	textDecoration: none;
+}
+
+.MobilePaneSplitterThumbButton {
+	color: #000000;
+	fontFamily: "Verdana";
+	fontSize: 11;
+	textDecoration: none;
+}
+
+.NetflixPopUp {
+	dropShadowVisible: false;
+}

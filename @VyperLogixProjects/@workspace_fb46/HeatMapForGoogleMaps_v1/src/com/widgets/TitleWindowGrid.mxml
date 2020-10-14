@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:NumberFormatter id="fmt_number" fractionalDigits="2"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.geolocation.GeolocationDistance;
+			
+			import mx.collections.ArrayCollection;
+			
+			import spark.components.gridClasses.GridColumn;
+			
+			private var _dataProviderChanged:Boolean = false;
+			private var _dataProvider:ArrayCollection;
+			
+			public function get dataProvider():ArrayCollection {
+				return this._dataProvider;
+			}
+			
+			public function set dataProvider(dataProvider:ArrayCollection):void {
+				if (this._dataProvider != dataProvider) {
+					this._dataProvider = dataProvider;
+					this._dataProviderChanged = true;
+					this.invalidateProperties();
+				}
+			}
+			
+			private function get grid_columns():ArrayCollection {
+				var aDatum:Object;
+				var aGridColumn:GridColumn;
+				var columns:ArrayCollection = new ArrayCollection();
+				for (var i:int = 0; i < this._dataProvider.length; i++) {
+					aDatum = this._dataProvider.getItemAt(i);
+					aGridColumn = new GridColumn();
+					aGridColumn.headerText = '#'+(i+1).toString();
+					aGridColumn.resizable = true;
+					aGridColumn.dataField = 'column'+(i+1).toString();
+					aGridColumn.dataTipField = 'tip'+(i+1).toString();
+					aGridColumn.showDataTips = true;
+					aGridColumn.minWidth = 70;
+					aGridColumn.maxWidth = 100;
+					columns.addItem(aGridColumn);
+				}
+				return columns;
+			}
+			
+			private function get data_provider():ArrayCollection {
+				var aDatum1:Object;
+				var aDatum2:Object;
+				var dp:ArrayCollection = new ArrayCollection();
+				var _data:Object;
+				for (var i:int = 0; i < this._dataProvider.length; i++) {
+					aDatum1 = this._dataProvider.getItemAt(i);
+					_data = {};
+					for (var j:int = 0; j < this._dataProvider.length; j++) {
+						aDatum2 = this._dataProvider.getItemAt(j);
+						_data['column'+(j+1).toString()] = this.fmt_number.format(GeolocationDistance.distance(aDatum1.gps,aDatum2.gps,GeolocationDistance.convertible_units[0].label));
+						_data['tip'+(j+1).toString()] = aDatum1.gps.toString()+','+aDatum2.gps.toString();
+					}
+					dp.addItem(_data);
+				}
+				return dp;
+			}
+			
+			override protected function commitProperties() : void {
+				super.commitProperties();
+				if (this._dataProviderChanged) {
+					this._dataProviderChanged = false;
+					this.grid.columns = this.grid_columns;
+					this.grid.rowHeight = 30;
+					this.grid.dataProvider = this.data_provider;
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:DataGrid id="grid" width="100%" height="100%" styleName="DataGrids" requestedRowCount="4"/>
+</s:TitleWindow>

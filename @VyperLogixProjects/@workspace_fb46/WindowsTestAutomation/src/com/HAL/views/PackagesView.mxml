@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup 
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="100%" height="100%"
+	xmlns:controls="com.HAL.controls.*" xmlns:s="library://ns.adobe.com/flex/spark" 
+	>
+	<mx:Style>
+		.PackacgesViewVGroupStyle {
+			borderColor: #000000;
+			borderStyle: outset;
+			cornerRadius: 10;
+		}
+
+		.PackacgesViewHGroupStyle {
+			borderColor: #000000;
+			borderStyle: outset;
+		}
+	</mx:Style>
+	<s:VGroup styleName="PackacgesViewVGroupStyle" width="100%" height="100%" horizontalAlign="center" verticalAlign="middle">
+		<s:HGroup styleName="PackacgesViewHGroupStyle" width="100%" horizontalAlign="center">
+			<s:HGroup width="90%" horizontalAlign="center">
+				<s:Label text="Package Names"/>
+			</s:HGroup>
+			<s:HGroup width="10%" horizontalAlign="right">
+				<s:Button id="btn_ArchiveContentsGridToggle" styleName="ToggleButtonGridState" width="20" toolTip="Click this button to toggle between the List View and the Grid View."/>
+			</s:HGroup>
+		</s:HGroup>
+		<controls:ListGridCanvas id="listGridCanvasPkgs" width="100%" height="100%" labelField="name"/>
+	</s:VGroup>
+</s:HGroup>

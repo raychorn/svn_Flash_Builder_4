@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- http://blog.flexexamples.com/2009/05/18/styling-the-data-tip-on-a-spark-hslider-control-in-flex-gumbo/ -->
+<s:SparkSkin name="CustomHSliderSkin"
+			 xmlns:fx="http://ns.adobe.com/mxml/2009"
+			 xmlns:s="library://ns.adobe.com/flex/spark"
+			 minHeight="11" minWidth="100"
+			 alpha.disabled="0.5" xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:skins="skins.*">
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="disabled" />
+	</s:states>
+	
+	<fx:Metadata>
+		<![CDATA[
+		[HostComponent("spark.components.HSlider")]
+		]]>
+	</fx:Metadata> 
+	
+	<fx:Script>
+		/* Define the skin elements that should not be colorized.
+		For slider, the skin itself is colorized but the individual parts are not. */
+		static private const exclusions:Array = ["track", "thumb"];
+		
+		override public function get colorizeExclusions():Array {return exclusions;}
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!--- Defines the appearance of the the Slider's DataTip. To customize the DataTip's appearance, create a custom HSliderSkin class. -->
+	</fx:Declarations>
+	
+	<!--- Defines the skin class for the HSliderSkin's track. The default skin class is HSliderTrackSkin. -->
+	<s:Button id="track" left="0" right="0" top="0" bottom="0"
+			  skinClass="spark.skins.spark.HSliderTrackSkin" />
+	<!--- Defines the skin class for the HSliderSkin's thumb. The default skin class is HSliderThumbSkin. -->
+	<s:Button id="thumb" top="0" bottom="0" width="11" height="11"
+			  skinClass="spark.skins.spark.HSliderThumbSkin" />
+	
+</s:SparkSkin>

@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+	width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+	creationComplete="init()">
+		<mx:HBox id="container" horizontalGap="0" verticalAlign="middle" 
+			verticalScrollPolicy="off" horizontalScrollPolicy="off"
+			horizontalAlign="left" width="100%" height="100%">
+		</mx:HBox>
+		
+		
+		<mx:Script>
+			<![CDATA[
+				import communication.WebServices;
+				import models.Menu_Model;
+				import libs.utils.ErrorMessages;
+				import mx.controls.Label;
+				import mx.controls.Image;
+				import utils.displayObject.DuplicateImage;
+				import libs.vo.GlobalsVO;
+			
+				[Bindable]
+				public var componentHeight:Number;
+				
+				[Bindable]
+				private var tabWidth:Number;
+				
+				private var _mcr:*;
+				private var lobCount:int;
+				private var preSelect:int;
+				private var arr:Array;
+				private var _divider:Image;
+				private var _tabBackground:Image;
+				private var _currentSelect:Object;
+				private var _tabOrder:int;
+				private var _isAdmin:Boolean = Boolean(GlobalsVO.getGlobal(GlobalsVO.ISADMIN));
+				
+				// CSS Style
+				private const STYLE1:String = "HeaderLOBSelect";
+				private const STYLE2:String = "HeaderLOBMouseOut";
+				
+				// Graphic Assets
+				private const P1:String = "image_lobDivAsset";		// Divider asset
+				private const P2:String = "image_lobTabBackAsset";	// Background asset
+				
+				// Style Mode
+				private const MODE:String = "select";
+				private const DIVIDER_WIDTH:Number = 1;			// Tab Divider witth
+
+				// Mouse
+				private const HLSM:String = "HeaderLOBSelectMouseOver";
+				private const HLMOVER:String = "HeaderLOBMouseOver";
+				private const HLS:String = "HeaderLOBSelect";
+				private const HLMOUT:String = "HeaderLOBMouseOut";
+				private const HLD:String = "headerLOBDefault";
+				private const MCR:String = "MenuController";
+				
+				public function init():void {
+					
+		   			this._mcr = GlobalsVO.getGlobal(MCR);
+
+					_tabOrder = GlobalsVO.INIT_TAB_LOB;
+					
+					// Get Header Data
+					arr = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL).getHeaderData(GlobalsVO.LINEOFBUSINESS,true);
+					
+					// Get height
+					componentHeight = Number(GlobalsVO.getCSSProperty("headerLOBH")); 
+					
+					// Set width for all Lob Tabs
+					tabWidth = Number(GlobalsVO.getCSSProperty("headerLOBLinkW")); 
+					
+					// Get graphic background
+					getTabBackground();
+					
+					// Build new links
+					buildHeaderLOB();
+				}
+				
+				
+				
+				public function buildHeaderLOB():void {
+					preSelect = int(GlobalsVO.getCSSProperty(HLD));
+					
+					var model:Menu_Model = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL);
+					var ar:Array = model.headerData.data.lob[model.headerData.name];
+					var onCreationCompleteHandler:Function = GlobalsVO.getGlobal(GlobalsVO.EDITABLELOBICON_onCreationComplete);
+
+					/* Iterate through the array of objects
+					 * and setup the line of business tabs */
+					for(lobCount=0; lobCount<arr.length;++lobCount) {
+						
+						/* Build a tabContainer to hold all the
+						 * component assets */
+						var tabContainer:LineOfBusinessTabContainer = new LineOfBusinessTabContainer();
+						tabContainer.width = tabWidth;
+						tabContainer.height = componentHeight;
+						if (!this._isAdmin) {
+							tabContainer.addChild(_tabBackground);
+						}
+						
+						
+						// Add new label field to the hBox
+						var l:Label = new Label();
+						l.mouseChildren = false;
+						l.buttonMode = true;
+						l.useHandCursor = true;
+						arr[lobCount].label = l;
+						
+						/* Build a hBox to hold the
+						 * label field for alignment purposes */
+						var h:HBox = this.getContainer();
+						h.addChild(l);
+						
+						// Set focus listener and it's tab priority
+						GlobalsVO.addFocus(l,_tabOrder++);
+						
+						// Add new hBox to the tabContainer
+						tabContainer.addChild(h);
+						
+						// Add new tabContainer to the array
+						arr[lobCount].component = l;
+
+						/* Set the proper button to default
+						 * as pre selected based on the CSS */					
+						if (lobCount == preSelect) {
+							arr[lobCount].mode = MODE;
+							l.styleName = STYLE1;
+						} else {
+							arr[lobCount].mode = null;
+							l.styleName = STYLE2;
+						}
+						
+						// Define the textfield with the text title
+						l.text = arr[lobCount].name.toString();
+						GlobalsVO.setStyle(l);
+						
+						// Setup mouse listeners for the new tabContainer
+						if ( (this._isAdmin) && (onCreationCompleteHandler is Function) ) {
+							tabContainer.currentData = ar[lobCount];
+							var e:* = {'currentTarget':tabContainer};
+							onCreationCompleteHandler(e);
+						}
+						tabContainer.addEventListener(MouseEvent.MOUSE_OVER,onMouse);
+						tabContainer.addEventListener(MouseEvent.MOUSE_OUT,onMouse);
+						tabContainer.addEventListener(MouseEvent.CLICK,onMouse);
+						
+						// Add the new tabContainer to the main container
+						container.addChild(tabContainer);
+						
+						// Add a divider to the end of the tab
+						if(lobCount < arr.length-1) addDivider();
+					}
+				}
+				
+				
+				
+				
+				
+				private function getContainer():HBox {
+					/* Build a hBox to hold the
+					 * label field for alignment purposes */
+					var h:HBox = new HBox();
+					h.verticalScrollPolicy = "off";
+					h.horizontalScrollPolicy = "off";
+					h.setStyle("verticalAlign","middle");
+					h.setStyle("horizontalGap","0");
+					h.setStyle("horizontalAlign","center");
+					h.percentWidth = 100;
+					h.percentHeight = 100;
+					
+					return h;
+				}
+				
+				
+				
+				
+				
+				public function getTabBackground():void {
+					var asset:Object = DuplicateImage.validate(GlobalsVO.getGlobal(P2),this);
+					if(asset.error != null) {
+						_tabBackground = DuplicateImage.copy(asset.image,false,true);
+						new ErrorMessages(_tabBackground,asset.error);
+					} else {
+						// Catch missing graphic asset error message					
+						_tabBackground = DuplicateImage.copy(asset.image,true,false);
+						_tabBackground.width = tabWidth;
+						_tabBackground.height = componentHeight;
+					}
+				}
+				
+				
+				
+				
+				/**
+				 * Accessibility, get the current selected
+				 * instance from this class
+				 * @see Accessibility_Model:talk()
+				 */
+				 
+				public function getDataByAccessibility(instance:*):Object {
+					for(var i:int = 0; i<arr.length; ++i) {
+						if(instance.name.toString() == arr[i].component.name.toString()) {
+							return arr[i];
+						}
+					}
+					
+					return null;
+				}		
+				
+				
+				
+				
+				
+				private function addDivider():void {
+					var c:Canvas = new Canvas();
+					var asset:Object = DuplicateImage.validate(GlobalsVO.getGlobal(P1),this);
+					var divider:Image = DuplicateImage.copy(asset.image,true,false);
+					if(asset.error != null) {
+						new ErrorMessages(divider,asset.error);
+						divider.width = asset.image.width;
+					} else {
+						divider.width = DIVIDER_WIDTH;
+					}
+					
+					c.addChild(divider);
+					container.addChild(c);
+					divider.height = componentHeight;
+				}
+				
+				
+				
+				
+				
+				/**
+				 * Check the array with the current
+				 * selected component to see if the
+				 * component should be styled differently
+				 * @param:MouseEvent - Any mouse event
+				 */
+				private function onMouse(e:MouseEvent):void {
+					
+					var i:int=0;
+					switch(e.type) {
+						case MouseEvent.MOUSE_OVER :
+							for(; i<arr.length; ++i) {
+								if(arr[i].component.parent.parent == e.currentTarget) {
+									onHighlight(_currentSelect = arr[i],e);
+								}
+							}
+									
+						break;
+						
+						case MouseEvent.MOUSE_OUT :
+							for(; i<arr.length; ++i)  
+								if(arr[i].component.parent.parent == e.currentTarget)
+									onHighlight(arr[i],e);
+									
+						break;
+						
+						case MouseEvent.CLICK :
+			      			if ( (this._mcr) && (this._mcr.onMouseClickMenuLOB_callback) ) {
+			      				this._mcr.onMouseClickMenuLOB_callback(e, e.currentTarget);
+			      			}
+						break;
+					}
+				}
+				
+				
+				
+				
+				/**
+				 * Based on the component match, determine
+				 * if the component should be styled differently
+				 */
+				 
+				private function onHighlight(item:Object,e:MouseEvent):void {
+					
+					switch(e.type) {
+						case MouseEvent.MOUSE_OVER:
+							item.mode == MODE ? item.label.styleName = HLSM : item.label.styleName = HLMOVER;
+							GlobalsVO.setStyle(item.label);
+						break;
+						case MouseEvent.MOUSE_OUT:
+							item.mode == MODE ? item.label.styleName = HLS : item.label.styleName = HLMOUT;
+							GlobalsVO.setStyle(item.label);
+						break;
+					}
+				}
+			]]>
+	</mx:Script>
+</mx:Canvas>

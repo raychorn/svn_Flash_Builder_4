@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="100%" height="100%"
+			   backgroundColor.activity="#00FF00"
+			   backgroundColor.error="#FF0000"
+			   backgroundColor.normal="#0000FF"
+			   creationComplete="titlewindow1_creationCompleteHandler(event)" 
+			   initialize="titlewindow1_initializeHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void {
+			}
+			
+			private function handle_close_event(event:CloseEvent):void {
+				this.removeEventListener(CloseEvent.CLOSE, handle_close_event);
+				PopUpManager.removePopUp(this);
+			}
+			
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void {
+				this.addEventListener(CloseEvent.CLOSE, handle_close_event);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%" verticalAlign="top" horizontalAlign="center">
+		<s:TextArea id="status" width="100%"
+					height="100%" text=""
+					verticalScrollPolicy="auto" horizontalScrollPolicy="auto" 
+					editable="false" enabled="true"/>
+	</s:VGroup>
+</s:TitleWindow>

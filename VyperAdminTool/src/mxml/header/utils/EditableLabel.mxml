@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas 
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	width="{this.hbox0.width}" height="{this.hbox0.height}"
+	 useHandCursor="{this.__useHandCursor}" buttonMode="{this.__buttonMode}" mouseChildren="{this.__mouseChildren}"
+	creationComplete="onCreationComplete(event)"
+	>
+	<mx:states>
+		<mx:State name="TwoLabels">
+			<mx:AddChild relativeTo="{hbox0}" position="lastChild">
+				<mx:HBox id="hbox2" paddingTop="-5" creationComplete="onCreationComplete_hbox(event)">
+					<mx:Label id="aLabel2" width="100%" creationComplete="onCreationComplete_aLabel(event)"/>
+				</mx:HBox>
+			</mx:AddChild>
+			<mx:SetStyle target="{hbox0}" name="backgroundColor" value="cyan"/>
+			<mx:SetStyle target="{hbox0}" name="backgroundAlpha" value="0.0"/>
+			<mx:SetStyle target="{hbox2}" name="backgroundColor" value="lime"/>
+			<mx:SetStyle target="{hbox2}" name="backgroundAlpha" value="0.0"/>
+			<mx:SetStyle target="{aCanvas}" name="backgroundColor" value="#0000ff"/>
+			<mx:SetStyle target="{aCanvas}" name="backgroundAlpha" value="0.0"/>
+			<mx:SetProperty target="{this.aCanvas}" name="visible" value="false"/>
+			<mx:SetProperty target="{this.aCanvas}" name="includeInLayout" value="false"/>
+		</mx:State>
+		<mx:State name="NoLabels">
+			<mx:SetProperty target="{this.aLabel}" name="visible" value="false"/>
+			<mx:SetProperty target="{this.aLabel}" name="includeInLayout" value="false"/>
+		</mx:State>
+	</mx:states>
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.Menu;
+			import  utils.objects.ObjectUtils;
+			import mx.events.FlexEvent;
+			import libs.utils.ExtendedChars;
+			
+			[Bindable]
+			private var __mouseChildren:Boolean = false;
+
+			[Bindable]
+			private var __buttonMode:Boolean = true;
+			
+			[Bindable]
+			private var __useHandCursor:Boolean = true;
+			
+			private var __styleName:String = '';
+			
+			private var __htmlText:String = '';
+
+			private var __selector:String = '';
+			
+			private var __dataProvider:Object = {};
+			
+			private var _eventListeners:Array = [];
+			private var _callbacks:Array = [];
+
+			private var __gui:Array = [];
+			private var __containers:Array = [];
+
+			private var __delayed_events:Array = [];
+
+			private var __delayed_styles:Array = [];
+			
+			private var __paddingLeft:Number = 0;
+			private var __paddingTop:Number = 0;
+
+	        private var __onClickHandler:Function = function ():void {};
+	        
+	        private var __onCreationCompleteHandler:Function = function ():void {};
+	        
+	        private var isConnectedEventHandlers:Boolean = false;
+			
+			public var currentData:Object;
+			public var currentDataContainer:Array;
+			
+			private var __isStateTwoLabels:Boolean = false;
+
+			public var menuItems:Array;
+			public var menuToolTip:String;
+
+			public static const symbol_edit_menuitem:String = 'edit_menuitem';
+			public static const symbol_delete_menuitem:String = 'delete_menuitem';
+			
+			public static const symbol_edit_logo_item:String = 'edit_logo_item';
+
+			public function get _mouseChildren():Boolean {
+				return this.__mouseChildren;
+			}
+			
+			public function set _mouseChildren(mouseChildren:Boolean):void {
+				if (mouseChildren != this.__mouseChildren) {
+					this.__mouseChildren = mouseChildren;
+				}
+			}
+			
+			public function get _buttonMode():Boolean {
+				return this.__buttonMode;
+			}
+			
+			public function set _buttonMode(buttonMode:Boolean):void {
+				if (buttonMode != this.__buttonMode) {
+					this.__buttonMode = buttonMode;
+				}
+			}
+			
+			public function get _useHandCursor():Boolean {
+				return this.__useHandCursor;
+			}
+			
+			public function set _useHandCursor(useHandCursor:Boolean):void {
+				if (useHandCursor != this.__useHandCursor) {
+					this.__useHandCursor = useHandCursor;
+				}
+			}
+			
+			public function get _styleName():String {
+				return this.__styleName;
+			}
+			
+			public function set _styleName(styleName:String):void {
+				if (styleName != this.__styleName) {
+					this.__styleName = styleName;
+				}
+			}
+			
+			public function get _htmlText():String {
+				return this.__htmlText;
+			}
+			
+			public function set _htmlText(htmlText:String):void {
+				if (htmlText != this.__htmlText) {
+					this.__htmlText = htmlText;
+				}
+			}
+			
+			public function get _selector():String {
+				return this.__selector;
+			}
+			
+			public function set _selector(selector:String):void {
+				if (this.__selector != selector) {
+					this.__selector = selector;
+				}
+			}
+			
+			public function _setStyle(aStyleSpec:*):void {
+				this.__delayed_styles.push(aStyleSpec);
+			}
+			
+			public function get containers():Array {
+				return this.__containers;
+			}
+			
+			[Bindable]
+			public function set paddingLeft(paddingLeft:Number):void {
+				if (this.__paddingLeft != paddingLeft) {
+					this.__paddingLeft = paddingLeft;
+				}
+			}
+			
+			public function get paddingLeft():Number {
+				return this.__paddingLeft;
+			}
+			
+			[Bindable]
+			public function set paddingTop(paddingTop:Number):void {
+				if (this.__paddingTop != paddingTop) {
+					this.__paddingTop = paddingTop;
+				}
+			}
+			
+			public function get paddingTop():Number {
+				return this.__paddingTop;
+			}
+			
+			public function _connectEventHandler(args:Array):void {
+				var isComplex:Boolean = args.length == 3;
+				var isSimple:Boolean = args.length >= 2;
+				var anObj:* = this;
+				if (isComplex) {
+					try {
+						anObj = this[args[args.length-1]];
+					} catch (e:Error) {}
+				}
+				if (isSimple) {
+					if (args[0] != null) {
+						//trace(this.className+'._connectEventHandler().1 --> anObj='+anObj);
+						anObj.addEventListener(args[0],args[1]);
+					} else {
+						anObj[args[1]](anObj);
+					}
+				}
+			}
+			
+			public function _addEventListener(... args):void {
+				this._eventListeners.push(args);
+			}
+			
+			public function _fireCallback(args:Array):void {
+				var isSimple:Boolean = args.length == 2;
+				var anObj:* = this;
+				if (isSimple) {
+					try {
+						anObj = this[args[args.length-1]];
+					} catch (e:Error) {}
+					try {
+						args[0](anObj);
+					} catch (e:Error) {}
+				}
+			}
+			
+			public function _addCallbacks(... args):void {
+				this._callbacks.push(args);
+			}
+			
+			public function get eventListeners():Array {
+				return this._eventListeners;
+			}
+			
+			private function connectEventHandlers():void {
+				for (var i:String in this._eventListeners) {
+					this._connectEventHandler(this._eventListeners[i]);
+				}
+			}
+			
+			private function fireCallbacks():void {
+				for (var i:String in this._callbacks) {
+					this._fireCallback(this._callbacks[i]);
+				}
+			}
+			
+	        public function set onClickHandler(onClickHandler:Function):void {
+	        	if ( (this.__onClickHandler != onClickHandler) && (onClickHandler is Function) ) {
+	        		this.__onClickHandler = onClickHandler;
+	        	}
+	        }
+	        
+	        public function get onClickHandler():Function {
+	        	return this.__onClickHandler;
+	        }
+	        
+	        public function set _dataProvider(dataProvider:Object):void {
+	        	if (this.__dataProvider != dataProvider) {
+	        		this.__dataProvider = dataProvider;
+	        		if (dataProvider is Array) {
+	        			this.currentState = 'TwoLabels';
+	        			this.__isStateTwoLabels = true;
+	        		}
+	        	}
+	        }
+	        
+	        public function get _dataProvider():Object {
+	        	return this.__dataProvider;
+	        }
+	        
+	        public function set onCreationCompleteHandler(onCreationCompleteHandler:Function):void {
+	        	if ( (this.__onCreationCompleteHandler != onCreationCompleteHandler) && (onCreationCompleteHandler is Function) ) {
+	        		this.__onCreationCompleteHandler = onCreationCompleteHandler;
+	        	}
+	        }
+	        
+	        public function get onCreationCompleteHandler():Function {
+	        	return this.__onCreationCompleteHandler;
+	        }
+	        
+			private function onClick_PopUpMenu_ActionBtn(event:*):void {
+				if (this.__onClickHandler is Function) {
+					try {
+						this.__onClickHandler(event);
+					} catch (e:Error) {}
+				}
+			}
+
+			private function _onCreationComplete():void {
+				if ( (this.__onCreationCompleteHandler is Function) && (this.__delayed_events is Array) && (this.__delayed_events.length > 0) ) {
+					try {
+						var event:* = this.__delayed_events.pop();
+						this.__onCreationCompleteHandler(event);
+					} catch (e:Error) {}
+				}
+			}
+			
+			private function onCreationComplete(event:*):void {
+				if ( (this.__onCreationCompleteHandler is Function) && (this.currentState != 'TwoLabels') ) {
+					try {
+						this.__onCreationCompleteHandler(event);
+					} catch (e:Error) {}
+				} else {
+					this.__delayed_events.push(event);
+				}
+			}
+			
+			private function setup_label(label:Label):void {
+    			var text:String;
+				this.__gui.push(label);
+    			var i:int = this.__gui.indexOf(label);
+    			if (i > -1) {
+    				var dataProvider:* = (this._dataProvider is Array) ?  this._dataProvider[i] : this._dataProvider;
+    				if (dataProvider != null) {
+    					try {
+		    				text = dataProvider[this._selector];
+		    				if ( (text is String) && (text.length > 0) ) {
+			    				label.htmlText = new ExtendedChars().convertHTML(text);
+		    				}
+    					} catch (err:Error) {}
+    				}
+    			}
+			}
+			
+			private function onCreationComplete_aLabel(event:FlexEvent):void {
+				var l:Label = event.currentTarget as Label;
+				l.styleName = this._styleName;
+				l.htmlText = this._htmlText;
+				
+				var keys:Array;
+				var aKey:String;
+				for (var i:String in this.__delayed_styles) {
+					keys = ObjectUtils.keys(this.__delayed_styles[i]);
+					for (var j:String in keys) {
+						aKey = keys[j];
+						if (aKey == 'paddingLeft') {
+							this.paddingLeft = Number(this.__delayed_styles[i][aKey]);
+						} else if (aKey == 'paddingTop') {
+							this.paddingTop = Number(this.__delayed_styles[i][aKey]);
+						} else {
+							try { l.setStyle(aKey,this.__delayed_styles[i][aKey]); } catch (e:Error) {}
+						}
+					}
+				}
+
+				if (this.__isStateTwoLabels) {
+					l.mouseChildren = this.__mouseChildren;
+					l.useHandCursor = this.__useHandCursor;
+					l.buttonMode = this.__buttonMode;
+        			l.addEventListener(MouseEvent.CLICK,this.onClickHandler);
+				} else {
+					if (!this.isConnectedEventHandlers) {
+						this.connectEventHandlers();
+						this.fireCallbacks();
+	
+						this.isConnectedEventHandlers = true;
+					}
+				}
+
+				this.setup_label(l);
+			}
+			
+			private function onCreationComplete_aCanvas():void {
+				this.aCanvas.mouseChildren = this._mouseChildren;
+				this.aCanvas.useHandCursor = this._useHandCursor;
+				this.aCanvas.buttonMode = this._buttonMode;
+			}
+
+			private function onCreationComplete_hbox(event:FlexEvent):void {
+				var h:HBox = event.currentTarget as HBox;
+				this.__containers.push(h);
+				if ( (this.__delayed_events is Array) && (this.__delayed_events.length > 0) ) {
+					this._onCreationComplete();
+				}
+			}
+		]]>
+	</mx:Script>
+	<mx:VBox id="hbox0" horizontalScrollPolicy="off" verticalScrollPolicy="off">
+		<mx:HBox id="hbox1" creationComplete="onCreationComplete_hbox(event)">
+			<mx:Label id="aLabel" width="100%" paddingLeft="{this.paddingLeft}" paddingTop="{this.paddingTop}" creationComplete="onCreationComplete_aLabel(event)"/>
+		</mx:HBox>
+	</mx:VBox>
+	<mx:Canvas id="aCanvas" x="15" y="0" width="{this.hbox0.width - 15}" height="{this.hbox0.height}" creationComplete="onCreationComplete_aCanvas()"/>
+</mx:Canvas>

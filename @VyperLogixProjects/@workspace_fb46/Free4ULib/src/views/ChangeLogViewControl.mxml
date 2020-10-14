@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" height="100%" 
+		 initialize="group1_initializeHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var _info:String;
+			
+			protected function txt_output_creationCompleteHandler(event:FlexEvent):void {
+				try {
+					FlexGlobals.topLevelApplication.determine_view_debugger_for(this,event.currentTarget as TextArea);
+					FlexGlobals.topLevelApplication.handle_get_gps_location_updates();
+				} catch (err:Error) {}
+			}
+			
+			protected function group1_initializeHandler(event:FlexEvent):void {
+				try {
+					this._info = FlexGlobals.topLevelApplication['changeLog_info'];
+				} catch (err:Error) {}
+			}
+			
+			private function get isDebugger():Boolean {
+				return FlexGlobals.topLevelApplication.isDebugger;
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:Scroller width="100%" height="100%">
+			<s:Group> 
+				<s:VGroup width="100%">
+					<s:TextArea id="txt_info" editable="false" styleName="INFO" text="{this._info}" selectable="false" width="100%" height="100%" verticalScrollPolicy="auto"/>
+				</s:VGroup>
+			</s:Group>        
+		</s:Scroller>  
+		<s:HGroup width="100%" height="20%" visible="{this.isDebugger}" includeInLayout="{this.isDebugger}">
+			<s:TextArea id="txt_output" styleName="Debugger" width="100%" height="100" editable="false" selectable="false" creationComplete="txt_output_creationCompleteHandler(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Group>

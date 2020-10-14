@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   width="100%" height="100%" 
+		   backgroundColor="#ffffff" backgroundAlpha="0.0" borderVisible="false" 
+		   verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+		   xmlns:youtube="com.google.youtube.*"
+		   >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var _url_:String;
+			
+			[Bindable]
+			private var _video_id_:String;
+			
+			public function get url():String {
+				return this._url_;
+			}
+			
+			public function get video_id():String {
+				return this._video_id_;
+			}
+			
+			private function play():void {
+				try {Security.allowDomain(this.url)} catch (err:Error) {}
+				this.video.player.playVideo();
+			}
+			
+			public function set url(url:String):void {
+				if ( (url is String) && (this._url_ != url) ) {
+					this._url_ = url;
+					try {
+						this.video.cue_a_video_url(url);
+					} catch (err:Error) {}
+				}
+			}
+			
+			public function set video_id(id:String):void {
+				if ( (id is String) && (this._video_id_ != id) ) {
+					this._video_id_ = id;
+					try {
+						this.video.cue_a_video(id);
+					} catch (err:Error) {}
+				}
+			}
+			
+			protected function video_creationCompleteHandler(event:FlexEvent):void {
+				this.video.cueButton.visible = this.video.cueButton.includeInLayout = false;
+				this.video.pauseButton.visible = this.video.pauseButton.includeInLayout = false;
+				this.video.qualityComboBox.visible = this.video.qualityComboBox.includeInLayout = false;
+				this.video.videoIdTextInput.visible = this.video.videoIdTextInput.includeInLayout = false;
+				this.video.playButton.visible = this.video.playButton.includeInLayout = false;
+				this.video.video_id = this._video_id_;
+				if ( (this.url is String) && (this.url.length > 0) ) {
+					try {
+						this.video.cue_a_video_url(this.url);
+					} catch (err:Error) {}
+				} else {
+					try {
+						this.video.cue_a_video(id);
+					} catch (err:Error) {}
+				}
+			}
+			
+			
+			protected function video_completeHandler(event:Event):void {
+				//trace(this.className+'.video_completeHandler().1 width='+this.video.width+', height='+this.video.height);
+			}
+		]]>
+	</fx:Script>
+	<youtube:AS3Player x="0" y="0" id="video" width="100%" height="100%" creationComplete="video_creationCompleteHandler(event)"/>
+</mx:Canvas>

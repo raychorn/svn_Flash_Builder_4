@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group width="400"
+		 height="300"
+		 add="addHandler()"
+		 preinitialize="preinitializeHandler()"
+		 xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:charts="com.adobe.dashboard.view.charts.*"
+		 xmlns:images="assets.images.*"
+		 xmlns:components="com.adobe.webdashboard.view.components.*"
+		 xmlns:components1="com.adobe.dashboard.view.components.*">
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.dashboard.enum.ChartTypeEnum;
+			import com.adobe.dashboard.enum.DateRangeEnum;
+			import com.adobe.dashboard.model.AppModel;
+			import com.adobe.dashboard.presenter.SalesGoalsPresenter;
+			import com.adobe.dashboard.util.DateTimeUtil;
+			import com.adobe.utils.DateUtil;
+
+			import mx.collections.ArrayCollection;
+			import mx.events.CloseEvent;
+
+			import spark.events.IndexChangeEvent;
+
+			[Bindable]
+			public var presenter:SalesGoalsPresenter;
+
+			[Bindable]
+			protected var selectOptionList:ArrayCollection=new ArrayCollection([{label: "By Month"}, {label: "By Quarter"}]);
+
+			//
+			// Private Methods
+			//
+
+			private function setMonthDefaultValues():void
+			{
+				var now:Date=new Date();
+				presenter.sliderStartDate=new Date(now.fullYear, 0, 1); // First day of current year
+				presenter.sliderEndDate=new Date(now.fullYear, 12, 0); // Last day of curren year
+				presenter.selectionStartDate=new Date(now.fullYear, now.month, 1); // First day of current Month
+				presenter.selectionEndDate=new Date(now.fullYear, now.month + 1, 0); // Last day of current Month
+			}
+
+			private function setQuarterDefaultValues():void
+			{
+				var now:Date=new Date();
+				presenter.sliderStartDate=new Date(now.fullYear, 0, 1); // First day of current year
+				presenter.sliderEndDate=new Date(now.fullYear, 12, 0); // Last day of curren year
+				presenter.selectionStartDate=DateTimeUtil.getFirstDateOfQuarter(now); // First day of current Quarter
+				presenter.selectionEndDate=DateTimeUtil.getLastDateOfQuarter(now); // Last day of current Quarter
+			}
+
+
+
+			//
+			// Event Handlers
+			//
+
+			protected function preinitializeHandler():void
+			{
+				presenter=AppModel.getInstance().salesGoalsPresenter;
+
+				presenter.chartDetailsPresenter.addEventListener(Event.CHANGE, chartDetailsChangeHandler, false, 0, true);
+			}
+
+			protected function addHandler():void
+			{
+				presenter.dateRange=DateRangeEnum.MONTH;
+				presenter.loadChartData(DateRangeEnum.MONTH, presenter.dateRangeStartDate, presenter.dateRangeStartDate);
+
+				setMonthDefaultValues();
+			}
+
+			protected function chartDetailsChangeHandler(event:Event):void
+			{
+				// do nothing atm.
+			}
+
+			protected function areaChartButton_clickHandler(event:MouseEvent):void
+			{
+				if (presenter.chartDetailsPresenter && presenter.chartDetailsPresenter.chartModel)
+				{
+					presenter.chartDetailsPresenter.chartModel.chartType=ChartTypeEnum.AREA_CHART;
+					presenter.isAreaChart=true;
+				}
+			}
+
+			protected function lineChartButton_clickHandler(event:MouseEvent):void
+			{
+				if (presenter.chartDetailsPresenter && presenter.chartDetailsPresenter.chartModel)
+				{
+					presenter.chartDetailsPresenter.chartModel.chartType=ChartTypeEnum.LINE_CHART;
+					presenter.isAreaChart=false;
+				}
+			}
+
+			protected function salesGoalsChart_clickHandler(event:MouseEvent):void
+			{
+				if (presenter.chartListDetailsPresenter.dataProvider)
+				{
+					presenter.chartListDetailsPresenter.dataProvider.removeAll();
+				}
+				currentState="details";
+
+				var firstMonth:String=DateUtil.getFullMonthName(presenter.selectionStartDate);
+				var lastMonth:String=DateUtil.getFullMonthName(presenter.selectionEndDate);
+				var s:String;
+				if (firstMonth != lastMonth)
+				{
+					s=firstMonth + " - " + lastMonth;
+				}
+				else
+				{
+					s=firstMonth;
+				}
+
+				dataCategoryDisplay.text=s;
+
+				presenter.getSalesGoalDetails(presenter.selectionStartDate, presenter.selectionEndDate);
+				presenter.hideAllTourTips();
+			}
+
+			protected function multiSelect_changeHandler(event:IndexChangeEvent):void
+			{
+				switch (multiSelect.selectedItem.label)
+				{
+					case "By Month":
+					{
+						presenter.dateRange=DateRangeEnum.MONTH;
+						dateSlider.dateRange=DateRangeEnum.MONTH;
+						setMonthDefaultValues();
+						break;
+					}
+					case "By Quarter":
+					{
+						presenter.dateRange=DateRangeEnum.QUARTER;
+						dateSlider.dateRange=DateRangeEnum.QUARTER;
+						setQuarterDefaultValues();
+						break;
+					}
+					default:
+					{
+						// do nothing
+						break;
+					}
+				}
+
+				// fetch new data
+				presenter.loadChartData(presenter.dateRange, presenter.selectionStartDate, presenter.selectionEndDate);
+			}
+
+			protected function closeDetailsHandler(event:MouseEvent):void
+			{
+				currentState="overview";
+				presenter.loadChartData(presenter.dateRange, presenter.selectionStartDate, presenter.selectionEndDate);
+			}
+
+			protected function dateSlider_changeHandler(event:Event):void
+			{
+				presenter.selectionStartDate=dateSlider.selectionBeginDate;
+				presenter.selectionEndDate=dateSlider.selectionEndDate;
+				presenter.loadChartData(presenter.dateRange, presenter.selectionStartDate, presenter.selectionEndDate);
+			}
+
+			protected function tourTip_closeHandler(event:CloseEvent):void
+			{
+				presenter.hideTourTip();
+			}
+
+
+			protected function tourTip_hideAllHandler(event:Event):void
+			{
+				presenter.hideAllTourTips();
+			}
+		]]>
+	</fx:Script>
+
+	<s:states>
+		<s:State name="overview"/>
+		<s:State name="details"/>
+	</s:states>
+
+	<!-- complex background -->
+	<components:ChartViewBackground width="100%"
+									height="100%"/>
+
+	<!-- top bar -->
+	<s:HGroup height="45"
+			  left="37"
+			  right="37"
+			  verticalAlign="middle"
+			  gap="10">
+
+		<s:Label id="titleTextLinkButton"
+				 styleName="chartTitleText"
+				 text="SALES GOALS"/>
+
+		<images:chevron/>
+
+		<s:Label id="dataCategoryDisplay"
+				 styleName="historyTextStyle"
+				 click="closeDetailsHandler(event)"
+				 buttonMode="true"
+				 includeIn="details"/>
+
+		<s:ComboBox id="multiSelect"
+					dataProvider="{selectOptionList}"
+					selectedIndex="0"
+					change="multiSelect_changeHandler(event)"
+					includeIn="overview"
+					skinClass="skins.ComboBoxSkin"
+					selectionColor="#2b2b2b"
+					visible="true"/>
+
+		<s:Rect width="100%"/>
+
+	</s:HGroup>
+
+	<!-- date slider -->
+	<components:DateSliderComponent id="dateSlider"
+									height="40"
+									left="77"
+									right="77"
+									top="120"
+									change="dateSlider_changeHandler(event)"
+									dateRange="{presenter.dateRange}"
+									startDate="{presenter.sliderStartDate}"
+									selectionBeginDate="{presenter.selectionStartDate}"
+									selectionEndDate="{presenter.selectionEndDate}"
+									endDate="{presenter.sliderEndDate}"/>
+
+	<!-- the chart -->
+	<charts:SalesGoalsChart id="salesGoalsChart"
+							left="37"
+							right="37"
+							top="180"
+							bottom="20"
+							click="salesGoalsChart_clickHandler(event)"
+							chartPresenter="{presenter.chartDetailsPresenter}"/>
+
+	<!-- details list -->
+	<s:DataGrid id="detailsListDisplay"
+				left="37"
+				right="37"
+				top="98"
+				bottom="20"
+				color="0xCCCCCC"
+				dataProvider="{presenter.chartListDetailsPresenter.dataProvider}"
+				skinClass="skins.datagrid.DataGridSkin"
+				includeIn="details"
+				alternatingRowColors="{[ 0x333333, 0x262626 ]}"
+				borderVisible="false">
+
+		<s:columns>
+			<s:ArrayList>
+				<s:GridColumn dataField="clientName"
+							  headerText="Company Name"/>
+				<s:GridColumn dataField="date"
+							  headerText="Close Date"
+							  itemRenderer="com.adobe.webdashboard.view.renderer.DateItemRenderer"/>
+				<s:GridColumn dataField="myGross"
+							  headerText="Sales Amount"
+							  itemRenderer="com.adobe.webdashboard.view.renderer.CurrencyItemRenderer"/>
+			</s:ArrayList>
+		</s:columns>
+
+	</s:DataGrid>
+
+	<components:TourTip id="tourTip"
+						top="108"
+						right="47"
+						message="Click Chart Areas for Details"
+						visible="{presenter.showTourTip}"
+						close="tourTip_closeHandler(event)"
+						hideAll="tourTip_hideAllHandler(event)"
+						showArrow="false"/>
+</s:Group>

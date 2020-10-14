@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   initialize="initializeHandler()"
+			   preinitialize="preinitializeHandler()"
+			   activate="activateHandler(event)"
+			   resize="application_resizeHandler(event)"
+			   xmlns:components="com.adobe.tabletdashboard.view.components.*">
+	<fx:Script>
+		<![CDATA[
+			import assets.images.callout_button;
+
+			import com.adobe.dashboard.control.AppController;
+			import com.adobe.dashboard.enum.DateRangeEnum;
+			import com.adobe.dashboard.enum.StateEnum;
+			import com.adobe.dashboard.event.NavigationEvent;
+			import com.adobe.dashboard.model.AppModel;
+			import com.adobe.dashboard.presenter.MainPresenter;
+			import com.adobe.tabletdashboard.view.*;
+
+			import flash.utils.setTimeout;
+
+			import mx.core.FlexGlobals;
+			import mx.events.ResizeEvent;
+
+			import skins.containers.CustomCalloutSkin;
+			import skins.containers.CustomSplitViewNavigatorCalloutSkin;
+
+			protected function application_resizeHandler(event:ResizeEvent):void
+			{
+				currentState=aspectRatio;
+
+			}
+
+			/**
+			 * Instance of the presenter (presentation model) for this view.
+			 * The presenter is used to communicate with the controller.  The same presenter
+			 * is used for both the mobile and web apps.
+			 */
+			public var presenter:MainPresenter;
+
+			/**
+			 * Instance of the app controller that is created once for this app during init
+			 */
+			private var appController:AppController;
+
+
+
+			//
+			// Private Methods
+			//
+
+			private function addPresenterEventListeners():void
+			{
+				presenter.addEventListener(NavigationEvent.GO_STATE_EVENT, goStateHandler, false, 0, true);
+			}
+
+
+			//
+			// Event Handlers
+			//
+
+			/**
+			 * Listen for application state changes and translate the state string name into
+			 * modifying the navigator stack via a case statement.
+			 */
+			protected function goStateHandler(event:NavigationEvent):void
+			{
+				if (event.doPop)
+				{
+					// If the request to go back in the stack then pop instead of push
+					if (detailNavigator.length > 1)
+						detailNavigator.popView();
+
+					return;
+				}
+
+				switch (event.state)
+				{
+					case StateEnum.HOME_STATE:
+						detailNavigator.popToFirstView();
+						break;
+					case StateEnum.SALES_GOALS_STATE:
+						detailNavigator.pushView(SalesGoalsTabletView);
+						break;
+					case StateEnum.SALES_GOALS_DETAILS_STATE:
+						detailNavigator.pushView(SalesGoalsDetailsTabletView);
+						break;
+					case StateEnum.AVERAGE_REVENUE_PER_SALE_STATE:
+						detailNavigator.pushView(AverageRevenueTabletView);
+						break;
+					case StateEnum.AVERAGE_REVENUE_PER_SALE_DETAILS_STATE:
+						detailNavigator.pushView(AverageRevenueDetailsTabletView);
+						break;
+					case StateEnum.SALES_PIPELINE_STATE:
+						detailNavigator.pushView(SalesPipelineTabletView);
+						break;
+					case StateEnum.SALES_PIPELINE_DETAILS_STATE:
+						detailNavigator.pushView(SalesPipelineDetailsTabletView);
+						break;
+
+
+				}
+			}
+
+			protected function preinitializeHandler():void
+			{
+				// Build the AppController
+				appController=new AppController(true);
+
+				// Set (Inject) the presentation model
+				presenter=AppModel.getInstance().mainPresenter;
+
+				// Add Listeners
+				addPresenterEventListeners();
+
+			}
+
+			protected function initializeHandler():void
+			{
+				// Set up the services
+				presenter.setUp();
+				setKeyListeners();
+			}
+
+			protected function activateHandler(event:Event):void
+			{
+				appController.onAppActivated();
+			}
+
+			/**
+			 * Back button enablement: Only enabled on certain platforms
+			 */
+			protected function shouldDisplayBackButton():Boolean
+			{
+				var isAndroid:Boolean=Capabilities.version.indexOf('AND') > -1;
+
+				return !isAndroid;
+			}
+
+			protected function shouldDisplayHomeButton():Boolean
+			{
+				var isAndroid:Boolean=Capabilities.version.indexOf('AND') > -1;
+
+				return !isAndroid;
+			}
+
+			protected function goBackHandler():void
+			{
+				if (detailNavigator.length > 1)
+				{
+					detailNavigator.popView();
+					ReportListView(masterNavigator.activeView).goBack();
+				}
+			}
+
+
+			protected function setKeyListeners():void
+			{
+				NativeApplication.nativeApplication.addEventListener(KeyboardEvent.KEY_DOWN, keyDown_handler);
+				NativeApplication.nativeApplication.addEventListener(KeyboardEvent.KEY_UP, keyUp_handler);
+			}
+
+			protected function keyDown_handler(event:KeyboardEvent):void
+			{
+				if (event.keyCode != Keyboard.BACK)
+				{
+					return;
+				}
+				event.preventDefault();
+
+			}
+
+			protected function keyUp_handler(event:KeyboardEvent):void
+			{
+				if (event.keyCode != Keyboard.BACK)
+				{
+					return;
+				}
+				goBackHandler();
+
+			}
+
+
+
+			protected function onCalloutButtonClicked(event:MouseEvent):void
+			{
+				splitNavigator.showFirstViewNavigatorInPopUp(calloutButton);
+				splitNavigator.viewNavigatorPopUp.setStyle("skinClass", CustomSplitViewNavigatorCalloutSkin);
+				splitNavigator.viewNavigatorPopUp.setStyle("contentBackgroundAppearance", "none");
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<s:HorizontalLayout id="splitViewLandscapeLayout"
+							gap="1"/>
+		<s:VerticalLayout id="splitViewPortraitLayout"
+						  gap="1"/>
+	</fx:Declarations>
+
+	<fx:Style source="assets/styles/styles.css"/>
+
+	<s:states>
+		<s:State name="portrait"/>
+		<s:State name="landscape"/>
+	</s:states>
+	<s:NavigatorContent height="55"
+						width="100%">
+
+		<s:HGroup width="100%"
+				  height="100%"
+				  verticalAlign="middle"
+				  gap="0">
+			<s:Group width="55"
+					 height="100%"
+					 visible="false"
+					 includeInLayout="false"
+					 visible.portrait="true"
+					 includeInLayout.portrait="true">
+				<s:Button id="calloutButton"
+						  horizontalCenter="0"
+						  height="45"
+						  width="45"
+						  verticalCenter="0"
+						  icon="{callout_button}"
+						  skinClass="skins.buttons.CustomToggleButtonSkin"
+						  click.portrait="onCalloutButtonClicked(event)"/>
+			</s:Group>
+			<s:Line height="100%"
+					width="1"
+					visible="false"
+					includeInLayout="false"
+					visible.portrait="true"
+					includeInLayout.portrait="true">
+				<s:stroke>
+					<s:SolidColorStroke color="#000000"
+										weight="1"/>
+				</s:stroke>
+			</s:Line>
+			<s:Label text="SALES"
+					 styleName="titleWhiteStyle"
+					 verticalCenter="0"/>
+			<s:Label text="DASHBOARD"
+					 styleName="titleBlackStyle"
+					 verticalCenter="0"/>
+			<s:Rect width="100%"/>
+			<s:Line height="100%"
+					width="1">
+				<s:stroke>
+					<s:SolidColorStroke color="#000000"
+										weight="1"/>
+				</s:stroke>
+			</s:Line>
+
+			<s:Group width="55"
+					 height="100%">
+				<s:Image horizontalCenter="0"
+						 verticalCenter="0">
+					<s:source>
+						<s:MultiDPIBitmapSource source160dpi="@Embed('/assets/images/fx_logo/fxLogo160.png')"
+												source240dpi="@Embed('/assets/images/fx_logo/fxLogo240.png')"
+												source320dpi="@Embed('/assets/images/fx_logo/fxLogo320.png')"/>
+					</s:source>
+				</s:Image>
+			</s:Group>
+
+		</s:HGroup>
+
+	</s:NavigatorContent>
+	<s:SplitViewNavigator id="splitNavigator"
+						  width="100%"
+						  height="100%"
+						  autoHideFirstViewNavigator="true"
+						  layout.portrait="{splitViewPortraitLayout}"
+						  layout.landscape="{splitViewLandscapeLayout}">
+
+		<!-- Master ViewNavigator -->
+		<s:ViewNavigator id="masterNavigator"
+						 width.landscape="317"
+						 width.portrait="100%"
+						 height="100%"
+						 firstView="com.adobe.tabletdashboard.view.ReportListView"
+						 color="0x000000"/>
+
+		<!-- Detail ViewNavigator -->
+		<s:ViewNavigator id="detailNavigator"
+						 width="100%"
+						 height="100%"
+						 firstView="com.adobe.tabletdashboard.view.SalesGoalsTabletView">
+
+		</s:ViewNavigator>
+		<s:layout>
+			<s:VerticalLayout/>
+		</s:layout>
+
+	</s:SplitViewNavigator>
+	<s:layout>
+		<s:VerticalLayout gap="0"/>
+	</s:layout>
+</s:Application>

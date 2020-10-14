@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   resize="application1_resizeHandler(event)" 
+			   creationComplete="application1_creationCompleteHandler(event)" 
+			   addedToStage="application1_addedToStageHandler(event)">
+	<fx:Style source="styles.css"/>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.URLUtils;
+			import com.google_maps.HeatMapForGoogleMaps;
+			import com.vyperlogix.GoogleCloudOperation;
+			import com.widgets.HeatMapControlPanel;
+			
+			import controls.Alert.AlertAlternative;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			import mx.utils.URLUtil;
+			
+			[Bindable]
+			public var isDebugger:Boolean = Capabilities.isDebugger;
+			
+			[Bindable]
+			public static var url_google_maps1:String = 'smithmicro.com';
+			
+			[Bindable]
+			public static var google_maps_api_key1:String = 'ABQIAAAAmwzRmeVGHsXlchx4-mnPJhSHt3w0u0cOM1L5wRFDA1s40ic0rBTtSG3PP2ix5oY8eWHMJnEvQizAJw';
+			
+			[Bindable]
+			public static var url_google_maps2:String = 'local.smithmicro.com';
+			
+			[Bindable]
+			public static var google_maps_api_key2:String = 'ABQIAAAAofdnNKC0vkkCWlEV2QpymRStJ30fbFnc6936okh6BhgVUYE06hQWw4qLgRyMjr2lEttmjIafDdBGoA';
+			
+			[Bindable]
+			public static var url_google_maps3:String = 'http://bouyguespoc.analytics.smithmicro.com';
+			
+			[Bindable]
+			public static var google_maps_api_key3:String = 'ABQIAAAAmwzRmeVGHsXlchx4-mnPJhQo-86i7JEIqkmmEFXQBOsjIgcTlxS-vCkNqom2VnG_9NpWfjOW9w__pg';
+			
+			private var is_using_control_panel:Boolean = false; //Capabilities.isDebugger || (FlexGlobals.topLevelApplication.url.indexOf('localhost') > -1) || (FlexGlobals.topLevelApplication.url.indexOf('127.0.0.1') > -1) || (FlexGlobals.topLevelApplication.url.indexOf(url_google_maps2) > -1);
+			private var is_really_using_control_panel:Boolean = false;
+			
+			public var report_url:String;
+			
+			[Bindable]
+			private static var google_map_credentials:Object = {
+			};
+			
+			private var aMap:HeatMapForGoogleMaps;
+			
+			protected function application1_creationCompleteHandler(event:FlexEvent):void {
+				GoogleCloudOperation._timeout = 10;
+			}
+			
+			private function hide_control_panel():void {
+				if (this.aMap.control_panel is HeatMapControlPanel) {
+					//this.aMap.control_panel.visible = this.aMap.control_panel.includeInLayout = false;
+					trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> this.aMap.control_panel.height='+this.aMap.control_panel.height);
+					this.aMap.control_panel.height = 1;
+					trace(DebuggerUtils.getFunctionName(new Error())+'.2 --> this.aMap.control_panel.height='+this.aMap.control_panel.height);
+					this.aMap.control_panel.btn_shrink.visible = this.aMap.control_panel.btn_shrink.includeInLayout = false;
+					this.aMap.control_panel.height = this.aMap.control_panel.btn_shrink.height = 1;
+				}
+			}
+			
+			private function add_control_panel_to_map():void {
+				var _this:MapSampleWeb1 = this;
+				this.aMap.control_panel = new HeatMapControlPanel();
+				this.aMap.control_panel.x = 0;
+				this.aMap.control_panel.y = 0;
+				this.aMap.control_panel.width = this.aMap.width;
+				this.aMap.control_panel.addEventListener(FlexEvent.CREATION_COMPLETE, 
+					function (event:FlexEvent):void {
+						var timer:Timer = new Timer(500);
+						timer.addEventListener(TimerEvent.TIMER, 
+							function (event:TimerEvent):void {
+								timer.stop();
+								_this.aMap.currentState = 'shrink';
+								//_this.callLater(_this.hide_control_panel,[]);
+							}
+						);
+						timer.start();
+					}
+				);
+				this.aMap.stateChange_callback = function (event:FlexEvent):void {
+					if (_this.aMap.currentState == 'shrink') {
+						_this.aMap.currentState = 'shrunk';
+					}
+				};
+				this.aMap.addElementAt(this.aMap.control_panel,0);
+			}
+			
+			private function get_query_string(target:String):String {
+				var parms:Object = this.loaderInfo.parameters;
+				return parms[target];
+			}
+			
+			protected function application1_addedToStageHandler(event:Event):void {
+				var _this:MapSampleWeb1 = this;
+				google_map_credentials[url_google_maps1] = google_maps_api_key1;
+				google_map_credentials[url_google_maps2] = google_maps_api_key2;
+				google_map_credentials[url_google_maps3] = google_maps_api_key3;
+				AlertAlternative.init(this.stage);
+				var protocol:String = URLUtil.getProtocol(FlexGlobals.topLevelApplication.url);
+				var domain:String = URLUtil.getServerName(FlexGlobals.topLevelApplication.url);
+				var port:int = URLUtil.getPort(FlexGlobals.topLevelApplication.url);
+				this.aMap = new HeatMapForGoogleMaps();
+				this.aMap.width = this.width;
+				this.aMap.height = this.height;
+				var _domain:String = ( (domain == null) || ( (domain is String) && (domain.length == 0) ) ) ? url_google_maps1 : domain;
+				if (google_map_credentials[_domain] is String) {
+					this.aMap.url_google_maps = _domain;
+					this.aMap.google_maps_api_key = google_map_credentials[_domain];
+				} else {
+					this.aMap.url_google_maps = url_google_maps1;
+					this.aMap.google_maps_api_key = google_map_credentials[url_google_maps1];
+				}
+				this.report_url = this.get_query_string('p');
+				this.aMap.currentState = HeatMapControlPanel.STATE_WEB;
+				//AlertAlternative.show('DEBUG: <p>url='+FlexGlobals.topLevelApplication.url+'</p><p>protocol='+protocol+'</p><p>domain='+domain+'</p><p>port='+port+'</p><p>this.aMap.url_google_maps='+this.aMap.url_google_maps+'</p><p>this.aMap.google_maps_api_key='+this.aMap.google_maps_api_key+'</p><p>this.report_url='+this.report_url+'</p>');
+				if (this.is_using_control_panel) {
+					this.aMap.addEventListener(FlexEvent.CREATION_COMPLETE, 
+						function (event:FlexEvent):void {
+							var timer:Timer = new Timer(150);
+							timer.addEventListener(TimerEvent.TIMER, 
+								function (event:TimerEvent):void {
+									timer.stop();
+									_this.add_control_panel_to_map();
+								}
+							);
+							timer.start();
+						}
+					);
+				}
+				this.addElement(this.aMap);
+			}
+			
+			protected function application1_resizeHandler(event:ResizeEvent):void {
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 RESIZED !!!');
+				if (this.aMap is HeatMapForGoogleMaps) {
+					this.aMap.width = this.width;
+					this.aMap.height = this.height;
+					if (this.aMap.control_panel) {
+						this.aMap.control_panel.width = this.aMap.width;
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+</s:Application>

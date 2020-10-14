@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View preinitialize="preinitializeHandler()"
+		viewActivate="viewActivateHandler()"
+		backgroundColor="0x1A1A1A"
+		xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:mx="library://ns.adobe.com/flex/mx"
+		xmlns:charts="library://ns.adobe.com/flex/mx/charts"
+		xmlns:components="com.adobe.dashboard.view.components.*"
+		xmlns:enum="com.adobe.dashboard.enum.*"
+		xmlns:mobilecomponents="com.adobe.mobiledashboard.view.components.*">
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.dashboard.model.AppModel;
+			import com.adobe.dashboard.presenter.MainPresenter;
+
+			import flash.filters.ColorMatrixFilter;
+
+			import mx.events.CloseEvent;
+			import mx.events.TouchInteractionEvent;
+
+			[Bindable]
+			private var presenter:MainPresenter;
+
+
+
+			protected function preinitializeHandler():void
+			{
+				presenter=AppModel.getInstance().mainPresenter;
+			}
+
+			protected function viewActivateHandler():void
+			{
+				salesGoalsOverviewDisplay.loadData();
+				salesPipelineOverviewDisplay.loadData();
+				averageRevenueOverviewDisplay.loadData();
+			}
+
+			protected function removeSaturate(event:Event):void
+			{
+				DisplayObject(event.currentTarget).filters=[];
+			}
+
+			protected function tourTip_closeHandler(event:CloseEvent):void
+			{
+				presenter.hideTourTip();
+			}
+
+
+			protected var beingTouched:Boolean=false;
+
+			protected function homeScroller_touchInteractionStartHandler(event:TouchInteractionEvent):void
+			{
+				salesGoalsOverviewDisplay.filters=[];
+				salesPipelineOverviewDisplay.filters=[];
+				averageRevenueOverviewDisplay.filters=[];
+				beingTouched=true;
+			}
+
+
+			protected function homeScroller_touchInteractionEndHandler(event:TouchInteractionEvent):void
+			{
+				beingTouched=false;
+			}
+		]]>
+	</fx:Script>
+
+	<s:states>
+		<s:State name="loading"/>
+		<s:State name="details"/>
+	</s:states>
+
+	<s:Scroller id="homeScroller"
+				left="0"
+				right="0"
+				top="0"
+				bottom="0"
+				contentBackgroundColor="0x000000"
+				touchInteractionStart="homeScroller_touchInteractionStartHandler(event)"
+				touchInteractionEnd="homeScroller_touchInteractionEndHandler(event)">
+		<s:VGroup gap="6">
+			<s:Spacer height="1"/>
+			<!-- Sales Goals Overview -->
+			<components:SalesGoalsOverview id="salesGoalsOverviewDisplay"
+										   width="100%"
+										   height="260"
+										   paddingLeft="20"
+										   paddingRight="20"
+										   click="presenter.goSalesGoals()"
+										   barHeight="49"
+										   cacheAsBitmap="true"/>
+
+			<!-- Sales Pipeline Overview -->
+			<components:SalesPipelineOverview id="salesPipelineOverviewDisplay"
+											  width="100%"
+											  height="130"
+											  paddingLeft="20"
+											  paddingRight="20"
+											  click="presenter.goSalesPipeline()"
+											  barHeight="49"
+											  cacheAsBitmap="true"/>
+
+			<!-- Average Revenue per Sale Overview -->
+			<components:AverageRevenueOverview id="averageRevenueOverviewDisplay"
+											   width="100%"
+											   height="120"
+											   paddingLeft="20"
+											   paddingRight="20"
+											   click="presenter.goAverageRevenuePerSale()"
+											   barHeight="49"
+											   cacheAsBitmap="true"/>
+
+		</s:VGroup>
+	</s:Scroller>
+	<s:BusyIndicator id="loadingIndicator"
+					 right="10"
+					 top="5"
+					 visible="{!salesGoalsOverviewDisplay.dataLoaded}"
+					 symbolColor="#ffffff"/>
+
+	<!-- the title content for this view -->
+	<s:titleContent>
+		<s:Label styleName="titleWhiteStyle"
+				 text="Flex Sales Dashboard"/>
+	</s:titleContent>
+
+
+
+</s:View>

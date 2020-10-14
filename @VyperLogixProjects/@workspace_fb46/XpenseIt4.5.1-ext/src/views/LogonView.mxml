@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		title="Logon"
+		viewActivate="viewActivateHandler()">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import events.ReportEvent;
+			
+			import spark.managers.PersistenceManager;
+			
+			protected var persistenceManager:PersistenceManager = new PersistenceManager();
+			
+			[Bindable]
+			protected var busy:Boolean = false;
+			
+			[Bindable]
+			protected var email:String;
+			
+			[Bindable]
+			protected var password:String;
+			
+			protected function viewActivateHandler():void
+			{
+				if (loadCredentials())
+					logon();
+				else
+					currentState = "captureData";
+			}
+
+			protected function loadCredentials():Boolean
+			{
+				if (persistenceManager.load())
+				{
+					var property:Object = persistenceManager.getProperty("email");
+					if (property)
+						email = property.toString();
+					else
+						return false;
+					property = persistenceManager.getProperty("password");
+					if (property) 
+						password = property.toString();
+					else
+						return false;
+					return true;
+				}
+				else
+				{
+					return false;
+				} 
+				
+			}
+			
+			protected function logon():void
+			{
+				busy = true;
+				// dummy service call for now
+				var token:AsyncToken = service.send();
+				token.addResponder(new AsyncResponder(resultHandler, faultHandler, token));
+			}
+			
+			protected function resultHandler(event:ResultEvent, token:AsyncToken):void
+			{
+				busy = false;
+				trace("result");
+				persistenceManager.setProperty("email", email);
+				persistenceManager.setProperty("password", password);
+				persistenceManager.save();
+				dispatchEvent(new Event("logonSuccess"));
+			}
+			
+			protected function faultHandler(event:FaultEvent, token:AsyncToken):void
+			{
+				busy = false;
+				//ErrorDialog.show(event.fault.faultString);
+				currentState = "captureData";
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Metadata>
+		[Event(name="logonSuccess", type="flash.events.Event")]
+	</fx:Metadata>
+	
+	<fx:Declarations>
+		<!-- dummy service for now -->
+		<s:HTTPService id="service" url="http://flex.org:8080/extras" resultFormat="text"/>
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="default"/>
+		<s:State name="captureData"/>
+	</s:states>
+	
+	<s:VGroup width="100%" height="100%" paddingLeft="355" gap="4" verticalAlign="middle"  includeIn="captureData">
+		<s:Label text="Email:"/>
+		<s:TextInput text="@{email}" width="60%" enter="logon()"/>
+		
+		<s:Spacer height="10"/>
+		
+		<s:Label text="Password:"/>
+		<s:TextInput text="@{password}" width="60%" displayAsPassword="true" enter="logon()"/>
+		
+		<s:Spacer height="10"/>
+		
+		<s:Button label="Log on" width="60%" click="logon()"/>
+		<s:Spacer height="10"/>
+	</s:VGroup>
+	
+	<s:BusyIndicator visible="{busy}" verticalCenter="0" horizontalCenter="0"/>
+	
+</s:View>

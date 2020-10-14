@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+			   xmlns:custardbelly="custardbelly.container.*"
+			   initialize="titlewindow1_initializeHandler(event)" xmlns:controls="popups.controls.*">
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import factories.ArmourTechFactory;
+			import factories.AstrophysicsTechFactory;
+			import factories.CombustionDriveTechFactory;
+			import factories.ComputerTechFactory;
+			import factories.EnergyTechFactory;
+			import factories.EspionageTechFactory;
+			import factories.GravitonTechFactory;
+			import factories.HyperspaceDriveTechFactory;
+			import factories.HyperspaceTechFactory;
+			import factories.ImpulseDriveTechFactory;
+			import factories.IntraGalacticResearchNetworkTechFactory;
+			import factories.IonTechFactory;
+			import factories.LaserTechFactory;
+			import factories.PlasmaDriveTechFactory;
+			import factories.ShieldingTechFactory;
+			import factories.WeaponsTechFactory;
+			import factories.editors.ArmourTechBuilder;
+			import factories.editors.AstrophysicsTechBuilder;
+			import factories.editors.CombustionDriveTechBuilder;
+			import factories.editors.ComputerTechBuilder;
+			import factories.editors.EnergyTechBuilder;
+			import factories.editors.EspionageTechBuilder;
+			import factories.editors.GravitonTechBuilder;
+			import factories.editors.HyperspaceDriveTechBuilder;
+			import factories.editors.HyperspaceTechBuilder;
+			import factories.editors.ImpulseDriveTechBuilder;
+			import factories.editors.IntraGalacticResearchNetworkTechBuilder;
+			import factories.editors.IonTechBuilder;
+			import factories.editors.LaserTechBuilder;
+			import factories.editors.PlasmaDriveTechBuilder;
+			import factories.editors.ShieldingTechBuilder;
+			import factories.editors.WeaponsTechBuilder;
+			
+			import popups.controls.ResourcesGroup;
+
+			private var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+			
+			private var _this:Research;
+			
+			public function handle_timer_event(event:TimerEvent):void {
+				app.log = '(+++) '+this.className+'-->'+DebuggerUtils.getFunctionName(new Error());
+			}
+			
+			public static function get is_building_by_id():String {
+				return ResourcesGroup.is_building_by_id;
+			}
+			
+			public static function set is_building_by_id(is_building_by_id:String):void {
+				if (ResourcesGroup.is_building_by_id != is_building_by_id) {
+					ResourcesGroup.is_building_by_id = is_building_by_id;
+				}
+			}
+			
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void {
+				this.closeButton.visible = this.closeButton.includeInLayout = false;
+			}
+			
+			public function refresh_panel_titles():void {
+				this.researchBasic.refresh_panel_titles();
+			}
+			
+			public function signal_completion_of_timer(id:String):void {
+				this.researchBasic.signal_completion_of_timer(id);
+			}
+			
+			protected function research_creationCompleteHandler(event:FlexEvent):void {
+				var group:QuadGroup = event.currentTarget as QuadGroup;
+				group.currentState = 'fancy';
+
+				if (!FlexGlobals.topLevelApplication.premium_account) {
+					this.researchBasic.signal_disabled_for_others_besides(is_building_by_id);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:TabBar width="100%" dataProvider="{views}"/>
+	<custardbelly:CBViewStack id="views" width="100%" height="100%">
+		<s:NavigatorContent width="100%" height="100%" label="Basic">
+			<s:VGroup width="100%" height="100%">
+				<controls:QuadGroup 
+					id="researchBasic"
+					
+					resource_label1="Energy Tech" paddingTop1="-20" width1="130" height1="160" 
+					factory1="{EnergyTechFactory}" builder1="{EnergyTechBuilder}" building_container_name1="{EnergyTechFactory.name}" building_resource_image1="{Images.energyTechImageClass}"
+					
+					resource_label2="Laser Tech" paddingTop2="-20" width2="130" height2="160"
+					factory2="{LaserTechFactory}" builder2="{LaserTechBuilder}" building_container_name2="{LaserTechFactory.name}" building_resource_image2="{Images.laserTechImageClass}"
+					
+					resource_label3="Ion Tech" paddingTop3="-20" width3="130" height3="160"
+					factory3="{IonTechFactory}" builder3="{IonTechBuilder}" building_container_name3="{IonTechFactory.name}" building_resource_image3="{Images.ionTechImageClass}" 
+					
+					resource_label4="Hyperspace Tech" paddingTop4="-20" width4="130" height4="160"
+					factory4="{HyperspaceTechFactory}" builder4="{HyperspaceTechBuilder}" building_container_name4="{HyperspaceTechFactory.name}" building_resource_image4="{Images.hyperspaceTechImageClass}" 
+					
+					creationComplete="research_creationCompleteHandler(event)"
+					/>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" height="100%" label="Propulsion">
+			<s:VGroup width="100%" height="100%">
+				<controls:QuadGroup 
+					id="researchDrive"
+					
+					resource_label1="Plasma Tech" paddingTop1="-20" width1="130" height1="160"
+					factory1="{PlasmaDriveTechFactory}" builder1="{PlasmaDriveTechBuilder}" building_container_name1="{PlasmaDriveTechFactory.name}" building_resource_image1="{Images.plasmaDriveTechImageClass}"
+					
+					resource_label2="Combustion Tech" paddingTop2="-20" width2="130" height2="160"
+					factory2="{CombustionDriveTechFactory}" builder2="{CombustionDriveTechBuilder}" building_container_name2="{CombustionDriveTechFactory.name}" building_resource_image2="{Images.combustionDriveTechImageClass}"
+					
+					resource_label3="Impulse Tech" paddingTop3="-20" width3="130" height3="160"
+					factory3="{ImpulseDriveTechFactory}" builder3="{ImpulseDriveTechBuilder}" building_container_name3="{ImpulseDriveTechFactory.name}" building_resource_image3="{Images.impulseDriveTechImageClass}" 
+					
+					resource_label4="Hyperspace Drive" paddingTop4="-20" width4="130" height4="160"
+					factory4="{HyperspaceDriveTechFactory}" builder4="{HyperspaceDriveTechBuilder}" building_container_name4="{HyperspaceDriveTechFactory.name}" building_resource_image4="{Images.hyperspaceTechImageClass}" 
+					
+					creationComplete="research_creationCompleteHandler(event)"
+					/>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" height="100%" label="Advanced">
+			<s:VGroup width="100%" height="100%">
+				<controls:QuadGroup 
+					id="researchAdvanced"
+					
+					resource_label1="Espionage Tech" paddingTop1="-20" width1="130" height1="160"
+					factory1="{EspionageTechFactory}" builder1="{EspionageTechBuilder}" building_container_name1="{EspionageTechFactory.name}" building_resource_image1="{Images.espionageTechImageClass}"
+					
+					resource_label2="Computer Tech" paddingTop2="-20" width2="130" height2="160" 
+					factory2="{ComputerTechFactory}" builder2="{ComputerTechBuilder}" building_container_name2="{ComputerTechFactory.name}" building_resource_image2="{Images.computerTechImageClass}"
+					
+					resource_label3="Astrophysics Tech" paddingTop3="-20" width3="130" height3="160"
+					factory3="{AstrophysicsTechFactory}" builder3="{AstrophysicsTechBuilder}" building_container_name3="{AstrophysicsTechFactory.name}" building_resource_image3="{Images.astrophysicsTechImageClass}" 
+					
+					resource_label4="Research Network" paddingTop4="-20" width4="130" height4="160"
+					factory4="{IntraGalacticResearchNetworkTechFactory}" builder4="{IntraGalacticResearchNetworkTechBuilder}" building_container_name4="{IntraGalacticResearchNetworkTechFactory.name}" building_resource_image4="{Images.intraGalacticResearchTechImageClass}" 
+					
+					creationComplete="research_creationCompleteHandler(event)"
+					/>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" height="100%" label="Combat">
+			<s:VGroup width="100%" height="100%">
+				<controls:QuadGroup 
+					id="researchCombat"
+					
+					resource_label1="Graviton Tech" paddingTop1="-20" width1="130" height1="160"
+					factory1="{GravitonTechFactory}" builder1="{GravitonTechBuilder}" building_container_name1="{GravitonTechFactory.name}" building_resource_image1="{Images.gravitonResearchTechImageClass}"
+					
+					resource_label2="Weapons Tech" paddingTop2="-20" width2="130" height2="160"
+					factory2="{WeaponsTechFactory}" builder2="{WeaponsTechBuilder}" building_container_name2="{WeaponsTechFactory.name}" building_resource_image2="{Images.weaponsResearchTechImageClass}"
+					
+					resource_label3="Shielding Tech" paddingTop3="-20" width3="130" height3="160"
+					factory3="{ShieldingTechFactory}" builder3="{ShieldingTechBuilder}" building_container_name3="{ShieldingTechFactory.name}" building_resource_image3="{Images.shieldingResearchTechImageClass}" 
+					
+					resource_label4="Armor Tech" paddingTop4="-20" width4="130" height4="160"
+					factory4="{ArmourTechFactory}" builder4="{ArmourTechBuilder}" building_container_name4="{ArmourTechFactory.name}" building_resource_image4="{Images.armourResearchTechImageClass}" 
+					
+					creationComplete="research_creationCompleteHandler(event)"
+					/>
+			</s:VGroup>
+		</s:NavigatorContent>
+	</custardbelly:CBViewStack>
+</s:TitleWindow>

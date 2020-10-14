@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 width="100%" height="100%" 
+		 xmlns:MediaPresentation="controls.MediaPresentation.*" xmlns:popups="controls.popups.*" xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import controls.MediaPresentation.events.ChangedItemsCanvasDataProviderEvent;
+			
+			import mx.collections.ArrayCollection;
+			[Bindable]
+			private var __is_editingMode__:Boolean = false;
+			
+			public function get is_editingMode():Boolean {
+				return this.__is_editingMode__;
+			}
+			
+			public function set is_editingMode(is_editingMode:Boolean):void {
+				if (this.__is_editingMode__ != is_editingMode) {
+					this.__is_editingMode__ = is_editingMode;
+				}
+			}
+			
+			public function get is_showing_nav():Boolean {
+				return (this.nav.visible);
+			}
+			
+			public function show_nav():void {
+				this.nav.visible = this.nav.includeInLayout = true;
+				trace(this.className+'.show_nav.1 --> this.nav.visible='+this.nav.visible+', this.nav.includeInLayout='+this.nav.includeInLayout+', this.nav.height='+this.nav.height);
+			}
+
+			public function hide_nav():void {
+				this.nav.visible = this.nav.includeInLayout = false;
+				trace(this.className+'.hide_nav.1 --> this.nav.visible='+this.nav.visible+', this.nav.includeInLayout='+this.nav.includeInLayout+', this.nav.height='+this.nav.height);
+			}
+			
+			public function addItemsCanvasElement(element:*):void {
+				if (this.itemsCanvas.dataProvider == null) {
+					this.itemsCanvas.dataProvider = new ArrayCollection();
+				}
+				this.itemsCanvas.dataProvider.addItem({'target':this.itemsCanvas,'element':element});
+				this.itemsCanvas.dispatchEvent(new ChangedItemsCanvasDataProviderEvent(ChangedItemsCanvasDataProviderEvent.TYPE_CHANGED_ITEMS_CANVAS_DATA_PROVIDER));
+				this.itemsCanvas.visible = true;
+			}
+			
+			public function removeAllItemsCanvasElements():void {
+				if (this.itemsCanvas.dataProvider) {
+					this.itemsCanvas.dataProvider.removeAll();
+					this.itemsCanvas.dispatchEvent(new ChangedItemsCanvasDataProviderEvent(ChangedItemsCanvasDataProviderEvent.TYPE_CHANGED_ITEMS_CANVAS_DATA_PROVIDER));
+					this.itemsCanvas.visible = false;
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%" paddingLeft="0" horizontalAlign="left">
+		<MediaPresentation:ItemNavigation id="nav" width="100%" height="25" paddingLeft="0" paddingRight="5" visible="false" includeInLayout="false"/>
+		<popups:WinProgressBar id="progress" width="100%" visible="false" includeInLayout="{this.progress.visible}"/>
+		<s:HGroup width="100%" height="100%" paddingLeft="0" horizontalAlign="left">
+			<s:List id="itemsCanvas" width="100%" height="100%" visible="false" includeInLayout="{this.itemsCanvas.visible}">
+				<s:layout>
+					<s:TileLayout requestedRowCount="1" 
+								  requestedColumnCount="1"
+								  rowAlign="justifyUsingHeight" 
+								  columnAlign="justifyUsingWidth" 
+								  horizontalGap="0" 
+								  verticalGap="0" 
+								  horizontalAlign="center" 
+								  verticalAlign="top"/>
+				</s:layout>
+				<s:itemRenderer>
+					<fx:Component>
+						<s:ItemRenderer>
+							<fx:Script>
+								<![CDATA[
+									import controls.MediaPresentation.events.ChangedItemsCanvasDataProviderEvent;
+									
+									import mx.collections.ArrayCollection;
+									import mx.core.IVisualElement;
+									import mx.events.FlexEvent;
+									
+									import spark.components.List;
+									
+									protected function vgroup1_creationCompleteHandler(event:FlexEvent):void {
+										var target:VGroup = event.currentTarget as VGroup;
+										try {
+											var ele:* = data['element'];
+											if (ele) {
+												target.addElement(ele as IVisualElement);
+											}
+										} catch (err:Error) {}
+										try {
+											var canvas:List = data['target'] as List;
+											if (canvas) {
+												canvas.addEventListener(ChangedItemsCanvasDataProviderEvent.TYPE_CHANGED_ITEMS_CANVAS_DATA_PROVIDER, 
+													function (event:ChangedItemsCanvasDataProviderEvent):void {
+														var currentTarget:List = event.currentTarget as List;
+														var dp:ArrayCollection = currentTarget.dataProvider as ArrayCollection;
+														target.removeAllElements();
+														var anItem:*;
+														for (var i:int = 0; i < dp.length; i++) {
+															anItem = dp.getItemAt(i);
+															ele = anItem['element'];
+															if (ele) {
+																target.addElement(ele as IVisualElement);
+															}
+														}
+													}
+												);
+											}
+										} catch (err:Error) {}
+									}
+									
+								]]>
+							</fx:Script>
+							<s:states>
+								<mx:State name="normal" />
+								<mx:State name="hovered" />
+								<mx:State name="selected" />
+							</s:states>
+							<s:Rect left="0" right="0" top="0" bottom="0">
+								<s:stroke>
+									<mx:SolidColorStroke color="0xCCCCCC" joints="round" weight="2"/>
+								</s:stroke>
+								<s:fill>
+									<mx:SolidColor color="0x999999" alpha="0" alpha.hovered="0.2"
+												  alpha.selected="0.6" />
+								</s:fill>
+							</s:Rect>
+							<s:VGroup width="100%" horizontalAlign="left" creationComplete="vgroup1_creationCompleteHandler(event)">
+							</s:VGroup>
+						</s:ItemRenderer>
+					</fx:Component>
+				</s:itemRenderer>
+			</s:List>
+		</s:HGroup>
+	</s:VGroup>
+</s:Group>

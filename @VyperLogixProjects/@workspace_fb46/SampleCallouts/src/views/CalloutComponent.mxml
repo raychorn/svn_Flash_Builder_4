@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" title="Callout Component"  xmlns:components="components.*"
+		viewDeactivate="callout.close()">
+	
+	<fx:Declarations>
+		<components:MyCalloutComp id="callout" height="300" close="location.text=event.data" verticalPosition="after"/>
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout paddingTop="40" paddingBottom="8" paddingLeft="8" paddingRight="8" gap="15" 
+						  horizontalAlign="center"/>
+	</s:layout>
+	
+	<s:TextArea skinClass="spark.skins.mobile.TextAreaSkin" width="90%" 
+				text="You can include a callout component defined in a separate MXML file and open it programmatically from anywhere such as shown in this sample. The second
+parameter to the open() method on the callout is a boolean to indicate if you want the callout popup to be modal (no input accepted outside of the callout container if true).
+The callout in this tab uses a modal dialog and requires input. You can call the close() method and then listen for the close event to get data back from the callout inputs as 
+shown in this example. Click on the text input box below to invoke the callout to select a location."/>
+	<s:HGroup verticalAlign="middle">
+		<s:Label text="Location:"/>
+		<s:TextInput id="location" text="Select..." width="320" focusIn="callout.open(this.location,true)" editable="false"/>
+	</s:HGroup>
+	
+</s:View>

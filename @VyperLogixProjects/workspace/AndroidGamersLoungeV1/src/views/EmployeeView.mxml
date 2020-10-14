@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:views="views.*"
+		 creationComplete="creationCompleteHandler()">
+
+	<fx:Script>
+		<![CDATA[
+			import context.Context;
+			
+			import events.EmployeeEvent;
+			
+			import model.Employee;
+			
+			import mx.collections.ArrayCollection;
+			
+			private var _employee:Employee;
+			
+			[Bindable]
+			public var actions:ArrayCollection;
+			
+			[Embed("assets/sms.png")]
+			private var smsIcon:Class;
+
+			[Embed("assets/phone.png")]
+			private var phoneIcon:Class;
+			
+			[Bindable]
+			public function set employee(employee:Employee):void
+			{
+				_employee = employee;
+				actions = new ArrayCollection();
+
+				if (employee.phone)
+				{
+					actions.addItem({type: "tel", name: "Call office", details: employee.phone, icon:phoneIcon});
+				}
+				if (employee.cellPhone)
+				{
+					actions.addItem({type: "tel", name: "Call mobile", details: employee.cellPhone, icon:phoneIcon});
+					actions.addItem({type: "sms", name: "SMS", details: employee.cellPhone, icon:smsIcon});
+				}
+				if (employee.email)
+				{
+					actions.addItem({type: "mailto", name: "Email", details: employee.email});
+				}
+				if (employee.manager)
+				{
+					actions.addItem({type: "employee", name: "View manager", details: employee.manager.firstName + " " + employee.manager.lastName, employee: employee.manager});
+				}
+				if (employee.directReports && employee.directReports.length > 0)
+				{
+					actions.addItem({type: "reports", name: "View direct reports", details: "(" + employee.directReports.length + ")", employee: employee});
+				}
+			}
+			
+			public function get employee():Employee
+			{
+				return _employee;
+			}
+			
+			protected function creationCompleteHandler():void
+			{
+				addEventListener(EmployeeEvent.REPORTS, 
+					function():void
+					{
+						Context.getAttribute("history").push({employee: employee, state: "directReports"});
+						currentState="directReports";
+					});
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="default"/>
+		<s:State name="directReports"/>
+	</s:states>
+	
+	<s:Label text="{employee.firstName} {employee.lastName}" styleName="title" top="14" left="10"/>
+	<s:Label text="{employee.title}" top="48" left="10" visible.directReports="false"/>
+	<s:Label text="{employee.department}" top="76" left="10" visible.directReports="false"/>
+	<s:Label text="{employee.city}" top="104" left="10" visible.directReports="false"/>
+
+	<s:Rect width="122" height="122" top="8" right="8">
+		<s:fill>
+			<s:SolidColor color="#DCDCDC"/>
+		</s:fill>
+	</s:Rect>
+
+	<mx:Image source="pics/{employee.picture}" top="9" right="9" width="120" height="120"/>
+	
+	<s:Line top="149" top.directReports="139" left="0" right="0">
+		<s:stroke>
+			<s:SolidColorStroke color="#000000" weight="1"/>
+		</s:stroke>
+	</s:Line>
+	
+	<s:SkinnableContainer styleName="list" top="150" left="0" right="0" bottom="0" >
+		<s:DataGroup dataProvider="{actions}" top="0" left="0" right="0" bottom="0" itemRenderer="renderers.ActionRenderer" visible="false" visible.default="true">
+			<s:layout>
+				<s:VerticalLayout gap="0"/>
+			</s:layout>
+		</s:DataGroup>
+	</s:SkinnableContainer>
+
+	<s:Label text="Direct Reports ({employee.directReports.length})" left="10" top="48" visible="false" visible.directReports="true"/>
+
+	<views:EmployeeList employees="{employee.directReports}" top="140" left="0" right="0" bottom="0" visible="false" visible.directReports="true"/>
+	
+</s:SkinnableContainer>

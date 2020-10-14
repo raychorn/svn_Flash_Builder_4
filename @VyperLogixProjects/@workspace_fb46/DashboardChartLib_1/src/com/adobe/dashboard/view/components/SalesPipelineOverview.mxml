@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group add="addHandler()"
+		 preinitialize="preinitializeHandler()"
+		 xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:charts="com.adobe.dashboard.view.charts.*"
+		 xmlns:images="assets.images.*">
+
+	<fx:Metadata>
+		[Style(name="chartCornerRadius", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="chartPaddingTop", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="chartPaddingBottom", type="Number", format="Length", inherit="no",  minValue="0.0")]
+		[Style(name="chartPaddingLeft", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="chartPaddingRight", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="paddingLeft", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="paddingRight", type="Number", format="Length", inherit="no", minValue="0.0")]
+	</fx:Metadata>
+
+	<fx:Declarations>
+		<s:CurrencyFormatter id="currencyFormatter"
+							 currencySymbol="$"
+							 fractionalDigits="0"
+							 useCurrencySymbol="true"/>
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.dashboard.model.AppModel;
+			import com.adobe.dashboard.model.chart.SalesPipelineModel;
+			import com.adobe.dashboard.presenter.ChartPresenter;
+			import com.adobe.dashboard.presenter.SalesPipelinePresenter;
+
+			import mx.core.IVisualElement;
+			import mx.core.UIComponent;
+
+			import spark.primitives.Graphic;
+
+			[Bindable]
+			public var presenter:SalesPipelinePresenter;
+
+			[Bindable]
+			public var barHeight:int=72;
+
+			[Bindable]
+			public var vPadding:int=10;
+
+			[Bindable]
+			public var closeRate:Number=0;
+
+			[Bindable]
+			public var totalPotentialSales:String;
+
+
+
+			private var _nextIcon:Class;
+
+			//
+			// Public functions
+			//
+
+			public function get nextIcon():Class
+			{
+				return _nextIcon;
+			}
+
+			public function set nextIcon(value:Class):void
+			{
+				_nextIcon=value;
+				var icon:IVisualElement=addElement(new value());
+				icon.right=15;
+				icon.verticalCenter=0;
+			}
+
+			public function loadData():void
+			{
+				presenter.getMySalesPipelineChartData(true);
+			}
+
+
+			//
+			// Event Handlers
+			//
+
+			protected function preinitializeHandler():void
+			{
+				presenter=AppModel.getInstance().salesPipelinePresenter;
+			}
+
+			protected function addHandler():void
+			{
+				presenter.chartOverviewPresenter.addEventListener(Event.CHANGE, chartOverviewChangeHandler, false, 0, true);
+			}
+
+			protected function chartOverviewChangeHandler(event:Event):void
+			{
+				var prospectGross:Number=0;
+				var closingGross:Number=0;
+				var qualifyGross:Number=0;
+				var chartPresenter:ChartPresenter=event.target as ChartPresenter;
+				for each (var salesPipelineModel:SalesPipelineModel in chartPresenter.dataProvider)
+				{
+					if (salesPipelineModel && salesPipelineModel.hasOwnProperty("name"))
+					{
+						switch (salesPipelineModel.name)
+						{
+							case "Prospect":
+							{
+								prospectGross=salesPipelineModel.myGross;
+								break;
+							}
+							case "Qualify":
+							{
+								qualifyGross=salesPipelineModel.myGross;
+								break;
+							}
+							case "Closing":
+							{
+								closingGross=salesPipelineModel.myGross;
+								break;
+							}
+							default:
+							{
+								// do nothing
+								break;
+							}
+						}
+					}
+				}
+				var totalGross:Number=prospectGross + closingGross + qualifyGross;
+				salesPiplineChart.section1Percent=prospectGross / totalGross;
+				salesPiplineChart.section2Percent=qualifyGross / totalGross;
+				salesPiplineChart.section3Percent=closingGross / totalGross;
+				closeRate=Math.round(closingGross / totalGross * 100);
+				totalPotentialSales=currencyFormatter.format(totalGross);
+
+				salesPiplineChart.section1Label="Prospect"
+				salesPiplineChart.section2Label="Qualify"
+				salesPiplineChart.section3Label="Closing"
+			}
+		]]>
+	</fx:Script>
+
+	<!-- background -->
+	<s:Rect radiusX="2"
+			radiusY="2"
+			left="10"
+			top="0"
+			right="10"
+			bottom="0">
+		<s:fill>
+			<!--TODO: move to styles-->
+			<s:SolidColor color="#2E2E2E"/>
+		</s:fill>
+	</s:Rect>
+
+	<!-- progress chart -->
+	<s:VGroup left="{getStyle('paddingLeft')}"
+			  right="{getStyle('paddingRight')}"
+			  top="20"
+			  bottom="0"
+			  paddingBottom="20"
+			  paddingTop="0"
+			  gap="12">
+		<s:HGroup width="100%">
+			<s:Label styleName="labelStyle"
+					 text="Sales Pipeline: {closeRate}%"/>
+			<s:Rect width="100%"/>
+			<s:Label color="0xFFFFFF"
+					 textAlign="right"
+					 styleName="labelStyle"
+					 text="{totalPotentialSales}"/>
+		</s:HGroup>
+
+		<charts:ProgressChart id="salesPiplineChart"
+							  width="100%"
+							  height="{barHeight}"
+							  cornerRadius="{getStyle('chartCornerRadius')}"
+							  paddingBottom="{getStyle('chartPaddingBottom')}"
+							  paddingLeft="{getStyle('chartPaddingLeft')}"
+							  paddingRight="{getStyle('chartPaddingRight')}"
+							  paddingTop="{getStyle('chartPaddingTop')}"
+							  section1ColorList="{ [ 0x2A65C7, 0x2853A2, 0x243D76 ] }"
+							  section2ColorList="{ [ 0x4E7221, 0x3C5919, 0x293E10 ] }"
+							  section3ColorList="{ [ 0x9C9C1E, 0x89891F, 0x74721E ] }"
+							  skipAnimation="@{presenter.skipAnimation}"/>
+	</s:VGroup>
+</s:Group>

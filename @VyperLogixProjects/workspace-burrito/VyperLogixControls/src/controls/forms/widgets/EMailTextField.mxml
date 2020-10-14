@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   width="100%" creationComplete="canvas1_creationCompleteHandler(event)" xmlns:controls="controls.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:EmailValidator id="Validator_emailAddress" 
+						   source="{this.txt_emailAddress}" 
+						   property="text"
+						   requiredFieldError="{this._userNameRequiredFieldError}" 
+						   required="true" 
+						   trigger="{this.btn_target}" 
+						   triggerEvent="click"/>
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="validationResultsChanged",type="controls.forms.widgets.events.ValidationResultsChangedEvent")]
+	</fx:Metadata>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		.AttentionLabel {
+			color: #ff0000;
+			fontFamily: Verdana;
+			fontSize: 14;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.ErrorTipManager;
+			
+			import controls.forms.widgets.events.ValidationResultsChangedEvent;
+			
+			import mx.events.FlexEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import spark.components.Button;
+
+			[Bindable]
+			private var __isNewlyRegisterState:Object = {};
+			
+			[Bindable]
+			public var btn_target:Button; // required for the framework...
+			
+			[Bindable]
+			public var btn_source:TextInput; // required for the framework...
+			
+			[Bindable]
+			public var lbl_prompt_text:String;
+
+			[Bindable]
+			public var hbox_lbl_prompt_container_width:Number;
+			
+			[Bindable]
+			public var _emailAddress_MaxLength:int = 20;
+			
+			[Bindable]
+			public var is_validated:Boolean = false;
+
+			[Bindable]
+			public var ignore_focus:Boolean = false;
+			
+			[Bindable]
+			public var _userNameRequiredFieldError:String = "This is a Required Field that cannot be left blank or have less than 4 characters and MUST be a valid Internet Email Address where you receive your emails.";
+			
+			[Bindable]
+			public var lbl_prompt_styleName:String;
+			
+			[Bindable]
+			public var txt_emailAddress_styleName:String;
+			
+			[Bindable]
+			public var siblings:Array = [];
+			
+			[Bindable]
+			public var txt_emailAddress_text:String;
+			
+			[Inspectable]
+			public function get text():String {
+				return this.txt_emailAddress.text;
+			}
+			
+			public function set text(text:String):void {
+				if (this.txt_emailAddress.text != text) {
+					this.txt_emailAddress.text = text;
+				}
+			}
+			
+			private function onCreationComplete_emailAddress(event:FlexEvent):void {
+				this.btn_source = event.currentTarget as TextInput;
+				if (!this.ignore_focus) {
+					this.btn_source.setFocus();
+				}
+				if (this.__isNewlyRegisterState[this.btn_source.id]) {
+					ErrorTipManager.hideErrorTip(this.btn_source,true);
+					this.__isNewlyRegisterState[this.btn_source.id] = false;
+				}
+			}
+			
+			private function onKeyUp_emailAddress(event:KeyboardEvent):void {
+				this.validate_emailAddress(event);
+			}
+			
+			public function validate_emailAddress(event:Event=null):void {
+				var previous_value:Boolean = this.is_validated;
+				var vResult:ValidationResultEvent = Validator_emailAddress.validate();
+				var btn:Button = this.btn_target;
+				if (vResult.type==ValidationResultEvent.INVALID) {
+					this.is_validated = false;
+					if (btn is Button) {
+						ErrorTipManager.refresh_button_target_state(this.txt_emailAddress);
+					}
+				} else {
+					this.is_validated = true;
+					if (btn is Button) {
+						ErrorTipManager.refresh_button_target_state(this.txt_emailAddress);
+					}
+				}
+				if (previous_value != this.is_validated) {
+					this.dispatchEvent(new ValidationResultsChangedEvent(ValidationResultsChangedEvent.TYPE_VALIDATION_RESULTS_CHANGED,previous_value,this.is_validated));
+				}
+			}
+			
+			private function onFocusOut_emailAddress(event:FocusEvent):void {
+				if (!(event.relatedObject is Button)) {
+					this.lbl_EmailAddress.visible = this.lbl_EmailAddress.includeInLayout = false;
+					this.validate_emailAddress();
+				}
+			}
+			
+			protected function canvas1_creationCompleteHandler(event:FlexEvent):void {
+				ErrorTipManager.registerValidator(this.Validator_emailAddress,this.siblings);
+			}
+
+		]]>
+	</fx:Script>
+	<s:HGroup id="container" width="100%">
+		<s:HGroup id="hbox_lbl_prompt_container" paddingTop="{this.container.height/4}" verticalAlign="middle" width="{this.hbox_lbl_prompt_container_width}">
+			<s:Label id="lbl_prompt" text="{this.lbl_prompt_text}" verticalAlign="middle" styleName="{this.lbl_prompt_styleName}"/>
+		</s:HGroup>
+		<s:VGroup width="100%">
+			<s:TextInput id="txt_emailAddress" styleName="{this.txt_emailAddress_styleName}" text="{this.txt_emailAddress_text}" editable="true" width="90%" creationComplete="onCreationComplete_emailAddress(event)" keyUp="onKeyUp_emailAddress(event)" focusOut="onFocusOut_emailAddress(event)" maxChars="{this._emailAddress_MaxLength}"/>
+			<s:Label id="lbl_EmailAddress" text="***" width="10%" visible="false" includeInLayout="false" styleName="AttentionLabel"/>
+		</s:VGroup>
+	</s:HGroup>
+</s:Group>

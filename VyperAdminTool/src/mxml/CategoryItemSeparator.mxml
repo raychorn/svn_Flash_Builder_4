@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%"
+	verticalScrollPolicy="off" horizontalScrollPolicy="off"
+	creationComplete="init()">
+	<mx:Canvas id="imgBackground"
+		verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+		width="{componentWidth}" height="{componentHeight}"> </mx:Canvas>
+	<mx:Script>
+		<![CDATA[
+			import libs.utils.ErrorMessages;
+			import mx.core.BitmapAsset;
+		
+			import libs.vo.GlobalsVO;
+			import utils.displayObject.DuplicateImage;
+			import mx.controls.Image;
+
+			[Bindable]
+			public var componentWidth:Number;
+			
+			[Bindable]
+			public var componentHeight:Number;
+			
+			[Bindable]
+			public var paddingLeft:Number=0;
+						
+			[Bindable]
+			public var imageAsset:String;
+			
+			[Bindable]
+			public var scaleContent:Boolean;
+			
+			[Bindable]
+			public var maintainAspectRatio:Boolean;
+			
+			private const CSA:String = "image_categorySeparatorAsset";
+			
+			
+			public function init():void {
+				
+				var asset:Object = DuplicateImage.validate(GlobalsVO.getGlobal(CSA),this);
+				var img:Image = DuplicateImage.copy(asset.image,scaleContent,maintainAspectRatio);
+				
+				// If Error
+				if(asset.error != null) {
+					scaleContent = false;
+					maintainAspectRatio = true;
+					new ErrorMessages(img,asset.error);
+					this.componentWidth = 12;
+				} else {
+					img.scaleContent = scaleContent;
+					img.maintainAspectRatio = maintainAspectRatio;
+					img.width = componentWidth;
+					img.height = componentHeight;
+				}
+				
+				if (GlobalsVO.ISLoggedOut == false) {
+					this.width = Number(GlobalsVO.getCSSProperty("categoryGapW"));
+				}
+				imgBackground.addChild(img);
+			}
+		]]>
+	</mx:Script>
+</mx:Canvas>

@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas 
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	creationComplete="onCreationComplete()" 
+	width="100%" height="100%">
+	<mx:states>
+		<mx:State name="horizontal">
+			<mx:AddChild relativeTo="{hbox2}" position="lastChild">
+				<mx:Spacer/>
+			</mx:AddChild>
+			<mx:RemoveChild target="{hbox3}"/>
+			<mx:AddChild relativeTo="{hbox2}" position="lastChild" target="{hbox3}"/>
+		</mx:State>
+		<mx:State name="horizontal+LabelsOnly+loggedIn" basedOn="horizontal">
+		</mx:State>
+		<mx:State name="horizontal+loggedIn" basedOn="horizontal">
+		</mx:State>
+	</mx:states>
+	<mx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			import vzw.utils.StringUtils;
+			import vzw.utils.ObjectUtils;
+			import mx.controls.CheckBox;
+			import vzw.utils.ObjectExplainer;
+			import vzw.utils.ArrayCollectionUtils;
+			import mx.collections.ArrayCollection;
+
+			private static const symbol_one_bill_label:String = 'Do not show for One Bill Customers';
+			private static const symbol_alltel_label:String = 'Alltel Customers';
+			
+			[Bindable]
+			private var _dataProvider:Object = {};
+
+			[Bindable]
+			public var rb_oneBill_label:String = AdminOptions.symbol_one_bill_label;
+
+			[Bindable]
+			public var rb_oneBill_tooltip:String = '';
+
+			[Bindable]
+			public var rb_neither_onChange_handler:Function = function (event:*):void {};
+
+			[Bindable]
+			public var rb_oneBill_onChange_handler:Function = function (event:*):void {};
+
+			[Bindable]
+			public var rb_oneBill_selected_handler:Function = function ():void {};
+
+			[Bindable]
+			public var rb_alltel_onChange_handler:Function = function (event:*):void {};
+			
+			[Bindable]
+			public var rb_alltel_tooltip:String = '';
+
+			[Bindable]
+			public var rb_alltel_label:String = AdminOptions.symbol_alltel_label;
+
+			[Bindable]
+			public var txt_alltel_url_text:String = '';
+			
+			[Bindable]
+			public var txt_hbxlink_text:String = '';
+
+			[Bindable]
+			public var rb_alltel_url_tooltip:String = '';
+			
+			[Bindable]
+			public var txt_hbxlink_tooltip:String = '';
+
+			[Bindable]
+			public var rb_alltel_url_onChange_handler:Function = function (event:*):void {};
+			
+			[Bindable]
+			public var txt_hbxlink_onChange_handler:Function = function (event:*):void {};
+			
+			private var _hbxlink_label:String = '';
+
+			private var _roles_label:String = '';
+
+			private var txt_alltel_url_text_storage:String = '';
+			
+			private var _roles_list:ArrayCollection = new ArrayCollection();
+
+			private var _selected_roles:Array = [];
+
+			[Bindable]
+			public var cb_roles_onChange_handler:Function = function (event:*):void {};
+			
+			public function set dataProvider(dataProvider:Object):void {
+				if (this._dataProvider != dataProvider) {
+					this._dataProvider = dataProvider;
+					this.onCreationComplete_txt_hbxlink();
+					this.onCreationComplete_rb_oneBill();
+					this.onCreationComplete_rb_alltel();
+					this.onCreationComplete_txt_alltel_url();
+					this.onCreationComplete_cb_newWindow();
+					this.onCreationComplete_cb_CDSSO();
+				}
+			}
+			
+			public function get dataProvider():Object {
+				return (this._dataProvider) ? this._dataProvider : {};
+			}
+
+			private function onCreationComplete():void {
+				this.height = 75;
+			}
+			
+			private function handle_rb_none(event:*):void { 
+				this.txt_alltel_url_text_storage = this.txt_alltel_url.text; 
+				this.txt_alltel_url.text = ''; 
+				this.rb_neither_onChange_handler(event);
+			}
+			
+			private function handle_rb_oneBill(event:*):void { 
+				this.rb_oneBill_onChange_handler(event);
+			}
+			
+			private function handle_rb_alltel(event:*):void {
+				this.cb_roles_onChange_handler(event);
+			}
+			
+			private function handle_cb_role(event:*):void { 
+				this.cb_roles_onChange_handler(event);
+			}
+			
+			public function set roles_label(roles_label:String):void {
+				if (this._roles_label != roles_label) {
+					this._roles_label = roles_label;
+				}
+			}
+			
+			[Bindable]
+			public function get roles_label():String {
+				return this._roles_label;
+			}
+			
+			public function set hbxlink_label(hbxlink_label:String):void {
+				if (this._hbxlink_label != hbxlink_label) {
+					this._hbxlink_label = hbxlink_label;
+				}
+			}
+			
+			[Bindable]
+			public function get hbxlink_label():String {
+				return this._hbxlink_label;
+			}
+			
+			private function onChange(event:*):void {
+				var id:String = event.currentTarget.id;
+				var vector:Function = this['handle_'+id];
+				if (vector is Function) {
+					try {
+						vector(event);
+					} catch (e:Error) {}
+				}
+			}
+
+			public function get asObject():Object {
+				var sources:Array = [
+										this.txt_hbxlink,
+										this.rb_oneBill,
+										this.rb_alltel,
+										this.txt_alltel_url,
+										this.cb_newWindow,
+										this.cb_CDSSO
+									];
+				var obj:Object = {};
+				var aSource:*;
+				for (var i:String in sources) {
+					aSource = sources[i];
+					obj[aSource.id] = ((aSource is TextInput) ? aSource.text : ((aSource is CheckBox) ? aSource.selected : ''));
+				}
+				return obj;
+			}
+
+			private function dataProvider_for(name:String):* {
+				var value:* = (this._dataProvider != null) ? this._dataProvider[name] : null;
+				return value;
+			}
+
+			private function onCreationComplete_txt_hbxlink():void {
+				this.txt_hbxlink.text = this.dataProvider_for('txt_hbxlink');
+			}
+			
+			private function onCreationComplete_rb_oneBill():void {
+				this.rb_oneBill.selected = StringUtils.toBoolean(this.dataProvider_for('rb_oneBill'));
+			}
+			
+			private function onCreationComplete_rb_alltel():void {
+				this.rb_alltel.selected = StringUtils.toBoolean(this.dataProvider_for('rb_alltel'));
+			}
+			
+			private function onCreationComplete_txt_alltel_url():void {
+				this.txt_alltel_url.text = this.dataProvider_for('txt_alltel_url');
+			}
+			
+			private function onCreationComplete_cb_newWindow():void {
+				this.cb_newWindow.selected = StringUtils.toBoolean(this.dataProvider_for('cb_newWindow'));
+			}
+			
+			private function onCreationComplete_cb_CDSSO():void {
+				this.cb_CDSSO.selected = StringUtils.toBoolean(this.dataProvider_for('cb_CDSSO'));
+			}
+			
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%">
+		<mx:HBox id="hbox1" width="100%">
+			<mx:Label text="{this.hbxlink_label}" textAlign="left" styleName="SmartPanelLabelText"/>
+			<mx:TextInput id="txt_hbxlink" width="100%" toolTip="{this.txt_hbxlink_tooltip}" creationComplete="onCreationComplete_txt_hbxlink()"/>
+		</mx:HBox>
+		<mx:HBox id="hbox2" width="100%">
+			<mx:CheckBox id="rb_oneBill" label="{this.rb_oneBill_label}" toolTip="{this.rb_oneBill_tooltip}" styleName="SmartPanelLabelText" creationComplete="onCreationComplete_rb_oneBill()"/>
+		</mx:HBox>
+		<mx:HBox id="hbox3" width="100%">
+			<mx:CheckBox id="rb_alltel" label="{this.rb_alltel_label}" toolTip="{this.rb_alltel_tooltip}" styleName="SmartPanelLabelText" creationComplete="onCreationComplete_rb_alltel()"/>
+			<mx:Spacer/>
+			<mx:Label text="URL:" styleName="SmartPanelLabelText"/>
+			<mx:TextInput id="txt_alltel_url" width="100%" enabled="{this.rb_alltel.selected}" toolTip="{this.rb_alltel_url_tooltip}" creationComplete="onCreationComplete_txt_alltel_url()"/>
+			<mx:CheckBox id="cb_newWindow" label="New Window" toolTip="This checkbox tells the URL to open in a New Window rather than opening in the current window of the browser." styleName="SmartPanelLabelText" creationComplete="onCreationComplete_cb_newWindow()"/>
+			<mx:CheckBox id="cb_CDSSO" label="CDSSO" toolTip="CDSSO." styleName="SmartPanelLabelText" creationComplete="onCreationComplete_cb_CDSSO()"/>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Canvas>

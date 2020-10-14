@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="955" minHeight="600">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import freevana.util.Settings;
+			import freevana.view.VideoPlayer;
+			
+			import mx.events.FlexEvent;
+			
+			private var _settings:Settings = new Settings();
+			
+			private var _subtitleURL:String = '';
+			
+			private var _playerConfig:String = 'config={"canvas":{"backgroundColor":"#000000","backgroundGradient":"none"},"clip":{"url":"http://dn-hd1/miq/includes/player/init_black1.png","playerId":"player0","scaling":"fit","provider":"lighttpd"},"play":{"replayLabel":null,"fadeSpeed":500,"rotateSpeed":50,"opacity":0.8},"plugins":{"lighttpd":{"url":"/videoplayers/flowplayer.pseudostreaming-3.2.7.swf"},"controls":{"backgroundColor":"#000000","backgroundGradient":"low","buttonColor":"#777777","buttonOverColor":"#999999","sliderColor":"#000000","sliderGradient":"..."100pct","height":250,"padding":0,"opacity":0.5,"zIndex":1,"border":0,"borderRadius":0,"backgroundColor":"#000000","backgroundGradient":"none","html":"<span class=\"subtitle_text\"><br><br><br></span>","style":{".subtitle_text":{"height":32,"border":"solid 1px #ffffff","textAlign":"center","fontWeight":"bold","color":"#eeeeee"},".message_info":{"textAlign":"center"}}}},"playerId":"player0","playlist":[{"url":"http://dn-hd1/miq/includes/player/init_black1.png","playerId":"player0","scaling":"fit","provider":"lighttpd"}]}';
+			
+			private function startLoadingVideo(movieURL:String):void {
+				_settings.setPreferredPlayer(VideoPlayer.VIDEO_PLAYER_FLOW);
+				var _videoPlayer:* = VideoPlayer.create(_settings, movieURL, _subtitleURL, _playerConfig);
+				_videoPlayer.addEventListener(VideoPlayer.PLAYER_INITIALIZING, onVideoPlayerInit);
+				_videoPlayer.addEventListener(VideoPlayer.PLAYER_READY, onVideoPlayerReady);
+				_videoPlayer.addEventListener(VideoPlayer.PLAYER_STOPPED, onVideoPlayerStopped);
+				_videoPlayer.addEventListener(VideoPlayer.VIDEO_NOT_AVAILABLE, onVideoNotAvailable);
+				
+				function onVideoPlayerInit(event:Event):void {
+					videoCanvas.addElement(_videoPlayer.getUIComponent());
+					_videoPlayer.onAddedToStage();
+				}
+				
+				function onVideoPlayerReady(event:Event):void {
+					trace("[main] onVideoPlayerReady.");
+				}
+				
+				function onVideoPlayerStopped(event:Event):void {
+					trace("[main] onVideoPlayerStopped.");
+				}
+				
+				function onVideoNotAvailable(event:Event):void {
+					trace("[main] onVideoNotAvailable.");
+				}
+				
+				_videoPlayer.init();
+			}
+			
+			protected function videoCanvas_creationCompleteHandler(event:FlexEvent):void {
+				this.startLoadingVideo('http://dn-hd1/miq/includes/player/streamer_liveflv.php/dn-hd1/5071_20120320140000.mpg?start=3595');
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup id="videoCanvas" width="100%" height="100%" creationComplete="videoCanvas_creationCompleteHandler(event)"/>
+</s:Application>

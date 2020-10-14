@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark"  
+					   xmlns:mx="library://ns.adobe.com/flex/mx" showStatusBar="false" 
+					   initialize="windowedapplication1_initializeHandler(event)" 
+					   applicationDeactivate="windowedapplication1_applicationDeactivateHandler(event)"
+					   creationComplete="windowedapplication1_creationCompleteHandler(event)" 
+					   xmlns:application="application.*" 
+					   height="100" width="300"
+					   visible="false" includeInLayout="false" xmlns:views="com.HAL.sockets.views.*" xmlns:controls="com.HAL.controls.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:states>
+		<mx:State name="mainView"/>
+		<mx:State name="updaterView"/>
+	</s:states>
+	<fx:Style>
+		@namespace application "application.*";
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel.ttf");
+			fontFamily: NeoSansIntel;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Light.ttf");
+			fontFamily: NeoSansIntelLight;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium2;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/CALIBRI.TTF");
+			fontFamily: Calibri;
+			embedAsCFF: false;
+		}
+		
+		s|Application {
+			backgroundColor: silver;
+			color: #000000;
+			fontFamily: Calibri;
+			fontSize: 16;
+		}
+		
+		.splash_movie_canvas {
+			backgroundColor: #ffffff;
+		}
+		
+		.LoginPanel {
+			borderStyle: none;
+			borderColor: #3300ff;
+			borderThickness: 3;
+			roundedBottomCorners: true;
+			cornerRadius: 8;
+			headerHeight: 31;
+			headerColors: #0033ff, #330099;
+			backgroundColor: #ffffff;
+			backgroundAlpha: 0.3;
+			shadowDistance: 6;
+			shadowDirection: right;
+			titleStyleName: "LoginPanelTitle";
+		}
+		
+		.LoginPanelTitle {
+			fontFamily: Calibri;
+			fontSize: 16;
+		}
+		
+		.TreeNodeWithChildren {
+			fontFamily: Calibri;
+			fontSize: 11;
+			fontWeight: bold;
+			color: blue;
+		}
+		
+		.TreeNodeWithNoChildren {
+			fontFamily: Calibri;
+			fontSize: 11;
+			fontWeight: normal;
+			color: black;
+		}
+		
+		.ErrorMessages {
+			fontFamily: Calibri;
+			fontSize: 14;
+			fontWeight: bold;
+			color: red;
+		}
+		
+		.NormalMessages {
+			fontFamily: Calibri;
+			fontSize: 14;
+			color: black;
+		}
+		
+		.ImportantMessage {
+			fontFamily: Calibri;
+			fontSize: 14;
+			fontWeight: bold;
+			color: blue;
+		}
+		
+		.TermsAndConditionsHTML {
+			fontFamily: NeoSansIntelLight;
+			fontSize: 10;
+			color: black;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.AIREvent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			
+			import spark.effects.Resize;
+			
+			import controls.AppIcon;
+			import controls.Alert.AlertPopUp;
+			
+			[Bindable]
+			public var icon:Loader = new Loader();
+
+			public var app_icon_url:String = 'assets/icons/icons/app_icon_16.png';
+			public var app_icon128_url:String = 'assets/icons/icons/app_icon_128.png';
+
+			[Bindable]
+			private var _this:DirectoryWatcher;
+
+			[Embed(source="assets/icons/icons/app_icon_128.png")]
+			[Bindable]
+			public var appLogoCls:Class;
+
+			public var _copyrightMessage:String;
+
+			public var __local_domain__:String = 'http://localhost:9000';
+			
+			public var language:String;
+			
+			public var _icon:AppIcon = new AppIcon(['assets/icons/icons/app_icon_16.png','assets/icons/icons/app_icon_32.png','assets/icons/icons/app_icon_48.png','assets/icons/icons/app_icon_128.png']);
+			
+			[Bindable]
+			private var __menubar__:ArrayCollection = new ArrayCollection();
+			
+			private function iconLoadComplete(e:Event):void {
+				NativeApplication.nativeApplication.icon.bitmaps=[e.target.content.bitmapData];
+			}
+			
+			private function undock(e:Event):void {
+				this.stage.nativeWindow.restore();
+			}
+			
+			private function _closeApplicaton():void {
+				trace(this.className+'._closeApplicaton().1 --> Deactivation Event !');
+			}
+			
+			public function closeApplicaton():void {
+				this._closeApplicaton();
+				NativeApplication.nativeApplication.exit();
+			}
+			
+			private function closeApp(e:Event):void {
+				this.closeApplicaton();
+			}
+			
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void {
+				trace(this.className+'.windowedapplication1_creationCompleteHandler().1 !');
+
+				trace(this.className+'.windowedapplication1_creationCompleteHandler().2 --> Capabilities.screenResolutionX='+Capabilities.screenResolutionX);
+				trace(this.className+'.windowedapplication1_creationCompleteHandler().3 --> Capabilities.screenResolutionY='+Capabilities.screenResolutionY);
+
+				this.nativeWindow.x = 50;
+				this.nativeWindow.y = 25;
+				
+				var timer:Timer = new Timer(500);
+				timer.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						_this.visible = true;
+						_this.includeInLayout = true;
+						timer.stop();
+					}
+				);
+				timer.start();
+				
+				var e:Resize = new Resize();
+				e.heightTo = Capabilities.screenResolutionY - ((DebuggerUtils.isDebugging) ? 250 : 50);
+				e.widthTo = Capabilities.screenResolutionX - 100;
+				e.duration = 500;
+				e.target = this.nativeWindow;
+				e.play();
+			}
+			
+			protected function windowedapplication1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				this.menubar_initializeHandler();
+				trace(this.className+'.windowedapplication1_initializeHandler().1 !');
+			}
+
+			private function __hide_nativeWindow__():void {
+				FlexGlobals.topLevelApplication.nativeWindow.minSize = new Point(0,0);
+				FlexGlobals.topLevelApplication.nativeWindow.height = 0;
+				FlexGlobals.topLevelApplication.nativeWindow.width = 0;
+				FlexGlobals.topLevelApplication.nativeWindow.visible = false;
+			}
+			
+			private function __show_nativeWindow__(width:Number,height:Number):void {
+				FlexGlobals.topLevelApplication.nativeWindow.minSize = new Point(width,height);
+				FlexGlobals.topLevelApplication.nativeWindow.height = height;
+				FlexGlobals.topLevelApplication.nativeWindow.width = width;
+				FlexGlobals.topLevelApplication.nativeWindow.visible = true;
+			}
+			
+			private function OnSysTrayMenuInit(menu:NativeMenu):void {
+				var testCommand:NativeMenuItem = new NativeMenuItem("Testing...");
+				testCommand.addEventListener(Event.SELECT, function (event:Event):void {
+					_this.__show_nativeWindow__(600,400);
+					/*
+					var popup:Alert = AlertPopUp.infoNoOkay('+++','DEBUG',
+						function (event:CloseEvent):void {
+							_this.__hide_nativeWindow__();
+						}
+					);
+					*/
+					//popup.width = 550;
+					//popup.height = 350;
+				});
+				for (var i:String in menu.items) {
+					var anItem:NativeMenuItem = menu.items[i] as NativeMenuItem;
+					if (anItem.label.indexOf('Vyper Logix Corp') > -1) {
+						var _creditsMessage:String;
+						try {_creditsMessage = FlexGlobals.topLevelApplication.AppNameSpace._creditsMessage;} catch (err:Error) {}
+						anItem.addEventListener(Event.SELECT,
+							function (event:*):void {
+								_this.__show_nativeWindow__(600,400);
+								/*
+								var popup:Alert = AlertPopUp.infoNoOkay('(c). Copyright, Vyper Logix Corp., All Rights Reserved...\nhttp://www.VyperLogixCorp.Com\n'+_creditsMessage,anItem.label,
+									function (event:CloseEvent):void {
+										_this.__hide_nativeWindow__();
+									}
+								);
+								*/
+								//popup.width = 550;
+								//popup.height = 350;
+							}
+						);
+						break;
+					}
+				}
+				menu.addItem(testCommand);
+				var exitCommand:NativeMenuItem = new NativeMenuItem("Exit");
+				exitCommand.addEventListener(Event.SELECT, function (event:Event):void {
+					setTimeout(FlexGlobals.topLevelApplication.closeApplicaton,100);
+				});
+				menu.addItem(exitCommand);
+			}
+			
+			private function _onCreationComplete_appProxy():void {
+				/*
+				this.appProxy.addEventListener(TermsAndConditionsAgreementEvent.TYPE_TERMSANDCONDITIONS_AGREEMENT,
+				function(event:TermsAndConditionsAgreementEvent):void {
+				if (_this['uploader'] is FileUpload) {
+				_this['uploader']['refresh_terms_and_conditions_checkbox_selection']();
+				}
+				}
+				);
+				this.appProxy.addEventListener(TermsAndConditionsNoAgreementEvent.TYPE_TERMSANDCONDITIONS_NO_AGREEMENT,
+				function(event:TermsAndConditionsNoAgreementEvent):void {
+				if (_this['uploader'] is FileUpload) {
+				_this['uploader']['refresh_terms_and_conditions_checkbox_selection']();
+				}
+				}
+				);
+				this.appProxy.TermsAndConditionsClass = this.TermsAndConditionsClass;
+				this.appProxy['_onCreationComplete_appProxy']([]);
+				this.appProxy.debugger.visible = this.appProxy.debugger.includeInLayout = false;
+				this.__hide_nativeWindow__();
+				//FlexGlobals.topLevelApplication.nativeWindow.notifyUser(NotificationType.CRITICAL);
+				*/
+			}
+			
+			protected function windowedapplication1_applicationDeactivateHandler(event:AIREvent):void {
+				this._closeApplicaton();
+			}
+
+			private function onCreationComplete_AppNameSpace():void {
+				this._copyrightMessage = this.AppNameSpace._copyrightMessage;
+				trace(this.className+'.onCreationComplete_AppNameSpace().1 --> this._copyrightMessage='+this._copyrightMessage);
+			}
+			
+			protected function socket_manager_creationCompleteHandler(event:FlexEvent):void {
+				trace(this.className+'.socket_manager_creationCompleteHandler().1 !!!');
+			}
+			
+			protected function appProxy_creationCompleteHandler(event:FlexEvent):void {
+				this.appProxy.OnSysTrayMenuInit = this.OnSysTrayMenuInit;
+				trace(this.className+'.onCreationComplete_appProxy().1 !');
+			}
+			
+			private function exit_app():void {
+				var popup:Alert = AlertPopUp.confirm('Are you sure you want to exit ?','Confirmation',
+					function (event:CloseEvent):void {
+						if (event.detail == Alert.OK) {
+							_this.exit();
+						}
+					},'OK','Cancel');
+			}
+			
+			protected function menubar_initializeHandler():void {
+				var item:Object = {'label':'File','enabled':true};
+				var children:ArrayCollection = new ArrayCollection();
+				var child:Object = {'label':'Exit','enabled':true,'action':exit_app};
+				children.addItem(child);
+				item['children'] = children;
+				this.__menubar__.addItem(item);
+
+				item = {'label':'Options','enabled':true};
+				children = new ArrayCollection();
+				child = {'label':'Edit','enabled':true};
+				children.addItem(child);
+				item['children'] = children;
+				this.__menubar__.addItem(item);
+			}
+			
+			protected function menuBar_itemClickHandler(event:MenuEvent):void {
+				var item:Object = event.item;
+				var action:Function = item['action'] as Function;
+				if (action is Function) {
+					try {
+						action();
+					} catch (err:Error) {
+						AlertPopUp.errorNoOkay(err.message, 'ERROR from menu item "'+item['label']+'".');
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<application:ApplicationNamespace id="AppNameSpace" x="0" y="0" width="0" height="0" creationComplete="onCreationComplete_AppNameSpace()"/>
+	<application:ApplicatonProxy id="appProxy" creationComplete="appProxy_creationCompleteHandler(event)"/>
+	<mx:ApplicationControlBar id="appBar" width="100%">
+		<mx:MenuBar id="menuBar" dataProvider="{this.__menubar__}" itemClick="menuBar_itemClickHandler(event)"/>
+		<s:HGroup width="100%">
+			<s:HGroup>
+				<s:Label text="Server:"/>
+				<s:Label id="ip_address_port" text="{this.socket_manager.ipAddress}:{this.socket_manager.port}"/>
+			</s:HGroup>
+		</s:HGroup>
+	</mx:ApplicationControlBar>
+	<s:VGroup width="100%" height="100%" paddingTop="100" verticalAlign="top" horizontalAlign="left">
+		<s:HGroup width="100%" height="100%" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5">
+			<views:SocketConnectionManager2 id="socket_manager" width="100%" height="100%" title="{this.AppNameSpace.app_name + ' v' + this.AppNameSpace.versionNumber}" creationComplete="socket_manager_creationCompleteHandler(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:WindowedApplication>

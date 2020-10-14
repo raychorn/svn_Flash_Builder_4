@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		creationComplete="view1_creationCompleteHandler(event)" currentState="normal"
+		title="Amazon Kindle Fire Demo v0.1.15" 
+		xmlns:flexMusicPlayer="*" xmlns:components="views.components.*">
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="error"/>
+		<s:State name="activity"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.HTMLUtils;
+			import com.XMLObjectUtils;
+			import com.nocreativity.playr.PlaylistManager;
+			import com.nocreativity.playr.PlayrTrack;
+			import com.randomFractals.media.controls.MusicPlayer;
+			
+			import controls.Alert.AlertAlternative;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.utils.ObjectProxy;
+			
+			import spark.components.Application;
+			import spark.components.Image;
+			import spark.events.IndexChangeEvent;
+
+			public var __current_tab__:*;
+			public var __current_asset__:int = 0;
+
+			private var playList:PlaylistManager;			
+
+			private var __prefix__:String;
+			
+			private var __debug__:String = '';
+
+			private function get prefix():String {
+				var prefix:String = '*UNDEFINED*';
+				if (this.__prefix__ == null) {
+					try {
+						this.__debug__ += '(1)';
+						if ( (CiscoAmazonDemo1.__root__ != null) && (CiscoAmazonDemo1.__root__['source'] is String) ) {
+							this.__debug__ += '(2 File.separator='+File.separator+')\n';
+							var aFile:File = new File(CiscoAmazonDemo1.__root__['source']);
+							this.__debug__ += '(3 aFile.nativePath='+aFile.nativePath+')\n';
+							var fpath:String = (aFile.nativePath.length > 0) ? aFile.nativePath : CiscoAmazonDemo1.__root__['source'];
+							this.__debug__ += '(4 fpath='+fpath+')\n';
+							var toks:Array = fpath.split(File.separator);
+							toks.pop();
+							prefix = toks.join(File.separator);
+							this.__debug__ += '(5 prefix='+prefix+')\n';
+							this.__debug__ += '(6 parentApplication.url='+this.parentApplication.url+')\n';
+							aFile = new File('app:'+File.separator);
+							this.__debug__ += '(7 aFile.nativePath='+aFile.nativePath+')\n';
+							this.__debug__ += '(8 CiscoAmazonDemo1.__root__.source='+CiscoAmazonDemo1.__root__['source']+')\n';
+							this.__prefix__ = prefix;
+						}
+					} catch (err:Error) {
+						this.status.text = 'Error #111 due to "'+err.toString()+'".';
+						this.currentState = 'error';
+					}
+				}
+				return this.__prefix__;
+			}
+			
+			private function get is_data_valid():Boolean {
+				this.__debug__ = '';
+				try {
+					if ( (CiscoAmazonDemo1.__root__ != null) && (CiscoAmazonDemo1.__root__['source'] is String) ) {
+						var aFile:File = new File(CiscoAmazonDemo1.__root__['source']);
+						if (CiscoAmazonDemo1.__data__ is ArrayCollection) {
+							var aTab:*;
+							var toks:Array = aFile.nativePath.split(File.separator);
+							toks.pop();
+							var f:File;
+							var prefix:String = toks.join(File.separator);
+							var source:String;
+							this.status.text = '';
+							var tabs:Array = [];
+							for (var i:int = 0; i < CiscoAmazonDemo1.__data__.length; i++) {
+								aTab = CiscoAmazonDemo1.__data__.getItemAt(i);
+								if (aTab['title'] is String) {
+									tabs.push(aTab['title']);
+								} else {
+									this.status.text = 'Warning #101 - Invalid data in Tab #'+i+'.';
+									this.currentState = 'error';
+									return false;
+								}
+							}
+							if (tabs.length == CiscoAmazonDemo1.__data__.length) {
+								this.btnBar.dataProvider = new ArrayCollection(tabs);
+								return true;
+							} else {
+								this.currentState = 'error';
+							}
+						}
+					}
+				} catch (err:Error) {}
+				return false;
+			}
+			
+			private function handle_xml_result(xmlStr:String):void {
+				var resultObj:Object = XMLObjectUtils.xmlConverter(xmlStr);
+				try {
+					if (resultObj['root'] != null) {
+						if (CiscoAmazonDemo1.__root__ == null) {
+							CiscoAmazonDemo1.__root__ = resultObj.root;
+							try {
+								if (resultObj['root']['source'] is String) {
+									var src:String = resultObj['root']['source'];
+									this.loadData(src);
+								}
+							} catch (err:Error) {
+								this.status.text = 'Error #102 - Invalid data stream.';
+								this.currentState = 'error';
+							}
+						} else if (CiscoAmazonDemo1.__data__ == null) {
+							try {
+								if ( (resultObj['root']  != null) && (resultObj['root']['tabs'] != null) && (resultObj['root']['tabs']['tab'] is ArrayCollection) ) {
+									CiscoAmazonDemo1.__data__ = resultObj['root']['tabs']['tab'];
+									if (this.is_data_valid) {
+										var prefix:String = this.prefix;
+										this.status.text = 'Good to go !!! '+this.__debug__;
+										this.currentState = 'activity';
+									} else {
+										this.status.text = 'WARNING - Data is NOT valid, something is missing...';
+										this.currentState = 'error';
+									}
+								} else {
+									this.status.text = 'Error #104 - Unable to validate the data stream.';
+									this.currentState = 'error';
+								}
+							} catch (err:Error) {
+								this.status.text = 'Error #103 - Error due to '+err.toString();
+								this.currentState = 'error';
+							}
+						}
+					}
+				} catch (err:Error) {
+					this.status.text = 'Error #101 - Error due to '+err.toString();
+					this.currentState = 'error';
+				}
+			}
+			
+			private function _loadData(aFileOrUrl:*):void {
+				var _this:CiscoAmazonDemo1HomeView = this;
+				var aFile:File;
+				if (aFileOrUrl is File) {
+					aFile = aFileOrUrl as File;
+					var aFileStream:FileStream = new FileStream();
+					var str:String = "";
+					aFileStream.addEventListener(Event.COMPLETE, function (event:Event):void {
+						_this.status.text = '';
+						_this.currentState = 'normal';
+						str = aFileStream.readMultiByte(aFileStream.bytesAvailable, "iso-8859-1");
+						_this.handle_xml_result(str);
+						aFileStream.close();
+					});
+					aFileStream.addEventListener(IOErrorEvent.IO_ERROR, function (event:IOErrorEvent):void {
+						aFile = File(aFileOrUrl);
+						_this.status.text = 'Cannot locate the primary data file for "'+aFile.nativePath+'".';
+						_this.currentState = 'activity';
+					});
+					try {
+						aFileStream.openAsync(aFile, FileMode.READ);
+					} catch (err:Error) {
+						try {
+							CiscoAmazonDemo1.__root__ = {'source':CiscoAmazonDemo1.default_root_file_name_xml};
+							aFile = new File(CiscoAmazonDemo1.default_root_file_name_xml);
+							aFileStream.openAsync(aFile, FileMode.READ);
+						} catch (err:Error) {
+							this.status.text = 'ERROR due to "'+err.toString()+'".';
+							this.currentState = 'error';
+						}
+					}
+				} else if (aFileOrUrl is String) {
+					HTMLUtils.load_data(aFileOrUrl, function (data:String):void {
+						_this.handle_xml_result(data);
+					});
+				} else {
+					var info:String;
+					if (aFileOrUrl is File) {
+						info = File(aFileOrUrl).nativePath;
+					} else {
+						info = aFileOrUrl;
+					}
+					this.status.text = 'Cannot load data for this unknown source "'+info+'"... Sorry.';
+					this.currentState = 'error';
+				}
+			}
+			
+			private function loadData(src:String):void {
+				this.status.text = 'Loading Data...';
+				this.currentState = 'activity';
+				this._loadData(new File(src));
+			}
+			
+			protected function view1_creationCompleteHandler(event:FlexEvent):void {
+				this.loadData(CiscoAmazonDemo1.root_file_name_xml);
+			}
+			
+			private function is_image(fname:String):Boolean {
+				var i:int = fname.toLowerCase().indexOf('.png');
+				var j:int = fname.toLowerCase().indexOf('.jpg');
+				var n:int = fname.length - 4;
+				return ( (i == n) || (j == n) );
+			}
+			
+			private function createTrack(artist:String, album:String, title:String, file:String, seconds:uint):PlayrTrack {
+				var track:PlayrTrack = new PlayrTrack();
+				track.artist = artist;
+				track.album = album;
+				track.title = title;
+				track.file = file;
+				track.totalSeconds = seconds;
+				
+				return track;
+			}
+			
+			private function _start_audio():void {
+				var _this:CiscoAmazonDemo1HomeView = this;
+				this.musicPlayer.musicPlayer.autoPlay = false;
+				this.musicPlayer.musicPlayer.playlist = this.playList;
+				
+				var timer:Timer = new Timer(100,1);
+				timer.addEventListener(TimerEvent.TIMER_COMPLETE, function (event:TimerEvent):void {
+					if (!_this.musicPlayer.musicPlayer.isPlaying) {
+						_this.musicPlayer.musicPlayer.play();
+						timer.stop();
+					}
+				});
+				timer.start();
+			}
+			
+			private function _stop_audio():void {
+				var _this:CiscoAmazonDemo1HomeView = this;
+				
+				var timer:Timer = new Timer(100,1);
+				timer.addEventListener(TimerEvent.TIMER_COMPLETE, function (event:TimerEvent):void {
+					if (_this.musicPlayer.musicPlayer.isPlaying) {
+						_this.musicPlayer.musicPlayer.stop();
+						timer.stop();
+					}
+				});
+				timer.start();
+			}
+			
+			private function _display_current_asset():void {
+				this.__debug__ = '';
+				try {
+					if (__current_tab__['images'] != null) {
+						if (__current_tab__['images']['image'] is ArrayCollection) {
+							var items:ArrayCollection = __current_tab__['images']['image'] as ArrayCollection;
+							var anItem:* = items.getItemAt(__current_asset__);
+							if (anItem['source'] is String) {
+								var source:String = anItem['source'];
+								var play:String;
+								try {
+									play = anItem['play'];
+								} catch (err:Error) {}
+								source = this.prefix+File.separator+source.replace('/',File.separator);
+								this.__debug__ += '(1 source='+source+')\n';
+								play = this.prefix+File.separator+play.replace('/',File.separator);
+								this.__debug__ += '(2 play='+play+')\n';
+								this._stop_audio();
+								var fPlay:File = new File(play);
+								if ( (fPlay.exists) && (!fPlay.isDirectory) ) {
+									this.playList = new PlaylistManager();
+									try {
+										this.playList.addTrack( createTrack(anItem['title'],'', '', fPlay.nativePath, 9999) );
+										this._start_audio();
+									} catch (err:Error) {}
+								}
+								var f:File = new File(source);
+								this.__debug__ += '(3 f.nativePath='+f.nativePath+')\n';
+								if ( (f.exists) && (!f.isDirectory) ) {
+									if (this.is_image(f.nativePath)) {
+										this.canvas.removeAllElements();
+										var image:Image = new Image();
+										image.source = f.nativePath;
+										image.x = 0;
+										image.y = 0;
+										image.percentWidth = 100;
+										image.percentHeight = 100;
+										this.canvas.addElement(image);
+									} else {
+										this.status.text = 'Current unknown asset is good to go ?!?';
+										this.currentState = 'activity';
+									}
+								} else {
+									this.status.text = 'Warning #301 - Cannot display the current image "'+f.nativePath+'" ('+this.prefix+') at '+__current_asset__+'.\n'+this.__debug__;
+									this.currentState = 'error';
+								}
+							}
+						}
+					}
+				} catch (err:Error) {
+					this.status.text = 'Error #401 - Error due to '+err.toString()+'\n'+err.getStackTrace();
+					this.currentState = 'error';
+				}
+			}
+			
+			private function display_first_asset():void {
+				__current_asset__ = 0;
+				this._display_current_asset();
+			}
+			
+			private function display_next_asset():void {
+				try {
+					if (__current_tab__['images'] != null) {
+						if (__current_tab__['images']['image'] is ArrayCollection) {
+							var items:ArrayCollection = __current_tab__['images']['image'] as ArrayCollection;
+							__current_asset__++;
+							if (__current_asset__ > items.length-1) {
+								__current_asset__ = 0;
+							}
+							this._display_current_asset();
+						}
+					}
+				} catch (err:Error) {
+					this.status.text = 'Error #301 - Error due to '+err.toString();
+					this.currentState = 'error';
+				}
+			}
+			
+			protected function btnBar_changeHandler(event:IndexChangeEvent):void {
+				var i:int = event.newIndex;
+				try {
+					if ( (i > -1) && (i < CiscoAmazonDemo1.__data__.length) ) {
+						__current_tab__ = CiscoAmazonDemo1.__data__.getItemAt(i);
+						display_first_asset();
+					}
+					this.status.text = 'Selected "'+i+'".\n'+this.__debug__;
+					this.currentState = 'activity';
+				} catch (err:Error) {
+					this.status.text = 'Error #201 - Error due to '+err.toString();
+					this.currentState = 'error';
+					return;
+				}
+			}
+			
+			private function _canvas_clickHandler(reason:String):void {
+				this.status.text = (reason is String) ? reason : 'Click !!!';
+				this.currentState = 'activity';
+				this.display_next_asset();
+			}
+			
+			protected function canvas_clickHandler(event:MouseEvent):void {
+				this._canvas_clickHandler('Click !!!');
+			}
+			
+			protected function canvas_touchTapHandler(event:TouchEvent):void {
+				this._canvas_clickHandler('Touch !!!');
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup width="100%" paddingTop="5" paddingLeft="5" paddingRight="5" paddingBottom="5">
+			<s:ButtonBar id="btnBar" width="100%" change="btnBar_changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup width="100%" height="{this.status.height}" paddingTop="5" paddingLeft="5" paddingRight="5" paddingBottom="5">
+			<s:TextArea id="status" width="100%"
+						height="{(this.status.text.length &gt; 0) ? 150 : 0}" text=""
+						color.activity="#0000FF"
+						color.error="#FF0000"
+						color.normal="#000000" editable.normal="false" enabled.normal="true"/>
+		</s:HGroup>
+		<s:HGroup id="filesCanvas" width="100%" paddingTop="5" paddingLeft="5" paddingRight="5" paddingBottom="5" visible="false" includeInLayout="false">
+			<components:FileExplorer id="fileExplorer" width="100%" height="100"/>
+		</s:HGroup>
+		<s:HGroup id="playerCanvas" width="100%" paddingTop="5" paddingLeft="5" paddingRight="5" paddingBottom="5" visible="false" includeInLayout="false">
+			<flexMusicPlayer:MusicPlayerVisualizer id="musicPlayer" width="100%"/>
+		</s:HGroup>
+		<s:Group id="canvas" x="0" y="0" width="100%" height="100%" click="canvas_clickHandler(event)" touchTap="canvas_touchTapHandler(event)">
+			<s:Rect x="0" y="0" radiusX="4" radiusY="4" height="100%" width="100%">
+				<s:fill>
+					<s:LinearGradient>
+						<s:entries>
+							<s:GradientEntry color="0x555555"/>
+						</s:entries>
+					</s:LinearGradient>
+				</s:fill>
+			</s:Rect>        
+		</s:Group>
+	</s:VGroup>
+</s:View>

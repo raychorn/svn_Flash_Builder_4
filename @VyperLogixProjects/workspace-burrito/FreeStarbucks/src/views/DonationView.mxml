@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:s="library://ns.adobe.com/flex/spark" 
+	title="Donations Supported" 
+	xmlns:views="views.*" xmlns:paypal="controls.paypal.*" 
+	creationComplete="view1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:states>
+		<s:State name="not_logged_in"/>
+		<s:State name="logged_in"/>
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.ErrorTipManager;
+			
+			import controls.paypal.events.DonationClickedEvent;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			private const delay_for_no_thanks:Number = 5000;
+			
+			[Bindable]
+			private var is_no_thanks_visible:Boolean = false;
+			
+			[Bindable]
+			private var _info:String = 'This Application is Donation Supported.\n\nKind and generous users, such as yourself, support this App and our ability to generously give loaded Starbucks Cards to those who win our random drawings.\n\nPlease feel free to give generously.\n\nBuy someone you don\'t know a nice Starbucks beverage...\n\nShare the wealth...\n\nMake a generous donation...\n\n';
+			
+			protected function txt_output_creationCompleteHandler(event:FlexEvent):void {
+				FlexGlobals.topLevelApplication.determine_view_debugger_for(this,event.currentTarget as TextArea);
+				FlexGlobals.topLevelApplication.handle_get_gps_location_updates();
+			}
+			
+			private function handle_no_thanks_event():void {
+				ErrorTipManager.hideAllErrorTips();
+				this.navigator.pushView(CheckInView,{});
+			}
+
+			protected function label1_clickHandler(event:MouseEvent):void {
+				this.handle_no_thanks_event();
+			}
+
+
+			protected function label1_touchTapHandler(event:TouchEvent):void {
+				this.handle_no_thanks_event();
+			}
+
+			private function handle_donations_event():void {
+				this.handle_no_thanks_event();
+			}
+			
+			protected function btn_donations_creationCompleteHandler(event:FlexEvent):void {
+				var _this:DonationView = this;
+				var db:DonationButton = event.currentTarget as DonationButton;
+				db.addEventListener(DonationClickedEvent.TYPE_DONATION_CLICKED, 
+					function (event:DonationClickedEvent):void {
+						_this.handle_donations_event();
+					}
+				);
+			}
+
+
+			protected function view1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:DonationView = this;
+				var timer:Timer = new Timer(this.delay_for_no_thanks);
+				timer.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						timer.stop();
+						_this.is_no_thanks_visible = true;
+						_this.btn_donations.height = _this.btn_donations.height - _this.btn_no_thanks.height - 20;
+						_this.txt_info.height = _this.txt_info.height - _this.btn_no_thanks.height;
+					}
+				);
+				timer.addEventListener(TimerEvent.TIMER_COMPLETE, 
+					function (event:TimerEvent):void {
+						//trace('2');
+					}
+				);
+				timer.start();
+			}
+
+			private function get isDebugger():Boolean {
+				return FlexGlobals.topLevelApplication.isDebugger;
+			}
+		]]>
+	</fx:Script>
+	<s:Panel width="100%" height="100%" styleName="Panels" title="Please Make Donations Generously...">
+		<s:VGroup width="100%" height="100%">
+			<s:Scroller width="100%" height="100%">
+				<s:Group> 
+					<s:VGroup width="100%" height="100%">
+						<s:TextArea id="txt_info" editable="false" styleName="INFO" text="{this._info}" selectable="false" width="100%" height="100%" verticalScrollPolicy="auto"/>
+						<paypal:DonationButton id="btn_donations" creationComplete="btn_donations_creationCompleteHandler(event)"/>
+					</s:VGroup>
+				</s:Group>        
+			</s:Scroller>  
+			<s:HGroup width="100%" height="20%" visible="{this.isDebugger}" includeInLayout="{this.isDebugger}">
+				<s:TextArea id="txt_output" styleName="Debugger" width="100%" height="100" editable="false" selectable="false" creationComplete="txt_output_creationCompleteHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Panel>
+	<s:Group x="{(this.width/2)-(this.width/4)}" y="{this.height-this.btn_no_thanks.height-20}" visible="{this.is_no_thanks_visible}" includeInLayout="{this.is_no_thanks_visible}">
+		<s:Button id="btn_no_thanks" label="Just Checkin..." height="40" styleName="SmallButtons" click="label1_clickHandler(event)" touchTap="label1_touchTapHandler(event)"/>
+	</s:Group>
+</s:View>

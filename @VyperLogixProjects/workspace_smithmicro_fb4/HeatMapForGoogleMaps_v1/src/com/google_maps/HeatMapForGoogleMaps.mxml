@@ -1,0 +1,1595 @@
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" height="100%"
+		 xmlns:widgets="com.widgets.*" 
+		 initialize="group1_initializeHandler(event)"  
+		 resize="group1_resizeHandler(event)"
+		 >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:NumberFormatter id="fmt_number" precision="2" rounding="up"/>
+
+		<mx:Sequence id="openingEffect">
+			<mx:Pause duration="400"/>
+			<mx:Resize id="expand" widthTo="500" duration="300" easingFunction="Circular.easeOut"/>
+			<mx:Pause duration="300"/>
+			<mx:Resize id="expand2" heightTo="450" duration="300" easingFunction="Circular.easeInOut"/>
+		</mx:Sequence>
+	</fx:Declarations>
+	<s:states>
+		<s:State name="shrink"/>
+		<s:State name="shrunk"/>
+		<s:State name="web"/>
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import com.ArrayCollectionUtils;
+			import com.DebuggerUtils;
+			import com.Math2D;
+			import com.MathUtils;
+			import com.ObjectUtils;
+			import com.StringUtils;
+			import com.geolocation.GeolocationDistance;
+			import com.google.maps.InfoWindowOptions;
+			import com.google.maps.LatLng;
+			import com.google.maps.LatLngBounds;
+			import com.google.maps.Map;
+			import com.google.maps.MapEvent;
+			import com.google.maps.MapMouseEvent;
+			import com.google.maps.MapMoveEvent;
+			import com.google.maps.MapOptions;
+			import com.google.maps.MapType;
+			import com.google.maps.View;
+			import com.google.maps.controls.MapTypeControl;
+			import com.google.maps.controls.PositionControl;
+			import com.google.maps.controls.ZoomControl;
+			import com.google.maps.overlays.Marker;
+			import com.google.maps.overlays.MarkerOptions;
+			import com.google.maps.overlays.Polygon;
+			import com.google.maps.overlays.PolygonOptions;
+			import com.google.maps.overlays.Polyline;
+			import com.google.maps.overlays.PolylineOptions;
+			import com.google.maps.styles.FillStyle;
+			import com.google.maps.styles.StrokeStyle;
+			import com.google_maps.events.DataChangedEvent;
+			import com.vyperlogix.AdHocOperation;
+			import com.vyperlogix.AdHocService;
+			import com.vyperlogix.GoogleCloudService;
+			import com.vyperlogix.GoogleMapsOperation;
+			import com.vyperlogix.GoogleMapsService;
+			import com.widgets.DropDownGrid;
+			import com.widgets.HeatMapControlPanel;
+			import com.widgets.events.StateChangeEvent;
+			
+			import controls.Alert.AlertAlternative;
+			import controls.Alert.AlertPopUp;
+			import controls.activity.Preloader;
+			import controls.winProgress;
+			
+			import models.smsi.SmithMicroHeatMapDataModel;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.ColorPicker;
+			import mx.controls.ToolTip;
+			import mx.core.FlexGlobals;
+			import mx.effects.easing.*;
+			import mx.events.CloseEvent;
+			import mx.events.ColorPickerEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			import mx.events.StateChangeEvent;
+			import mx.managers.CursorManager;
+			import mx.managers.PopUpManager;
+			import mx.managers.ToolTipManager;
+			
+			import spark.components.DropDownList;
+			import spark.components.HSlider;
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			
+			import views.HeatColorSamples;
+
+			
+			/**
+			 * Dispatched when the modified date of the file being modified changes.
+			 *
+			 * @eventType com.adobe.air.filesystem.events.FileMonitor.CHANGE
+			 */
+			[Event(name="DATA_CHANGED", type="com.google_maps.events.DataChangedEvent")]		
+
+			private var _this:HeatMapForGoogleMaps;
+			
+			[Bindable]
+			public static var url_google_maps:String = '';
+			
+			[Bindable]
+			public static var google_maps_api_key:String = '';
+			
+			[Bindable]
+			public static var is_using_sensor:Boolean = false;
+			
+			public var data:SmithMicroHeatMapDataModel; // data supplied by the Google Maps Web Service...
+			
+			[Bindable]
+			public var _width_of_cell:Number = 350;
+
+			[Bindable]
+			public var _width_units:String = '350';
+
+			[Bindable]
+			public var _height_of_cell:Number = 350;
+
+			[Bindable]
+			public var _height_units:String = '350';
+			
+			private var _max_map_res:Number = -1;
+			
+			[Bindable]
+			public var _valid_zoom_values:ArrayCollection = new ArrayCollection();
+			
+			public static const MIN_ALPHA:Number = 0.1;
+			public static const MAX_ALPHA:Number = 0.65;
+			
+			[Bindable]
+			public var _heat_color_alphas:Array = [];
+			
+			[Bindable]
+			public var control_panel:*;
+			
+			private var _winProgress:winProgress;
+			
+			private var _timer:Timer;
+			
+			private var _watchdog_timer:Timer;
+			private var _watchdog_counter:int = 0;
+			private var _watchdog_counter_msec:int = 1000;
+			private var _watchdog_counter_max:int = 5;
+			private var _is_report_event_handled:Boolean = false;
+			
+			//private var _num_data_required:int = 1000;
+			
+			[Bindable]
+			public var _data:ArrayCollection = new ArrayCollection();
+
+			[Bindable]
+			public var cell_map:Object = {};
+			
+			[Bindable]
+			public var heat_map_census:Object = {};
+			
+			[Bindable]
+			public var heat_color:uint = 0xff0000;
+			
+			public static const HEAT_MAP_CENSUS_TOTAL_SYMBOL:String = '__TOTAL__';
+			
+			[Bindable]
+			public var map_center_coords:LatLng = new LatLng(37.4234835, -122.08985190055094);
+			
+			[Bindable]
+			public var _gps_history:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var ignore_gps_history:Boolean = false;
+			
+			private var busy:Preloader;
+			
+			[Bindable]
+			public var stateChange_callback:Function;
+			
+			private const default_slider_population_value:int = 10; // the number of random boxes to plot when there is no control panel...
+			private const default_cell_width_value:int = 310;
+			private const default_cell_height_value:int = 310;
+			private const default_slider_distance_value:int = 20;
+			private const default_num_segments_value:int = 4;
+			private const default_address_value:String = "1600 Amphitheatre Pkwy, Mountain View, CA 94043, USA";
+			
+			private var default_zoomer_value:int;
+			
+			public function get is_using_report_url():Boolean {
+				return ( (this.parentApplication.report_url is String) && (this.parentApplication.report_url.length > 0) );
+			}
+			
+			protected function group1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				this._width_units = this.units[0].label;
+				this._height_units = this. units[0].label;
+				this.populate_heat_color_alphas();
+				if ( (HeatMapForGoogleMaps.url_google_maps == null) || ( (HeatMapForGoogleMaps.url_google_maps is String) && (HeatMapForGoogleMaps.url_google_maps.length == 0) ) ) {
+					AlertAlternative.error('WARNING: You must specify a URL for the Google Maps API - this is the domain where Google Maps is being used and it must match the domain for the API key.');
+					this.enabled = false;
+					return;
+				}
+				if ( (HeatMapForGoogleMaps.google_maps_api_key == null) || ( (HeatMapForGoogleMaps.google_maps_api_key is String) && (HeatMapForGoogleMaps.google_maps_api_key.length == 0) ) ) {
+					AlertAlternative.error('WARNING: You must specify an API Key for Google Maps.');
+					this.enabled = false;
+					return;
+				}
+			}
+			
+			public function get hgroup_shrink():* {
+				var dO:*;
+				if (this.control_panel) {
+					try {
+						dO = this.control_panel['hgroup_shrink'];
+					} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+				}
+				return dO;
+			}
+			
+			public function get units():ArrayCollection {
+				var units:ArrayCollection = new ArrayCollection([{label:'UNDEFINED'}]);
+				if (this.control_panel) {
+					try {
+						units = this.control_panel['units'];
+					} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+				}
+				return units;
+			}
+			
+			public function get is_currentState_web():Boolean {
+				return (this.currentState == HeatMapControlPanel.STATE_WEB);
+			}
+			
+			public function get is_action_being_handled_go_button():Boolean {
+				var bool:Boolean = false;
+				if (this.control_panel) {
+					try {
+						bool = this.control_panel['_action_being_handled'] == HeatMapControlPanel.ACTION_GO_BUTTON;
+					} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+				}
+				return bool;
+			}
+			
+			public function get is_action_being_handled_random_button():Boolean {
+				var bool:Boolean = true;  // this must be assumed to be true or random data will never be shown...
+				if (this.control_panel) {
+					try {
+						bool = this.control_panel['_action_being_handled'] == HeatMapControlPanel.ACTION_RANDOM_BUTTON;
+					} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+				}
+				return bool;
+			}
+			
+			public function get is_action_being_handled_random_gps_button():Boolean {
+				var bool:Boolean = (!this.is_using_report_url);  // this must be assumed to be true or random data will never be shown...
+				if (this.control_panel) {
+					try {
+						bool = this.control_panel['_action_being_handled'] == HeatMapControlPanel.ACTION_RANDOM_GPS_BUTTON;
+					} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+				}
+				return bool;
+			}
+			
+			public function refresh_data():void {
+				try {
+					if ( (false) && (this.data.status.toUpperCase() == 'OK') && (this.data.results is Array) ) {
+						var aResult:Object;
+						for (var i:String in this.data.results) {
+							aResult = this.data.results[i];
+							if ( (aResult.geometry) && (aResult.geometry.location) && (aResult.geometry.location.lat is Number) && (aResult.geometry.location.lng is Number) ) {
+								this.map_center_coords = new LatLng(aResult.geometry.location.lat,aResult.geometry.location.lng);
+								this.callLater(this.refresh_map_center_using,[this.map_center_coords]);
+							} else {
+								AlertAlternative.show('WARNING #2: Something has gone wrong - cannot process the data from Google Maps... Got some kind of data back but not in the expected format...');
+							}
+						}
+					} else {
+						this.callLater(this.refresh_map_center_using,[this.map_center_coords]);
+						//AlertAlternative.show('WARNING #1: Something has gone wrong - cannot process the data from Google Maps...');
+					}
+				} catch (err:Error) {}
+				if ( (!this.is_using_report_url) && ( (this.is_action_being_handled_random_button) || (this.is_action_being_handled_random_gps_button) ) ) {
+					this.handle_random_data_event();
+				} else if (this.is_using_report_url) {
+					this.handle_report_data_event();
+				}
+			}
+			
+			public function setBusyCursor(aParent:*):void {
+				CursorManager.setBusyCursor();
+				DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.'+DebuggerUtils.getCallingFunctionName(new Error()));
+				if (aParent) {
+					aParent.enabled = false;
+				}
+			}
+			
+			public function removeBusyCursor(aParent:*):void {
+				CursorManager.removeBusyCursor();
+				DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.'+DebuggerUtils.getCallingFunctionName(new Error()));
+				if (aParent) {
+					aParent.enabled = true;
+				}
+			}
+
+			public function map_center_on_LatLng(latLng:LatLng):void {
+				if (latLng is LatLng) {
+					//this.map.setCenter(latLng, 14, MapType.NORMAL_MAP_TYPE);
+					//trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> latLng='+latLng);
+					this.map_center_coords = latLng;
+					if (!this.ignore_gps_history) {
+						this._gps_history.addItem({gps:latLng});
+						this.dispatchEvent(new DataChangedEvent(DataChangedEvent.DATA_CHANGED,'_gps_history',this._gps_history));
+					}
+					this.ignore_gps_history = false; // this allows this flag to float when being used.
+				}
+			}
+			
+			private function map_center_on_coords(lat:Number,long:Number):void {
+				this.map_center_on_LatLng(new LatLng(lat,long));
+			}
+			
+			private function set_currentState(state:String):void {
+				this.currentState = state;
+			}
+
+			private function _map_mapevent_mapreadyHandler():void {
+				//AlertAlternative.show(DebuggerUtils.getFunctionName(new Error())+' :: '+'1 !');
+				this.onDetermineMapSize();
+				this.initialize_valid_zoom_values();
+				
+				//this.map_center_on_coords(40.736072,-73.992062);
+				//this.map_center_on_LatLng(this.map_center_coords);
+				
+				//this.map.removeMapType(MapType.HYBRID_MAP_TYPE);
+				//this.map.addControl(new MapTypeControl());
+				
+				this.map.addControl(new ZoomControl());
+				this.map.addControl(new PositionControl());
+				
+				this.issue_controlPanel_callback(null,this.map);
+				
+				if (this.control_panel) {
+					try {
+						if ( (this.control_panel['preferred_zoomer']) && (this.control_panel['preferred_zoomer'].dataProvider) ) {
+							this.control_panel['preferred_zoomer'].selectedIndex = this.control_panel['preferred_zoomer'].dataProvider.length - this.map.getZoom();
+						}
+					} catch (err:Error) {
+						//trace(DebuggerUtils.getFunctionName(err)+'.ERROR --> '+err.getStackTrace());
+						AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512));
+					}
+				}
+				
+				//AlertAlternative.show(DebuggerUtils.getFunctionName(new Error())+' :: '+'2 !');
+				if ( (this.control_panel == null) && ( (this.parentApplication.report_url == null) || ( (this.parentApplication.report_url is String) && (this.parentApplication.report_url.length == 0) ) ) ) {
+					this.handle_submit_event();
+				} else if (this.is_using_report_url) {
+					this.handle_report_event(this.parentApplication.report_url);
+				}
+				
+				this.callLater(this.set_currentState,[HeatMapControlPanel.STATE_SHRUNK]);
+			}
+			
+			protected function map_mapevent_mapreadyHandler(event:MapEvent):void {
+				//this._watchdog_timer.stop();
+				this._map_mapevent_mapreadyHandler();
+			}
+			
+			public function add_marker(latLng:LatLng,options:Object=null,click_callback:Function=null,rollOver_callback:Function=null,rollOut_callback:Function=null):Marker {
+				var aMarker:Marker;
+				if (latLng is LatLng) {
+					var markerOptions:MarkerOptions = new MarkerOptions({
+						strokeStyle: new StrokeStyle({color: 0x987654}),
+						fillStyle: new FillStyle({color: 0x000000, alpha: 0.1}),
+						radius: 12,
+						hasShadow: true
+					});
+					var aKey:String;
+					try {
+						if (options) {
+							var toks:Array;
+							var keys:Array = ObjectUtils.keys(options);
+							for (var i:String in keys) {
+								aKey = keys[i];
+								if (aKey.indexOf('.') == -1) {
+									markerOptions[aKey] = options[aKey];
+								} else {
+									toks = aKey.split('.');
+									//trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> '+DebuggerUtils.explainThis(toks));
+									var aStyle:* = markerOptions[toks[0]];
+									aStyle[toks[toks.length-1]] = options[aKey];
+								}
+							}
+						}
+					} catch (err:Error) {
+						//trace(DebuggerUtils.getFunctionName(err)+'.ERROR.1 ('+aKey+') --> '+err.toString()+'\n'+err.getStackTrace());
+					}
+					aMarker = new Marker( latLng, markerOptions);
+					aMarker.addEventListener(MapMouseEvent.ROLL_OVER, 
+						function (event:MapMouseEvent):void {
+							if (rollOver_callback is Function) {
+								try {rollOver_callback(event)} catch (err:Error) {}
+							}
+						}
+					);
+					aMarker.addEventListener(MapMouseEvent.ROLL_OUT, 
+						function (event:MapMouseEvent):void {
+							if (rollOut_callback is Function) {
+								try {rollOut_callback(event)} catch (err:Error) {}
+							}
+						}
+					);
+					aMarker.addEventListener(MapMouseEvent.CLICK, 
+						function (event:MapMouseEvent):void {
+							if (click_callback is Function) {
+								try {click_callback(event)} catch (err:Error) {}
+							}
+						}
+					);
+					map.addOverlay(aMarker);
+				}
+				return aMarker;
+			}
+				
+			/**
+			 * latLng must be a LatLng.
+			 */
+			private function add_polyLines_overlay(latLng:LatLng,width:Number,height:Number,width_units:String,height_units:String):void {
+				try {
+					var delta_width:Number = GeolocationDistance.delta_from_units_lat(width,width_units); // 0.0001;   // Get a composite Number from GeolocationDistance for the chosen units...
+					var delta_height:Number = GeolocationDistance.delta_from_units_lng(height,height_units); // 0.0001; // Get a composite Number from GeolocationDistance for the chosen units...
+					var strokeStyle:StrokeStyle = new StrokeStyle({
+						color: this.heat_color,
+						thickness: 1,
+						alpha: 0.5}
+					);
+					var options:PolygonOptions = new PolygonOptions({strokeStyle: strokeStyle});
+					var verticies:Array = [new Point(-delta_width,-delta_height),new Point(delta_width,-delta_height),new Point(delta_width,delta_height),new Point(-delta_width,delta_height)];
+					if (latLng is LatLng) {
+						var aPolylineOptions:PolylineOptions = new PolylineOptions({strokeStyle: strokeStyle});
+						var aVertex1:Point;
+						var aVertex2:Point;
+						var latLng1:LatLng;
+						var latLng2:LatLng;
+						var aPolyline:Polyline;
+						var i:int;
+						var m:int = verticies.length-1;
+						var coords:Array = [];
+						var num_segments:int = ((this.control_panel) ? this.control_panel['cmbo_num_segments'].selectedIndex : this.default_num_segments_value);
+						for (i = 0; i <= m; i++) {
+							aVertex1 = verticies[i];
+							aVertex2 = verticies[((i == m) ? 0 : i+1)];
+							latLng1 = (coords.length == 0) ? new LatLng(latLng.lat()+aVertex1.x, latLng.lng()+aVertex1.y) : coords[coords.length-1];
+							latLng2 = new LatLng(latLng.lat()+aVertex2.x, latLng.lng()+aVertex2.y);
+							coords.push(latLng1);
+							coords.push(latLng2);
+							if (i == num_segments) {
+								break;
+							}
+						}
+						aPolyline = new Polyline(coords,aPolylineOptions);
+						this.map.addOverlay(aPolyline);
+					}
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			private function _add_polygon_overlay(latLng:LatLng,width:Number,height:Number,alpha:Number=HeatMapForGoogleMaps.MAX_ALPHA,width_units:String='feet',height_units:String='feet'):void {
+				var delta_width:Number = GeolocationDistance.delta_from_units_lat(width,width_units) / 2;
+				var delta_height:Number = GeolocationDistance.delta_from_units_lng(height,height_units) / 2;
+				var strokeStyle:StrokeStyle = new StrokeStyle({
+					color: this.heat_color,
+					thickness: 1,
+					alpha: alpha}
+				);
+				var fillstyle:FillStyle = new FillStyle({
+					color: this.heat_color,
+					alpha: alpha}
+				);
+				var options:PolygonOptions = new PolygonOptions({strokeStyle: strokeStyle,fillStyle: fillstyle});
+				var verticies:Array = [new Point(-delta_width,-delta_height),new Point(delta_width,-delta_height),new Point(delta_width,delta_height),new Point(-delta_width,delta_height)];
+				if (latLng is LatLng) {
+					var aVertex1:Point;
+					var aVertex2:Point;
+					var latLng1:LatLng;
+					var latLng2:LatLng;
+					var i:int;
+					var m:int = verticies.length-1;
+					var coords:Array = [];
+					for (i = 0; i <= m; i++) {
+						aVertex1 = verticies[i];
+						aVertex2 = verticies[((i == m) ? 0 : i+1)];
+						latLng1 = (coords.length == 0) ? new LatLng(latLng.lat()+aVertex1.x, latLng.lng()+aVertex1.y) : coords[coords.length-1];
+						latLng2 = new LatLng(latLng.lat()+aVertex2.x, latLng.lng()+aVertex2.y);
+						coords.push(latLng1);
+						coords.push(latLng2);
+					}
+					var aPolygon:Polygon = new Polygon(coords,options);
+					this.map.addOverlay(aPolygon);
+				}
+			}
+			
+			private function createCustomToolTip_for(target:DisplayObject,centerLatLng:LatLng,latLngBounds:LatLngBounds):void{
+				var dataProvider:ArrayCollection = (this.is_using_report_url) ? new ArrayCollection(this.data.data) : this._data;
+				var i:int = ArrayCollectionUtils.findIndexOfItemCaseless(dataProvider,(this.is_using_report_url) ? SmithMicroHeatMapDataModel.GPS_SYMBOL : 'gps',
+					function (item:*,obj:*):Boolean {
+						var center:LatLng = centerLatLng;
+						var bounds:LatLngBounds = latLngBounds;
+						var nw:LatLng = bounds.getNorthWest();
+						var ne:LatLng = bounds.getNorthEast();
+						var sw:LatLng = bounds.getSouthWest();
+						var se:LatLng = bounds.getSouthEast();
+						var aLatLng:LatLng = item as LatLng;
+
+						if (aLatLng is LatLng) {
+							var distCenter:Number = GeolocationDistance.distance(aLatLng,center,GeolocationDistance.convertible_units[0].label);
+							
+							var distNw:Number = GeolocationDistance.distance(aLatLng,nw,GeolocationDistance.convertible_units[0].label);
+							var distNe:Number = GeolocationDistance.distance(aLatLng,ne,GeolocationDistance.convertible_units[0].label);
+							var distSw:Number = GeolocationDistance.distance(aLatLng,sw,GeolocationDistance.convertible_units[0].label);
+							var distSe:Number = GeolocationDistance.distance(aLatLng,se,GeolocationDistance.convertible_units[0].label);
+							
+							var distCenterNw:Number = GeolocationDistance.distance(center,nw,GeolocationDistance.convertible_units[0].label);
+							var distCenterNe:Number = GeolocationDistance.distance(center,ne,GeolocationDistance.convertible_units[0].label);
+							var distCenterSw:Number = GeolocationDistance.distance(center,sw,GeolocationDistance.convertible_units[0].label);
+							var distCenterSe:Number = GeolocationDistance.distance(center,se,GeolocationDistance.convertible_units[0].label);
+						}
+
+						var isInBoundsOrAtCenter:Boolean = (aLatLng is LatLng) ? (centerLatLng.equals(aLatLng) || bounds.containsLatLng(aLatLng)) : false;
+						var isInBoundsEmpirically:Boolean = isInBoundsOrAtCenter;
+						if (!isInBoundsOrAtCenter) {
+							var distNwSe:Number = distNw + distSe;
+							var distNeSw:Number = distNe + distSw;
+							var avgDistCenter:Number = (distCenterNw+distCenterNe+distCenterSw+distCenterSe)/4;
+							isInBoundsEmpirically = ( (distCenter < avgDistCenter) && (distNw < distNwSe) && (distNe < distNeSw) && (distSw < distNeSw) && (distSe < distNwSe) );
+						}
+						return (isInBoundsOrAtCenter || isInBoundsEmpirically);
+					}
+				);
+				var opts:InfoWindowOptions = new InfoWindowOptions();
+				var aDatum:Object;
+				//DebuggerUtils.assert((i > -1),'Something went wrong in "'+DebuggerUtils.getFunctionName(new Error())+'" !');
+				if (i > -1) {
+					aDatum = dataProvider.getItemAt(i);
+					if (this.is_using_report_url) {
+					}
+					if ( (aDatum['value'] == null) && (aDatum['cell_address'] is String) ) {
+						var aCell:Object = this.cell_map[aDatum['cell_address']];
+						opts.content = 'Count is "'+((i > -1) ? ((aCell.data) ? aCell.data[this.data.target] : aCell.count) : 'UNDEFINED')+'", alpha is "'+fmt_number.format(aCell.alpha)+'"'+' at '+centerLatLng.toString()+'", via "'+aDatum['cell_address']+'"'+', map bounds is "'+this.map.getLatLngBounds()+'"';
+					} else {
+						opts.content = 'Heat is "'+((i > -1) ? aDatum.value : 'UNDEFINED')+'", alpha is "'+fmt_number.format(aDatum.alpha)+'"'+' at '+centerLatLng.toString(); //'Lat,Lng ('+centerLatLng.toString()+')\nBounds ('+latLngBounds.toString()+')';
+					}
+				}
+				opts.cornerRadius = 10;
+				opts.hasShadow = true;
+				this.map.openInfoWindow(centerLatLng,opts);
+			}
+			
+			private function destroyCustomToolTips(centerLatLng:LatLng):void{
+			}
+			
+			private function determine_distances(coords:Array,width:Number,height:Number):void {
+				if (coords is Array) {
+					var aCoord1:LatLng;
+					var aCoord2:LatLng;
+					var dist:Number;
+					var m:int = coords.length-1;
+					for (var i:int = 0; i <= m; i++) {
+						aCoord1 = coords[i];
+						aCoord2 = coords[((i == m) ? 0 : i+1)];
+						dist = GeolocationDistance.distance(aCoord1,aCoord2,GeolocationDistance.convertible_units[0].label);
+						try {
+							DebuggerUtils.assert((dist <= width) && (dist <= height),'Problem in '+DebuggerUtils.getFunctionName(new Error()));
+						} catch (err:Error) {
+							//trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> dist='+dist);
+						}
+					}
+				}
+			}
+			
+			private function add_polygon_overlay(data_item:Object,i:int,latLng:LatLng,width:Number,height:Number,alpha:Number=HeatMapForGoogleMaps.MAX_ALPHA,width_units:String='feet',height_units:String='feet'):void {
+				var delta_width:Number = GeolocationDistance.delta_from_units_lat(width,width_units) / 2;
+				var delta_height:Number = GeolocationDistance.delta_from_units_lng(height,height_units) / 2;
+				var strokeStyle:StrokeStyle = new StrokeStyle({
+					color: this.heat_color,
+					thickness: 1,
+					alpha: alpha}
+				);
+				var fillstyle:FillStyle = new FillStyle({
+					color: this.heat_color,
+					alpha: alpha}
+				);
+				var options:PolygonOptions = new PolygonOptions({strokeStyle: strokeStyle,fillStyle: fillstyle});
+				var verticies:Array = [new Point(-delta_width,-delta_height),new Point(delta_width,-delta_height),new Point(delta_width,delta_height),new Point(-delta_width,delta_height)];
+				if (latLng is LatLng) {
+					var aVertex1:Point;
+					var aVertex2:Point;
+					var aLatLng:LatLng;
+					var latLng1:LatLng;
+					var latLng2:LatLng;
+					var i:int;
+					var m:int = verticies.length-1;
+					var coords:Array = [];
+					for (i = 0; i <= m; i++) {
+						aVertex1 = verticies[i];
+						aVertex2 = verticies[((i == m) ? 0 : i+1)];
+						latLng1 = (coords.length == 0) ? new LatLng(latLng.lat()+aVertex1.x, latLng.lng()+aVertex1.y) : coords[coords.length-1];
+						latLng2 = new LatLng(latLng.lat()+aVertex2.x, latLng.lng()+aVertex2.y);
+						aLatLng = coords[coords.length-1];
+						if ( (aLatLng == null) || ( (aLatLng is LatLng) && (!aLatLng.equals(latLng1)) ) ) {
+							coords.push(latLng1);
+						}
+						aLatLng = coords[coords.length-1];
+						if ( (aLatLng == null) || ( (aLatLng is LatLng) && (!aLatLng.equals(latLng2)) ) ) {
+							coords.push(latLng2);
+						}
+					}
+					//trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> latLng='+latLng+', coords='+DebuggerUtils.explainThis(coords));
+					var aPolygon:Polygon = new Polygon(coords,options);
+					data_item['Polygon'] = {coords:coords,aPolygon:aPolygon};
+					if (FlexGlobals.topLevelApplication.isDebugger) {
+						this.determine_distances(coords,data_item.width*2,data_item.height*2);
+					}
+					aPolygon.addEventListener(MapMouseEvent.ROLL_OVER, 
+						function (event:MapMouseEvent):void {
+							var poly:Polygon = event.currentTarget as Polygon;
+							if (poly is Polygon) {
+								var latLngBounds:LatLngBounds = poly.getLatLngBounds();
+								var centerLatLng:LatLng = latLngBounds.getCenter();
+								var polyDO:DisplayObject = poly.foreground as DisplayObject;
+								_this.createCustomToolTip_for(polyDO,centerLatLng,latLngBounds);
+								
+							}
+							//trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> (MapMouseEvent.ROLL_OVER) event='+event.toString());
+						}
+					);
+					aPolygon.addEventListener(MapMouseEvent.ROLL_OUT, 
+						function (event:MapMouseEvent):void {
+							var poly:Polygon = event.currentTarget as Polygon;
+							if (poly is Polygon) {
+								var latLngBounds:LatLngBounds = poly.getLatLngBounds();
+								var centerLatLng:LatLng = latLngBounds.getCenter();
+								//var polyDO:DisplayObject = poly.foreground as DisplayObject;
+								if (!latLngBounds.containsLatLng(event.latLng)) {
+									//_this.destroyCustomToolTips(centerLatLng);
+								}
+								
+							}
+							//trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> (MapMouseEvent.ROLL_OUT) event='+event.toString());
+						}
+					);
+					//trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> coords='+DebuggerUtils.explainThis(coords));
+					this.map.addOverlay(aPolygon);
+				}
+			}
+			
+			private function createSpecficToolTip_for(centerLatLng:LatLng,latLngBounds:LatLngBounds,label:String=null):void{
+				var opts:InfoWindowOptions = new InfoWindowOptions();
+				var height:Number;
+				var width:Number;
+				var widths:Object = {};
+				var heights:Object = {};
+				var i:String;
+				for (i in GeolocationDistance.convertible_units) {
+					height = GeolocationDistance.distance(latLngBounds.getNorthWest(),latLngBounds.getSouthWest(),GeolocationDistance.convertible_units[i].label);
+					width = GeolocationDistance.distance(latLngBounds.getNorthWest(),latLngBounds.getNorthEast(),GeolocationDistance.convertible_units[i].label);
+					heights[GeolocationDistance.convertible_units[i].label] = height;
+					widths[GeolocationDistance.convertible_units[i].label] = width;
+				}
+				if (label is String) {
+					opts.content = label;
+				}
+				opts.content += '\n\ncenterLatLng is "'+centerLatLng+'", latLngBounds is "'+latLngBounds+'"\n';
+				for (i in GeolocationDistance.convertible_units) {
+					opts.content += '\nw[ '+GeolocationDistance.convertible_units[i].label+' ]='+fmt_number.format(widths[GeolocationDistance.convertible_units[i].label])+',\nh[ '+GeolocationDistance.convertible_units[i].label+' ]='+fmt_number.format(heights[GeolocationDistance.convertible_units[i].label]);
+				}
+				opts.cornerRadius = 10;
+				opts.hasShadow = true;
+				opts.width = 350;
+				this.map.openInfoWindow(centerLatLng,opts);
+			}
+			
+			public function handle_polygon_roll_over(centerLatLng:LatLng,label:String,poly:Polygon,polyOpts:PolygonOptions):void {
+				var aBucket:Object = this.heat_map_census[label];
+				if (aBucket) {
+					var opts:InfoWindowOptions = new InfoWindowOptions();
+					if (label is String) {
+						opts.content = label;
+					}
+					if (aBucket.count is Number) {
+						opts.content += '\n\naBucket.count=('+aBucket.count+')';
+						opts.content += '\naAlpha=('+polyOpts.fillStyle.alpha+')';
+					}
+					opts.content += '\n\nCenterLatLng is "'+centerLatLng+'"';
+					opts.cornerRadius = 10;
+					opts.hasShadow = true;
+					opts.width = 350;
+					this.map.openInfoWindow(centerLatLng,opts);
+				}
+			}
+			
+			/*
+			data_item['ignore_mouse_events'] can be true/false to control when mouse_over is being used or not.
+			*/
+			public function add_polygon_from_bounds_overlay(data_item:Object,bounds:LatLngBounds,alpha:Number=HeatMapForGoogleMaps.MAX_ALPHA,color:uint=0xff0000,options:Object=null):void {
+				var strokeStyle:StrokeStyle = new StrokeStyle({
+					color: color,
+					thickness: 1,
+					alpha: alpha}
+				);
+				var fillstyle:FillStyle = new FillStyle({
+					color: color,
+					alpha: alpha}
+				);
+				try {
+					if (options) {
+						var aStyle:*;
+						var toks:Array;
+						var aKey:String;
+						var keys:Array = ObjectUtils.keys(options);
+						for (var i:String in keys) {
+							aKey = keys[i];
+							if (aKey.indexOf('.') > -1) {
+								toks = aKey.split('.');
+								aStyle = null;
+								if (toks[0].toLowerCase() == 'strokestyle') {
+									aStyle = strokeStyle;
+								} else if (toks[0].toLowerCase() == 'fillstyle') {
+									aStyle = fillstyle;
+								}
+								if (aStyle) {
+									aStyle[toks[toks.length-1]] = options[aKey];
+								}
+							}
+						}
+					}
+				} catch (err:Error) {
+					//trace(DebuggerUtils.getFunctionName(err)+'.ERROR.1 ('+aKey+') --> '+err.toString()+'\n'+err.getStackTrace());
+				}
+				var opts:PolygonOptions = new PolygonOptions({strokeStyle: strokeStyle,fillStyle: fillstyle});
+				if (bounds is LatLngBounds) {
+					var coords:Array = [];
+					coords.push(bounds.getNorthWest());
+					coords.push(bounds.getNorthEast());
+					coords.push(bounds.getSouthEast());
+					coords.push(bounds.getSouthWest());
+					var aPolygon:Polygon = new Polygon(coords,opts);
+
+					var geotag:String = data_item['label'];
+					if (geotag is String) {
+						var aBucket:Object = {count:0,poly:aPolygon,opts:opts};
+						this.heat_map_census[geotag] = aBucket;
+					}
+
+					data_item['Polygon'] = {coords:coords,aPolygon:aPolygon};
+					aPolygon.addEventListener(MapMouseEvent.ROLL_OVER, 
+						function (event:MapMouseEvent):void {
+							var poly:Polygon = event.currentTarget as Polygon;
+							if (poly is Polygon) {
+								var latLngBounds:LatLngBounds = poly.getLatLngBounds();
+								var centerLatLng:LatLng = latLngBounds.getCenter();
+								if ( (data_item['ignore_mouse_events'] == null) || ( (data_item['ignore_mouse_events'] is Boolean) && (data_item['ignore_mouse_events'] == false) ) ) {
+									_this.createSpecficToolTip_for(centerLatLng,latLngBounds,data_item['label']);
+								} else {
+									var aHandler:Function = data_item['onMouseOver'] as Function;
+									//trace('MapMouseEvent.ROLL_OVER.1 --> data_item='+DebuggerUtils.explainThis(data_item));
+									if (aHandler is Function) {
+										aHandler(event,data_item);
+									}
+								}
+							}
+						}
+					);
+					aPolygon.addEventListener(MapMouseEvent.ROLL_OUT, 
+						function (event:MapMouseEvent):void {
+							var poly:Polygon = event.currentTarget as Polygon;
+							if (poly is Polygon) {
+								var latLngBounds:LatLngBounds = poly.getLatLngBounds();
+								var centerLatLng:LatLng = latLngBounds.getCenter();
+								if (!latLngBounds.containsLatLng(event.latLng)) {
+								}
+								
+							}
+						}
+					);
+					aPolygon.addEventListener(MapMouseEvent.CLICK, 
+						function (event:MapMouseEvent):void {
+							var aHandler:Function = data_item['onClick'] as Function;
+							if (aHandler is Function) {
+								aHandler(event,data_item);
+							}
+						}
+					);
+					this.map.addOverlay(aPolygon);
+				}
+			}
+			
+			private function get max_map_zoom_factor():Number {
+				return Math.max(this._valid_zoom_values.getItemAt(0).value,this._valid_zoom_values.getItemAt(this._valid_zoom_values.length-1).value);
+			}
+			
+			/**
+			 * latLng can be a Number of LatLng.
+			 * long must be a Number and is only used if latLng is Number. 
+			 */
+			private function refresh_map_center_using(latLng:*,long:Number=NaN):void {
+				if (this.is_action_being_handled_random_gps_button) {
+					return;
+				}
+				var _latLng:LatLng = latLng as LatLng;
+				if (_latLng is LatLng) {
+					this.map_center_on_LatLng(_latLng);
+				} else {
+					_latLng = new LatLng(latLng,long);
+					this.map_center_on_coords(latLng,long);
+				}
+				try {
+					if ( (this.control_panel) && (this.control_panel['cb_drawing_marker'].selected) ) {
+						this.add_marker(_latLng,{},
+							function (event:MapMouseEvent):void {
+								//trace(DebuggerUtils.getFunctionName(new Error())+'.CLICK --> ('+_latLng.toString()+') event='+event.toString());
+							},
+							function (event:MapMouseEvent):void {
+								//trace(DebuggerUtils.getFunctionName(new Error())+'.ROLL_OVER --> ('+_latLng.toString()+') event='+event.toString());
+							},
+							function (event:MapMouseEvent):void {
+								//trace(DebuggerUtils.getFunctionName(new Error())+'.ROLL_OUT --> ('+_latLng.toString()+') event='+event.toString());
+							}
+						);
+					}
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+				try {
+					if ( (this.control_panel) && (this.control_panel['cb_drawing_polygon'].selected) ) {
+						this._add_polygon_overlay(_latLng,this._width_of_cell,this._height_of_cell,HeatMapForGoogleMaps.MAX_ALPHA,this._width_units,this._height_units);
+					} else {
+						this.add_polyLines_overlay(_latLng,this._width_of_cell,this._height_of_cell,this._width_units,this._height_units);
+					}
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+				try {
+					if (this.is_using_report_url) {
+						this.map_zoom(this._valid_zoom_values.getItemAt((this._valid_zoom_values.length/2)+1).value);
+					} else {
+						this.map_zoom((this.control_panel) ? this.control_panel['preferred_zoomer'].selectedItem.value : this.default_zoomer_value);
+					}
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			public function handle_submit_event():void {
+				try {
+					var addrs:String = (this.control_panel) ? this.control_panel['txt_address'].text : this.default_address_value;
+					var svc:GoogleMapsService = new GoogleMapsService();
+					var op:GoogleMapsOperation = svc.geocode(addrs);
+					op.addEventListener(Event.COMPLETE,
+						function (event:Event):void {
+							_this.removeBusyCursor(_this);
+							try {
+								_this.data = event.target.data;
+							} catch (err:Error) {trace(err.toString())}
+							_this.callLater(_this.refresh_data,[]);
+						}
+					);
+					op.addEventListener(ErrorEvent.ERROR,
+						function (event:ErrorEvent):void {
+							_this.removeBusyCursor(_this);
+							var msg:String = 'Because: ' + event.toString();
+							//AlertAlternative.error('ERROR.101: Cannot process your request for the geocode for "'+addrs+'" at this time.\n\nPlease try back later.\n\n'+msg);
+							_this.callLater(_this.refresh_data,[]);
+						}
+					);
+					this.setBusyCursor(this);
+					op.execute();
+				} catch (err:Error) {
+					AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512));
+				}
+			}
+			
+			public function handle_report_event(url:String):void {
+				try {
+					var svc:AdHocService = new AdHocService();
+					var op:AdHocOperation = svc.custom(url);
+					//AlertPopUp.surpriseNoOkay(DebuggerUtils.getFunctionName(new Error())+'.'+url,'DEBUG');
+					op.addEventListener(Event.COMPLETE,
+						function (event:Event):void {
+							_this.removeBusyCursor(_this);
+							try {
+								_this.data = new SmithMicroHeatMapDataModel(event.target.data);
+								_this.map_center_coords = _this.data.map_center;
+							} catch (err:Error) {trace(err.toString()+'\n'+err.getStackTrace())}
+							_this.callLater(_this.refresh_data,[]);
+						}
+					);
+					op.addEventListener(ErrorEvent.ERROR,
+						function (event:ErrorEvent):void {
+							_this.removeBusyCursor(_this);
+							var msg:String = 'Because: "' + ((event.text is String) && (event.text.length > 0)) ? event.text : event.toString() + '"';
+							//trace(event.toString());
+							AlertAlternative.error('ERROR.101: <p>Cannot process the request for the data from "'+url+'" at this time.</p><p>Please try back later.</p><p>'+msg+'</p>');
+							//_this.callLater(_this.refresh_data,[]);
+						}
+					);
+					this.setBusyCursor(this);
+					op.execute();
+					this._is_report_event_handled = true;
+				} catch (err:Error) {
+					AlertAlternative.error('WARNING:<p>'+err.toString()+'</p><p>'+err.getStackTrace().substr(0,512)+'</p>');
+				}
+			}
+			
+			private function populate_heat_color_alphas():void {
+				var m:int = 10;
+				var alpha:Number = HeatMapForGoogleMaps.MIN_ALPHA;
+				var alpha_inc:Number = HeatMapForGoogleMaps.MAX_ALPHA/m;
+				for (var i:int = 0; i < m; i++) {
+					this._heat_color_alphas.push(Number(alpha.toPrecision(3)));
+					alpha += alpha_inc;
+				}
+			}
+			
+			
+			private function initialize_valid_zoom_values():void {
+				var mapTypes:* = this.map.getMapTypes();
+				var n:int;
+				for (n = 0; n < mapTypes.length ; n++ ) {
+					this._max_map_res = Math.max(mapTypes[n].getMaximumResolution(),this._max_map_res);
+				}
+				var values:Array = [];
+				for (n = 0; n < this._max_map_res+1 ; n++ ) {
+					values.push(n);
+				}
+				var aValue:Number;
+				do {
+					aValue = values.pop();
+					this._valid_zoom_values.addItem({label:aValue.toString(),value:aValue});
+				} while (values.length > 0);
+				//this.default_zoomer_value = Math.max(this._valid_zoom_values.source[0].value,this._valid_zoom_values.source[this._valid_zoom_values.source.length-1].value);
+				this.default_zoomer_value = Math.min(this._valid_zoom_values.source[0].value,this._valid_zoom_values.source[this._valid_zoom_values.source.length-1].value/2);
+			}
+			
+			private function determine_overlay_at(latLng:LatLng):* {
+				var aDatum:Object;
+				var i:int;
+				var polygon:Object;
+				var aPolygon:Polygon;
+				for (i = 0; i < this._data.length; i++) {
+					aDatum = this._data.getItemAt(i);
+					polygon = (aDatum['Polygon']) ? aDatum['Polygon']['coords'] : null;
+					aPolygon = (aDatum['Polygon']) ? aDatum['Polygon']['aPolygon'] as Polygon : null;
+					if ( (polygon) && (aPolygon) ) {
+						var ii:int = -1;
+					}
+				}
+				return null;
+			}
+
+			private function issue_controlPanel_callback(event:*,map:Map):void {
+				var callback:Function = (_this.control_panel) ? _this.control_panel['callback'] as Function : null;
+				if (callback is Function) {
+					try {
+						callback(event,map);
+					} catch (err:Error) {
+						AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512));
+					}
+				}
+			}
+			
+			public function hide_busy_spinner():void {
+				if (this.busy is Preloader) {
+					PopUpManager.removePopUp(this.busy);
+					this.busy = null;
+				}
+			}
+			
+			protected function map_mapevent_mappreinitializeHandler(event:MapEvent):void {
+				try {
+					Security.allowInsecureDomain("maps.googleapis.com");
+				} catch (err:Error) {}
+				var myMapOptions:MapOptions = new MapOptions();
+				myMapOptions.zoom = 16;
+				myMapOptions.viewMode = View.VIEWMODE_2D;
+				myMapOptions.center = this.map_center_coords; // new LatLng(40.736072,-73.992062);
+				myMapOptions.mapType = MapType.NORMAL_MAP_TYPE;
+				this.map.setInitOptions(myMapOptions);
+				//trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> myMapOptions='+myMapOptions.toString());
+
+				this.hide_busy_spinner();
+				
+				this.map.addEventListener(MapMouseEvent.CLICK, 
+					function (event:MapMouseEvent):void {
+						var target:Map = event.currentTarget as Map;
+						var latLng:LatLng = event.latLng;
+						//trace('MouseEvent.CLICK.Map.1 --> '+target.toString());
+						//var item:* = _this.determine_overlay_at(latLng);
+					}
+				);
+				this._watchdog_timer = new Timer(this._watchdog_counter_msec);
+				this._watchdog_timer.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						if (_this._watchdog_counter >= _this._watchdog_counter_max) {
+							_this._watchdog_timer.stop();
+							//AlertAlternative.show('Times up!  Google Maps should be alive !');
+							//_this._map_mapevent_mapreadyHandler();
+						}
+						_this._watchdog_counter++;
+					}
+				);
+				this._watchdog_counter = 0;
+				this._watchdog_timer.start();
+				try {
+					this.map.addEventListener(MapEvent.MAP_INITIALIZE_FAILED, 
+						function (event:MapEvent):void {
+							if (_this.control_panel) {
+								_this.control_panel['container_address_bar'].enabled = false;
+							} else {
+								this.enabled = false;
+							}
+							_this._watchdog_timer.stop();
+							AlertAlternative.error('WARNING: Cannot initialize the map... Certain functions might not be working at this time...');
+						}
+					);
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+				this.map.addEventListener(MapEvent.VIEW_CHANGED, 
+					function (event:MapEvent):void {
+						var map:Map = event.currentTarget as Map;
+					}
+				);
+				try {
+					this.map.addEventListener(MapMoveEvent.MOVE_END, 
+						function (event:MapMoveEvent):void {
+							var map:Map = event.currentTarget as Map;
+							try {
+								var dp:ArrayCollection = (_this.control_panel) ? _this.control_panel['preferred_zoomer'].dataProvider as ArrayCollection : null;
+								if (dp is ArrayCollection) {
+									var zoom_level:int = map.getZoom();
+									var i:int = ArrayCollectionUtils.findIndexOfItem(dp,'value',zoom_level);
+									if ( (i > -1) && (_this.control_panel) ) {
+										_this.control_panel['preferred_zoomer'].selectedIndex = i;
+									} else {
+										// +++ ?!?
+									}
+								}
+								var cLatLng:LatLng = _this.map.getCenter();
+								_this.issue_controlPanel_callback(event,_this.map);
+								//trace('MapMoveEvent.MOVE_END :: cLatLng='+cLatLng);
+							} catch (err:Error) {
+								//trace(err.toString()+'\n'+err.getStackTrace());
+							}
+						}
+					);
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			public function map_zoom(factor:Number):void {
+				var centerGPS:LatLng = this.map.getCenter();
+				this.map.setCenter(centerGPS,factor);
+				//trace(DebuggerUtils.getCallingFunctionName(new Error())+'::'+DebuggerUtils.getFunctionName(new Error())+'.1 --> centerGPS='+centerGPS+', factor='+factor);
+			}
+			
+			public function handle_clear_overlays_event():void {
+				this.map.clearOverlays();
+				this._data.removeAll();
+				this.dispatchEvent(new DataChangedEvent(DataChangedEvent.DATA_CHANGED,'_data',this._data));
+				this._gps_history.removeAll();
+				this.dispatchEvent(new DataChangedEvent(DataChangedEvent.DATA_CHANGED,'_gps_history',this._gps_history));
+			}
+			
+			public function handle_drawing_marker_change_event():void {
+				this.handle_clear_overlays_event();
+				this.refresh_data();
+			}
+			
+			private function handle_shrink_event():void {
+				this.currentState = (this.currentState != HeatMapControlPanel.STATE_SHRUNK) ? HeatMapControlPanel.STATE_SHRUNK : HeatMapControlPanel.STATE_SHRINK;
+			}
+
+			protected function btn_shrunk_clickHandler(event:MouseEvent):void {
+				this.handle_shrink_event();
+			}
+			
+			
+			private function onProgressCanceled(event:Event=null):void {
+				if (this._winProgress is winProgress) {
+					PopUpManager.removePopUp(this._winProgress);
+					this._winProgress = null;
+				}
+			}
+			
+			private function onProgress(num:Number,total:Number):void {
+				var numPerc:Number = Math.round((num / total) * 100);
+				//trace(DebuggerUtils.getFunctionName(new Error())+'..1 --> num='+num+', total='+total+', numPerc='+numPerc);
+				this._winProgress.progBar.setProgress(numPerc, 100);
+				this._winProgress.progBar.label = numPerc + "%";
+				this._winProgress.progBar.validateNow();
+			}
+			
+			private function handle_random_data(i:int, data_item:Object):void {
+				var units:String = GeolocationDistance.convertible_units[0].label;
+				this.map_center_on_LatLng(data_item.gps);
+				this.add_polygon_overlay(data_item,i,data_item.gps,data_item.width,data_item.height,data_item.alpha,units,units);
+			}
+			
+			private function generate_some_random_data():void {
+				try {
+					var deltaLat:Number;
+					var deltaLng:Number;
+					var delta_lat:Number;
+					var delta_lng:Number;
+					var gps:LatLng;
+					var aDatum:Object;
+					var width:Number = Number((this.control_panel) ? this.control_panel['txt_cell_width'].text : this.default_cell_width_value);
+					var height:Number = Number((this.control_panel) ? this.control_panel['txt_cell_height'].text : this.default_cell_height_value);
+					var distance:Number = Number((this.control_panel) ? this.control_panel['slider_distance'].value : this.default_slider_distance_value);
+					var deltaWidth:Number = (width*distance)/2;
+					var deltaHeight:Number = (height*distance)/2;
+					var min_delta_lat:Number = GeolocationDistance.min_delta_lat;
+					var min_delta_lng:Number = GeolocationDistance.min_delta_lng;
+					if (this.is_action_being_handled_random_gps_button) {
+						var bounds:LatLngBounds = this.map.getLatLngBounds();
+						var east:Number = bounds.getEast();
+						var west:Number = bounds.getWest();
+						var north:Number = bounds.getNorth();
+						var south:Number = bounds.getSouth();
+						var northEast:LatLng = bounds.getNorthEast();
+						var northWest:LatLng = bounds.getNorthWest();
+						var southEast:LatLng = bounds.getSouthEast();
+						var southWest:LatLng = bounds.getSouthWest();
+						//trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> northWest='+northWest+', northEast='+northEast+', southWest='+southWest+', southEast='+southEast);
+						var distNorth:Number = GeolocationDistance.distance(northEast,northWest,GeolocationDistance.convertible_units[0].label);
+						var distNorthSouth:Number = GeolocationDistance.distance(northWest,southWest,GeolocationDistance.convertible_units[0].label);
+						//trace(DebuggerUtils.getFunctionName(new Error())+'.2 --> distNorth='+distNorth+', distNorthSouth='+distNorthSouth);
+						var distNorthDelta:Number = GeolocationDistance.delta_from_units_lat(distNorth,GeolocationDistance.convertible_units[0].label);
+						var distNorthSouthDelta:Number = GeolocationDistance.delta_from_units_lng(distNorthSouth,GeolocationDistance.convertible_units[0].label);
+						var rect:Rectangle = new Rectangle(0,0,distNorth,distNorthSouth);
+						var randomGPSPt:Point;
+						var latDelta:Number;
+						var lngDelta:Number;
+					}
+					for (var i:int = 0; i < 10; i++) {
+						if (this.is_action_being_handled_random_button) {
+							deltaLat = MathUtils.randRange(-deltaWidth,deltaWidth);
+							while (Math.abs(deltaLat) < min_delta_lat) {
+								deltaLat = min_delta_lat + MathUtils.randRange(-deltaWidth,deltaWidth);
+							}
+							if (Math.abs(deltaLat) < min_delta_lat) {
+								var i0:int = -1;
+							}
+							if (deltaLat.toString().indexOf('NaN') > -1) {
+								var i1:int = -1;
+							}
+							delta_lat = GeolocationDistance.delta_from_units_lat(deltaLat,GeolocationDistance.convertible_units[0].label);
+							if (delta_lat.toString().indexOf('NaN') > -1) {
+								var i2:int = -1;
+							}
+							deltaLng = MathUtils.randRange(-deltaHeight,deltaHeight);
+							while (Math.abs(deltaLng) < min_delta_lng) {
+								deltaLng = min_delta_lng + MathUtils.randRange(-deltaHeight,deltaHeight);
+							}
+							if (Math.abs(deltaLng) < min_delta_lng) {
+								var i3:int = -1;
+							}
+							if (deltaLng.toString().indexOf('NaN') > -1) {
+								var i4:int = -1;
+							}
+							delta_lng = GeolocationDistance.delta_from_units_lng(deltaLng,GeolocationDistance.convertible_units[0].label);
+							if (delta_lng.toString().indexOf('NaN') > -1) {
+								var i5:int = -1;
+							}
+							gps = new LatLng(this.map_center_coords.lat()+delta_lat,this.map_center_coords.lng()+delta_lng);
+							aDatum = {gps:gps,value:MathUtils.randRange(0,100),width:width,height:height};
+							//trace(DebuggerUtils.getFunctionName(new Error())+'.3 --> deltaLat='+deltaLat+', delta_lat='+delta_lat+', deltaLng='+deltaLng+', delta_lng='+delta_lng+', '+DebuggerUtils.explainThis(aDatum));
+						} else if (this.is_action_being_handled_random_gps_button) {
+							randomGPSPt = Math2D.getRandomPoint(rect);
+							latDelta = GeolocationDistance.delta_from_units_lat(randomGPSPt.x,GeolocationDistance.convertible_units[0].label);
+							lngDelta = GeolocationDistance.delta_from_units_lng(randomGPSPt.y,GeolocationDistance.convertible_units[0].label);
+							gps = new LatLng(northWest.lat()+latDelta,northWest.lng()+lngDelta);
+							aDatum = {gps:gps,center:bounds.getCenter()};
+							//trace(DebuggerUtils.getFunctionName(new Error())+'.4 --> randomGPSPt='+randomGPSPt+', latDelta='+latDelta+', lngDelta='+lngDelta+', '+DebuggerUtils.explainThis(aDatum));
+						}
+						this._data.addItem(aDatum);
+						this.dispatchEvent(new DataChangedEvent(DataChangedEvent.DATA_CHANGED,'_data',this._data));
+					}
+				} catch (err:Error) {
+					AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512));
+				}
+			}
+			
+			private function determine_center_of_heat():void {
+				if (this._data.length > 0) {
+					this.map_center_coords = this._data.getItemAt(0).gps;
+					this.callLater(this.refresh_map_center_using,[this.map_center_coords]);
+				}
+			}
+			
+			public function _determine_heat_from(pcent:Number):Number {
+				var alpha:Number = 0;
+				var delta_alpha:Number = Math.max(this._heat_color_alphas[0],this._heat_color_alphas[this._heat_color_alphas.length-1]);
+				var base_alpha:Number = Math.min(this._heat_color_alphas[0],this._heat_color_alphas[this._heat_color_alphas.length-1]);
+				alpha = (pcent * delta_alpha);
+				if (alpha < base_alpha) {
+					alpha += base_alpha;
+				}
+				return alpha;
+			}
+			
+			private function determine_heat():void {
+				var max_value:Number = 0;
+				var aDatum:Object;
+				var i:int;
+				for (i = 0; i < this._data.length; i++) {
+					aDatum = this._data.getItemAt(i);
+					max_value = Math.max(max_value,aDatum.value);
+				}
+				var pcent:Number;
+				for (i = 0; i < this._data.length; i++) {
+					aDatum = this._data.getItemAt(i);
+					pcent = (aDatum.value / max_value);
+					aDatum.alpha = _determine_heat_from(pcent);
+					this.handle_random_data(i,aDatum);
+				}
+				this.map_zoom(this.max_map_zoom_factor);
+				this.determine_center_of_heat();
+			}
+			
+			public function parse_geotag(geotag:String):Object {
+				var result:Object;
+				var toks:Array = geotag.split(',');
+				if (toks.length == 4) {
+					var delims:String = StringUtils.nonNumericsOnly(toks[0]);
+					var firstDelim:String = delims.substr(0,1);
+					var lastDelim:String = delims.substr(delims.length-1,1);
+					var gpsToks:Array = toks[0].split(lastDelim);
+					var lat:Number = Number(((firstDelim == '+') ? '' : firstDelim)+gpsToks[0]);
+					var lng:Number = Number(lastDelim+gpsToks[1]);
+					var x:Number = Number(toks[1]);
+					var y:Number = Number(toks[2]);
+					var num_boxes:Number = Number(toks[3]);
+					var latLng:LatLng = new LatLng(lat,lng);
+					result = {toks:toks,delims:delims,firstDelim:firstDelim,lastDelim:lastDelim,gpsToks:gpsToks,lat:lat,lng:lng,x:x,y:y,num_boxes:num_boxes,latLng:latLng};
+				}
+				return result;
+			}
+			
+			public function get_heat_map_census_total():Number {
+				var total:Number = (this.heat_map_census[HEAT_MAP_CENSUS_TOTAL_SYMBOL] == null) ? 0.0 : this.heat_map_census[HEAT_MAP_CENSUS_TOTAL_SYMBOL];
+				return total;
+			}
+			
+			public function increment_heat_map_census_for(geotag:String,poly:Polygon=null,polyOpts:PolygonOptions=null):void {
+				var parsedGeoTag:Object = this.parse_geotag(geotag);
+				if (parsedGeoTag) {
+					var total:Number = this.get_heat_map_census_total();
+					var aBucket:Object = {count:1,poly:poly,opts:polyOpts};
+					if (this.heat_map_census[geotag] != null) {
+						aBucket = this.heat_map_census[geotag];
+						aBucket.count += 1;
+					}
+					total += 1;
+					this.heat_map_census[HEAT_MAP_CENSUS_TOTAL_SYMBOL] = total;
+					this.heat_map_census[geotag] = aBucket;
+					var keys:Array = ObjectUtils.keys_filtered_by(this.heat_map_census, 
+						function (aKey:String):Boolean {
+							return (aKey != HEAT_MAP_CENSUS_TOTAL_SYMBOL);
+						}
+					);
+					var pcent:Number;
+					var alpha:Number;
+					var aKey:String;
+					var poly:Polygon;
+					var opts:PolygonOptions;
+					for (var i:String in keys) {
+						aKey = keys[i];
+						aBucket = this.heat_map_census[aKey];
+						pcent = aBucket.count / total;
+						alpha = 0.0;
+						if (aBucket.count > 0) {
+							alpha = _determine_heat_from(pcent);
+						}
+						try {
+							opts = aBucket.opts;
+							poly = aBucket.poly;
+							if ( (poly is Polygon) && (opts is PolygonOptions) ) {
+								if (aBucket.count > 0) {
+									opts.fillStyle.color = this.heat_color;
+								}
+								opts.fillStyle.alpha = alpha;
+								poly.setOptions(opts);
+								poly.show();
+								if (aBucket.count > 0) {
+									//trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> aKey='+aKey+', opts.fillStyle.color='+opts.fillStyle.color+', opts.fillStyle.alpha='+opts.fillStyle.alpha+', caller='+DebuggerUtils.getCallingFunctionName(new Error()));
+								} else {
+									poly.hide();
+								}
+							}
+						} catch (err:Error) {}
+					}
+				}
+			}
+			
+			private function determine_gps_heat():void {
+				// determine the bounds from the map...
+				var bounds:LatLngBounds = this.map.getLatLngBounds();
+				var distEastWest:Number = GeolocationDistance.distance(bounds.getNorthEast(),bounds.getNorthWest(),GeolocationDistance.convertible_units[0].label);
+				var distNorthSouth:Number = GeolocationDistance.distance(bounds.getNorthWest(),bounds.getSouthWest(),GeolocationDistance.convertible_units[0].label);
+				var distEastWestDelta:Number = GeolocationDistance.delta_from_units_lat(distEastWest,GeolocationDistance.convertible_units[0].label);
+				var distNorthSouthDelta:Number = GeolocationDistance.delta_from_units_lng(distNorthSouth,GeolocationDistance.convertible_units[0].label);
+				// create cells from the bounds...
+				var cell_width:Number = Number((this.control_panel) ? this.control_panel['txt_cell_width'].text : this.default_cell_width_value);
+				var cell_width2:Number = cell_width/2;
+				var cell_widthDelta:Number = GeolocationDistance.delta_from_units_lat(cell_width,GeolocationDistance.convertible_units[0].label);
+				var cell_height:Number = Number((this.control_panel) ? this.control_panel['txt_cell_height'].text : this.default_cell_height_value);
+				var cell_height2:Number = cell_height/2;
+				var cell_heightDelta:Number = GeolocationDistance.delta_from_units_lng(cell_height,GeolocationDistance.convertible_units[0].label);
+				var num_cells_wide:Number = Math.floor(distEastWest / cell_width);
+				var num_cells_high:Number = Math.floor(distNorthSouth / cell_height);
+				// count the hits in each cell...
+				var aDatum:Object;
+				var aGPS:LatLng;
+				var leftMostLatLng:LatLng;
+				var topMostLatLng:LatLng;
+				var i:int;
+				var distFromLeft:Number; 
+				var distFromTop:Number;
+				var nwLatLng:LatLng = bounds.getNorthWest();
+				var nwLat:Number = nwLatLng.lat();
+				var nwLng:Number = nwLatLng.lng();
+				var cell_from_left:Number;
+				var cell_from_top:Number;
+				var cell_address:String;
+				var aCellPt:Point;
+				var cell_center_latLng:LatLng;
+				var total_count:Number = 0;
+				for (i = 0; i < this._data.length; i++) {
+					try {
+						aDatum = this._data.getItemAt(i);
+						aGPS = aDatum.gps as LatLng;
+						if (aGPS is LatLng) {
+							// determine distance from left-most of bounds.
+							//trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> aGPS='+aGPS);
+							leftMostLatLng = new LatLng(nwLatLng.lat(),aGPS.lng());
+							//trace(DebuggerUtils.getFunctionName(new Error())+'.2 --> leftMostLatLng='+leftMostLatLng);
+							distFromLeft = GeolocationDistance.distance(leftMostLatLng,aGPS,GeolocationDistance.convertible_units[0].label);
+							//trace(DebuggerUtils.getFunctionName(new Error())+'.3 --> distFromLeft='+distFromLeft);
+							topMostLatLng = new LatLng(aGPS.lat(),nwLatLng.lng());
+							//trace(DebuggerUtils.getFunctionName(new Error())+'.4 --> topMostLatLng='+topMostLatLng);
+							distFromTop = GeolocationDistance.distance(topMostLatLng,aGPS,GeolocationDistance.convertible_units[0].label);
+							//trace(DebuggerUtils.getFunctionName(new Error())+'.5 --> distFromTop='+distFromTop);
+							// determine which cell from left...
+							cell_from_left = Math.floor(distFromLeft / cell_width);
+							//trace(DebuggerUtils.getFunctionName(new Error())+'.6 --> cell_from_left='+cell_from_left);
+							DebuggerUtils.assert((cell_from_left <= num_cells_wide),'Oops #1, something went wrong here in '+DebuggerUtils.getFunctionName(new Error())+'.');
+							// determine which cell from top...
+							cell_from_top = Math.floor(distFromTop / cell_height);
+							//trace(DebuggerUtils.getFunctionName(new Error())+'.7 --> cell_from_top='+cell_from_top);
+							DebuggerUtils.assert((cell_from_top <= num_cells_high),'Oops #2, something went wrong here'+DebuggerUtils.getFunctionName(new Error())+'.');
+							aCellPt = new Point(cell_from_left,cell_from_top);
+							//trace(DebuggerUtils.getFunctionName(new Error())+'.8 --> aCellPt='+aCellPt);
+							cell_address = aCellPt.x+','+aCellPt.y;
+							//trace(DebuggerUtils.getFunctionName(new Error())+'.9 --> cell_address='+cell_address);
+							if (cell_map[cell_address] == null) {
+								cell_center_latLng = new LatLng(bounds.getNorthWest().lat()+GeolocationDistance.delta_from_units_lat((aCellPt.x*cell_width)+cell_width2,GeolocationDistance.convertible_units[0].label),bounds.getNorthWest().lng()+GeolocationDistance.delta_from_units_lng((aCellPt.y*cell_height)+cell_height2,GeolocationDistance.convertible_units[0].label));
+								cell_map[cell_address] = {count:1,pt:aCellPt,gps:cell_center_latLng,width:cell_width,height:cell_height,population:[aDatum]};
+								total_count += 1;
+							} else {
+								cell_map[cell_address].count++;
+								cell_map[cell_address].population.push(aDatum);
+								total_count += 1;
+							}
+							aDatum['cell_address'] = cell_address;
+						}
+					} catch (err:Error) {trace(DebuggerUtils.getFunctionName(err)+'.ERROR -->'+err.toString()+'\n'+err.getStackTrace())}
+				}
+				i = 1;
+				var pcent:Number;
+				var aCell:Object;
+				var delta_alpha:Number = Math.max(this._heat_color_alphas[0],this._heat_color_alphas[this._heat_color_alphas.length-1]);
+				var base_alpha:Number = Math.min(this._heat_color_alphas[0],this._heat_color_alphas[this._heat_color_alphas.length-1]);
+				for (var ci:String in cell_map) {
+					aCell = cell_map[ci];
+					pcent = (aCell.count / total_count);
+					aCell.alpha = (pcent * delta_alpha);
+					if (aCell.alpha < base_alpha) {
+						aCell.alpha += base_alpha;
+					}
+					this.handle_random_data(i,aCell);
+					i++;
+				}
+				var ii:int = -1;
+			}
+			
+			private function handle_random_data_event():void {
+				try {
+					this.map_center_on_LatLng(this.map_center_coords);
+					this._timer = new Timer(1);
+					this._timer.addEventListener(TimerEvent.TIMER, 
+						function (event:TimerEvent):void {
+							_this.generate_some_random_data();
+							_this.onProgress(_this._data.length,(_this.control_panel) ? _this.control_panel['slider_population'].value : _this.default_slider_population_value);
+							if (_this._data.length == ((_this.control_panel) ? _this.control_panel['slider_population'].value : _this.default_slider_population_value)) {
+								_this._timer.stop();
+								_this.onProgressCanceled();
+								if (_this.is_action_being_handled_random_gps_button) {
+									_this.determine_gps_heat();
+									
+								} else {
+									_this.determine_heat();
+								}
+							}
+						}
+					);
+					this._timer.start();
+					if (this._winProgress == null) {
+						this._winProgress = winProgress(PopUpManager.createPopUp(this, winProgress, true));
+						this._winProgress.btnCancel.removeEventListener("click", onProgressCanceled);
+						this._winProgress.btnCancel.addEventListener("click", onProgressCanceled);
+						this._winProgress.title = "Generating Random Test Data...";
+						this._winProgress.txtFile.text = null;
+						this._winProgress.progBar.label = "0%";
+						PopUpManager.centerPopUp(this._winProgress);
+					}
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			private function determine_gps_heat_for(aDatum:Object):void {
+				// determine the bounds from the map...
+				var bounds:LatLngBounds = this.data.map_bounds;
+				var distEastWest:Number = GeolocationDistance.distance(bounds.getNorthEast(),bounds.getNorthWest(),GeolocationDistance.convertible_units[0].label);
+				var distNorthSouth:Number = GeolocationDistance.distance(bounds.getNorthWest(),bounds.getSouthWest(),GeolocationDistance.convertible_units[0].label);
+				// create cells from the bounds...
+				var cell_width:Number = distEastWest/aDatum[SmithMicroHeatMapDataModel.HEAT_NUM_SYMBOL];
+				var cell_height:Number = distNorthSouth/aDatum[SmithMicroHeatMapDataModel.HEAT_NUM_SYMBOL];
+				// count the hits in each cell...
+				var aGPS:LatLng;
+				var i:int;
+				var cell_address:String;
+				var aCellPt:Point;
+				var cell_center_latLng:LatLng;
+				try {
+					aGPS = aDatum[SmithMicroHeatMapDataModel.GPS_SYMBOL] as LatLng;
+					if (aGPS is LatLng) {
+						// determine distance from left-most of bounds.
+						//trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> aGPS='+aGPS);
+						aCellPt = new Point(aDatum[SmithMicroHeatMapDataModel.HEAT_X_SYMBOL],aDatum[SmithMicroHeatMapDataModel.HEAT_Y_SYMBOL]);
+						//trace(DebuggerUtils.getFunctionName(new Error())+'.8 --> aCellPt='+aCellPt);
+						cell_address = aCellPt.x+','+aCellPt.y;
+						//trace(DebuggerUtils.getFunctionName(new Error())+'.9 --> cell_address='+cell_address);
+						aDatum['cell_address'] = cell_address;
+						if (cell_map[cell_address] == null) {
+							cell_map[cell_address] = {data:aDatum,pt:aCellPt,gps:aGPS,width:cell_width,height:cell_height,population:[aDatum]};
+						} else {
+							cell_map[cell_address].population.push(aDatum);
+						}
+					}
+				} catch (err:Error) {trace(DebuggerUtils.getFunctionName(err)+'.ERROR -->'+err.toString()+'\n'+err.getStackTrace())}
+				i = 1;
+				var pcent:Number;
+				var aCell:Object;
+				var delta_alpha:Number = Math.max(this._heat_color_alphas[0],this._heat_color_alphas[this._heat_color_alphas.length-1]);
+				var base_alpha:Number = Math.min(this._heat_color_alphas[0],this._heat_color_alphas[this._heat_color_alphas.length-1]);
+				for (var ci:String in cell_map) {
+					aCell = cell_map[ci];
+					pcent = aDatum[SmithMicroHeatMapDataModel.PERCENT_SYMBOL];
+					aCell.alpha = (pcent * delta_alpha);
+					if (aCell.alpha < base_alpha) {
+						aCell.alpha += base_alpha;
+					}
+					this.handle_random_data(i,aCell);
+					i++;
+				}
+				var ii:int = -1;
+			}
+			
+			private function handle_report_data_event():void {
+				try {
+					this.map_center_on_LatLng(this.map_center_coords);
+					this._timer = new Timer(1);
+					this._timer.addEventListener(TimerEvent.TIMER, 
+						function (event:TimerEvent):void {
+							var aRecord:Object = (_this.data is SmithMicroHeatMapDataModel) ? _this.data.next_record : null;
+							if (aRecord) {
+								_this.onProgress(_this.data.i,_this.data.length);
+								if (_this.data.i == _this.data.length-1) {
+									_this._timer.stop();
+									_this.onProgressCanceled();
+								}
+								_this.determine_gps_heat_for(aRecord);
+							} else {
+								_this.onProgress(_this.data.i,_this.data.length);
+								_this._timer.stop();
+								_this.onProgressCanceled();
+							}
+						}
+					);
+					this._timer.start();
+					if (this._winProgress == null) {
+						this._winProgress = winProgress(PopUpManager.createPopUp(this, winProgress, true));
+						this._winProgress.btnCancel.removeEventListener("click", onProgressCanceled);
+						this._winProgress.btnCancel.addEventListener("click", onProgressCanceled);
+						this._winProgress.title = "Reading Report Data from the Portal...";
+						this._winProgress.txtFile.text = null;
+						this._winProgress.progBar.label = "0%";
+						PopUpManager.centerPopUp(this._winProgress);
+					}
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			private function onDetermineMapSize():void {
+				try {
+					if (this.map is Map) {
+						this.map.width = this.width;
+						this.map.height = this.height-(((this.control_panel) && (this.control_panel['container_address_bar'].visible)) ? this.control_panel['container_address_bar'].height : 0)-((this.control_panel) ? this.control_panel['hgroup_shrink'].height : 0);
+					}
+				} catch (err:Error) {
+					this.map.width = this.width;
+					this.map.height = this.height;
+				}
+			}
+
+			public function show_busy_spinner():void {
+				if (!this.busy) {
+					this.busy = PopUpManager.createPopUp(this,Preloader,true) as Preloader;
+					//this.busy.x = (this.width/2) + this.x;
+					//this.busy.y = (this.height/2) + this.y;
+					this.openingEffect.target = busy;
+					this.openingEffect.duration = 1000;
+					this.openingEffect.end();
+					PopUpManager.centerPopUp(this.busy);
+					this.openingEffect.play();
+				}
+			}
+			
+			protected function map_initializeHandler(event:FlexEvent):void {
+				this.show_busy_spinner();
+			}
+			
+			
+			protected function group1_resizeHandler(event:ResizeEvent):void {
+				this.onDetermineMapSize();
+				this.group1_stateChangeCompleteHandler();
+			}
+			
+			private function refresh_control_panel():void {
+				if (this.control_panel) {
+					this.map_container.y = this.control_panel.container_address_bar.height + this.control_panel.hgroup_shrink.height + 10;
+					this.map_container.y -= this.control_panel.hgroup_shrink.y
+					//trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> this.map_container.y='+this.map_container.y+', this.control_panel.height='+this.control_panel.height+', this.control_panel.container_address_bar.height='+this.control_panel.container_address_bar.height+', this.control_panel.hgroup_shrink.y='+this.control_panel.hgroup_shrink.y);
+				}
+			}
+			
+			private function control_panel_shrink_button_click_handler(event:MouseEvent):void {
+				//trace(DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				this.refresh_control_panel();
+			}
+			
+			private function control_panel_state_changed_handler(event:com.widgets.events.StateChangeEvent):void {
+				//trace(DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				this.refresh_control_panel();
+			}
+			
+			private function group1_stateChangeCompleteHandler():void {
+				try {
+					//trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> this.control_panel='+(this.control_panel is HeatMapControlPanel));
+					if (this.control_panel is HeatMapControlPanel) {
+						this.control_panel.currentState = this.currentState;
+						this.map_container.y = this.control_panel.hgroup_shrink.y+this.control_panel.hgroup_shrink.height;
+						
+						this.control_panel.btn_shrink.removeEventListener(MouseEvent.CLICK, control_panel_shrink_button_click_handler);
+						this.control_panel.btn_shrink.addEventListener(MouseEvent.CLICK, control_panel_shrink_button_click_handler);
+						
+						this.removeEventListener(com.widgets.events.StateChangeEvent.CHANGE, control_panel_state_changed_handler);
+						this.addEventListener(com.widgets.events.StateChangeEvent.CHANGE, control_panel_state_changed_handler);
+						
+						this.refresh_control_panel();
+						
+						if (this.stateChange_callback is Function) {
+							this.stateChange_callback(null);
+						}
+					}
+				} catch (err:Error) {
+					//trace(DebuggerUtils.getFunctionName(err)+'.ERROR --> '+err.toString()+'\n\n'+err.getStackTrace());
+					AlertAlternative.error('WARNING: <p>Someone has defined a Control Panel however<BR/>it appears it was never added to the stage,<BR/>as was expected by "'+DebuggerUtils.getFunctionName(err)+'".</p>');
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:Group id="map_container" x="0" y="0" width="100%" height="100%">
+		<s:HGroup id="container_maps" width="100%" height="100%">
+			<maps:Map 
+				id="map" width="100%" height="{this.height-this.map_container.y}"
+				xmlns:maps="com.google.maps.*" 
+				url="{HeatMapForGoogleMaps.url_google_maps}" key="{HeatMapForGoogleMaps.google_maps_api_key}"
+				mapevent_mapready="map_mapevent_mapreadyHandler(event)" 
+				mapevent_mappreinitialize="map_mapevent_mappreinitializeHandler(event)"
+				sensor="{is_using_sensor}" 
+				initialize="map_initializeHandler(event)" 
+				/>
+		</s:HGroup>
+	</s:Group>
+</s:Group>

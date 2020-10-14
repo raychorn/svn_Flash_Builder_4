@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		title="HomeView" 
+		creationComplete="view1_creationCompleteHandler(event)" 
+		xmlns:google="controls.google.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.GUID;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var __items__:ArrayCollection = new ArrayCollection();
+			
+			private function get get_current_name():String {
+				return (this.__items__.length+1).toString();
+			}
+			
+			protected function view1_creationCompleteHandler(event:FlexEvent):void {
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'source':'/assets/videos/Battleship_Final_Trailer_2012_[HD]-Official_Movie_Trailer.mp4'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'source':'/assets/videos/Battleship_Final_Trailer_2012_[HD]-Official_Movie_Trailer.mp4'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'source':'/assets/videos/Battleship-Official_Trailer_HD_(2012).mp4'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'source':'/assets/videos/Battleship_Trailer_2012_Rihanna-Official[HD].mp4'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'source':'/assets/videos/Battleship_Final_Trailer_2012_[HD]-Official_Movie_Trailer.mp4'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'source':'/assets/videos/Battleship_Trailer_2012_Rihanna-Official[HD].mp4'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'source':'/assets/videos/Battleship-Official_Trailer_HD_(2012).mp4'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'source':'/assets/videos/Battleship_Final_Trailer_2012_[HD]-Official_Movie_Trailer.mp4'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'source':'/assets/videos/Battleship_Trailer_2012_Rihanna-Official[HD].mp4'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'source':'/assets/videos/Battleship-Official_Trailer_HD_(2012).mp4'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'source':'/assets/videos/Battleship_Final_Trailer_2012_[HD]-Official_Movie_Trailer.mp4'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'source':'/assets/videos/Battleship_Trailer_2012_Rihanna-Official[HD].mp4'
+					}
+				);
+			}
+			
+			private function refresh_items():void {
+				this.items.enabled = false;
+				this._width_.enabled = false;
+				this._height_.enabled = false;
+				var player:*;
+				for (var i:int = 0; i < this.__items__.length; i++) {
+					player = this.__items__.getItemAt(i)['player'];
+					if (player) {
+						player['width'] = this._width_.value;
+						player['height'] = this._height_.value;
+					}
+				}
+				this.items.enabled = true;
+				this._width_.enabled = true;
+				this._height_.enabled = true;
+			}
+			
+			protected function _width__changeHandler(event:Event):void {
+				var target:HSlider = event.currentTarget as HSlider;
+				var aspect:Number = this.width/this.height;
+				this._height_.value = target.value / aspect;
+				trace(this.className+'(_width__changeHandler).1 --> target.value='+target.value+', aspect='+aspect+', _height_.value='+this._height_.value);
+				this.callLater(refresh_items,[]);
+			}
+			
+			protected function _height__changeHandler(event:Event):void {
+				var target:VSlider = event.currentTarget as VSlider;
+				trace(this.className+'(_height__changeHandler).1 --> target.value='+target.value);
+				this.callLater(refresh_items,[]);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0" visible="false" includeInLayout="false">
+			<s:HSlider id="_width_" 
+					   height="30" width="{this.width-30}" 
+					   value="300" minimum="1" maximum="{this.width}" 
+					   skinClass="controls.skins.CustomMobileHSliderSkin" 
+					   change="_width__changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup>
+			<s:HGroup paddingLeft="10" paddingRight="20" paddingTop="10" paddingBottom="10" visible="false" includeInLayout="false">
+				<s:VSlider id="_height_" 
+						   skinClass="controls.skins.CustomMobileVSliderSkin"
+						   height="{this.height-100}" width="30" 
+						   value="150" minimum="1" maximum="{this.height}" 
+						   change="_height__changeHandler(event)"/>
+			</s:HGroup>
+			<s:List id="items" width="100%" height="100%" dataProvider="{this.__items__}">
+				<s:layout>
+					<s:TileLayout 
+						horizontalAlign="left" 
+						verticalAlign="top" 
+						horizontalGap="0" 
+						verticalGap="0" 
+						/>
+				</s:layout>
+				<s:itemRenderer>
+					<fx:Component>
+						<s:ItemRenderer>
+							<fx:Script>
+								<![CDATA[
+									import freevana.util.Settings;
+									import freevana.view.IVideoPlayer;
+									import freevana.view.VideoPlayer;
+									
+									import mx.events.FlexEvent;
+									
+									private function get _player():* {
+										return data['player'];
+									}
+									
+									private function set _player(_player:*):void {
+										if (data['player'] != _player) {
+											data['player'] = _player;
+										}
+									}
+									
+									private function get _videoID():* {
+										return data['videoID'];
+									}
+									
+									private function get _source():* {
+										return data['source'];
+									}
+									
+									private function get _url():* {
+										return data['url'];
+									}
+									
+									private function get width_value():Number {
+										return ((data['target'] && data['target']['_width_']) ? data['target']['_width_']['value'] : 150);
+									}
+
+									private function get height_value():Number {
+										return ((data['target'] && data['target']['_height_']) ? data['target']['_height_']['value'] : 100);
+									}
+									
+									protected function player_creationCompleteHandler(event:FlexEvent):void {
+										if (this._source) {
+											trace('(###).1 --> this._source='+this._source);
+											this.player.source = this._source;
+										}
+									}
+									
+									protected function vgroup1_creationCompleteHandler(event:FlexEvent):void {
+//										var target:VGroup = event.currentTarget as VGroup;
+//										var settings:Settings = new Settings();
+//										settings.setPreferredPlayer(VideoPlayer.VIDEO_PLAYER_FLOW);
+//										trace('(###).1 --> this._url='+this._url);
+//										var v:IVideoPlayer = VideoPlayer.create(settings,this._url,'');
+//										v.addEventListener(VideoPlayer.PLAYER_INITIALIZING, onVideoPlayerInit);
+//										v.addEventListener(VideoPlayer.PLAYER_READY, onVideoPlayerReady);
+//										v.addEventListener(VideoPlayer.PLAYER_STOPPED, onVideoPlayerStopped);
+//										v.addEventListener(VideoPlayer.VIDEO_NOT_AVAILABLE, onVideoNotAvailable);
+//										v.addEventListener(IOErrorEvent.IO_ERROR, onVideoPlayerIOError);
+//										
+//										function onVideoPlayerInit(event:Event):void {
+//											trace('(###).onVideoPlayerInit.1 --> !!!');
+//											target.addChild(v.getUIComponent());
+//											v.onAddedToStage();
+//										}
+//										
+//										function onVideoPlayerIOError(event:IOErrorEvent):void {
+//											trace('(###).onVideoPlayerIOError.1 --> !!!');
+//										}
+//										
+//										function onVideoPlayerReady(event:Event):void {
+//											trace('(###).onVideoPlayerReady.1 --> !!!');
+//										}
+//										
+//										function onVideoPlayerStopped(event:Event):void {
+//											trace('(###).onVideoPlayerStopped.1 --> !!!');
+//										}
+//										
+//										function onVideoNotAvailable(event:Event):void {
+//											trace('(###).onVideoNotAvailable.1 --> !!!');
+//										}
+//										
+//										v.init();
+									}
+								]]>
+							</fx:Script>
+							<s:states>
+								<s:State name="normal" />
+								<s:State name="hovered" />
+								<s:State name="selected" />
+							</s:states>
+							<s:Rect left="0" right="0" top="0" bottom="0">
+								<s:stroke>
+									<s:SolidColorStroke color="0xCCCCCC" joints="round" weight="2"/>
+								</s:stroke>
+								<s:fill>
+									<s:SolidColor color="0x999999" alpha="0" alpha.hovered="0.2" alpha.selected="0.6" />
+								</s:fill>
+							</s:Rect>
+							<s:VGroup width="100%">
+								<s:VideoPlayer id="player" width="350" height="175" creationComplete="player_creationCompleteHandler(event)"/>
+								<!--
+								<google:AS3Player id="player" width="300" height="150"/>
+								<google:YouTubeVideoPlayer id="player" videoID="{_videoID}" width="300" height="150"/>
+								-->
+							</s:VGroup>
+						</s:ItemRenderer>
+					</fx:Component>
+				</s:itemRenderer>
+			</s:List>
+		</s:HGroup>
+	</s:VGroup>
+</s:View>

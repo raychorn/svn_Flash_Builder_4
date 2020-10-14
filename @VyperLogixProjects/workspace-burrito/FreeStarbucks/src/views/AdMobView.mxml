@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.Generator;
+			import com.MathUtils;
+			import com.benstucki.utilities.IconUtility;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+
+			private var properties:Object = {};
+
+			private var _data:Object = {};
+			
+			private var _dataProvider:Object;
+			
+			private var has_dataProvider:Boolean = false;
+			
+			private var _generator:Generator;
+			
+			public var use_advertising_agency:Boolean = true;
+			
+			private var advertising_messages:Array = [
+				'A Word from our Sponsors',
+				'Remember to make a Donation today...',
+				'This App is supported by Donations.'
+			];
+			
+			public function get dataProvider():Object {
+				return this._dataProvider;
+			}
+			
+			public function set dataProvider(dataProvider:Object):void {
+				if (this._dataProvider != dataProvider) {
+					try {
+						properties['_dataProvider'] = dataProvider;
+						this.has_dataProvider = true;
+					} catch (err:Error) {this._dataProvider = dataProvider;}
+				}
+			}
+			
+			public function get advert_label():String {
+				var value:String = this.advertising_messages[int(Math.floor(MathUtils.randRange(0,this.advertising_messages.length-1)))];
+				if (this.use_advertising_agency) {
+					try {return ((this._data['data'] is String) ? this._data['data'] : value);} catch (err:Error) {}
+				}
+				return value;
+			}
+
+			public function get advert_image():String {
+				var value:String = null;
+				if (this.use_advertising_agency) {
+					try {return (((this._data['img'] != null) && (this._data['img']['src'] is String)) ? this._data['img']['src'] : null);} 
+					catch (err:Error) {}
+				}
+				return value;
+			}
+			
+			public function get advert_href():String {
+				var value:String = FlexGlobals.topLevelApplication.sponsor_site;
+				if (this.use_advertising_agency) {
+					try {return ((this._data['href'] is String) ? this._data['href'] : value);} catch (err:Error) {}
+				}
+				return value;
+			}
+
+			override protected function commitProperties() : void {
+				var _this:AdMobView = this;
+				super.commitProperties();
+				if (this.has_dataProvider) {
+					this._dataProvider = properties['_dataProvider'];
+					trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> this._dataProvider='+DebuggerUtils.explainThis(this._dataProvider));
+					this._generator = new Generator(this._dataProvider,
+						function (gen:Generator,item:*):void {
+							if ((item is String) == false) {
+								if (item['data']) {
+									_this._data['data'] = item['data'];
+								} 
+								if (item['img']) {
+									_this._data['img'] = item['img'];
+								} 
+								if (item['href']) {
+									_this._data['href'] = item['href'];
+								}
+								if (item['target']) {
+									_this._data['target'] = item['target'];
+								}
+							}
+						}
+					);
+					delete properties._dataProvider;
+					this.has_dataProvider = false;
+				}
+			}
+			
+			protected function btn_Ad_creationCompleteHandler(event:FlexEvent):void {
+				var btn:Button = event.currentTarget as Button;
+				btn.useHandCursor = true;
+				var icon_url:String = this.advert_image;
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> ('+(icon_url is String)+') icon_url='+icon_url);
+				if ( (this.use_advertising_agency) && (icon_url is String) ) {
+					//btn.icon = IconUtility.getClass(btn,icon_url,btn.height,btn.height);
+					this.img_Ad.source = icon_url;
+					this.img_Ad.width = this.width - 50;
+					this.img_Ad.height = this.height - 10;
+					btn.visible = btn.includeInLayout = false;
+				} else {
+					this.img_Ad.visible = this.img_Ad.includeInLayout = false;
+					btn.width = this.width - 50;
+					btn.height = this.height - 10;
+				}
+				btn.label = this.advert_label;
+			}
+
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:Image id="img_Ad"/>
+		<s:Button id="btn_Ad" width="{this.width-50}" height="{Math.min(this.height-this.img_Ad.height,30)}" skinClass="skins.FancyButtonSkin" iconPlacement="left" styleName="SmallAdMobButtons" creationComplete="btn_Ad_creationCompleteHandler(event)"/>
+	</s:VGroup>
+</s:Group>

@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Panel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 width="100%" height="100%" 
+		 title="Remember to Check-In for every Drawing..." 
+		 xmlns:paypal="controls.paypal.*" xmlns:mx="library://ns.adobe.com/flex/mx">
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<s:states>
+		<mx:State name="not_logged_in"/>
+		<mx:State name="logged_in"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			
+			import controls.Alert.AlertAlternative;
+			import controls.paypal.events.DonationClickedEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			
+			[Bindable]
+			[Embed(source="/assets/change-log_64x64.png")]
+			public static var changeLogIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="/assets/email_icon_64x64.png")]
+			public static var emailIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="/assets/exit_64x64.png")]
+			public static var exitIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="/assets/person_author_64x64.png")]
+			public static var personAuthorIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="/assets/info.png")]
+			public var infoIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="/assets/info_balloon_32x32.png")]
+			public var infoBalloonIconClass:Class;
+			
+			private var btns_all:Array = [];
+			
+			private var btn_total_width:Number = 0;
+			
+			private var TABS_ARRAY:Array = [
+				{label:"Menu", data:function ():void {FlexGlobals.topLevelApplication.app.show('1')},is_information_tab_selected:true,is_actions_tab_selected:false},
+				{label:"More...", data:function ():void {FlexGlobals.topLevelApplication.app.show('2')},is_information_tab_selected:false,is_actions_tab_selected:true}
+			];
+			
+			[Bindable]
+			private var tabs_list:ArrayCollection = new ArrayCollection(TABS_ARRAY);
+			
+			public function get is_information_tab_selected():Boolean {
+				var item:Object = this.menu_selection.selectedItem;
+				return !this.is_tabBar_visible || item['is_information_tab_selected'];
+			}
+			
+			public function get is_actions_tab_selected():Boolean {
+				var item:Object = this.menu_selection.selectedItem;
+				return !this.is_tabBar_visible || item['is_actions_tab_selected'];
+			}
+			
+			protected function btn_donations_creationCompleteHandler(event:FlexEvent):void {
+				var _this:MenuPanel = this;
+				var db:DonationButton = event.currentTarget as DonationButton;
+				db.addEventListener(DonationClickedEvent.TYPE_DONATION_CLICKED, 
+					function (event:DonationClickedEvent):void {
+					}
+				);
+				db.currentState = 'no_icon';
+				db.btn.styleName = 'NoIconDonationButtons';
+				db.btn.label = 'Remember to make a Generous Donation often..';
+				db.btn.percentWidth = 95.0;
+				db.btn.height = 40;
+			}
+			
+			private function refresh_tabBar_buttons():void {
+				this.btn_credits.visible = this.btn_credits.includeInLayout = this.is_information_tab_selected;
+				this.btn_feedback.visible = this.btn_feedback.includeInLayout = this.is_actions_tab_selected;
+				this.btn_changeLog.visible = this.btn_changeLog.includeInLayout = this.is_information_tab_selected;
+				this.btn_info.visible = this.btn_info.includeInLayout = this.is_information_tab_selected;
+			}
+			
+			protected function menu_selection_changeHandler(event:IndexChangeEvent):void {
+				var tabBar:TabBar = event.currentTarget as TabBar;
+				if (tabBar is TabBar) {
+					this.refresh_tabBar_buttons();
+				}
+			}
+			
+			protected function menu_selection_creationCompleteHandler(event:FlexEvent):void {
+				this.refresh_tabBar_buttons();
+			}
+			
+			public function get is_tabBar_visible():Boolean {
+				var is_width:Boolean = (this.btn_total_width <= this.width);
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> this.btn_total_width='+this.btn_total_width+', this.width='+this.width+', is_width:Boolean='+is_width+', FlexGlobals.topLevelApplication.isScreenHD='+FlexGlobals.topLevelApplication.isScreenHD);
+				return (is_width) || !FlexGlobals.topLevelApplication.isScreenHD;
+			}
+			
+			private function handle_application_event(name_of_event:String):void {
+				try {
+					if (FlexGlobals.topLevelApplication[name_of_event] is Function) {
+						FlexGlobals.topLevelApplication[name_of_event]();
+					} else {
+						AlertAlternative.error('WARNING: <p>Cannot locate the "'+name_of_event+'()" function in the top-level Application.</p>');
+					}
+				} catch (err:Error) {
+					AlertAlternative.error('ERROR: <p>Cannot locate the "'+name_of_event+'()" function.</p><p>'+err.toString()+'</p><p>'+err.getStackTrace().substr(0,250)+'</p>');
+				}
+			}
+			
+			private function handle_author_event():void {
+				this.handle_application_event('handle_author_event');
+			}
+			
+			protected function btn_author_clickHandler(event:MouseEvent):void {
+				this.handle_author_event();
+			}
+			
+			protected function btn_author_touchTapHandler(event:TouchEvent):void {
+				this.handle_author_event();
+			}
+			
+			protected function btn_creationCompleteHandler(event:FlexEvent):void {
+				var aBtn:Button = event.currentTarget as Button;
+				if (aBtn is Button) {
+					this.btns_all.push(aBtn);
+					this.btn_total_width += aBtn.width;
+				}
+			}
+			
+			private function handle_feedback_event():void {
+				this.handle_application_event('handle_feedback_event');
+			}
+			
+			protected function btn_feedback_clickHandler(event:MouseEvent):void {
+				this.handle_feedback_event();
+			}
+			
+			protected function btn_feedback_touchTapHandler(event:TouchEvent):void {
+				this.handle_feedback_event();
+			}
+			
+			private function handle_changelog_event():void {
+				this.handle_application_event('handle_changelog_event');
+			}
+			
+			protected function btn_changeLog_clickHandler(event:MouseEvent):void {
+				this.handle_changelog_event();
+			}
+			
+			protected function btn_changeLog_touchTapHandler(event:TouchEvent):void {
+				this.handle_changelog_event();
+			}
+			
+			private function handle_info_event():void {
+				this.handle_application_event('handle_info_event');
+			}
+			
+			protected function btn_info_clickHandler(event:MouseEvent):void {
+				this.handle_info_event();
+			}
+			
+			protected function btn_info_touchTapHandler(event:TouchEvent):void {
+				this.handle_info_event();
+			}
+			
+			private function handle_exit_event():void {
+				if (FlexGlobals.topLevelApplication.app.is_menu_shown) {
+					FlexGlobals.topLevelApplication.app.dismiss_menuPanel();
+					FlexGlobals.topLevelApplication.nativeApplication.exit();
+				}
+			}
+			
+			protected function btn_exit_clickHandler(event:MouseEvent):void {
+				this.handle_exit_event();
+			}
+			
+			protected function btn_exit_touchTapHandler(event:TouchEvent):void {
+				this.handle_exit_event();
+			}
+			
+			private function get menu_panel_height():Number {
+				return FlexGlobals.topLevelApplication.menu_panel_height;
+			}
+			
+			private function get is_loggedin():Boolean {
+				return FlexGlobals.topLevelApplication.app.is_loggedin;
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup id="menuPanel_hbox_label" width="100%" paddingTop="5" paddingLeft="5">
+			<s:Label width="100%" styleName="SmallErrorLabels" text.not_logged_in="Register for a User Account and Check-In to give feedback." visible.not_logged_in="true" includeInLayout.not_logged_in="true" visible.logged_in="false" includeInLayout.logged_in="false"/>
+			<paypal:DonationButton id="btn_donations" visible.not_logged_in="false" includeInLayout.not_logged_in="false" visible.logged_in="true" includeInLayout.logged_in="true" creationComplete="btn_donations_creationCompleteHandler(event)"/>
+		</s:HGroup>
+		<s:TabBar 
+			id="menu_selection" 
+			dataProvider="{this.tabs_list}" 
+			skinClass="spark.skins.spark.TabBarSkin" 
+			selectedIndex="0" 
+			visible="{this.is_tabBar_visible}" includeInLayout="{this.menu_selection.visible}" 
+			change="menu_selection_changeHandler(event)" 
+			creationComplete="menu_selection_creationCompleteHandler(event)"/>
+		<s:HGroup width="100%" height="{this.menu_panel_height-menuPanel_hbox_label.height-20}" paddingLeft="5" paddingRight="10">
+			<s:Button 
+				id="btn_credits" 
+				width="100%" height="100%" 
+				label="Credits" 
+				iconPlacement="top" 
+				styleName="SmallButtons" 
+				icon="{personAuthorIconClass}" 
+				click="btn_author_clickHandler(event)" 
+				touchTap="btn_author_touchTapHandler(event)" 
+				creationComplete="btn_creationCompleteHandler(event)"/>
+			<s:Button 
+				id="btn_feedback" 
+				width="100%" height="100%" 
+				label="Feedback" 
+				iconPlacement="top" 
+				styleName="SmallButtons" 
+				enabled="{this.is_loggedin}" 
+				icon="{emailIconClass}" 
+				click="btn_feedback_clickHandler(event)" 
+				touchTap="btn_feedback_touchTapHandler(event)" 
+				creationComplete="btn_creationCompleteHandler(event)"/>
+			<s:Button 
+				id="btn_changeLog" 
+				width="100%" height="100%" 
+				label="Change Log" 
+				iconPlacement="top" 
+				styleName="SmallButtons" 
+				icon="{changeLogIconClass}" 
+				click="btn_changeLog_clickHandler(event)" 
+				touchTap="btn_changeLog_touchTapHandler(event)" 
+				creationComplete="btn_creationCompleteHandler(event)"/>
+			<s:Button 
+				id="btn_info" 
+				width="100%" height="100%" 
+				label="About" 
+				iconPlacement="top" 
+				styleName="SmallButtons" 
+				icon="{infoIconClass}" 
+				click="btn_info_clickHandler(event)" 
+				touchTap="btn_info_touchTapHandler(event)" 
+				creationComplete="btn_creationCompleteHandler(event)"/>
+			<s:Button 
+				id="btn_exit" 
+				width="100%" height="100%" 
+				label="Exit" 
+				iconPlacement="top" 
+				styleName="SmallButtons" 
+				icon="{exitIconClass}" 
+				click="btn_exit_clickHandler(event)" 
+				touchTap="btn_exit_touchTapHandler(event)" 
+				creationComplete="btn_creationCompleteHandler(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Panel>

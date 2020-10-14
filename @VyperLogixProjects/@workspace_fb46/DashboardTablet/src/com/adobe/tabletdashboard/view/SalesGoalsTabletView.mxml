@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View preinitialize="preinitializeHandler()"
+		viewDeactivate="viewDeactivateHandler()"
+		viewActivate="viewActivateHandler()"
+		actionBarVisible="false"
+		xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		title="Sales Goals"
+		xmlns:components="com.adobe.tabletdashboard.view.components.*"
+		xmlns:charts="com.adobe.dashboard.view.charts.*"
+		xmlns:renderer="com.adobe.tabletdashboard.view.renderer.*">
+
+	<fx:Script>
+		<![CDATA[
+			import assets.images.area_char_icon_on;
+			import assets.images.area_chart_icon_off;
+			import assets.images.bar_chart_vert_icon_on;
+			import assets.images.listing_icon_off;
+			import assets.images.listing_icon_on;
+
+			import com.adobe.dashboard.enum.ChartTypeEnum;
+			import com.adobe.dashboard.enum.DateRangeEnum;
+			import com.adobe.dashboard.model.AppModel;
+			import com.adobe.dashboard.model.DateRangeModel;
+			import com.adobe.dashboard.presenter.SalesGoalsPresenter;
+
+			import mx.collections.ArrayCollection;
+			import mx.events.CloseEvent;
+			import mx.events.PropertyChangeEvent;
+
+			import spark.events.IndexChangeEvent;
+
+			[Bindable]
+			public var presenter:SalesGoalsPresenter;
+
+			[Bindable]
+			protected var selectedOption:Object;
+
+			[Bindable]
+			protected var viewTitle:String;
+
+			private var gestureScaleX:Number=1;
+
+			private var gesturePanX:Number=0;
+
+			private var gesturePanY:Number=0;
+
+
+
+			private function addListeners():void
+			{
+				presenter.addEventListener(PropertyChangeEvent.PROPERTY_CHANGE, presenterPropertyChangeHandler, false, 0, true);
+				presenter.chartDetailsPresenter.addEventListener(Event.CHANGE, dataChangeHandler, false, 0, true);
+			}
+
+			private function removeListeners():void
+			{
+				if (presenter && presenter.chartDetailsPresenter && presenter.chartDetailsPresenter.hasEventListener(Event.CHANGE))
+				{
+					presenter.chartDetailsPresenter.removeEventListener(Event.CHANGE, dataChangeHandler);
+				}
+			}
+
+
+
+			//
+			// Event Handlers
+			//
+
+			protected function preinitializeHandler():void
+			{
+				presenter=AppModel.getInstance().salesGoalsPresenter;
+				setComboBoxSelectedItem();
+
+			}
+
+
+
+			protected function viewActivateHandler():void
+			{
+				addListeners();
+				if (presenter.dateRange == null || presenter.dateRange == "")
+				{
+					presenter.dateRange=DateRangeEnum.MONTH;
+				}
+				// Help with smooth animation by waiting till View Activate to load chart data
+				presenter.loadChartData(presenter.dateRange, presenter.dateRangeStartDate, presenter.dateRangeStartDate);
+
+
+
+			}
+
+			protected function viewDeactivateHandler():void
+			{
+				removeListeners();
+			}
+
+			protected function dataChangeHandler(event:Event):void
+			{
+				loadingMessageDisplay.visible=false;
+				chartDisplay.visible=true;
+				chartDisplay.includeInLayout=true;
+
+			}
+
+			protected function presenterPropertyChangeHandler(event:PropertyChangeEvent):void
+			{
+
+				if (event.property == "dateRangeSelectorList")
+				{
+					setComboBoxSelectedItem();
+				}
+				viewTitle="Sales Goals - ";
+				switch (presenter.dateRange)
+				{
+					case DateRangeEnum.MONTH:
+						viewTitle+="Month";
+						break;
+					case DateRangeEnum.QUARTER:
+						viewTitle+="Quarter";
+						break;
+					default:
+						viewTitle+="Year";
+						break;
+				}
+
+			}
+
+			protected function areaChartButton_clickHandler(event:MouseEvent):void
+			{
+				event.stopPropagation();
+				event.stopImmediatePropagation();
+
+				if (presenter.chartDetailsPresenter && presenter.chartDetailsPresenter.chartModel)
+				{
+					presenter.chartDetailsPresenter.chartModel.chartType=ChartTypeEnum.AREA_CHART;
+					presenter.isAreaChart=true;
+				}
+			}
+
+
+			protected function lineChartButton_clickHandler(event:MouseEvent):void
+			{
+				event.stopPropagation();
+				event.stopImmediatePropagation();
+
+				if (presenter.chartDetailsPresenter && presenter.chartDetailsPresenter.chartModel)
+				{
+					presenter.chartDetailsPresenter.chartModel.chartType=ChartTypeEnum.LINE_CHART;
+					presenter.isAreaChart=false;
+				}
+			}
+
+
+
+			protected function setComboBoxSelectedItem():void
+			{
+				if (presenter && presenter.dateRangeSelectorList && presenter.dateRangeSelectorList.length)
+				{
+					selectedOption=presenter.dateRangeSelectorList.getItemAt(0);
+				}
+			}
+
+
+			protected function multiSelect_changeHandler(event:Event):void
+			{
+				if (multiSelect.selectedItem)
+				{
+					var data:DateRangeModel=DateRangeModel(multiSelect.selectedItem);
+					presenter.dateRangeStartDate=data.startDate;
+
+					presenter.loadChartData(presenter.dateRange, presenter.dateRangeStartDate, presenter.dateRangeStartDate);
+				}
+			}
+
+			protected function detailsButton_clickHandler(event:MouseEvent):void
+			{
+				detailsButton.setStyle("icon", listing_icon_on);
+				presenter.goDetails();
+			}
+
+
+
+			protected function tourTip_closeHandler(event:CloseEvent):void
+			{
+				presenter.hideTourTip();
+			}
+		]]>
+	</fx:Script>
+
+	<!-- framework changes state on device rotation -->
+	<s:states>
+		<s:State name="portrait"/>
+		<s:State name="landscape"/>
+	</s:states>
+	<s:Rect radiusX="2"
+			radiusY="2"
+			width="100%"
+			height="100%">
+		<s:stroke>
+			<s:SolidColorStroke color="0x262626"/>
+		</s:stroke>
+		<s:fill>
+			<s:SolidColor color="0x1a1a1a"/>
+		</s:fill>
+	</s:Rect>
+	<s:VGroup styleName="chartViewHolder">
+		<!-- chart controls -->
+		<s:Label text="{viewTitle}"
+				 styleName="viewTitleStyle"/>
+
+		<s:Group height="60"
+				 width="100%">
+			<components:TabletHorizontalRule width="100%"
+											 top="0"/>
+			<components:TabletHorizontalRule width="100%"
+											 bottom="0"/>
+			<components:MultiSelectComponent id="multiSelect"
+											 left="0"
+											 width="260"
+											 verticalCenter="0"
+											 dataProvider="{presenter.dateRangeSelectorList}"
+											 change="multiSelect_changeHandler(event)"
+											 text="{selectedOption.label}"
+											 visible="{presenter.dateRange != DateRangeEnum.YEAR}"/>
+
+			<s:Button id="detailsButton"
+					  width="60"
+					  height="40"
+					  right="0"
+					  verticalCenter="0"
+					  click="detailsButton_clickHandler(event)"
+					  label="List"
+					  skinClass="skins.buttons.NavToggleButtonSkin"/>
+
+
+		</s:Group>
+		<s:Rect height="20"/>
+		<s:Group width="100%"
+				 height="100%">
+			<s:Rect width="100%"
+					height="100%">
+				<s:fill>
+					<s:SolidColor color="#141414"/>
+				</s:fill>
+			</s:Rect>
+			<!-- chart -->
+			<charts:SalesGoalsChart id="chartDisplay"
+									width="100%"
+									height="100%"
+									click="detailsButton_clickHandler(event)"
+									chartPresenter="{presenter.chartDetailsPresenter}"/>
+		</s:Group>
+
+	</s:VGroup>
+
+	<!-- loading message -->
+	<s:VGroup id="loadingMessageDisplay"
+			  horizontalCenter="0"
+			  verticalCenter="0"
+			  horizontalAlign="center">
+		<s:BusyIndicator id="loadingIndicator"
+						 symbolColor="#ffffff"
+						 width="30"
+						 height="30"/>
+		<s:Label text="Building Chart"
+				 color="#ffffff"/>
+	</s:VGroup>
+
+	<components:TourTip id="tourTip"
+						bottom="5"
+						horizontalCenter="0"
+						message="Click Chart Areas for Details"
+						visible="{presenter.showTourTip}"
+						close="tourTip_closeHandler(event)"
+						showArrow="false"/>
+
+
+</s:View>

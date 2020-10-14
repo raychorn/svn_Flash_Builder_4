@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" xmlns:local="*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			public var onCreationComplete_poster_image_callback:Function;
+			
+			public var onCreationComplete_musicPlayer_callback:Function;
+			
+			private function onCreationComplete_poster_image(event:FlexEvent):void {
+				//trace(this.className+'.onCreationComplete_poster_image().1 --> this.onCreationComplete_poster_image_callback='+this.onCreationComplete_poster_image_callback);
+				if (this.onCreationComplete_poster_image_callback is Function) {
+					try {
+						//trace(this.className+'.onCreationComplete_poster_image().2 !');
+						this.onCreationComplete_poster_image_callback(event);
+					} catch (err:Error) {
+						//trace(this.className+'.onCreationComplete_poster_image().ERROR '+err.toString());
+					}
+				}
+			}
+
+			private function onCreationComplete_musicPlayer(event:FlexEvent):void {
+				if (this.onCreationComplete_musicPlayer_callback is Function) {
+					try {
+						this.onCreationComplete_musicPlayer_callback(event);
+					} catch (err:Error) {
+						//trace(this.className+'.onCreationComplete_musicPlayer().ERROR '+err.toString());
+					}
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<mx:VBox width="100%" height="100%">
+		<mx:Image id="poster_image" width="100%" height="100%" scaleContent="true" creationComplete="onCreationComplete_poster_image(event)"/>
+		<mx:HBox id="applicationcontrolbar1" height="160" width="100%" horizontalAlign="center">
+			<mx:Spacer width="5"/>
+			<local:MusicPlayerVisualizer id="musicPlayer" width="100%" height="150" creationComplete="onCreationComplete_musicPlayer(event)"/>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Canvas>

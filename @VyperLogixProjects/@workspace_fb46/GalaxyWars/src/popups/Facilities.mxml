@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" 
+			   xmlns:custardbelly="custardbelly.container.*" 
+			   initialize="titlewindow1_initializeHandler(event)" 
+			   xmlns:controls="popups.controls.*">
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import factories.AllianceDepotFactory;
+			import factories.MissileSiloFactory;
+			import factories.NaniteFactory;
+			import factories.ResearchLabFactory;
+			import factories.RoboticsFactory;
+			import factories.ShipyardFactory;
+			import factories.TerraformerFactory;
+			import factories.editors.AllianceDepotBuilder;
+			import factories.editors.MissileSiloBuilder;
+			import factories.editors.NaniteFactoryBuilder;
+			import factories.editors.ResearchLabBuilder;
+			import factories.editors.RoboticsFactoryBuilder;
+			import factories.editors.ShipyardBuilder;
+			import factories.editors.TerraformerBuilder;
+			
+			private var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+			
+			private var _this:Facilities;
+			
+			public function handle_timer_event(event:TimerEvent):void {
+				app.log = '(+++) '+this.className+'-->'+DebuggerUtils.getFunctionName(new Error());
+			}
+			
+			public static function get is_building_by_id():String {
+				return QuadGroup.is_building_by_id;
+			}
+			
+			public static function set is_building_by_id(is_building_by_id:String):void {
+				if (QuadGroup.is_building_by_id != is_building_by_id) {
+					QuadGroup.is_building_by_id = is_building_by_id;
+				}
+			}
+			
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				this.closeButton.visible = this.closeButton.includeInLayout = false;
+			}
+			
+			public function refresh_panel_titles():void {
+				this.facilitiesBasic.refresh_panel_titles();
+			}
+			
+			public function signal_completion_of_timer(id:String):void {
+				this.facilitiesBasic.signal_completion_of_timer(id);
+			}
+			
+			protected function facilitiesBasic_creationCompleteHandler(event:FlexEvent):void {
+				var group:QuadGroup = event.currentTarget as QuadGroup;
+				group.currentState = 'fancy';
+				
+				if (!FlexGlobals.topLevelApplication.premium_account) {
+					this.facilitiesBasic.signal_disabled_for_others_besides(is_building_by_id);
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:TabBar width="100%" dataProvider="{views}"/>
+	<custardbelly:CBViewStack id="views" width="100%" height="100%">
+		<s:NavigatorContent width="100%" height="100%" label="Basic">
+			<s:VGroup width="100%" height="100%">
+				<controls:QuadGroup 
+					id="facilitiesBasic"
+					
+					resource_label1="Robotics" paddingTop1="-20" width1="130" height1="165"
+					factory1="{RoboticsFactory}" builder1="{RoboticsFactoryBuilder}" building_container_name1="{RoboticsFactory.name}" 
+					building_resource_image1="{Images.roboticsFactoryImageClass}"
+					
+					resource_label2="Shipyard" paddingTop2="-20" width2="130" height2="165"
+					factory2="{ShipyardFactory}" builder2="{ShipyardBuilder}" building_container_name2="{ShipyardFactory.name}" 
+					building_resource_image2="{Images.shipyardImageClass}" 
+					
+					resource_label3="Research Lab" paddingTop3="-20" width3="130" height3="165"
+					factory3="{ResearchLabFactory}" builder3="{ResearchLabBuilder}" building_container_name3="{ResearchLabFactory.name}" 
+					building_resource_image3="{Images.researchLabImageClass}" 
+					
+					resource_label4="Depot" paddingTop4="-20" width4="130" height4="165"
+					factory4="{AllianceDepotFactory}" builder4="{AllianceDepotBuilder}" building_container_name4="{AllianceDepotFactory.name}" 
+					building_resource_image4="{Images.allianceDepotImageClass}" 
+					
+					creationComplete="facilitiesBasic_creationCompleteHandler(event)"
+					/>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" height="100%" label="Advanced">
+			<s:VGroup width="100%" height="100%">
+				<controls:QuadGroup 
+					id="facilitiesAdvanced"
+					
+					resource_label1="Missile Silo" paddingTop1="-20" width1="130" height1="160"
+					factory1="{MissileSiloFactory}" builder1="{MissileSiloBuilder}" building_container_name1="{MissileSiloFactory.name}" 
+					building_resource_image1="{Images.missileSiloImageClass}" 
+					
+					resource_label2="Nanites" paddingTop2="-20" width2="130" height2="160"
+					factory2="{NaniteFactory}" builder2="{NaniteFactoryBuilder}" building_container_name2="{NaniteFactory.name}" 
+					building_resource_image2="{Images.naniteFactoryImageClass}" 
+					
+					resource_label3="Terraformer" paddingTop3="-20" width3="130" height3="160"
+					factory3="{TerraformerFactory}" builder3="{TerraformerBuilder}" building_container_name3="{TerraformerFactory.name}" 
+					building_resource_image3="{Images.terraformerImageClass}" 
+					
+					creationComplete="facilitiesBasic_creationCompleteHandler(event)"
+					/>
+			</s:VGroup>
+		</s:NavigatorContent>
+	</custardbelly:CBViewStack>
+</s:TitleWindow>

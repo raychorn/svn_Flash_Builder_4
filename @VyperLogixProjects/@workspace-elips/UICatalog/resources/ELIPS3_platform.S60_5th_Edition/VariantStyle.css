@@ -1,0 +1,34 @@
+/* CSS file for Symbian 5th */
+Button
+{
+	fontSize: 12;
+}
+
+Label
+{
+	fontSize: 16;
+}
+
+TextArea
+{
+	fontSize: 14;
+}
+
+TextInput
+{
+	fontSize: 14;
+}
+
+.lstStyle
+{
+	selectionColor: blue;
+	fontWeight: bold;
+}
+
+.comments
+{
+	color: white;
+	fontSize:12;
+	fontWeight: bold;
+	fontStyle: italic;
+}

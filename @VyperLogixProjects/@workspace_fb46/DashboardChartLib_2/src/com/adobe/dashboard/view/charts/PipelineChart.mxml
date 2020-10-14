@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group width="200"
+		 height="200"
+		 currentState="{chartPresenter.chartModel.chartType}"
+		 xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:charts="mx.charts.*"
+		 xmlns:series="mx.charts.series.*"
+		 xmlns:graphics="com.adobe.dashboard.view.graphics.*">
+
+	<fx:Metadata>
+		[Event (name="itemClick", type="mx.charts.events.ChartItemEvent")]
+	</fx:Metadata>
+
+	<fx:Declarations>
+		<mx:SeriesInterpolate id="seriesInterpolate"
+							  duration="1000"
+							  minimumElementDuration="300"
+							  elementOffset="30"/>
+		<s:CurrencyFormatter id="currencyFormatter"
+							 useCurrencySymbol="true"
+							 currencySymbol="$"/>
+		<s:SolidColorStroke id="axisStroke"
+							weight="2"
+							color="#808080"
+							alpha="1"/>
+		<mx:GridLines id="gridLines"
+					  gridDirection="both"
+					  alpha="1"
+					  horizontalShowOrigin="false">
+			<mx:horizontalStroke>
+				<graphics:CustomLinearGradientStroke weight="2"/>
+			</mx:horizontalStroke>
+			<mx:verticalStroke>
+				<graphics:CustomLinearGradientStroke weight="2"
+													 rotation="90"/>
+			</mx:verticalStroke>
+		</mx:GridLines>
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.dashboard.presenter.ChartPresenter;
+
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.events.ChartItemEvent;
+			import mx.charts.series.items.BarSeriesItem;
+			import mx.charts.series.items.ColumnSeriesItem;
+
+
+			[Bindable]
+			public var chartPresenter:ChartPresenter;
+
+
+			[Bindable]
+			public var barWidthRatio:Number=1;
+
+			public var gradientDrawDelay:int=0;
+
+			//
+			// Private Methods
+			//
+
+			private function currencyParseFunction(labelValue:Object, previousValue:Object, axis:IAxis):String
+			{
+				return Number(labelValue) / 1000 + "k";
+			}
+
+			private function parseFunction(object:Object):Number
+			{
+				return int(object);
+			}
+
+
+			//
+			// Event Handlers
+			//
+
+			protected function columnChart_itemClickHandler(event:ChartItemEvent):void
+			{
+				if (event.hitData && event.hitData.item && event.hitData.item.hasOwnProperty("name"))
+				{
+					chartPresenter.selectedFillEntries=getGradientEntries(event.hitData.item.name);
+				}
+			}
+
+			protected function columnSeriesFillFunction(colItem:ColumnSeriesItem, index:int):LinearGradient
+			{
+
+				var lg:LinearGradient=new LinearGradient();
+				if (colItem.item.hasOwnProperty("name"))
+				{
+					lg.entries=getGradientEntries(colItem.item.name);
+				}
+				else
+				{
+					lg.entries=chartPresenter.selectedFillEntries;
+				}
+				return lg;
+			}
+
+			protected function barSeriesFillFunction(barItem:BarSeriesItem, index:int):LinearGradient
+			{
+
+				var lg:LinearGradient=new LinearGradient();
+				lg.rotation=90;
+				if (barItem.item.hasOwnProperty("name"))
+				{
+					lg.entries=getGradientEntries(barItem.item.name);
+				}
+				else
+				{
+					lg.entries=chartPresenter.selectedFillEntries;
+				}
+
+				return lg;
+			}
+
+			protected function getGradientEntries(name:String):Array
+			{
+				var entries:Array=[];
+
+				switch (name)
+				{
+					case "Prospect":
+					{
+						entries=[new GradientEntry(0x2A65C7), new GradientEntry(0x2853A2), new GradientEntry(0x243D76)];
+						break;
+					}
+					case "Qualify":
+					{
+						entries=[new GradientEntry(0x4E7221), new GradientEntry(0x3C5919), new GradientEntry(0x293E10)];
+						break;
+					}
+					case "Closing":
+					{
+						entries=[new GradientEntry(0x9C9C1E), new GradientEntry(0x89891F), new GradientEntry(0x74721E)];
+						break;
+					}
+					default:
+					{
+						// do nothing
+						break;
+					}
+				}
+				return entries;
+			}
+
+			protected function dataTipFunction(hitData:HitData):String
+			{
+				if (hitData.element["xField"] == "myGross" || hitData.element["yField"] == "myGross")
+				{
+					return currencyFormatter.format(hitData.item.myGross);
+				}
+				else
+				{
+					return currencyFormatter.format(hitData.item.averageGross);
+				}
+
+			}
+		]]>
+	</fx:Script>
+
+	<!-- currentState bound to chartPresenter.chartModel.chartType -->
+	<s:states>
+		<s:State name="horizontalStandalone"
+				 stateGroups="horizontal"/>
+		<s:State name="horizontalComparison"
+				 stateGroups="horizontal"/>
+		<s:State name="verticalStandalone"
+				 stateGroups="vertical"/>
+		<s:State name="verticalComparison"
+				 stateGroups="vertical"/>
+	</s:states>
+
+
+
+	<charts:ColumnChart id="columnChart"
+						width="100%"
+						height="100%"
+						dataProvider="{chartPresenter.dataProvider}"
+						itemClick="columnChart_itemClickHandler(event)"
+						includeIn="vertical"
+						showDataTips="true"
+						dataTipFunction="dataTipFunction"
+						columnWidthRatio="{barWidthRatio}"
+						backgroundElements="{[gridLines]}">
+		<charts:series>
+			<series:ColumnSeries id="columnChartSeries1"
+								 yField="myGross"
+								 xField="{chartPresenter.seriesList.getItemAt(0).field}"
+								 fillFunction="columnSeriesFillFunction"/>
+			<series:ColumnSeries id="columnChartSeries2"
+								 yField="averageGross"
+								 xField="{chartPresenter.seriesList.getItemAt(0).field}"
+								 includeIn="verticalComparison">
+				<series:fill>
+					<s:LinearGradient rotation="90">
+						<s:GradientEntry color="0xd5ce6a"/>
+						<s:GradientEntry color="0xafc849"/>
+						<s:GradientEntry color="0x889b39"/>
+					</s:LinearGradient>
+				</series:fill>
+			</series:ColumnSeries>
+		</charts:series>
+
+		<charts:horizontalAxis>
+			<charts:CategoryAxis id="verticalChartHorizontalAxis"
+								 categoryField="{chartPresenter.seriesList.getItemAt(0).field}"/>
+		</charts:horizontalAxis>
+
+		<charts:verticalAxis>
+			<mx:LinearAxis id="verticalChartVerticalAxis"
+						   labelFunction="currencyParseFunction"/>
+		</charts:verticalAxis>
+
+		<charts:verticalAxisRenderers>
+			<mx:AxisRenderer showLine="true"
+							 axis="{verticalChartVerticalAxis}"
+							 color="#808080"
+							 tickPlacement="outside"
+							 tickLength="10"
+							 labelGap="10"
+							 fontSize="16"
+							 axisStroke="{axisStroke}"
+							 tickStroke="{axisStroke}"
+							 minorTickPlacement="none">
+			</mx:AxisRenderer>
+		</charts:verticalAxisRenderers>
+
+		<charts:horizontalAxisRenderers>
+			<mx:AxisRenderer showLine="true"
+							 axis="{verticalChartHorizontalAxis}"
+							 color="#808080"
+							 tickPlacement="outside"
+							 tickLength="10"
+							 labelGap="10"
+							 axisStroke="{axisStroke}"
+							 tickStroke="{axisStroke}">
+			</mx:AxisRenderer>
+		</charts:horizontalAxisRenderers>
+
+	</charts:ColumnChart>
+
+
+
+	<charts:BarChart id="horizontalChart"
+					 width="100%"
+					 height="100%"
+					 dataProvider="{chartPresenter.dataProvider}"
+					 itemClick="columnChart_itemClickHandler(event)"
+					 includeIn="horizontal"
+					 showDataTips="true"
+					 dataTipFunction="dataTipFunction"
+					 barWidthRatio="{barWidthRatio}"
+					 backgroundElements="{[gridLines]}">
+		<charts:series>
+
+			<series:BarSeries xField="myGross"
+							  yField="{chartPresenter.seriesList.getItemAt(0).field}"
+							  fillFunction="barSeriesFillFunction"/>
+
+			<series:BarSeries xField="averageGross"
+							  yField="{chartPresenter.seriesList.getItemAt(0).field}"
+							  includeIn="horizontalComparison">
+				<series:fill>
+					<s:LinearGradient rotation="90">
+						<s:GradientEntry color="0xd5ce6a"/>
+						<s:GradientEntry color="0xafc849"/>
+						<s:GradientEntry color="0x889b39"/>
+					</s:LinearGradient>
+				</series:fill>
+			</series:BarSeries>
+		</charts:series>
+
+		<charts:verticalAxis>
+			<charts:CategoryAxis id="horizontalChartVerticalAxis"
+								 categoryField="{chartPresenter.seriesList.getItemAt(0).field}"
+								 ticksBetweenLabels="true"/>
+		</charts:verticalAxis>
+
+		<charts:horizontalAxis>
+			<mx:LinearAxis id="horizontalChartHorizontalAxis"
+						   labelFunction="currencyParseFunction"/>
+		</charts:horizontalAxis>
+
+		<charts:verticalAxisRenderers>
+			<mx:AxisRenderer showLine="true"
+							 axis="{horizontalChartVerticalAxis}"
+							 color="#808080"
+							 tickPlacement="outside"
+							 tickLength="10"
+							 labelGap="10"
+							 axisStroke="{axisStroke}"
+							 tickStroke="{axisStroke}"/>
+		</charts:verticalAxisRenderers>
+
+		<charts:horizontalAxisRenderers>
+			<mx:AxisRenderer showLine="true"
+							 axis="{horizontalChartHorizontalAxis}"
+							 color="#808080"
+							 tickPlacement="outside"
+							 tickLength="10"
+							 labelGap="10"
+							 fontSize="16"
+							 axisStroke="{axisStroke}"
+							 tickStroke="{axisStroke}"
+							 minorTickPlacement="none">
+			</mx:AxisRenderer>
+		</charts:horizontalAxisRenderers>
+
+	</charts:BarChart>
+
+</s:Group>

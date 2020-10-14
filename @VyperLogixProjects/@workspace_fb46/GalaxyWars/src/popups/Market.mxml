@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="100%" height="100%"
+			   initialize="titlewindow1_initializeHandler(event)">
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import flashx.textLayout.conversion.TextConverter;
+			
+			import popups.market.PurchaseDarkMatter;
+			
+			[Bindable]
+			private var dark_matter_rich_text:String = "<font color='#000000'>Dark Matter</font> is a substance for which storage has only been possible for a few standard years and still requires a lot of effort. It can be processed to produce unimaginable quantities of energy. The methods used to gain <font color='#000000'>Dark Matter</font> are complex and full of risks, making it very valuable. Only <font color='#000000'>Dark Matter</font> that has been bought and is still available protects an account from deletion!";
+			
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void {
+				this.closeButton.visible = this.closeButton.includeInLayout = false;
+			}
+			
+			protected function richtext1_initializeHandler(event:FlexEvent):void {
+				this.richText.textFlow = TextConverter.importToFlow(this.dark_matter_rich_text, TextConverter.TEXT_FIELD_HTML_FORMAT);
+			}
+			
+			protected function btn_purchase_dark_matter_clickHandler(event:MouseEvent):void {
+				var popUp:PurchaseDarkMatter = PopUpManager.createPopUp(FlexGlobals.topLevelApplication.popUpContainer,PurchaseDarkMatter,true) as PurchaseDarkMatter;
+				popUp.width = FlexGlobals.topLevelApplication.popUpContainer.width;
+				popUp.height = FlexGlobals.topLevelApplication.popUpContainer.height;
+				popUp.title = 'Purchase Dark Matter';
+				popUp.addEventListener(CloseEvent.CLOSE, 
+					function (event:CloseEvent):void {
+						PopUpManager.removePopUp(popUp);
+					}
+				);
+				PopUpManager.centerPopUp(popUp);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:Panel width="100%" height="100%" title="Dark Matter" styleName="DarkMatterMarketPanel">
+			<s:VGroup width="100%" height="100%">
+				<s:HGroup width="100%">
+					<s:HGroup width="20%" paddingLeft="10" paddingTop="-10">
+						<s:Image source="{Images.darkMatterLargeImageClass}" width="150"/>
+					</s:HGroup>
+					<s:HGroup width="80%" paddingTop="15" paddingLeft="5">
+						<s:RichText id="richText" text="{this.dark_matter_rich_text}" styleName="DarkMatterRichText" width="100%" height="100%" initialize="richtext1_initializeHandler(event)"/>
+					</s:HGroup>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingLeft="10">
+					<s:Button id="btn_purchase_dark_matter" label="Purchase Dark Matter" click="btn_purchase_dark_matter_clickHandler(event)"/>
+				</s:HGroup>
+				<s:VGroup width="100%" paddingTop="10" paddingLeft="10">
+					<s:HGroup width="100%">
+						<s:Label text="Benefits:"/>
+					</s:HGroup>
+					<s:HGroup width="100%" paddingTop="10">
+						<s:Label styleName="DarkMatterMarketBenefitsLabel" text="Gain Resources when not playing or when the Game is not being used."/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:VGroup>
+		</s:Panel>
+	</s:VGroup>
+</s:TitleWindow>

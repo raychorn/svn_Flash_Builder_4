@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:view="view.sides.*"
+    xmlns:mxeffects="com.adobe.ac.mxeffects.*"
+    showCloseButton="true"
+    close="PopUpManager.removePopUp( this )">
+
+    <mx:Script>
+        <![CDATA[
+            import mx.managers.PopUpManager;
+        ]]>
+    </mx:Script>
+
+    <mx:Metadata>
+		[Event("change", type="mx.events.Event")]
+	</mx:Metadata>
+
+    <view:Login/>
+
+</mx:TitleWindow>

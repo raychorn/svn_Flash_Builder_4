@@ -1,0 +1,647 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+	<mx:VBox width="100%" height="100%" xmlns:mx="http://www.adobe.com/2006/mxml" verticalScrollPolicy="off" xmlns:views="views.*">
+	
+	<mx:HBox width="100%" height="100%">
+
+
+
+	<mx:VBox height="100%" width="365" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="STYLE CONTROLS"/>
+	
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%">
+		
+		<mx:TabNavigator width="100%" id="controlNavigator" height="100%" styleName="styleControlTabNavigator">
+			<mx:Box label="List" height="100%" >
+			
+			<mx:Form styleName="noPadding">
+		
+			<mx:FormItem label="Background Alpha">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="1"
+						id="myBackgroundAlphalist"
+						
+						snapInterval=".01"
+						change="setValue('backgroundAlpha', event.target.value, 'number', 'list');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Background Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xFFFFFF" id="myBackgroundColorlist"
+								close="setValue('backgroundColor', event.target.selectedColor, 'color', 'list'); "/>
+		</mx:FormItem>
+			
+				<mx:FormItem label="Alternating Item Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="alternateList1" height="23" width="70" selectedColor="0xFFFFFF"
+								close="myList.setStyle('alternatingItemColors', [alternateList1.selectedColor, alternateList2.selectedColor]);
+								setArrayCSS('alternatingItemColors', alternateList1.selectedColor, alternateList2.selectedColor, true, 'list');
+								"/>
+								<mx:ColorPicker id="alternateList2" height="23" width="70" selectedColor="0xFFFFFF"
+								close="myList.setStyle('alternatingItemColors', [alternateList1.selectedColor, alternateList2.selectedColor]);
+								setArrayCSS('alternatingItemColors', alternateList1.selectedColor, alternateList2.selectedColor, true, 'list');"/>
+							</mx:HBox>
+						</mx:FormItem>
+			
+		<mx:FormItem label="Use Rollover">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBUseRollOverList" label="true"  labelPlacement="right" selected="true"  id="myUseRollOverList"
+								click="myList.setStyle('useRollOver', true); enableRollOverItemsList();
+									   setCSS('useRollOver', 0, 'true', 'list');"
+									   />
+							<mx:RadioButton groupName="SBUseRollOverList" label="false" labelPlacement="right"  
+								click="myList.setStyle('useRollOver', false); enableRollOverItemsList();
+								 setCSS('useRollOver', 0, 'false', 'list');"/>
+						</mx:HBox>
+					</mx:FormItem>
+					<mx:Box styleName="conditionalBox" >			
+				<mx:Form styleName="conditionalForm"  >
+					
+					<mx:FormItem label="Roll Over Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xAADEFF" id="myRollOverColorlist"
+								close="setValue('rollOverColor', event.target.selectedColor, 'color', 'list')"/>
+		</mx:FormItem>
+		<mx:FormItem label="Text Roll Over Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myTextRollOverColorlist"
+								close="setValue('textRollOverColor', event.target.selectedColor, 'color', 'list')"/>
+		</mx:FormItem>
+					
+		
+			
+			</mx:Form></mx:Box>
+		
+			<mx:FormItem label="Border Style">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBBorderStyleList" label="none" 
+								labelPlacement="right" click="myList.setStyle('borderStyle', 'none');
+								enableBorderItemsList();
+								setCSS('borderStyle', 0, 'none', 'list');"/>
+							<mx:RadioButton groupName="SBBorderStyleList" label="solid"  id="myBorderStylelist" selected="true"
+								labelPlacement="right" click="myList.setStyle('borderStyle', 'solid');
+								enableBorderItemsList();
+								setCSS('borderStyle', 0, 'solid', 'list');"/>
+						</mx:HBox>
+						<mx:HBox>
+							<mx:RadioButton groupName="SBBorderStyleList" label="inset"  
+								labelPlacement="right" click="myList.setStyle('borderStyle', 'inset');
+								enableBorderItemsList();
+								setCSS('borderStyle', 0, 'inset', 'list');"/>
+							<mx:RadioButton groupName="SBBorderStyleList" label="outset"  
+								labelPlacement="right" click="myList.setStyle('borderStyle', 'outset');
+								enableBorderItemsList();
+								setCSS('borderStyle', 0, 'outset', 'list');"/>
+						</mx:HBox>
+					</mx:FormItem>
+					
+			<mx:Box styleName="conditionalBox" >			
+			<mx:Form styleName="conditionalForm"  >
+				
+			<mx:FormItem label="Border Thickness" >
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="1"
+						id="myBorderThicknesslist"
+						
+						snapInterval="1"
+						change="setValue('borderThickness', event.target.value , 'number', 'list'); "
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Border Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xB7BABC" id="myBorderColorlist"
+								close="setValue('borderColor', event.target.selectedColor, 'color', 'list')"/>
+		</mx:FormItem>
+		</mx:Form>
+		</mx:Box>
+		<mx:FormItem label="Selection Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x7FCDFE" id="mySelectionColorlist"
+								close="setValue('selectionColor', event.target.selectedColor, 'color', 'list')"/>
+		</mx:FormItem>
+			
+		
+		<mx:FormItem label="Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myColorlist"
+								close="setValue('color', event.target.selectedColor, 'color', 'list')"/>
+		</mx:FormItem>
+		
+		<mx:FormItem label="Text Selected Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myTextSelectedColorlist"
+								close="setValue('textSelectedColor', event.target.selectedColor, 'color', 'list')"/>
+		</mx:FormItem>
+		<mx:FormItem label="Text Indent" >
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="30"
+						value="0"
+						id="myTextIndentlist"
+						
+						snapInterval="1"
+						change="setValue('textIndent', event.target.value , 'number', 'list');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Selection Duration" >
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="5000"
+						value="250"
+						id="mySelectionDurationlist"
+						
+						snapInterval="1"
+						change="setValue('selectionDuration', event.target.value , 'number', 'list');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			
+			<mx:FormItem label="Drop Shadow Enabled">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBDropShadowEnabledlist" label="true"  labelPlacement="right"
+								click="myList.setStyle('dropShadowEnabled', true); enableShadowItemsList();
+									   setCSS('dropShadowEnabled', 0, 'true', 'list');"
+									   />
+							<mx:RadioButton groupName="SBDropShadowEnabledlist" label="false" labelPlacement="right" selected="true"  id="myDropShadowEnabledlist" 
+								click="myList.setStyle('dropShadowEnabled', false); enableShadowItemsList();
+								 setCSS('dropShadowEnabled', 0, 'false', 'list');"/>
+						</mx:HBox>
+					</mx:FormItem>
+					<mx:Box styleName="conditionalBox">			
+				<mx:Form styleName="conditionalForm"  >
+					<mx:FormItem label="Shadow Distance">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="2"
+						enabled="false"
+						id="myShadowDistancelist"
+						
+						snapInterval="1"
+						change="setValue('shadowDistance', event.target.value, 'number', 'list');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				</mx:FormItem>
+			<mx:FormItem label="Shadow Direction">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBShadowDirectionlist" label="left"  id="myShadowDirection2list" enabled="false"
+								labelPlacement="right" click="myList.setStyle('shadowDirection', 'left'); setCSS('shadowDirection', 0, 'left', 'list');"/>
+							<mx:RadioButton groupName="SBShadowDirectionlist" label="center" id="myShadowDirectionlist" enabled="false"
+								selected="true" labelPlacement="right" click="myList.setStyle('shadowDirection', 'center'); setCSS('shadowDirection', 0, 'center', 'list');"/>
+							<mx:RadioButton groupName="SBShadowDirectionlist" label="right" id="myShadowDirection3list" enabled="false"
+								selected="true" labelPlacement="right" click="myList.setStyle('shadowDirection', 'right'); setCSS('shadowDirection', 0, 'right', 'list');"/>
+						</mx:HBox>
+					</mx:FormItem>
+					
+					<mx:FormItem label="Drop Shadow Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x000000" id="myDropShadowColorlist" enabled="false"
+								close="setValue('dropShadowColor', event.target.selectedColor, 'color', 'list')"/>
+		</mx:FormItem>
+			</mx:Form></mx:Box>
+			
+			
+			
+			
+			
+			</mx:Form>
+			
+			
+		</mx:Box>
+		<mx:Box label="DataGrid" height="100%">
+		<mx:Form paddingLeft="0" paddingRight="0" paddingTop="0" paddingBottom="0">
+			
+			
+			<mx:FormItem label="Background Alpha">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="1"
+						id="myBackgroundAlphagrid"
+						
+						snapInterval=".01"
+						change="setValue('backgroundAlpha', event.target.value, 'number', 'grid');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Background Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xFFFFFF" id="myBackgroundColorgrid"
+								close="setValue('backgroundColor', event.target.selectedColor, 'color', 'grid'); "/>
+		</mx:FormItem>
+			<mx:FormItem label="Alternating Item Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="alternateGrid1" height="23" width="70" selectedColor="0xFFFFFF"
+								close="myGrid.setStyle('alternatingItemColors', [alternateGrid1.selectedColor, alternateGrid2.selectedColor]);
+								setArrayCSS('alternatingItemColors', alternateGrid1.selectedColor, alternateGrid2.selectedColor, true, 'grid');
+								"/>
+								<mx:ColorPicker id="alternateGrid2" height="23" width="70" selectedColor="0xFFFFFF"
+								close="myGrid.setStyle('alternatingItemColors', [alternateGrid1.selectedColor, alternateGrid2.selectedColor]);
+								setArrayCSS('alternatingItemColors', alternateGrid1.selectedColor, alternateGrid2.selectedColor, true, 'grid');"/>
+							</mx:HBox>
+						</mx:FormItem>
+					<mx:FormItem label="Header Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="headerGrid1" height="23" width="70" selectedColor="0xE6EEEE"
+								close="myGrid.setStyle('headerColors', [headerGrid1.selectedColor, headerGrid2.selectedColor]);
+								setArrayCSS('headerColors', headerGrid1.selectedColor, headerGrid2.selectedColor, true, 'grid');
+								"/>
+								<mx:ColorPicker id="headerGrid2" height="23" width="70" selectedColor="0xFFFFFF"
+								close="myGrid.setStyle('headerColors', [headerGrid1.selectedColor, headerGrid2.selectedColor]);
+								setArrayCSS('headerColors', headerGrid1.selectedColor, headerGrid2.selectedColor, true, 'grid');"/>
+							</mx:HBox>
+						</mx:FormItem>
+								
+			
+			
+			<mx:FormItem label="Horizontal Gridlines">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBHGridLineslist" label="true"  labelPlacement="right"
+								click="myGrid.setStyle('horizontalGridLines', true);
+										enabledHGridItems();
+									   setCSS('horizontalGridLines', 0, 'true', 'grid');"
+									   />
+							<mx:RadioButton groupName="SBHGridLineslist" label="false" labelPlacement="right" selected="true"  id="myHGridLinesgrid" 
+								click="myGrid.setStyle('horizontalGridLines', false);
+								enabledHGridItems();
+								 setCSS('horizontalGridLines', 0, 'false', 'grid');"/>
+						</mx:HBox>
+					</mx:FormItem>
+					<mx:Box styleName="conditionalBox" >			
+				<mx:Form styleName="conditionalForm"  >
+			
+			<mx:FormItem label="Horizontal Grid Line Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xFFFFFF" id="myHGridLineColorgrid" enabled="false"
+								close="setValue('horizontalGridLineColor', event.target.selectedColor, 'color', 'grid'); "/>
+		</mx:FormItem></mx:Form></mx:Box>
+		<mx:FormItem label="Vertical Gridlines">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBVGridLineslist" label="true"  labelPlacement="right"  id="myVGridLinesgrid" selected="true"
+								click="myGrid.setStyle('verticalGridLines', true);
+								enabledVGridItems();
+									   setCSS('verticalGridLines', 0, 'true', 'grid');"
+									   />
+							<mx:RadioButton groupName="SBVGridLineslist" label="false" labelPlacement="right"  
+								click="myGrid.setStyle('verticalGridLines', false);
+								enabledVGridItems();
+								 setCSS('verticalGridLines', 0, 'false', 'grid');"/>
+						</mx:HBox>
+					</mx:FormItem>
+			<mx:Box styleName="conditionalBox" >			
+				<mx:Form styleName="conditionalForm"  >
+			<mx:FormItem label="Vertical Grid Line Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xCCCCCC" id="myVGridLineColorgrid"
+								close="setValue('verticalGridLineColor', event.target.selectedColor, 'color', 'grid'); "/>
+		</mx:FormItem></mx:Form></mx:Box>
+			<mx:FormItem label="Use Rollover">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBUseRollOverGrid" label="true"  labelPlacement="right" selected="true"  id="myUseRollOvergrid"
+								click="myGrid.setStyle('useRollOver', true); enableRollOverItemsGrid();
+									   setCSS('useRollOver', 0, 'true', 'grid');"
+									   />
+							<mx:RadioButton groupName="SBUseRollOverGrid" label="false" labelPlacement="right"  
+								click="myGrid.setStyle('useRollOver', false); enableRollOverItemsGrid();
+								 setCSS('useRollOver', 0, 'false', 'grid');"/>
+						</mx:HBox>
+					</mx:FormItem>
+					<mx:Box styleName="conditionalBox" >			
+				<mx:Form styleName="conditionalForm"  >
+					
+					<mx:FormItem label="Roll Over Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xAADEFF" id="myRollOverColorgrid"
+								close="setValue('rollOverColor', event.target.selectedColor, 'color', 'grid')"/>
+		</mx:FormItem>
+		<mx:FormItem label="Text Roll Over Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myTextRollOverColorgrid"
+								close="setValue('textRollOverColor', event.target.selectedColor, 'color', 'grid')"/>
+		</mx:FormItem>
+					
+		
+			
+			</mx:Form></mx:Box>
+		
+			
+			<mx:FormItem label="Border Thickness" >
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="1"
+						id="myBorderThicknessgrid"
+						
+						snapInterval="1"
+						change="setValue('borderThickness', event.target.value , 'number', 'grid'); "
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Border Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xB7BABC" id="myBorderColorgrid"
+								close="setValue('borderColor', event.target.selectedColor, 'color', 'grid')"/>
+		</mx:FormItem>
+			
+			
+			<mx:FormItem label="Selection Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x7FCDFE" id="mySelectionColorgrid"
+								close="setValue('selectionColor', event.target.selectedColor, 'color', 'grid')"/>
+		</mx:FormItem>
+			<mx:FormItem label="Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myColorgrid"
+								close="setValue('color', event.target.selectedColor, 'color', 'grid')"/>
+		</mx:FormItem>
+		
+		
+			<mx:FormItem label="Text Selected Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myTextSelectedColorgrid"
+								close="setValue('textSelectedColor', event.target.selectedColor, 'color', 'grid')"/>
+		</mx:FormItem>
+			<mx:FormItem label="Text Indent" >
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="30"
+						value="0"
+						id="myTextIndentgrid"
+						
+						snapInterval="1"
+						change="setValue('textIndent', event.target.value , 'number', 'grid');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			<mx:HBox toolTip="Note: dropShadowEnabled, shadowDirection, shadowDistance, bordeStyle, and selectionDuration are also available and behave identically to list.  Also, headerstyleName is available in order to create a unique font format for the datagrid headers." >
+			<mx:Image id="alert" source="@Embed('assets/alert.png')" />
+			<mx:Label text="Note" fontSize="9" fontFamily="verdana" color="#FFFFFF" />
+			</mx:HBox>
+			
+		</mx:Form>
+		</mx:Box>
+		
+		<mx:Box label="Tree">
+			<mx:Form paddingLeft="0" paddingRight="0" paddingTop="0" paddingBottom="0">
+		<mx:FormItem label="Background Alpha">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="1"
+						id="myBackgroundAlphatree"
+						
+						snapInterval=".01"
+						change="setValue('backgroundAlpha', event.target.value , 'number', 'tree');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Background Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xFFFFFF" id="myBackgroundColortree"
+								close="setValue('backgroundColor', event.target.selectedColor, 'color', 'tree'); "/>
+		</mx:FormItem>
+			
+				<mx:FormItem label="Alternating Item Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="alternateTree1" height="23" width="70" selectedColor="0xFFFFFF"
+								close="sbTree.setStyle('alternatingItemColors', [alternateTree1.selectedColor, alternateTree2.selectedColor]);
+								setArrayCSS('alternatingItemColors', alternateTree1.selectedColor, alternateTree2.selectedColor, true, 'tree');
+								"/>
+								<mx:ColorPicker id="alternateTree2" height="23" width="70" selectedColor="0xFFFFFF"
+								close="sbTree.setStyle('alternatingItemColors', [alternateTree1.selectedColor, alternateTree2.selectedColor]);
+								setArrayCSS('alternatingItemColors', alternateTree1.selectedColor, alternateTree2.selectedColor, true, 'tree');"/>
+							</mx:HBox>
+						</mx:FormItem>
+							<mx:FormItem label="Depth Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="depthTree1" height="23" width="30" selectedColor="0xFFFFFF"
+								close="sbTree.setStyle('depthColors', [depthTree1.selectedColor, depthTree2.selectedColor, depthTree3.selectedColor, depthTree4.selectedColor]);
+								setArrayFourCSS('depthColors', depthTree1.selectedColor, depthTree2.selectedColor, depthTree3.selectedColor, depthTree4.selectedColor, true, 'tree');
+								"/>
+								<mx:ColorPicker id="depthTree2" height="23" width="30" selectedColor="0xFFFFFF"
+								close="sbTree.setStyle('depthColors', [depthTree1.selectedColor, depthTree2.selectedColor, depthTree3.selectedColor, depthTree4.selectedColor]);
+								setArrayFourCSS('depthColors', depthTree1.selectedColor, depthTree2.selectedColor, depthTree3.selectedColor, depthTree4.selectedColor, true, 'tree');
+								"/>
+								<mx:ColorPicker id="depthTree3" height="23" width="30" selectedColor="0xFFFFFF"
+								close="sbTree.setStyle('depthColors', [depthTree1.selectedColor, depthTree2.selectedColor, depthTree3.selectedColor, depthTree4.selectedColor]);
+								setArrayFourCSS('depthColors', depthTree1.selectedColor, depthTree2.selectedColor, depthTree3.selectedColor, depthTree4.selectedColor, true, 'tree');
+								"/>
+								<mx:ColorPicker id="depthTree4" height="23" width="30" selectedColor="0xFFFFFF"
+								close="sbTree.setStyle('depthColors', [depthTree1.selectedColor, depthTree2.selectedColor, depthTree3.selectedColor, depthTree4.selectedColor]);
+								setArrayFourCSS('depthColors', depthTree1.selectedColor, depthTree2.selectedColor, depthTree3.selectedColor, depthTree4.selectedColor, true, 'tree');
+								"/>
+							
+							</mx:HBox>
+						</mx:FormItem>
+						
+		
+		<mx:FormItem label="Use Rollover">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBUseRollOvertree" label="true"  labelPlacement="right" selected="true"  id="myUseRollOvertree"
+								click="sbTree.setStyle('useRollOver', true); enableRollOverItemsTree();
+									   setCSS('useRollOver', 0, 'true', 'tree');"
+									   />
+							<mx:RadioButton groupName="SBUseRollOvertree" label="false" labelPlacement="right"  
+								click="sbTree.setStyle('useRollOver', false); enableRollOverItemsTree();
+								 setCSS('useRollOver', 0, 'false', 'tree');"/>
+						</mx:HBox>
+					</mx:FormItem>
+		
+		<mx:Box styleName="conditionalBox" >			
+				<mx:Form styleName="conditionalForm"  >
+					
+				<mx:FormItem label="Roll Over Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xAADEFF" id="myRollOverColortree"
+								close="setValue('rollOverColor', event.target.selectedColor, 'color', 'tree'); "/>
+				</mx:FormItem>
+				<mx:FormItem label="Text Roll Over Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x2B333C" id="myTextRollOverColortree"
+								close="setValue('textRollOverColor', event.target.selectedColor, 'color', 'tree'); "/>
+				</mx:FormItem>
+				</mx:Form></mx:Box>
+		
+		<mx:FormItem label="Border Thickness">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="1"
+						id="myBorderThicknesstree"
+						
+						snapInterval="1"
+						change="setValue('borderThickness', event.target.value , 'number', 'tree');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+		<mx:FormItem label="Border Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xB7BABC" id="myBorderColortree"
+								close="setValue('borderColor', event.target.selectedColor, 'color', 'tree'); "/>
+		</mx:FormItem>
+		<mx:FormItem label="Selection Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xB7BABC" id="mySelectionColortree"
+								close="setValue('selectionColor', event.target.selectedColor, 'color', 'tree'); "/>
+		</mx:FormItem>
+		<mx:FormItem label="Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x2B333C" id="myColortree"
+								close="setValue('color', event.target.selectedColor, 'color', 'tree'); "/>
+		</mx:FormItem>
+		<mx:FormItem label="Text Selected Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x2B333C" id="myTextSelectedColortree"
+								close="setValue('textSelectedColor', event.target.selectedColor, 'color', 'tree'); "/>
+		</mx:FormItem>
+		<mx:FormItem label="Text Indent">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="50"
+						value="0"
+						id="myTextIndenttree"
+						
+						snapInterval="1"
+						change="setValue('textIndent', event.target.value, 'number', 'tree');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+		<mx:FormItem label="Indentation">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="50"
+						value="15"
+						id="myIndentationtree"
+						
+						snapInterval="1"
+						change="setValue('indentation', event.target.value, 'number', 'tree');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Open Duration">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="1000"
+						value="250"
+						id="myOpenDurationtree"
+						
+						snapInterval="1"
+						change="setValue('openDuration', event.target.value, 'number', 'tree');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Selection Duration">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="3000"
+						value="250"
+						id="mySelectionDurationtree"
+						
+						snapInterval="1"
+						change="setValue('selectionDuration', event.target.value, 'number', 'tree');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			<mx:HBox toolTip="Note: dropShadowEnabled, shadowDirection, shadowDistance, and bordeStyle are also available and behave identically to list. Also, all of the icons are customizable through CSS as well." >
+			<mx:Image source="@Embed('assets/alert.png')" />
+			<mx:Label text="Note" fontSize="9" fontFamily="verdana" color="#FFFFFF" />
+			</mx:HBox>
+		</mx:Form>
+		</mx:Box>
+		</mx:TabNavigator> 
+		</mx:Box>
+		
+			
+		<mx:Box width="100%" paddingRight="5" paddingBottom="5" horizontalAlign="right">
+			<mx:LinkButton label="Restore Defaults" click="restoreDefaults()" styleName="undoLink" />
+		</mx:Box>
+	</mx:VBox>
+
+
+<!-- Sandbox -->
+<mx:VBox height="100%" width="100%" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="SANDBOX"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" verticalGap="10" >
+			
+			<!-- ADD LISTS HERE -->
+			
+			
+			<mx:List id="myList" width="100%" height="100">
+						 <mx:dataProvider>
+                <mx:Array>
+                    <mx:Object label="Adobe Dreamweaver" />
+                    <mx:Object label="Adobe Flash" />
+					 <mx:Object label="Adobe Flex" />
+                    <mx:Object label="Adobe Illustrator" />
+                    <mx:Object label="Adobe Photoshop " />
+                </mx:Array>
+            </mx:dataProvider>
+						</mx:List>
+			
+			<mx:DataGrid id="myGrid" width="100%" height="130">
+						 <mx:dataProvider>
+		                    <mx:Array id="arr">
+							 <mx:Object Artist="Amos Lee" Album="Amos Lee" Song="Arms of a Woman" Genre="Folk" />
+							<mx:Object Artist="Amos Lee" Album="Amos Lee" Song="Bottom of the Barrel" Genre="Folk/Jazz"/>
+							<mx:Object Artist="Snow Patrol" Album="Final Straw" Song="Chocolate" Genre="Alternative"/>
+							<mx:Object Artist="Snow Patrol" Album="Final Straw" Song="How to Be Dead" Genre="Alternative"/>
+							<mx:Object Artist="Keane" Album="Hopes and Fears" Song="Somewhere Only We Know" Genre="Alternative"/>
+	
+						</mx:Array>
+                </mx:dataProvider>
+
+            </mx:DataGrid>
+            <mx:Tree height="200" width="200%" id="sbTree" showRoot="false" creationComplete="openTree()" labelField="@label" dataProvider="{myxml}"/>
+            
+           
+			</mx:Box>
+	</mx:VBox>
+
+
+<!-- CSS -->
+<mx:VBox height="100%" width="315" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="CSS"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+		
+			<mx:TextArea id="myCSS" width="100%" height="100%" styleName="cssTextArea"	/>
+		</mx:Box>
+</mx:VBox>
+	
+
+	<mx:Script source="as/lists.as" />
+	
+	</mx:HBox>
+	<mx:XML id="myxml">
+        <Company label="Adobe">
+            <Branch label="Newton">
+                <Department label="Adobe Consulting">
+                    <Title label="User Experience">
+                        <Name label="Peter Baird"></Name>
+                    </Title>
+                </Department>
+            </Branch>
+        </Company>
+    </mx:XML>
+	
+</mx:VBox>
+
+
+

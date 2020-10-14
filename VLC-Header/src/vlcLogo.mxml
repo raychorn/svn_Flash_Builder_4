@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="100%" height="100%" 
+			   minWidth="900" maxWidth="900" 
+			   maxHeight="250"
+			   initialize="application1_initializeHandler(event)"
+			   creationComplete="application1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import Alert.AlertPopUp;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.effects.Move;
+			import mx.effects.Resize;
+			import mx.events.EffectEvent;
+			import mx.events.FlexEvent;
+			import mx.utils.URLUtil;
+			
+			import org.osmf.events.TimeEvent;
+			
+			private var _url:String;
+			private var _queryString:String;
+			private var _parms:Object = {};
+			
+			private var _C:String = 'c';
+			private var _SWF:String = 'swf';
+			private var _WIDTH:String = 'width';
+			private var _HEIGHT:String = 'height';
+			private var _BGCOLOR:String = 'bgcolor';
+			
+			private var flash_containerName:String = '';
+			
+			private var js:String = '';
+			
+			[Bindable]
+			private var bgColor:uint = 0xffffff;
+
+			[Embed(source="images/VLC-header-world-05-11-2010b.png")]
+			[Bindable]
+			public var logoVLCCls:Class;
+			
+			[Embed(source="images/raychorn_com2.png")]
+			[Bindable]
+			public var logoRayCHornCls:Class;
+			
+			[Embed(source="images/worldmap-v3-flash8a.swf")]
+			[Bindable]
+			public var logoWorldCls:Class;
+			
+			[Embed(source="images/backdrops/asteroids.jpg")]
+			[Bindable]
+			public var imageAsteroidsCls:Class;
+			
+			[Embed(source="images/backdrops/bubbles.jpg")]
+			[Bindable]
+			public var imageBubblesCls:Class;
+			
+			[Embed(source="images/backdrops/car_game.jpg")]
+			[Bindable]
+			public var imageCarGameCls:Class;
+			
+			[Embed(source="images/backdrops/oceanscape_4.jpg")]
+			[Bindable]
+			public var imageOceanscapeCls:Class;
+			
+			[Embed(source="images/backdrops/pacman.jpg")]
+			[Bindable]
+			public var imagePacmanCls:Class;
+			
+			[Embed(source="images/backdrops/crusader.jpg")]
+			[Bindable]
+			public var imageCrusaderCls:Class;
+			
+			[Embed(source="images/backdrops/rsstwitz.jpg")]
+			[Bindable]
+			public var imageRsstwitzCls:Class;
+			
+			[Bindable]
+			private var backgrounds:Array = [
+				imageAsteroidsCls,
+				imageBubblesCls,
+				imageCarGameCls,
+				imageCrusaderCls,
+				imageOceanscapeCls,
+				imagePacmanCls,
+				imageRsstwitzCls
+			];
+			
+			private var options:Object = {};
+			
+			private var moveEffect:Move;
+			private var resizeEffect:Resize;
+			private var moveEffect2:Move;
+			
+			private function xy_logo_image():Point {
+				return new Point((this.width/2)-(this.img.width*0.6),(this.height/2)-(this.img.height*0.45));
+				//return new Point((this.width/2)-(this.img.width*0.6),(this.height/2)-(this.img.height*0.25));
+			}
+
+			private function handleRightClick():void {
+				var popUp:Alert = AlertPopUp.infoNoOkay('(c). Copyright 2010,\nVyper Logix Corp.,\nAll Rights Reserved.','Copyright Notice');
+				popUp.width = 200;
+			}
+			
+			protected function application1_creationCompleteHandler(event:FlexEvent):void {
+				var toks:Array = FlexGlobals.topLevelApplication.url.split('?');
+				var qs:String = (toks.length > 1) ? toks[toks.length-1] : '';
+				var toks2:Array = qs.split('&');
+				var toks3:Array;
+				for (var i:String in toks2) {
+					toks3 = toks2[i].split('=');
+					if (toks3.length == 2) {
+						options[toks3[0]] = toks3[toks3.length-1];
+					}
+				}
+//				ExternalInterface.addCallback("rightClick", handleRightClick);
+//				this.currentState = 'default';
+//				this.currentState = 'raychorn';
+				this.currentState = 'vlc';
+			}
+			
+			private function moveImage():void {
+				var _this:vlcLogo = this;
+
+				this.moveEffect.xFrom = 0;
+				this.moveEffect.yFrom = -500;
+				this.moveEffect.xTo = 0;
+				this.moveEffect.yTo = 0;
+				this.moveEffect.duration = 2000;
+				this.moveEffect.addEventListener(EffectEvent.EFFECT_END, function (event:EffectEvent):void {
+				});
+				this.moveEffect.end();
+				
+				this.resizeEffect.heightFrom = 0;
+				this.resizeEffect.widthFrom = 0;
+				this.resizeEffect.heightTo = 230;
+				this.resizeEffect.widthTo = 700;
+				this.resizeEffect.duration = 3000;
+				this.resizeEffect.addEventListener(EffectEvent.EFFECT_END, function (event:EffectEvent):void {
+					var timer2:Timer = new Timer(1000,1);
+					timer2.addEventListener(TimerEvent.TIMER_COMPLETE, function (event:TimerEvent):void {
+						timer2.stop();
+						_this.moveEffect2.xFrom = _this.img1.x;
+						_this.moveEffect2.yFrom = _this.img1.y;
+						_this.moveEffect2.xTo = _this.img1.x+1000;
+						_this.moveEffect2.yTo = _this.img1.y;
+						_this.moveEffect2.duration = 1500;
+						_this.moveEffect2.end();
+						_this.moveEffect2.play();
+					});
+					timer2.start();
+				});
+				this.resizeEffect.end();
+				
+				this.resizeEffect.play();
+				this.moveEffect.play();
+			}
+			
+			private var i_next_background:int = -1;
+			private function get_next_background():* {
+				i_next_background = (i_next_background >= this.backgrounds.length) ? 0 : (i_next_background + 1);
+				return this.backgrounds[i_next_background];
+			}
+
+			protected function img1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:vlcLogo = this;
+				var img:Image = event.currentTarget as Image;
+				var timer:Timer = new Timer(6000);
+				timer.addEventListener(TimerEvent.TIMER, function (event:TimerEvent):void {
+					img.source = _this.get_next_background();
+					_this.moveImage();
+				});
+				timer.start();
+				img.source = this.get_next_background();
+				this.moveImage();
+			}
+
+
+			protected function application1_initializeHandler(event:FlexEvent):void {
+				this.moveEffect = new Move(this.img1);
+				this.resizeEffect = new Resize(this.img1);
+				this.moveEffect2 = new Move(this.img1);
+			}
+
+
+			protected function img_creationCompleteHandler(event:FlexEvent):void {
+				var _img:Image = event.currentTarget as Image;
+				if (options['source']) {
+					_img.source = options['source'];
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="default"/>
+		<s:State name="vlc"/>
+		<s:State name="raychorn"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:Canvas width="100%" height="100%" borderStyle="none" horizontalScrollPolicy="off" verticalScrollPolicy="off">
+		<mx:Canvas id="container1" includeIn="default" x="0" y="0" width="100%" height="100%" horizontalScrollPolicy="off" verticalScrollPolicy="off">
+			<mx:Image id="img1" x="0" y="0" source="{this.get_next_background()}" creationComplete="img1_creationCompleteHandler(event)"/>
+		</mx:Canvas>
+		<mx:SWFLoader id="loader" x="{(this.width/2)-(this.loader.width/2)}" y="0" height="{this.height}" scaleContent="true" source="{this.logoWorldCls}"/>
+		<mx:Canvas width="100%" id="container" x="0" y="50">
+			<!--
+			<mx:Image id="img" x="{(this.width/2)-(this.img.width*0.6)}" y="{(this.height/2)-(this.img.height*0.45)}" source="{this.logoRayCHornCls}" creationComplete="img_creationCompleteHandler(event)"/>
+			-->
+			<mx:Image id="img" x="{(this.width/2)-(this.img.width*0.6)}" y.raychorn="{(this.height/2)-(this.img.height*0.45)}" y.vlc="{50}" source.raychorn="{this.logoRayCHornCls}" source.vlc="{this.logoVLCCls}" creationComplete="img_creationCompleteHandler(event)"/>
+		</mx:Canvas>
+	</mx:Canvas>
+</s:Application>

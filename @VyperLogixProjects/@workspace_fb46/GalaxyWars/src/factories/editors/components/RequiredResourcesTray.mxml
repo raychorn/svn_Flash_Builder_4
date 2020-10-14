@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%" 
+		  creationComplete="hgroup1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ObjectUtils;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import spark.components.HGroup;
+			import spark.components.Image;
+			import spark.components.Label;
+			import spark.components.VGroup;
+			
+			import baseflex.utils.hex.StringUtils;
+			
+			import factories.ResourceFactory;
+			
+			private var __can_render__:Boolean = false;
+			
+			private var __data_provider__:ArrayCollection = new ArrayCollection();
+			
+			public function get dataProvider():* {
+				return this.__data_provider__;
+			}
+			
+			public function set dataProvider(value:Object):void {
+				var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+				var keys:Array = ObjectUtils.keys(value);
+				var item:Object;
+				for (var i:int = 0; i < keys.length; i++) {
+					item = {};
+					item[StringUtils.capitalize(keys[i])] = app.formatter_volume.format(value[keys[i]]);
+					this.__data_provider__.addItem(item);
+				}
+				if (this.__can_render__) {
+					this.render_using_dataProvider();
+				}
+			}
+			
+			private function render_using_dataProvider():void {
+				var img:Image;
+				var group:VGroup;
+				var lbl:Label
+				var item:Object;
+				var keys:Array;
+				var key:String;
+				for (var i:int = 0; i < this.__data_provider__.length; i++) {
+					item = this.__data_provider__.getItemAt(i);
+					keys = ObjectUtils.keys(item);
+					for (var n:int = 0; n < keys.length; n++) {
+						key = keys[n].toLowerCase();
+						group = new VGroup();
+						img = new Image();
+						if (key == ResourceFactory.metal.toLowerCase()) {
+							img.source = Images.metalImageClass;
+						} else if (key == ResourceFactory.crystal.toLowerCase()) {
+							img.source = Images.crystalImageClass;
+						} else if (key == ResourceFactory.deuterium.toLowerCase()) {
+							img.source = Images.deuteriumImageClass;
+						}
+						group.paddingLeft = 5;
+						group.paddingRight = 5;
+						group.addElement(img);
+						lbl = new Label();
+						lbl.text = ResourceFactory.current_level_upgrade_cost_as_string(item,true);
+						lbl.styleName = 'resourceBuilderLabel';
+						group.addElement(lbl);
+						this.addElement(group);
+					}
+				}
+				this.__can_render__ = false;
+			}
+			
+			protected function hgroup1_creationCompleteHandler(event:FlexEvent):void {
+				this.__can_render__ = true;
+				this.render_using_dataProvider();
+			}
+			
+		]]>
+	</fx:Script>
+</s:HGroup>

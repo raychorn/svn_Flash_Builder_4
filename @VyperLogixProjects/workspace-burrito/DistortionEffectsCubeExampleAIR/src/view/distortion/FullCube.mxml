@@ -1,0 +1,659 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox 
+    horizontalAlign="center"
+    verticalAlign="middle"
+    verticalGap="20"
+    creationComplete="onCreationComplete()"
+    xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:view="view.fullcube.*"
+    xmlns:sides="view.sides.*">
+
+    <mx:Script>
+        <![CDATA[
+            import flash.filters.BlurFilter;
+
+            import mx.core.UIComponent;
+            import mx.core.Container;
+            import mx.events.EffectEvent;
+            import mx.effects.easing.*;
+
+            import com.adobe.ac.control.StateMachine;
+            import com.adobe.ac.control.StateEvent;
+            import com.adobe.ac.mxeffects.Flip;
+            import com.adobe.ac.mxeffects.CubeRotate;
+            import com.adobe.ac.mxeffects.Push;
+            import com.adobe.ac.mxeffects.Pop;
+            import com.adobe.ac.mxeffects.Door;
+            import com.adobe.ac.mxeffects.Gate;
+            import com.adobe.ac.mxeffects.DistortionConstants;
+
+            import view.fullcube.DirectionEvent;
+
+            [Bindable]
+            private var FLIP:String = "Flip";
+
+            [Bindable]
+            private var CUBE_ROTATE:String = "CubeRotate";
+
+            [Bindable]
+            private var PUSH:String = "Push";
+
+            [Bindable]
+            private var POP:String = "Pop";
+
+            [Bindable]
+            private var DOOR:String = "Door";
+
+            [Bindable]
+            private var GATE:String = "Gate";
+
+            [Bindable]
+            private var OPEN:String = "OPEN";
+
+            [Bindable]
+            private var CLOSE:String = "CLOSE";
+
+            [Bindable]
+            private var DOWN:String = "DOWN";
+
+            [Bindable]
+            private var QUALITY:String = "QUALITY";
+
+            [Bindable]
+            private var SPEED:String = "SPEED";
+
+            private var stateMachine:StateMachine = StateMachine.getInstance();
+
+            private var easing:Function = Sine.easeInOut;
+
+            //private var easing : Function = Circ.easeIn;
+            //private var easing : Function = Linear.easeNone;        
+
+            private function getBlur():BlurFilter
+            {
+                var blur:BlurFilter = null;
+                if (blurCheckBox.selected)
+                {
+                    blur = new BlurFilter();
+                    blur.blurX = Number(blurXTextInput.text);
+                    blur.blurY = Number(blurYTextInput.text);
+                }
+                return blur;
+            }
+
+            private function exceedBounds():Boolean
+            {
+                return Boolean(exceedBoundsCheckBox.selected);
+            }
+
+            private function getDistortion():Number
+            {
+                return Number(distortionTextInput.text);
+            }
+
+            private function getDuration():Number
+            {
+                return Number(durationTextInput.text);
+            }
+
+            private function onFlipEnd(event:EffectEvent):void
+            {
+                var target:Container = Container(event.currentTarget.siblings[event.currentTarget.siblings.length - 1]);
+                viewStack.selectedChild = target;
+            }
+
+            private function onCreationComplete():void
+            {
+
+                var LOGIN_STATE:String = "login";
+                var QUICK_SEARCH_STATE:String = "quickSearch";
+                var SEARCH_STATE:String = "search";
+                var PRODUCT_LIST_STATE:String = "productList";
+                var REGISTRATION_STATE:String = "registration";
+                var CALENDAR_STATE:String = "calendar";
+
+                stateMachine.register(LOGIN_STATE);
+                stateMachine.register(QUICK_SEARCH_STATE);
+                stateMachine.register(SEARCH_STATE);
+                stateMachine.register(PRODUCT_LIST_STATE);
+                stateMachine.register(REGISTRATION_STATE);
+                stateMachine.register(CALENDAR_STATE);
+
+                stateMachine.setRepresentation(LOGIN_STATE, login);
+                stateMachine.setRepresentation(QUICK_SEARCH_STATE, quickSearch);
+                stateMachine.setRepresentation(SEARCH_STATE, search);
+                stateMachine.setRepresentation(PRODUCT_LIST_STATE, productList);
+                stateMachine.setRepresentation(REGISTRATION_STATE, registration);
+                stateMachine.setRepresentation(CALENDAR_STATE, calendar);
+
+                stateMachine.addTransition(LOGIN_STATE, PRODUCT_LIST_STATE, DirectionEvent.LEFT);
+                stateMachine.addTransition(LOGIN_STATE, SEARCH_STATE, DirectionEvent.LEFT + 2);
+                stateMachine.addTransition(LOGIN_STATE, QUICK_SEARCH_STATE, DirectionEvent.LEFT + 3);
+                stateMachine.addTransition(LOGIN_STATE, LOGIN_STATE, DirectionEvent.LEFT + 4);
+                stateMachine.addTransition(LOGIN_STATE, QUICK_SEARCH_STATE, DirectionEvent.RIGHT);
+                stateMachine.addTransition(LOGIN_STATE, SEARCH_STATE, DirectionEvent.RIGHT + 2);
+                stateMachine.addTransition(LOGIN_STATE, PRODUCT_LIST_STATE, DirectionEvent.RIGHT + 3);
+                stateMachine.addTransition(LOGIN_STATE, LOGIN_STATE, DirectionEvent.RIGHT + 4);
+                stateMachine.addTransition(LOGIN_STATE, REGISTRATION_STATE, DirectionEvent.TOP);
+                stateMachine.addTransition(LOGIN_STATE, SEARCH_STATE, DirectionEvent.TOP + 2);
+                stateMachine.addTransition(LOGIN_STATE, CALENDAR_STATE, DirectionEvent.TOP + 3);
+                stateMachine.addTransition(LOGIN_STATE, LOGIN_STATE, DirectionEvent.TOP + 4);
+                stateMachine.addTransition(LOGIN_STATE, CALENDAR_STATE, DirectionEvent.BOTTOM);
+                stateMachine.addTransition(LOGIN_STATE, SEARCH_STATE, DirectionEvent.BOTTOM + 2);
+                stateMachine.addTransition(LOGIN_STATE, REGISTRATION_STATE, DirectionEvent.BOTTOM + 3);
+                stateMachine.addTransition(LOGIN_STATE, LOGIN_STATE, DirectionEvent.BOTTOM + 4);
+
+                stateMachine.addTransition(QUICK_SEARCH_STATE, LOGIN_STATE, DirectionEvent.LEFT);
+                stateMachine.addTransition(QUICK_SEARCH_STATE, PRODUCT_LIST_STATE,
+                                           DirectionEvent.LEFT + 2);
+                stateMachine.addTransition(QUICK_SEARCH_STATE, SEARCH_STATE, DirectionEvent.LEFT + 3);
+                stateMachine.addTransition(QUICK_SEARCH_STATE, QUICK_SEARCH_STATE,
+                                           DirectionEvent.LEFT + 4);
+                stateMachine.addTransition(QUICK_SEARCH_STATE, SEARCH_STATE, DirectionEvent.RIGHT);
+                stateMachine.addTransition(QUICK_SEARCH_STATE, PRODUCT_LIST_STATE,
+                                           DirectionEvent.RIGHT + 2);
+                stateMachine.addTransition(QUICK_SEARCH_STATE, LOGIN_STATE, DirectionEvent.RIGHT + 3);
+                stateMachine.addTransition(QUICK_SEARCH_STATE, QUICK_SEARCH_STATE,
+                                           DirectionEvent.RIGHT + 4);
+                stateMachine.addTransition(QUICK_SEARCH_STATE, REGISTRATION_STATE,
+                                           DirectionEvent.TOP);
+                stateMachine.addTransition(QUICK_SEARCH_STATE, PRODUCT_LIST_STATE,
+                                           DirectionEvent.TOP + 2);
+                stateMachine.addTransition(QUICK_SEARCH_STATE, CALENDAR_STATE, DirectionEvent.TOP + 3);
+                stateMachine.addTransition(QUICK_SEARCH_STATE, QUICK_SEARCH_STATE,
+                                           DirectionEvent.TOP + 4);
+                stateMachine.addTransition(QUICK_SEARCH_STATE, CALENDAR_STATE, DirectionEvent.BOTTOM);
+                stateMachine.addTransition(QUICK_SEARCH_STATE, PRODUCT_LIST_STATE,
+                                           DirectionEvent.BOTTOM + 2);
+                stateMachine.addTransition(QUICK_SEARCH_STATE, REGISTRATION_STATE,
+                                           DirectionEvent.BOTTOM + 3);
+                stateMachine.addTransition(QUICK_SEARCH_STATE, QUICK_SEARCH_STATE,
+                                           DirectionEvent.BOTTOM + 4);
+
+                stateMachine.addTransition(SEARCH_STATE, QUICK_SEARCH_STATE, DirectionEvent.LEFT);
+                stateMachine.addTransition(SEARCH_STATE, LOGIN_STATE, DirectionEvent.LEFT + 2);
+                stateMachine.addTransition(SEARCH_STATE, PRODUCT_LIST_STATE, DirectionEvent.LEFT + 3);
+                stateMachine.addTransition(SEARCH_STATE, SEARCH_STATE, DirectionEvent.LEFT + 4);
+                stateMachine.addTransition(SEARCH_STATE, PRODUCT_LIST_STATE, DirectionEvent.RIGHT);
+                stateMachine.addTransition(SEARCH_STATE, LOGIN_STATE, DirectionEvent.RIGHT + 2);
+                stateMachine.addTransition(SEARCH_STATE, QUICK_SEARCH_STATE, DirectionEvent.RIGHT + 3);
+                stateMachine.addTransition(SEARCH_STATE, SEARCH_STATE, DirectionEvent.RIGHT + 4);
+                stateMachine.addTransition(SEARCH_STATE, CALENDAR_STATE, DirectionEvent.TOP);
+                stateMachine.addTransition(SEARCH_STATE, LOGIN_STATE, DirectionEvent.TOP + 2);
+                stateMachine.addTransition(SEARCH_STATE, REGISTRATION_STATE, DirectionEvent.TOP + 3);
+                stateMachine.addTransition(SEARCH_STATE, SEARCH_STATE, DirectionEvent.TOP + 4);
+                stateMachine.addTransition(SEARCH_STATE, REGISTRATION_STATE, DirectionEvent.BOTTOM);
+                stateMachine.addTransition(SEARCH_STATE, LOGIN_STATE, DirectionEvent.BOTTOM + 2);
+                stateMachine.addTransition(SEARCH_STATE, CALENDAR_STATE, DirectionEvent.BOTTOM + 3);
+                stateMachine.addTransition(SEARCH_STATE, SEARCH_STATE, DirectionEvent.BOTTOM + 4);
+
+                stateMachine.addTransition(PRODUCT_LIST_STATE, SEARCH_STATE, DirectionEvent.LEFT);
+                stateMachine.addTransition(PRODUCT_LIST_STATE, QUICK_SEARCH_STATE,
+                                           DirectionEvent.LEFT + 2);
+                stateMachine.addTransition(PRODUCT_LIST_STATE, LOGIN_STATE, DirectionEvent.LEFT + 3);
+                stateMachine.addTransition(PRODUCT_LIST_STATE, PRODUCT_LIST_STATE,
+                                           DirectionEvent.LEFT + 4);
+                stateMachine.addTransition(PRODUCT_LIST_STATE, LOGIN_STATE, DirectionEvent.RIGHT);
+                stateMachine.addTransition(PRODUCT_LIST_STATE, QUICK_SEARCH_STATE,
+                                           DirectionEvent.RIGHT + 2);
+                stateMachine.addTransition(PRODUCT_LIST_STATE, SEARCH_STATE, DirectionEvent.RIGHT + 3);
+                stateMachine.addTransition(PRODUCT_LIST_STATE, PRODUCT_LIST_STATE,
+                                           DirectionEvent.RIGHT + 4);
+                stateMachine.addTransition(PRODUCT_LIST_STATE, REGISTRATION_STATE,
+                                           DirectionEvent.TOP);
+                stateMachine.addTransition(PRODUCT_LIST_STATE, QUICK_SEARCH_STATE,
+                                           DirectionEvent.TOP + 2);
+                stateMachine.addTransition(PRODUCT_LIST_STATE, CALENDAR_STATE, DirectionEvent.TOP + 3);
+                stateMachine.addTransition(PRODUCT_LIST_STATE, PRODUCT_LIST_STATE,
+                                           DirectionEvent.TOP + 4);
+                stateMachine.addTransition(PRODUCT_LIST_STATE, CALENDAR_STATE, DirectionEvent.BOTTOM);
+                stateMachine.addTransition(PRODUCT_LIST_STATE, QUICK_SEARCH_STATE,
+                                           DirectionEvent.BOTTOM + 2);
+                stateMachine.addTransition(PRODUCT_LIST_STATE, REGISTRATION_STATE,
+                                           DirectionEvent.BOTTOM + 3);
+                stateMachine.addTransition(PRODUCT_LIST_STATE, PRODUCT_LIST_STATE,
+                                           DirectionEvent.BOTTOM + 4);
+
+                stateMachine.addTransition(REGISTRATION_STATE, PRODUCT_LIST_STATE,
+                                           DirectionEvent.LEFT);
+                stateMachine.addTransition(REGISTRATION_STATE, CALENDAR_STATE, DirectionEvent.LEFT + 2);
+                stateMachine.addTransition(REGISTRATION_STATE, QUICK_SEARCH_STATE,
+                                           DirectionEvent.LEFT + 3);
+                stateMachine.addTransition(REGISTRATION_STATE, REGISTRATION_STATE,
+                                           DirectionEvent.LEFT + 4);
+                stateMachine.addTransition(REGISTRATION_STATE, QUICK_SEARCH_STATE,
+                                           DirectionEvent.RIGHT);
+                stateMachine.addTransition(REGISTRATION_STATE, CALENDAR_STATE, DirectionEvent.RIGHT + 2);
+                stateMachine.addTransition(REGISTRATION_STATE, PRODUCT_LIST_STATE,
+                                           DirectionEvent.RIGHT + 3);
+                stateMachine.addTransition(REGISTRATION_STATE, REGISTRATION_STATE,
+                                           DirectionEvent.RIGHT + 4);
+                stateMachine.addTransition(REGISTRATION_STATE, SEARCH_STATE, DirectionEvent.TOP);
+                stateMachine.addTransition(REGISTRATION_STATE, CALENDAR_STATE, DirectionEvent.TOP + 2);
+                stateMachine.addTransition(REGISTRATION_STATE, LOGIN_STATE, DirectionEvent.TOP + 3);
+                stateMachine.addTransition(REGISTRATION_STATE, REGISTRATION_STATE,
+                                           DirectionEvent.TOP + 4);
+                stateMachine.addTransition(REGISTRATION_STATE, LOGIN_STATE, DirectionEvent.BOTTOM);
+                stateMachine.addTransition(REGISTRATION_STATE, CALENDAR_STATE, DirectionEvent.BOTTOM + 2);
+                stateMachine.addTransition(REGISTRATION_STATE, SEARCH_STATE, DirectionEvent.BOTTOM + 3);
+                stateMachine.addTransition(REGISTRATION_STATE, REGISTRATION_STATE,
+                                           DirectionEvent.BOTTOM + 4);
+
+                stateMachine.addTransition(CALENDAR_STATE, PRODUCT_LIST_STATE, DirectionEvent.LEFT);
+                stateMachine.addTransition(CALENDAR_STATE, REGISTRATION_STATE, DirectionEvent.LEFT + 2);
+                stateMachine.addTransition(CALENDAR_STATE, QUICK_SEARCH_STATE, DirectionEvent.LEFT + 3);
+                stateMachine.addTransition(CALENDAR_STATE, CALENDAR_STATE, DirectionEvent.LEFT + 4);
+                stateMachine.addTransition(CALENDAR_STATE, QUICK_SEARCH_STATE, DirectionEvent.RIGHT);
+                stateMachine.addTransition(CALENDAR_STATE, REGISTRATION_STATE, DirectionEvent.RIGHT + 2);
+                stateMachine.addTransition(CALENDAR_STATE, PRODUCT_LIST_STATE, DirectionEvent.RIGHT + 3);
+                stateMachine.addTransition(CALENDAR_STATE, CALENDAR_STATE, DirectionEvent.RIGHT + 4);
+                stateMachine.addTransition(CALENDAR_STATE, LOGIN_STATE, DirectionEvent.TOP);
+                stateMachine.addTransition(CALENDAR_STATE, REGISTRATION_STATE, DirectionEvent.TOP + 2);
+                stateMachine.addTransition(CALENDAR_STATE, SEARCH_STATE, DirectionEvent.TOP + 3);
+                stateMachine.addTransition(CALENDAR_STATE, CALENDAR_STATE, DirectionEvent.TOP + 4);
+                stateMachine.addTransition(CALENDAR_STATE, SEARCH_STATE, DirectionEvent.BOTTOM);
+                stateMachine.addTransition(CALENDAR_STATE, REGISTRATION_STATE, DirectionEvent.BOTTOM + 2);
+                stateMachine.addTransition(CALENDAR_STATE, LOGIN_STATE, DirectionEvent.BOTTOM + 3);
+                stateMachine.addTransition(CALENDAR_STATE, CALENDAR_STATE, DirectionEvent.BOTTOM + 4);
+
+                stateMachine.currentState = LOGIN_STATE;
+                stateMachine.addEventListener(StateEvent.STATE_CHANGE, onStateChange);
+
+            }
+
+            private function onStateChange(event:StateEvent):void
+            {
+                //trace( "state name " + event.state.alias );				
+            }
+
+            private function backward():void
+            {
+                stateMachine.backward();
+            }
+
+            private function forward():void
+            {
+                stateMachine.forward();
+            }
+
+
+
+
+
+
+
+
+            private function flipScreen(event:DirectionEvent):void
+            {
+                var target:UIComponent = UIComponent(stateMachine.currentStateRepresentation);
+                var direction:String = mapDirection(event.direction);
+                var siblings:Array = new Array();
+                var steps:int = event.steps;
+                if (steps > 1)
+                {
+                    for (var i:int = 0; i < steps; i++)
+                    {
+                        siblings.push(stateMachine.next(event.direction));
+                    }
+                }
+                else
+                {
+                    stateMachine.next(event.direction);
+                    siblings.push(UIComponent(stateMachine.currentStateRepresentation));
+                }
+                if (effectCombo.selectedItem == FLIP)
+                {
+                    var flip:Flip = new Flip(target);
+                    flip.exceedBounds = exceedBounds();
+                    flip.direction = direction;
+                    flip.smooth = smoothModeCombo.selected as Boolean;
+                    flip.siblings = siblings;
+                    flip.blur = getBlur();
+                    flip.distortion = getDistortion();
+                    flip.horizontalLightingLocation = String(horizontalLightingLocationCombo.selectedItem);
+                    flip.verticalLightingLocation = String(verticalLightingLocationCombo.selectedItem);
+                    flip.lightingStrength = Number(lightingStrengthTextInput.text);
+                    flip.exceedBounds = exceedBounds();
+                    flip.duration = getDuration();
+                    flip.easingFunction = easing;
+                    flip.suspendBackgroundProcessing = true;
+                    flip.addEventListener(EffectEvent.EFFECT_END, onFlipEnd);
+                    flip.play();
+                }
+                else if (effectCombo.selectedItem == CUBE_ROTATE)
+                {
+                    var flipCube:CubeRotate = new CubeRotate(target);
+                    flipCube.direction = direction;
+                    flipCube.smooth = smoothModeCombo.selected as Boolean;
+                    flipCube.siblings = siblings;
+                    flipCube.blur = getBlur();
+                    flipCube.distortion = getDistortion();
+                    flipCube.horizontalLightingLocation = String(horizontalLightingLocationCombo.selectedItem);
+                    flipCube.verticalLightingLocation = String(verticalLightingLocationCombo.selectedItem);
+                    flipCube.lightingStrength = Number(lightingStrengthTextInput.text);
+                    flipCube.duration = getDuration();
+                    flipCube.easingFunction = easing;
+                    flipCube.suspendBackgroundProcessing = true;
+                    flipCube.addEventListener(EffectEvent.EFFECT_END, onFlipEnd);
+                    flipCube.play();
+                }
+                else if (effectCombo.selectedItem == PUSH)
+                {
+                    var push:Push = new Push(target);
+                    push.direction = direction;
+                    push.smooth = smoothModeCombo.selected as Boolean;
+                    push.siblings = siblings;
+                    push.blur = getBlur();
+                    push.distortion = getDistortion();
+                    push.horizontalLightingLocation = String(horizontalLightingLocationCombo.selectedItem);
+                    push.verticalLightingLocation = String(verticalLightingLocationCombo.selectedItem);
+                    push.lightingStrength = Number(lightingStrengthTextInput.text);
+                    push.duration = getDuration();
+                    push.easingFunction = easing;
+                    push.suspendBackgroundProcessing = true;
+                    push.addEventListener(EffectEvent.EFFECT_END, onFlipEnd);
+                    push.play();
+                }
+                else if (effectCombo.selectedItem == POP)
+                {
+                    var pop:Pop = new Pop(target);
+                    pop.mode = (effectModePop.selectedItem == DOWN) ? DistortionConstants.DOWN : DistortionConstants.UP;
+                    pop.direction = direction;
+                    pop.smooth = smoothModeCombo.selected as Boolean;
+                    pop.siblings = siblings;
+                    pop.blur = getBlur();
+                    pop.distortion = getDistortion();
+                    pop.horizontalLightingLocation = String(horizontalLightingLocationCombo.selectedItem);
+                    pop.verticalLightingLocation = String(verticalLightingLocationCombo.selectedItem);
+                    pop.lightingStrength = Number(lightingStrengthTextInput.text);
+                    pop.duration = getDuration();
+                    pop.easingFunction = easing;
+                    pop.suspendBackgroundProcessing = true;
+                    pop.addEventListener(EffectEvent.EFFECT_END, onFlipEnd);
+                    pop.play();
+                }
+                else if (effectCombo.selectedItem == DOOR)
+                {
+                    var door:Door = new Door(target);
+                    door.mode = (effectModeDoor.selectedItem == OPEN) ? Door.OPEN : Door.CLOSE;
+                    door.direction = direction;
+                    door.smooth = smoothModeCombo.selected as Boolean;
+                    door.siblings = siblings;
+                    door.blur = getBlur();
+                    door.distortion = getDistortion();
+                    door.horizontalLightingLocation = String(horizontalLightingLocationCombo.selectedItem);
+                    door.verticalLightingLocation = String(verticalLightingLocationCombo.selectedItem);
+                    door.lightingStrength = Number(lightingStrengthTextInput.text);
+                    door.duration = getDuration();
+                    door.easingFunction = easing;
+                    door.suspendBackgroundProcessing = true;
+                    door.addEventListener(EffectEvent.EFFECT_END, onFlipEnd);
+                    door.play();
+                }
+                else if (effectCombo.selectedItem == GATE)
+                {
+                    var gate:Gate = new Gate(target);
+                    gate.mode = (effectModeDoor.selectedItem == OPEN) ? Door.OPEN : Door.CLOSE;
+                    gate.direction = direction;
+                    gate.smooth = smoothModeCombo.selected as Boolean;
+                    gate.siblings = siblings;
+                    gate.blur = getBlur();
+                    gate.distortion = getDistortion();
+                    gate.horizontalLightingLocation = String(horizontalLightingLocationCombo.selectedItem);
+                    gate.verticalLightingLocation = String(verticalLightingLocationCombo.selectedItem);
+                    gate.lightingStrength = Number(lightingStrengthTextInput.text);
+                    gate.duration = getDuration();
+                    gate.easingFunction = easing;
+                    gate.suspendBackgroundProcessing = true;
+                    gate.addEventListener(EffectEvent.EFFECT_END, onFlipEnd);
+                    gate.play();
+                }
+            }
+
+            private function mapDirection(direction:String):String
+            {
+                var flipDirection:String;
+                switch (direction)
+                {
+                    case DistortionConstants.LEFT:
+                        flipDirection = DistortionConstants.RIGHT;
+                        break;
+                    case DistortionConstants.RIGHT:
+                        flipDirection = DistortionConstants.LEFT;
+                        break;
+                    case DistortionConstants.TOP:
+                        flipDirection = DistortionConstants.BOTTOM;
+                        break;
+                    case DistortionConstants.BOTTOM:
+                        flipDirection = DistortionConstants.TOP;
+                        break;
+                    default:
+                        flipDirection = direction;
+                        break;
+                }
+                return flipDirection;
+            }
+
+            private function onEffectChange(effect:String):void
+            {
+                var isFlipStack:Boolean = (effect == "Push" || effect == "Pop" || effect == "Door" || effect == "Gate");
+                if (isFlipStack)
+                    styleCube();
+                else
+                    unstyleCube();
+            }
+
+            private function styleCube():void
+            {
+                var isStyled:Boolean = (login.getStyle("borderAlpha") != 1);
+                if (isStyled)
+                {
+                    login.setStyle("borderAlpha", 1);
+                    quickSearch.setStyle("borderAlpha", 1);
+                    search.setStyle("borderAlpha", 1);
+                    productList.setStyle("borderAlpha", 1);
+                    registration.setStyle("borderAlpha", 1);
+                    calendar.setStyle("borderAlpha", 1);
+
+                    quickSearch.setStyle("backgroundColor", "blue");
+                    search.setStyle("backgroundColor", "red");
+                    productList.setStyle("backgroundColor", "yellow");
+                    registration.setStyle("backgroundColor", "green");
+                    calendar.setStyle("backgroundColor", "purple");
+                }
+            }
+
+            private function unstyleCube():void
+            {
+                var isUnstyled:Boolean = (login.getStyle("borderAlpha") != .4);
+                if (isUnstyled)
+                {
+                    login.setStyle("borderAlpha", .4);
+                    quickSearch.setStyle("borderAlpha", .4);
+                    search.setStyle("borderAlpha", .4);
+                    productList.setStyle("borderAlpha", .4);
+                    registration.setStyle("borderAlpha", .4);
+                    calendar.setStyle("borderAlpha", .4);
+
+                    quickSearch.setStyle("backgroundColor", "white");
+                    search.setStyle("backgroundColor", "white");
+                    productList.setStyle("backgroundColor", "white");
+                    registration.setStyle("backgroundColor", "white");
+                    calendar.setStyle("backgroundColor", "white");
+                }
+            }
+
+            private function isFlipEffect(effect:String):Boolean
+            {
+                return (effect == "Flip");
+            }
+
+            private function isDoorEffect(effect:String):Boolean
+            {
+                return (effect == "Door" || effect == "Gate");
+            }
+
+            private function isPopEffect(effect:String):Boolean
+            {
+                return (effect == "Pop");
+            }
+
+            private function set effectComboChanged(effect:String):void
+            {
+                onEffectChange(effect);
+            }
+        ]]>
+    </mx:Script>
+
+    <mx:Binding 
+        source="String( effectCombo.selectedItem )"
+        destination="effectComboChanged"/>
+
+    <mx:Form>
+
+        <mx:FormItem 
+            label="Effect" direction="horizontal">
+            <mx:ComboBox id="effectCombo">
+                <mx:dataProvider>
+                    <mx:Array>
+                        <mx:String>CubeRotate</mx:String>
+                        <mx:String>Flip</mx:String>
+                        <mx:String>Push</mx:String>
+                        <mx:String>Pop</mx:String>
+                        <mx:String>Door</mx:String>
+                        <mx:String>Gate</mx:String>
+                    </mx:Array>
+                </mx:dataProvider>
+            </mx:ComboBox>
+            <mx:Canvas>
+                <mx:ComboBox id="effectModeDoor"
+                    hideEffect="Fade"
+                    showEffect="Fade"
+                    includeInLayout="{ isDoorEffect( String( effectCombo.selectedItem ) ) }"
+                    visible="{ isDoorEffect( String( effectCombo.selectedItem ) ) }">
+                    <mx:dataProvider>
+                        <mx:Array>
+                            <mx:String>OPEN</mx:String>
+                            <mx:String>CLOSE</mx:String>
+                        </mx:Array>
+                    </mx:dataProvider>
+                </mx:ComboBox>
+                <mx:ComboBox id="effectModePop"
+                    hideEffect="Fade"
+                    showEffect="Fade"
+                    includeInLayout="{ isPopEffect( String( effectCombo.selectedItem ) ) }"
+                    visible="{ isPopEffect( String( effectCombo.selectedItem ) ) }">
+                    <mx:dataProvider>
+                        <mx:Array>
+                            <mx:String>DOWN</mx:String>
+                            <mx:String>UP</mx:String>
+                        </mx:Array>
+                    </mx:dataProvider>
+                </mx:ComboBox>
+            </mx:Canvas>
+        </mx:FormItem>
+
+        <mx:FormItem label="Smoothing Mode">
+            <mx:CheckBox id="smoothModeCombo"
+                selected="false"/>
+        </mx:FormItem>
+
+        <mx:FormItem 
+            label="Blur" direction="horizontal">
+            <mx:CheckBox id="blurCheckBox"
+                selected="false"/>
+            <mx:FormItem 
+                hideEffect="Fade"
+                showEffect="Fade"
+                includeInLayout="{ blurCheckBox.selected }" label="BlurX:"
+                visible="{ blurCheckBox.selected }">
+                <mx:TextInput id="blurXTextInput"
+                    width="30"
+                    text="4"/>
+            </mx:FormItem>
+            <mx:FormItem 
+                hideEffect="Fade"
+                showEffect="Fade"
+                includeInLayout="{ blurCheckBox.selected }" label="BlurY:"
+                visible="{ blurCheckBox.selected }">
+                <mx:TextInput id="blurYTextInput"
+                    width="30"
+                    text="4"/>
+            </mx:FormItem>
+        </mx:FormItem>
+        <mx:FormItem 
+            showEffect="Fade"
+            label="Exceeds bounds"
+            includeInLayout="{ isFlipEffect( String( effectCombo.selectedItem ) ) }"
+            visible="{ isFlipEffect( String( effectCombo.selectedItem ) ) }">
+            <mx:CheckBox id="exceedBoundsCheckBox"
+                selected="true"/>
+        </mx:FormItem>
+
+        <mx:FormItem 
+            label="Lighting Location" direction="horizontal">
+            <mx:Label text="Horizontal"/>
+            <mx:ComboBox id="horizontalLightingLocationCombo">
+                <mx:dataProvider>
+                    <mx:Array>
+                        <mx:String>LEFT</mx:String>
+                        <mx:String>RIGHT</mx:String>
+                        <mx:String></mx:String>
+                    </mx:Array>
+                </mx:dataProvider>
+            </mx:ComboBox>
+            <mx:Label text="Vertical"/>
+            <mx:ComboBox id="verticalLightingLocationCombo">
+                <mx:dataProvider>
+                    <mx:Array>
+                        <mx:String>TOP</mx:String>
+                        <mx:String>BOTTOM</mx:String>
+                        <mx:String></mx:String>
+                    </mx:Array>
+                </mx:dataProvider>
+            </mx:ComboBox>
+            <mx:Label text="Strength"/>
+            <mx:TextInput id="lightingStrengthTextInput"
+                width="50"
+                text="7.5"/>
+        </mx:FormItem>
+
+        <mx:FormItem label="Distortion">
+            <mx:TextInput id="distortionTextInput"
+                width="50"
+                text="20"/>
+        </mx:FormItem>
+
+        <mx:FormItem label="Duration (ms)">
+            <mx:TextInput id="durationTextInput"
+                width="50"
+                text="750"/>
+        </mx:FormItem>
+
+    </mx:Form>
+
+    <!--
+         width="383" height="348"
+         width="385" height="385"
+    -->
+
+    <view:CubeControls direction="flipScreen( DirectionEvent( event ) );">
+
+        <view:sideContent>
+
+            <mx:ViewStack id="viewStack">
+
+                <sides:Login id="login"/>
+                <sides:QuickSearch id="quickSearch"/>
+                <sides:Search id="search"/>
+                <sides:ProductList id="productList"/>
+                <sides:Registration id="registration"/>
+                <sides:Calendar id="calendar"/>
+
+            </mx:ViewStack>
+
+        </view:sideContent>
+
+    </view:CubeControls>
+
+</mx:VBox>

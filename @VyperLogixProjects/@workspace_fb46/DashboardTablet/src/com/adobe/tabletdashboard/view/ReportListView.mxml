@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View preinitialize="preinitializeHandler()"
+		viewActivate="viewActivateHandler()"
+		backgroundColor="0x1A1A1A"
+		xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:mx="library://ns.adobe.com/flex/mx"
+		xmlns:charts="library://ns.adobe.com/flex/mx/charts"
+		xmlns:components="com.adobe.dashboard.view.components.*"
+		xmlns:enum="com.adobe.dashboard.enum.*"
+		xmlns:mobilecomponents="com.adobe.mobiledashboard.view.components.*"
+		actionBarVisible="false"
+		xmlns:tabletComponents="com.adobe.tabletdashboard.view.components.*">
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.dashboard.enum.DateRangeEnum;
+			import com.adobe.dashboard.enum.StateEnum;
+			import com.adobe.dashboard.event.NavigationEvent;
+			import com.adobe.dashboard.model.AppModel;
+			import com.adobe.dashboard.presenter.MainPresenter;
+			import com.adobe.dashboard.presenter.SalesGoalsPresenter;
+
+			import flash.filters.ColorMatrixFilter;
+
+			import mx.events.CloseEvent;
+			import mx.events.TouchInteractionEvent;
+
+			import spark.components.Group;
+
+			public static const SALES_GOALS_MONTH_OVERVIEW:String="salesGoalsMonthOverview";
+			public static const SALES_GOALS_QUARTER_OVERVIEW:String="salesGoalsQuarterOverview";
+			public static const SALES_GOALS_YEAR_OVERVIEW:String="salesGoalsYearOverview";
+			public static const SALES_PIPELINE_OVERVIEW:String="salesPipelineOverview";
+			public static const AVERAGE_REVENUE_OVERVIEW:String="averageRevenueOverview";
+
+
+
+			[Bindable]
+			private var presenter:MainPresenter;
+
+			private var salesGoalsPresenter:SalesGoalsPresenter=AppModel.getInstance().salesGoalsPresenter;
+
+			protected var selections:Array=[];
+
+			protected function preinitializeHandler():void
+			{
+				presenter=AppModel.getInstance().mainPresenter;
+			}
+
+			protected function viewActivateHandler():void
+			{
+				salesGoalsMonthOverviewDisplay.loadData();
+				salesGoalsQuarterOverviewDisplay.loadData();
+				salesGoalsYearOverviewDisplay.loadData();
+				salesPipelineOverviewDisplay.loadData();
+				averageRevenueOverviewDisplay.loadData();
+				salesGoalsMonthOverviewDisplay_clickHandler(null);
+			}
+
+			protected function removeSaturate(event:Event):void
+			{
+				DisplayObject(event.currentTarget).filters=[];
+			}
+
+			protected function tourTip_closeHandler(event:CloseEvent):void
+			{
+				presenter.hideTourTip();
+			}
+
+
+			protected var beingTouched:Boolean=false;
+
+			protected function homeScroller_touchInteractionStartHandler(event:TouchInteractionEvent):void
+			{
+				salesGoalsMonthOverviewDisplay.filters=[];
+				salesGoalsQuarterOverviewDisplay.filters=[];
+				salesGoalsYearOverviewDisplay.filters=[];
+				salesPipelineOverviewDisplay.filters=[];
+				averageRevenueOverviewDisplay.filters=[];
+				beingTouched=true;
+			}
+
+
+			protected function homeScroller_touchInteractionEndHandler(event:TouchInteractionEvent):void
+			{
+				beingTouched=false;
+			}
+
+			public function resetOverviews():void
+			{
+				salesGoalsMonthOverviewDisplay.currentState="normal";
+				salesGoalsQuarterOverviewDisplay.currentState="normal";
+				salesGoalsYearOverviewDisplay.currentState="normal";
+				salesPipelineOverviewDisplay.currentState="normal";
+				averageRevenueOverviewDisplay.currentState="normal";
+			}
+
+			public function setSelectedOverview(overviewName:String):void
+			{
+				switch (overviewName)
+				{
+					case SALES_GOALS_MONTH_OVERVIEW:
+						salesGoalsMonthOverviewDisplay.currentState="selected";
+						break;
+					case SALES_GOALS_QUARTER_OVERVIEW:
+						salesGoalsQuarterOverviewDisplay.currentState="selected";
+						break;
+					case SALES_GOALS_YEAR_OVERVIEW:
+						salesGoalsYearOverviewDisplay.currentState="selected";
+						break;
+					case SALES_PIPELINE_OVERVIEW:
+						salesPipelineOverviewDisplay.currentState="selected";
+						break;
+					case AVERAGE_REVENUE_OVERVIEW:
+						averageRevenueOverviewDisplay.currentState="selected";
+						break;
+				}
+			}
+
+			protected function salesGoalsMonthOverviewDisplay_clickHandler(event:MouseEvent):void
+			{
+				resetOverviews();
+				salesGoalsMonthOverviewDisplay.currentState="selected";
+				salesGoalsPresenter.dateRange=DateRangeEnum.MONTH;
+				presenter.goSalesGoals();
+				selections.push(salesGoalsMonthOverviewDisplay);
+			}
+
+
+
+			protected function salesGoalsQuarterOverviewDisplay_clickHandler(event:MouseEvent):void
+			{
+				resetOverviews();
+				salesGoalsQuarterOverviewDisplay.currentState="selected";
+				salesGoalsPresenter.dateRange=DateRangeEnum.QUARTER;
+				presenter.goSalesGoals();
+				selections.push(salesGoalsQuarterOverviewDisplay);
+			}
+
+			protected function salesGoalsYearOverviewDisplay_clickHandler(event:MouseEvent):void
+			{
+				resetOverviews();
+				salesGoalsYearOverviewDisplay.currentState="selected";
+				salesGoalsPresenter.dateRange=DateRangeEnum.YEAR;
+				presenter.goSalesGoals();
+				selections.push(salesGoalsYearOverviewDisplay);
+			}
+
+			protected function salesPipelineOverviewDisplay_clickHandler(event:MouseEvent):void
+			{
+				resetOverviews();
+				salesPipelineOverviewDisplay.currentState="selected";
+				presenter.goSalesPipeline();
+				selections.push(salesPipelineOverviewDisplay);
+			}
+
+			protected function averageRevenueOverviewDisplay_clickHandler(event:MouseEvent):void
+			{
+
+				resetOverviews();
+				averageRevenueOverviewDisplay.currentState="selected";
+				presenter.goAverageRevenuePerSale();
+				selections.push(averageRevenueOverviewDisplay);
+			}
+
+			public function goBack():void
+			{
+				resetOverviews();
+				if (selections.length > 1)
+				{
+					selections.pop()
+					Group(selections[selections.length - 1]).currentState="selected";
+				}
+			}
+		]]>
+	</fx:Script>
+
+	<s:Scroller id="homeScroller"
+				width="100%"
+				height="100%"
+				contentBackgroundColor="0x000000"
+				touchInteractionStart="homeScroller_touchInteractionStartHandler(event)"
+				touchInteractionEnd="homeScroller_touchInteractionEndHandler(event)">
+		<s:VGroup gap="1"
+				  width="100%">
+			<s:Spacer height="1"/>
+			<!-- Sales Goals Overview -->
+			<tabletComponents:SalesGoalsPeriodOverview id="salesGoalsMonthOverviewDisplay"
+													   width="100%"
+													   height="138"
+													   paddingLeft="20"
+													   paddingRight="20"
+													   click="salesGoalsMonthOverviewDisplay_clickHandler(event)"
+													   barHeight="49"
+													   cacheAsBitmap="true"
+													   period="{SalesGoalsPeriodOverview.PERIOD_MONTH}"/>
+
+			<tabletComponents:SalesGoalsPeriodOverview id="salesGoalsQuarterOverviewDisplay"
+													   width="100%"
+													   height="138"
+													   paddingLeft="20"
+													   paddingRight="20"
+													   click="salesGoalsQuarterOverviewDisplay_clickHandler(event)"
+													   barHeight="49"
+													   cacheAsBitmap="true"
+													   period="{SalesGoalsPeriodOverview.PERIOD_QUARTER}"/>
+
+			<tabletComponents:SalesGoalsPeriodOverview id="salesGoalsYearOverviewDisplay"
+													   width="100%"
+													   height="138"
+													   paddingLeft="20"
+													   paddingRight="20"
+													   click="salesGoalsYearOverviewDisplay_clickHandler(event)"
+													   barHeight="49"
+													   cacheAsBitmap="true"
+													   period="{SalesGoalsPeriodOverview.PERIOD_YEAR}"/>
+
+			<!-- Sales Pipeline Overview -->
+			<tabletComponents:SalesPipelineOverview id="salesPipelineOverviewDisplay"
+													width="100%"
+													height="130"
+													paddingLeft="20"
+													paddingRight="20"
+													click="salesPipelineOverviewDisplay_clickHandler(event)"
+													barHeight="49"
+													cacheAsBitmap="true"/>
+
+			<!-- Average Revenue per Sale Overview -->
+			<tabletComponents:AverageRevenueOverview id="averageRevenueOverviewDisplay"
+													 width="100%"
+													 height="120"
+													 paddingLeft="20"
+													 paddingRight="20"
+													 click="averageRevenueOverviewDisplay_clickHandler(event)"
+													 barHeight="49"
+													 cacheAsBitmap="true"/>
+
+
+
+		</s:VGroup>
+	</s:Scroller>
+	<s:BusyIndicator id="loadingIndicator"
+					 right="10"
+					 top="5"
+					 visible="{!salesGoalsMonthOverviewDisplay.dataLoaded}"
+					 symbolColor="#ffffff"/>
+
+	<!-- the title content for this view -->
+	<s:titleContent>
+		<s:Label styleName="titleWhiteStyle"
+				 text="Flex Sales Dashboard"/>
+	</s:titleContent>
+
+
+
+
+</s:View>

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   width="100%" height="100%" 
+			   initialize="titlewindow1_initializeHandler(event)" 
+			   creationComplete="titlewindow1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.SWFLoader;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.components.VideoPlayer;
+			import spark.events.TitleWindowBoundsEvent;
+			
+			private var __current_item__:*;
+			
+			public var prefix:String;
+			
+			private function is_image(fname:String):Boolean {
+				var i:int = fname.toLowerCase().indexOf('.png');
+				var j:int = fname.toLowerCase().indexOf('.jpg');
+				var n:int = fname.length - 4;
+				return ( (i == n) || (j == n) );
+			}
+
+			private function is_video(fname:String):Boolean {
+				var i:int = fname.toLowerCase().indexOf('.mp4');
+				var n:int = fname.length - 4;
+				return (i == n);
+			}
+			
+			public function get current_item():* {
+				return this.__current_item__;
+			}
+			
+			public function set current_item(current_item:*):void {
+				//this.canvas.removeAllElements();
+				if (current_item != this.__current_item__) {
+					this.__current_item__ = current_item;
+					this.canvas.removeAllElements();
+					this.source.text = this.__current_item__['source'];
+					this.play.text = this.__current_item__['play'];
+					var source:String;
+					if ( (this.source.text is String) && (this.source.text.length > 0) ) {
+						source = this.prefix+File.separator+this.source.text.replace('/',File.separator);
+					}
+					var play:String;
+					if ( (this.play.text is String) && (this.play.text.length > 0) ) {
+						play = this.prefix+File.separator+this.play.text.replace('/',File.separator);
+					}
+					var fPlay:File = new File(play);
+					var f:File = new File((this.is_video(fPlay.nativePath)) ? play : source);
+					if ( (f.exists) && (!f.isDirectory) ) {
+						if (this.is_image(f.nativePath)) {
+							var image:SWFLoader = new SWFLoader();
+							image.source = f.url;
+							image.x = 100;
+							image.y = 100;
+							image.scaleContent = true;
+							image.maintainAspectRatio = true;
+							image.showBusyCursor = true;
+							image.width = this.width;
+							image.height = this.height;
+							//this.canvas.addElement(image);
+							trace('(a f.url='+f.url+', image.width='+image.width+', image.height='+image.height+')');
+//							var hotspot:HotSpot = new HotSpot();
+//							hotspot.x = 0;
+//							hotspot.y = 0;
+//							hotspot.width = 100;
+//							hotspot.height = 100;
+//							this.canvas.addElement(hotspot);
+						} else if (this.is_video(f.nativePath)) {
+							var video:spark.components.VideoPlayer = new spark.components.VideoPlayer();
+							video.x = 0;
+							video.y = 0;
+							video.width = this.canvas.width;
+							video.height = this.canvas.height;
+							video.addEventListener(FlexEvent.CREATION_COMPLETE, 
+								function (event:FlexEvent):void {
+									video.source = f.url; // 'http://youtu.be/Xf9jEemxwYY'
+								}
+							);
+							this.canvas.addElement(video);
+						} else {
+							trace('Current unknown asset is good to go ?!?');
+						}
+					}
+				}
+			}
+			
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void {
+			}
+			
+			private function handle_close_event(event:CloseEvent):void {
+				//this.removeEventListener(CloseEvent.CLOSE, handle_close_event);
+				//PopUpManager.removePopUp(this);
+			}
+
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void {
+				this.addEventListener(CloseEvent.CLOSE, handle_close_event);
+				this.addEventListener(TitleWindowBoundsEvent.WINDOW_MOVE, 
+					function (event:TitleWindowBoundsEvent):void {
+						trace('TitleWindowBoundsEvent.WINDOW_MOVE');
+					}
+				);
+				this.addEventListener(TitleWindowBoundsEvent.WINDOW_MOVE_START, 
+					function (event:TitleWindowBoundsEvent):void {
+						trace('TitleWindowBoundsEvent.WINDOW_MOVE_START');
+					}
+				);
+				this.addEventListener(TitleWindowBoundsEvent.WINDOW_MOVING, 
+					function (event:TitleWindowBoundsEvent):void {
+						trace('TitleWindowBoundsEvent.WINDOW_MOVING');
+					}
+				);
+				this.addEventListener(TitleWindowBoundsEvent.WINDOW_MOVE_END, 
+					function (event:TitleWindowBoundsEvent):void {
+						trace('TitleWindowBoundsEvent.WINDOW_MOVE_END');
+					}
+				);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup id="vgroup" width="100%" height="100%" verticalAlign="top" horizontalAlign="left">
+		<s:HGroup width="100%" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" visible="false" includeInLayout="false">
+			<s:Label text="Source (Image+MP3): " paddingTop="10"/>
+			<s:TextInput id="source" text="" width="100%" editable="false"/>
+		</s:HGroup>
+		<s:HGroup width="100%" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" visible="false" includeInLayout="false">
+			<s:Label text="Play (MP3 or MP4): " paddingTop="10"/>
+			<s:TextInput id="play" text="" width="100%" editable="false"/>
+		</s:HGroup>
+	</s:VGroup>
+	<s:Group id="canvas" x="100" y="100" width="500" height="500">
+	</s:Group>
+</s:TitleWindow>

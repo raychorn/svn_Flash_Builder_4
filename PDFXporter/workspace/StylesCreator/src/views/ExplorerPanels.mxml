@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+	<mx:VBox width="100%" height="100%" xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:views="views.*" >
+	
+	<mx:HBox width="100%" height="100%" >
+
+
+
+	<mx:VBox height="100%" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="STYLE CONTROLS"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+			<mx:Form styleName="noPadding" height="100%">
+				<mx:FormItem label="Corner Radius">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="28"
+						value="4"
+						id="myCornerRadius"
+						snapInterval="1"
+						change="setValue('cornerRadius', event.target.value, 'number');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				</mx:FormItem>
+				<mx:FormItem label="Header Height">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="50"
+						value="28"
+						id="myHeaderHeight"
+						snapInterval="1"
+						change="setValue('headerHeight', event.target.value, 'number');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				</mx:FormItem>
+				<mx:FormItem label="Drop Shadow Enabled">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBDropShadowEnabled" label="true" selected="true" labelPlacement="right" id="PanelDropShadowEnabled" 
+								click="myPanel.setStyle('dropShadowEnabled', true);
+										enableShadowItems();
+									   setCSS('dropShadowEnabled', 0, 'true');"
+									   />
+							<mx:RadioButton groupName="SBDropShadowEnabled" label="false" labelPlacement="right" 
+								click="myPanel.setStyle('dropShadowEnabled', false);
+								enableShadowItems();
+								 setCSS('dropShadowEnabled', 0, 'false');"/>
+						</mx:HBox>
+					</mx:FormItem>
+					
+			<mx:Box styleName="conditionalBox" >			
+				<mx:Form styleName="conditionalForm"  >
+				
+					<mx:FormItem label="Shadow Distance">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="2"
+						id="myShadowDistance"
+						
+						snapInterval="1"
+						change="setValue('shadowDistance', event.target.value, 'number');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				</mx:FormItem>
+					<mx:FormItem label="Shadow Direction">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBShadowDirection" label="left"   id="myShadowDirection2"
+								labelPlacement="right" click="myPanel.setStyle('shadowDirection', 'left'); setCSS('shadowDirection', 0, 'left');"/>
+							<mx:RadioButton groupName="SBShadowDirection" label="center" id="myShadowDirection"
+								selected="true" labelPlacement="right" click="myPanel.setStyle('shadowDirection', 'center'); setCSS('shadowDirection', 0, 'center');"/>
+							<mx:RadioButton groupName="SBShadowDirection" label="right"  id="myShadowDirection3"
+								 labelPlacement="right" click="myPanel.setStyle('shadowDirection', 'right'); setCSS('shadowDirection', 0, 'right');"/>
+						</mx:HBox>
+					</mx:FormItem>
+					<mx:FormItem label="Drop Shadow Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x000000" id="myDropShadowColor"
+								close="setValue('dropShadowColor', event.target.selectedColor, 'color')"/>
+				</mx:FormItem>
+			</mx:Form>
+		</mx:Box>
+					
+					
+					<mx:FormItem label="Rounded Bottom Corners">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBRoundedBottomCorners"  label="true" labelPlacement="right"  click="myPanel.setStyle('roundedBottomCorners', 'true'); setCSS('roundedBottomCorners', 0, 'true');"/>
+							<mx:RadioButton groupName="SBRoundedBottomCorners" label="false" id="myRoundedBottomCorners"  selected="true" labelPlacement="right" click="myPanel.setStyle('roundedBottomCorners', 'false'); setCSS('roundedBottomCorners', 0, 'false');"/>
+						</mx:HBox>
+					</mx:FormItem>
+				
+				
+				
+				
+				<mx:FormItem label="Text Align">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBTextAlign" label="left"   id="myTextAlign" 	selected="true"
+								labelPlacement="right" click="myPanel.setStyle('textAlign', 'left'); setCSS('textAlign', 0, 'left');"/>
+							<mx:RadioButton groupName="SBTextAlign" label="center"
+							 labelPlacement="right" click="myPanel.setStyle('textAlign', 'center'); setCSS('textAlign', 0, 'center');"/>
+							<mx:RadioButton groupName="SBTextAlign" label="right" 
+								 labelPlacement="right" click="myPanel.setStyle('textAlign', 'right'); setCSS('textAlign', 0, 'right');"/>
+						</mx:HBox>
+					</mx:FormItem>
+
+
+				<mx:FormItem label="Background Alpha">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="1"
+						
+						snapInterval=".01"
+						id="myBackgroundAlpha"
+						change="setValue('backgroundAlpha', event.target.value, 'number');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				</mx:FormItem>
+				<mx:FormItem label="Border Alpha">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value=".40"
+						id="myBorderAlpha"
+						snapInterval=".01"
+						change="setValue('borderAlpha', event.target.value, 'number');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				</mx:FormItem>
+				<mx:HBox styleName="conditionalBox" toolTip="Note: Setting these will make borderAlpha obselete. Set highlight alphas to 0 for true header colors.">
+				<mx:Box paddingLeft="5" paddingTop="5">
+				<mx:Image id="alert" source="@Embed('assets/alert.png')" />
+				</mx:Box>
+				<mx:Form styleName="conditionalForm">
+				<mx:FormItem label="Highlight Alphas">
+					<mx:HBox>
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value=".30"
+						id="highlightAlpha1"
+						snapInterval=".01"
+						change="myPanel.setStyle('highlightAlphas',[highlightAlpha1.value, highlightAlpha2.value]);
+						setArrayCSS('highlightAlphas', highlightAlpha1.value, highlightAlpha2.value, false)"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="0"
+						id="highlightAlpha2"
+						snapInterval=".01"
+						change="myPanel.setStyle('highlightAlphas',[highlightAlpha1.value, highlightAlpha2.value]);
+						setArrayCSS('highlightAlphas', highlightAlpha1.value, highlightAlpha2.value, false)"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+				</mx:HBox>
+				</mx:FormItem>
+				
+				<mx:FormItem label="Border Style">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBBorderStyle2" label="undefined"  selected="true" id="myBorderStyle"
+								labelPlacement="right" click="myPanel.setStyle('borderStyle', undefined);
+								setCSS('borderStyle', 0, 'undefined');"/>
+							<mx:RadioButton groupName="SBBorderStyle2" label="none"  
+								labelPlacement="right" click="myPanel.setStyle('borderStyle', 'none');
+								setCSS('borderStyle', 0, 'none');"/>
+							<mx:RadioButton groupName="SBBorderStyle2" label="solid"  
+								labelPlacement="right" click="myPanel.setStyle('borderStyle', 'solid');
+								setCSS('borderStyle', 0, 'solid');"/>
+						</mx:HBox>
+					</mx:FormItem>
+					<mx:FormItem label="Border Thickness" toolTip="Note: Also available are borderThicknessBottom, borderThicknessRight, borderThicknessTop, and borderThicknessLeft to set each border individually.">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="1"
+						id="myBorderThickness"
+						snapInterval="1"
+						change="setValue('borderThickness', event.target.value, 'number');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				</mx:FormItem>
+				
+				<mx:FormItem label="Header Colors">
+					<mx:HBox paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0">
+							<mx:ColorPicker id="header1" height="23" width="70" selectedColor="0xe7e7e7" 
+								close="myPanel.setStyle('headerColors', [header1.selectedColor, header2.selectedColor]);
+								setArrayCSS('headerColors', header1.selectedColor, header2.selectedColor, true)"/>
+							<mx:ColorPicker  id="header2" height="23" width="70" selectedColor="0xd9d9d9" 
+								close="myPanel.setStyle('headerColors', [header1.selectedColor, header2.selectedColor]); 
+								setArrayCSS('headerColors', header1.selectedColor, header2.selectedColor, true)"/>
+					</mx:HBox>	
+				</mx:FormItem>
+				<mx:FormItem label="Control Bar" toolTip="Note: controlBarstyleName is available to set properties of children in the control bar">
+					<mx:CheckBox id="myControlBar" selected="true" click="showFooter()" />
+				
+				</mx:FormItem>
+				<mx:FormItem label="Footer Colors">
+					<mx:HBox paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0">
+							<mx:ColorPicker id="footer1" height="23" width="70" selectedColor="0xe7e7e7" 
+								close="myPanel.setStyle('footerColors', [footer1.selectedColor, footer2.selectedColor]); 
+								setArrayCSS('footerColors', footer1.selectedColor, footer2.selectedColor, true)"/>
+							<mx:ColorPicker  id="footer2" height="23" width="70" selectedColor="0xc7c7c7" 
+								close="myPanel.setStyle('footerColors', [footer1.selectedColor, footer2.selectedColor]);
+								setArrayCSS('footerColors', footer1.selectedColor, footer2.selectedColor, true)"/>
+					</mx:HBox>	
+				</mx:FormItem>
+				
+				</mx:Form>
+				
+				</mx:HBox>
+				
+				
+				
+				<mx:FormItem label="Background Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xFFFFFF" id="myBackgroundColor"
+								close="setValue('backgroundColor', event.target.selectedColor, 'color')"/>
+				</mx:FormItem>
+				
+				<mx:FormItem label="Border Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xB7BABC" id="myBorderColor"
+								close="setValue('borderColor', event.target.selectedColor, 'color')"/>
+				</mx:FormItem>
+				
+				<mx:FormItem label="Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="#0B333C" id="myColor"
+								close="setValue('color', event.target.selectedColor, 'color')"/>	
+				</mx:FormItem>
+				
+				
+			</mx:Form>
+			
+		</mx:Box>
+		<mx:Box width="100%" paddingRight="5" paddingBottom="5" horizontalAlign="right">
+			<mx:LinkButton label="Restore Defaults" click="restoreDefaults()" styleName="undoLink" />
+		</mx:Box>
+	</mx:VBox>
+
+
+<!-- Sandbox -->
+<mx:VBox height="100%" width="100%" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="SANDBOX" />
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+			<mx:Panel width="100%" height="100%" title="CSS Sandbox" id="myPanel" >
+					<mx:ControlBar id="controlBarChild" visible="true" />
+			</mx:Panel>
+		</mx:Box>
+	</mx:VBox>
+
+
+<!-- CSS -->
+<mx:VBox height="100%" width="315" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="CSS"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+		
+			<mx:TextArea id="myCSS" width="100%" height="100%" styleName="cssTextArea"	/>
+		</mx:Box>
+</mx:VBox>
+
+	<mx:Script source="as/panels.as" />
+	</mx:HBox>
+</mx:VBox>
+
+
+  
+
+
+
+

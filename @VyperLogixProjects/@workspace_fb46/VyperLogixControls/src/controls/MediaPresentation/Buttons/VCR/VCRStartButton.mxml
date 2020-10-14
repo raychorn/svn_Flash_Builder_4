@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MediaPresentation:CustomButtonAdapter 
+	xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:MediaPresentation="controls.MediaPresentation.*" 
+	>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			public override function get label():String {
+				return btn.label;
+			}
+
+			public override function set label(label:String):void {
+				if (btn.label != label) {
+					btn.label = label;
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:Button id="btn" skinClass="controls.MediaPresentation.Buttons.VCR.skins.VCRStartButtonSkin"/>
+</MediaPresentation:CustomButtonAdapter>

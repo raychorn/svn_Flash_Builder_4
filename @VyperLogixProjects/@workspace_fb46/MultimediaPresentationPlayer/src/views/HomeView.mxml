@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<views:CommonView xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		title="Home" currentState="normal"
+		initialize="view1_initializeHandler(event)" 
+		creationComplete="view1_creationCompleteHandler(event)" 
+		xmlns:components="views.components.*"
+		xmlns:views="views.*">
+	<views:states>
+		<s:State name="normal"/>
+		<s:State name="fileExplorer"/>
+	</views:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:FlipViewTransition id="flipViewTransition" direction="left" duration="500"/>
+		<s:ZoomViewTransition id="zoomViewTransition" duration="500" mode="in"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.Misc;
+			
+			import controls.explorer.FileExplorer;
+			
+			import flashx.textLayout.elements.TextFlow;
+			
+			import mx.events.FlexEvent;
+			
+			private var _this:HomeView;
+			
+			private var __title__:String = 'Home';
+			
+			private var __explorer__:FileExplorer;
+			
+			private var __count__:int = 0;
+			
+			protected override function view1_initializeHandler(event:FlexEvent):void {
+				super.view1_initializeHandler(event);
+				_this = this;
+				this.title = this.parentApplication.appTitle;
+			}
+			
+			protected override function view1_creationCompleteHandler(event:FlexEvent):void {
+				this.title = this.__title__;
+				trace(this.className+'.view1_creationCompleteHandler.1 --> title='+this.title);
+				super.view1_creationCompleteHandler(event);
+				this.__count__++;
+				trace('view1_creationCompleteHandler.1 --> is_logged_in='+this.parentApplication.is_logged_in);
+				if (!this.parentApplication.is_logged_in) {
+					this.navigator.pushView(LoginView,{});
+				} else {
+					this.currentState = 'fileExplorer';
+					if (!this.__explorer__) {
+						this.__explorer__ = new FileExplorer();
+						this.__explorer__.x = 0;
+						this.__explorer__.y = 0;
+						this.__explorer__.percentWidth = 100;
+						this.__explorer__.percentHeight = 100;
+						this.__explorer__.addEventListener(FlexEvent.CREATION_COMPLETE, 
+							function (event:FlexEvent):void {
+								var target:FileExplorer = event.currentTarget as FileExplorer;
+								trace(_this.className+'.view1_creationCompleteHandler.1.FlexEvent.CREATION_COMPLETE --> currentState='+_this.currentState);
+							}
+						);
+						this.canvas.addElement(this.__explorer__);
+					}
+					trace(this.className+'.view1_creationCompleteHandler.1 --> currentState='+this.currentState);
+				}
+			}
+			
+			protected function label1_creationCompleteHandler(event:FlexEvent):void {
+				Misc.fit_text_into(event.currentTarget,'text');
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup width="100%" horizontalAlign="left"
+				  visible.normal="true" includeInLayout.normal="true"
+				  visible.fileExplorer="false" includeInLayout.fileExplorer="false"		
+				  >
+			<components:AppTitleCanvas id="appTitle" width="150"/>
+			<s:VGroup width="100%" paddingTop="10" 
+					  horizontalAlign="left"
+					  >
+				<s:HGroup paddingTop="10">
+					<s:Label text="{this.parentApplication.appName}" styleName="TitleNameLabel"/>
+				</s:HGroup>
+				<s:HGroup paddingTop="10">
+					<s:Label text="{this.parentApplication.copyright}" styleName="TitleCopyrightLabel"/>
+				</s:HGroup>
+				<s:HGroup paddingTop="10">
+					<s:Label text="{this.parentApplication.appDescr}" width="100%" height="100%" styleName="TitleDescrLabel" creationComplete="label1_creationCompleteHandler(event)"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:HGroup>
+		<s:VGroup id="canvas" width="100%" height="100%"/>
+	</s:VGroup>
+</views:CommonView>

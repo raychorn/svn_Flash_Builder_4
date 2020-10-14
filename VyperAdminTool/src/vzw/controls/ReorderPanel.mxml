@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml"
+	title="Reorder the menu items using Drag-n-Drop"
+	styleName="ReorderPanel"
+	width="100%" height="100%">
+	<mx:Script>
+		<![CDATA[
+			import vzw.utils.ArrayUtils;
+			import vzw.menu.builder.MenuController;
+			import mx.collections.ArrayCollection;
+
+			private var _dataProvider:Array = [];
+			private var _dataProvider_source:Array = [];
+			
+			public function set dataProvider(dataProvider:Array):void {
+				var i:String;
+				var sep_label:String = '(separator)';
+				if (this._dataProvider != dataProvider) {
+					this._dataProvider = dataProvider;
+					var _num_seps:int = 0;
+					for (i in dataProvider) {
+						if (dataProvider[i][MenuController.hash.label] == null) {
+							_num_seps++;
+							dataProvider[i][MenuController.hash.label] = sep_label;
+						}
+					}
+					if (_num_seps > 1) {
+						var num_seps:int = 0;
+						for (i in dataProvider) {
+							if (dataProvider[i][MenuController.hash.label] == sep_label) {
+								num_seps++;
+								dataProvider[i][MenuController.hash.label] = '(separator.' + num_seps + ')';
+							}
+						}
+					}
+					this._dataProvider_source = dataProvider;
+					this.list_of_items.dataProvider = ArrayUtils.deepCopyFrom(dataProvider);
+				}
+			}
+			
+			public function get dataProvider():Array {
+				return this._dataProvider;
+			}
+			
+			private function onClick_btn_save(event:MouseEvent):void {
+				if ( (this._dataProvider_source is Array) && (this._dataProvider_source.length > 0) ) {
+					this._dataProvider_source.splice(0,this._dataProvider_source.length);
+				}
+				var ar:Array = (this.list_of_items.dataProvider is ArrayCollection) ? this.list_of_items.dataProvider.source : this.list_of_items.dataProvider as Array;
+				for (var i:String in ar) {
+					this._dataProvider_source.push(ar[i]);
+				}
+			}
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox styleName="ReorderPanelLabel" width="100%" horizontalAlign="center">
+			<mx:Label styleName="ReorderPanelLabelText" text="Drag-n-Drop to reorder the Menu Item Labels"/>
+		</mx:HBox>
+		<mx:List id="list_of_items" labelField="{MenuController.hash.label}" width="100%" height="100%" dragEnabled="true" dragMoveEnabled="true" dropEnabled="true"/>
+		<mx:HBox styleName="ReorderPanelButtons" width="100%" horizontalAlign="center">
+			<mx:Button id="btn_save" label="Save" click="onClick_btn_save(event)"/>
+			<mx:Spacer width="15"/>
+			<mx:Button id="btn_dismiss" label="Cancel"/>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Panel>

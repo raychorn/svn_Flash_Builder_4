@@ -1,0 +1,15 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+
+global
+{
+	chrome-color: #00F9FC;
+	content-background-color: #FAEF71;
+}
+mx|Panel.GameTiles
+{
+	contentBackgroundColor: #F8FC87;
+}
+	

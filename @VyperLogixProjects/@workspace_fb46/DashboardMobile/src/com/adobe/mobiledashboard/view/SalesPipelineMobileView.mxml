@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View preinitialize="preinitializeHandler()"
+		viewDeactivate="viewDeactivateHandler()"
+		viewActivate="viewActivateHandler(event)"
+		actionBarVisible.portrait="true"
+		actionBarVisible.landscape="true"
+		xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		title="Sales Pipeline"
+		xmlns:components="com.adobe.mobiledashboard.view.components.*"
+		xmlns:charts="com.adobe.dashboard.view.charts.*">
+
+	<fx:Script>
+		<![CDATA[
+			import assets.images.bar_chart_horz_icon_minimal;
+			import assets.images.bar_chart_vert_icon_minimal;
+
+			import com.adobe.dashboard.model.AppModel;
+			import com.adobe.dashboard.presenter.SalesPipelinePresenter;
+
+			import mx.charts.events.ChartItemEvent;
+			import mx.collections.ArrayCollection;
+			import mx.events.CloseEvent;
+			import mx.graphics.GradientEntry;
+
+			import spark.events.ViewNavigatorEvent;
+
+			[Bindable]
+			private var presenter:SalesPipelinePresenter;
+
+			[Bindable]
+			protected var selectOptionList:ArrayCollection=new ArrayCollection([{label: "My Sales Pipeline"}, {label: "My Pipeline vs Average"}]);
+
+			[Bindable]
+			protected var selectedOption:Object=selectOptionList.getItemAt(0);
+
+			[Bindable]
+			protected var detailsLabel:String;
+
+
+
+
+			private function addListeners():void
+			{
+				presenter.chartMainPresenter.addEventListener(Event.CHANGE, dataChangeHandler, false, 0, true);
+			}
+
+			private function removeListeners():void
+			{
+				if (presenter && presenter.chartMainPresenter && presenter.chartMainPresenter.hasEventListener(Event.CHANGE))
+				{
+					presenter.chartMainPresenter.removeEventListener(Event.CHANGE, dataChangeHandler);
+				}
+			}
+
+
+			protected function preinitializeHandler():void
+			{
+				presenter=AppModel.getInstance().salesPipelinePresenter;
+				if (presenter.chartConfig.indexOf("Comparison") != -1)
+				{
+					selectedOption=selectOptionList.getItemAt(1);
+				}
+				else
+				{
+					selectedOption=selectOptionList.getItemAt(0);
+				}
+			}
+
+			protected function viewActivateHandler(event:ViewNavigatorEvent):void
+			{
+				addListeners();
+
+				presenter.getMySalesPipelineChartData(false);
+			}
+
+			protected function viewDeactivateHandler():void
+			{
+				// Prevent memory leaks and remove listeners when this view is removed from the stage
+				removeListeners();
+			}
+
+			protected function dataChangeHandler(event:Event):void
+			{
+				loadingMessageDisplay.visible=false;
+
+				chartDisplay.visible=true;
+				chartDisplay.includeInLayout=true;
+			}
+
+			protected function horizontalBarChartButton_clickHandler(event:MouseEvent):void
+			{
+				presenter.isHorizontal=true;
+				updateChartConfig();
+			}
+
+
+			protected function verticalBarChartButton_clickHandler(event:MouseEvent):void
+			{
+				presenter.isHorizontal=false;
+				updateChartConfig();
+			}
+
+			protected function updateChartConfig():void
+			{
+				if (!presenter)
+				{
+					return;
+				}
+
+
+				if (presenter.isHorizontal)
+				{
+					if (selectedOption.label == "My Sales Pipeline")
+					{
+						presenter.chartConfig="horizontalStandalone";
+					}
+					else
+					{
+						presenter.chartConfig="horizontalComparison";
+					}
+				}
+				else if (!presenter.isHorizontal)
+				{
+					if (selectedOption.label == "My Sales Pipeline")
+					{
+						presenter.chartConfig="verticalStandalone";
+					}
+					else
+					{
+						presenter.chartConfig="verticalComparison";
+					}
+				}
+			}
+
+			protected function multiSelect_changeHandler(event:Event):void
+			{
+				selectedOption=multiSelect.selectedItem;
+				updateChartConfig();
+			}
+
+
+			protected function pipelineChart_itemClickHandler(event:ChartItemEvent):void
+			{
+				presenter.chartDetailsPresenter.selectedFillEntries=getGradientEntries(event.hitData.item.name);
+				presenter.goDetails(event.hitData.item.name);
+				if (presenter.isHorizontal)
+				{
+					presenter.chartDetailsConfig="horizontalStandalone";
+				}
+				else if (!presenter.isHorizontal)
+				{
+					presenter.chartDetailsConfig="verticalStandalone";
+				}
+
+			}
+
+			protected function getGradientEntries(name:String):Array
+			{
+
+				var entries:Array=[];
+
+				switch (name)
+				{
+					case "Prospect":
+					{
+						entries=[new GradientEntry(0x2A65C7), new GradientEntry(0x2853A2), new GradientEntry(0x243D76)];
+						break;
+					}
+					case "Qualify":
+					{
+						entries=[new GradientEntry(0x4E7221), new GradientEntry(0x3C5919), new GradientEntry(0x293E10)];
+						break;
+					}
+					case "Closing":
+					{
+						entries=[new GradientEntry(0x9C9C1E), new GradientEntry(0x89891F), new GradientEntry(0x74721E)];
+						break;
+					}
+					default:
+					{
+						// do nothing
+						break;
+					}
+				}
+				return entries;
+			}
+
+			protected function tourTip_closeHandler(event:CloseEvent):void
+			{
+				presenter.hideTourTip();
+			}
+		]]>
+	</fx:Script>
+
+	<!-- frameworks changes states on device rotation -->
+	<s:states>
+		<s:State name="portrait"/>
+		<s:State name="landscape"/>
+	</s:states>
+
+	<!-- header background -->
+	<s:Rect width="100%"
+			height="60"
+			includeIn="portrait">
+		<s:fill>
+			<s:SolidColor color="0x232323"/>
+		</s:fill>
+	</s:Rect>
+
+	<!-- 1px seperator -->
+	<s:Rect y="60"
+			width="100%"
+			height="1"
+			includeIn="portrait">
+		<s:fill>
+			<s:SolidColor color="0x0C0C0C"/>
+		</s:fill>
+	</s:Rect>
+
+
+	<!-- menu controls -->
+	<s:Group y="0"
+			 height="60"
+			 left="10"
+			 right="10"
+			 includeIn="portrait">
+
+		<components:MultiSelectComponent id="multiSelect"
+										 height="40"
+										 left="0"
+										 right="110"
+										 dataProvider="{selectOptionList}"
+										 selectedItem="{selectedOption}"
+										 text="{selectedOption.label}"
+										 change="multiSelect_changeHandler(event)"
+										 verticalCenter="0"/>
+
+		<s:Rect width="100%"/>
+
+		<s:ToggleButton id="horizontalBarChartButton"
+						width="50"
+						height="40"
+						right="50"
+						selected="{presenter.isHorizontal}"
+						click="horizontalBarChartButton_clickHandler(event)"
+						icon="{bar_chart_horz_icon_minimal}"
+						skinClass="skins.buttons.CustomToggleButtonSkin"
+						verticalCenter="0"/>
+
+		<s:ToggleButton id="verticalBarChartButton"
+						width="50"
+						height="40"
+						right="0"
+						selected="{!presenter.isHorizontal}"
+						click="verticalBarChartButton_clickHandler(event)"
+						icon="{bar_chart_vert_icon_minimal}"
+						skinClass="skins.buttons.CustomToggleButtonSkin"
+						verticalCenter="0"/>
+
+	</s:Group>
+
+
+	<!-- chart -->
+	<charts:PipelineChart id="chartDisplay"
+						  left.landscape="0"
+						  left.portrait="20"
+						  right.landscape="0"
+						  right.portrait="20"
+						  top.landscape="0"
+						  top.portrait="80 "
+						  bottom.landscape="0"
+						  bottom.portrait="30"
+						  currentState="{presenter.chartConfig}"
+						  includeInLayout="false"
+						  itemClick="pipelineChart_itemClickHandler(event)"
+						  visible="false"
+						  chartPresenter="{presenter.chartMainPresenter}"/>
+
+	<!-- loading message -->
+	<s:VGroup id="loadingMessageDisplay"
+			  horizontalCenter="0"
+			  verticalCenter="0"
+			  horizontalAlign="center">
+		<s:BusyIndicator id="loadingIndicator"
+						 symbolColor="#ffffff"
+						 width="30"
+						 height="30"/>
+		<s:Label text="Building Chart"
+				 color="#ffffff"/>
+	</s:VGroup>
+
+	<components:TourTip id="tourTip"
+						bottom="5"
+						horizontalCenter="0"
+						message="Click Chart Areas for Details"
+						visible="{presenter.showTourTip}"
+						close="tourTip_closeHandler(event)"
+						showArrow="false"/>
+
+	<!-- the title content for this view -->
+	<s:titleContent>
+		<s:Label styleName="titleWhiteStyle"
+				 text="Sales Pipeline"/>
+	</s:titleContent>
+
+</s:View>

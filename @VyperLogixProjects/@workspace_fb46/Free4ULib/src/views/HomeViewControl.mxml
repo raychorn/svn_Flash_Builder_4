@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:controls="controls.*" 
+		 width="100%" height="100%" 
+		 creationComplete="group1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:Parallel id="resizer_effect1">
+			<s:Resize id="resizer_effect11" startDelay="500" duration="1500" heightBy="-100" heightTo="0" target="{this.container1}"/>
+			<s:Fade id="resizer_effect13" alphaFrom="1.0" alphaTo="0.35" duration="1500" startDelay="250" target="{this.container1}"/>
+		</s:Parallel>
+	</fx:Declarations>
+	<s:states>
+		<s:State name="not_logged_in"/>
+		<s:State name="logged_in"/>
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.ErrorTipManager;
+			import com.URLUtils;
+			import com.vyperlogix.AdHocOperation;
+			import com.vyperlogix.AdHocService;
+			import com.vyperlogix.AdMobOperation;
+			import com.vyperlogix.AdMobService;
+			import com.vyperlogix.GoogleCloudOperation;
+			import com.vyperlogix.GoogleCloudService;
+			
+			import controls.Alert.AlertAlternative;
+			
+			import core.SWFHelper;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.EffectEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;
+			
+			import spark.components.TextInput;
+			
+			import utils.AIRHelper;
+			
+			[Bindable]
+			[Embed(source="assets/help_icon.png")]
+			public static var helpIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="assets/StarbucksLogo.png")]
+			public static var starbucksIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="assets/checkin_64x64.png")]
+			public static var checkinIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="assets/nearbyvenues_64x64.png")]
+			public static var venuesIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="assets/starbucks-card.png")]
+			public static var starbucksCardIconClass:Class;
+			
+			private var _this:HomeViewControl;
+			
+			[Bindable]
+			private var symbol_starbucksCard_text:String = '<font family="Verdana" size="+6">Check-In to WIN a loaded Starbucks Card!</font>';
+			
+			[Bindable]
+			private var symbol_product_text:String = '<font family="Verdana" size="+3">Check-In to WIN a loaded Starbucks Card!</font>';
+			
+			protected function txt_output_creationCompleteHandler(event:FlexEvent):void {
+				FlexGlobals.topLevelApplication.determine_view_debugger_for(this,event.currentTarget as TextArea);
+				FlexGlobals.topLevelApplication.handle_get_gps_location_updates();
+			}
+			
+			private function set_focus(txt:TextInput):void {
+				if (txt is TextInput) {
+					try {
+						this.focusManager.setFocus(txt);
+					} catch (err:Error) {
+						this.callLater(this.set_focus,[txt]);
+					}
+				} else {
+					FlexGlobals.topLevelApplication.app.error('WARNING: Cannot set focus...');
+				}
+			}
+			
+			protected function btn_info_creationCompleteHandler(event:FlexEvent):void {
+				var btn:Button = event.currentTarget as Button;
+//				btn.parent.x = this.stage.fullScreenWidth-btn.width-10;
+				btn.parent.x = this.width-btn.width-10;
+			}
+			
+			private function handle_checkin_event():void {
+				ErrorTipManager.hideAllErrorTips();
+				try {
+					if (this.parentDocument['handle_checkin_event'] is Function) {
+						this.parentDocument['handle_checkin_event']();
+					} else {
+						FlexGlobals.topLevelApplication.app.error('WARNING: <p>Cannot locate the "handle_checkin_event()" function.</p>');
+					}
+				} catch (err:Error) {
+					FlexGlobals.topLevelApplication.app.error('ERROR: <p>Cannot locate the "handle_checkin_event()" function.</p><p>'+err.toString()+'</p><p>'+err.getStackTrace().substr(0,250)+'</p>');
+				}
+			}
+			
+			protected function handle_logout_action():void {
+				var svc:GoogleCloudService = new GoogleCloudService();
+				var op:GoogleCloudOperation = svc.logout();
+				op.addEventListener(Event.COMPLETE,
+					function (event:Event):void {
+						FlexGlobals.topLevelApplication.removeBusyCursor(_this);
+						FlexGlobals.topLevelApplication.user_data = event.target.data;
+						try {
+							if (event.target.data['error'] is String) {
+								FlexGlobals.topLevelApplication.app.error('WARNING.101: <p>Cannot process your logout at this time.</p>');
+							} else {
+								_this.currentState = 'not_logged_in';
+							}
+						} catch (err:Error) {}
+					}
+				);
+				op.addEventListener(ErrorEvent.ERROR,
+					function (event:ErrorEvent):void {
+						FlexGlobals.topLevelApplication.removeBusyCursor(_this);
+						var msg:String = 'ERROR: ' + event.toString();
+						FlexGlobals.topLevelApplication.app.error('ERROR.401: <p>Cannot process your request at this time.  Please try back later.</p>');
+					}
+				);
+				FlexGlobals.topLevelApplication.setBusyCursor(this);
+				op.timeout = FlexGlobals.topLevelApplication.google_cloud_timeout;
+				op.execute();
+			}
+			
+			private function handle_logout_event():void {
+				ErrorTipManager.hideAllErrorTips();
+				var callback:Function = function ():void {
+					_this.handle_logout_action();
+				};
+				if (FlexGlobals.topLevelApplication.is_menu_shown) {
+					FlexGlobals.topLevelApplication.is_menu_shown = false;
+				} else {
+					callback();
+				}
+			}
+			
+			protected function btn_checkin_clickHandler(event:MouseEvent):void {
+				this.handle_checkin_event();
+			}
+			
+			protected function btn_checkin_touchTapHandler(event:TouchEvent):void {
+				this.handle_checkin_event();
+			}
+			
+			protected function btn_logout_clickHandler(event:MouseEvent):void {
+				this.handle_logout_event();
+			}
+			
+			protected function btn_logout_touchTapHandler(event:TouchEvent):void {
+				this.handle_logout_event();
+			}
+
+			private function handle_test_email_event():void {
+				var svc:GoogleCloudService = new GoogleCloudService();
+				var op:GoogleCloudOperation = svc.send_adhoc_email('vyperlogix@gmail.com','raychorn@vyperlogix.com','This is a test...','<p>Testing...</p>');
+				op.addEventListener(Event.COMPLETE,
+					function (event:Event):void {
+						FlexGlobals.topLevelApplication.removeBusyCursor(_this);
+						try {
+							trace(DebuggerUtils.explainThis(event.target.data));
+						} catch (err:Error) {}
+					}
+				);
+				op.addEventListener(ErrorEvent.ERROR,
+					function (event:ErrorEvent):void {
+						FlexGlobals.topLevelApplication.removeBusyCursor(_this);
+						var msg:String = 'ERROR: ' + event.toString();
+						FlexGlobals.topLevelApplication.app.error('ERROR.301: <p>Cannot process your request at this time.</p><p>Please try back later.</p>');
+					}
+				);
+				FlexGlobals.topLevelApplication.setBusyCursor(this);
+				op.timeout = FlexGlobals.topLevelApplication.google_cloud_timeout;
+				op.execute();
+			}
+			
+			protected function btn_test_email_clickHandler(event:MouseEvent):void {
+				this.handle_test_email_event();
+			}
+			
+			protected function btn_test_email_touchTapHandler(event:TouchEvent):void {
+				this.handle_test_email_event();
+			}
+			
+			public function handle_venues_event():void {
+				ErrorTipManager.hideAllErrorTips();
+				if (FlexGlobals.topLevelApplication.is_menu_shown) {
+					FlexGlobals.topLevelApplication.is_menu_shown = false;
+				}
+				FlexGlobals.topLevelApplication.app.show('Starbucks Search is Coming Soon... Stay tuned !');
+			}
+			
+			protected function btn_venues_clickHandler(event:MouseEvent):void {
+				this.handle_venues_event();
+			}
+			
+			protected function btn_venues_touchTapHandler(event:TouchEvent):void {
+				this.handle_venues_event();
+			}
+			
+			protected function adModContent_creationCompleteHandler(event:FlexEvent):void {
+			}
+			
+			
+			private function handle_sponsor_action():void {
+				AIRHelper.navigate_to_url(FlexGlobals.topLevelApplication.sponsor_site,'_blank');
+			}
+			
+			protected function lbl_sponsor_creationCompleteHandler(event:FlexEvent):void {
+				var lbl:Label = event.currentTarget as Label;
+				lbl.useHandCursor = true;
+			}
+			
+			
+			protected function lbl_sponsor_clickHandler(event:MouseEvent):void {
+				this.handle_sponsor_action();
+			}
+			
+			
+			protected function lbl_sponsor_touchTapHandler(event:TouchEvent):void {
+				this.handle_sponsor_action();
+			}
+			
+			protected function logo_container_creationCompleteHandler(event:FlexEvent):void {
+				var timer:Timer = new Timer(1500);
+				timer.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						timer.stop();
+						_this.resizer_effect1.end();
+						_this.resizer_effect1.duration = 1500;
+						_this.resizer_effect1.addEventListener(EffectEvent.EFFECT_END, 
+							function (event:EffectEvent):void {
+								//_this.container1.visible = _this.container1.includeInLayout = false;
+							}
+						);
+						_this.resizer_effect1.play();
+					}
+				);
+				timer.start();
+			}
+			
+			protected function mobileapplication1_applicationCompleteHandler(event:FlexEvent):void {
+			}
+
+			private function get isDebugger():Boolean {
+				return FlexGlobals.topLevelApplication.isDebugger;
+			}
+			
+			private function get versionNumber():String {
+				return FlexGlobals.topLevelApplication.appNamespace.versionNumber;
+			}
+
+			protected function group1_creationCompleteHandler(event:FlexEvent):void {
+				_this = this;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup id="container1" width="100%">
+		<s:BorderContainer width="100%" height="100%" backgroundColor="#ffffff" borderColor="#ffffff" backgroundAlpha="0.25">
+			<controls:VyperLogixLogoControl id="logo" width="250" height="250" creationComplete="logo_container_creationCompleteHandler(event)"/>
+		</s:BorderContainer>
+	</s:VGroup>
+	<s:VGroup id="container2" x="0" y="{this.container1.y+this.container1.height}" width="100%" height="100%">
+		<s:BorderContainer id="container_logos" x="0" y="0" width="100%" height="100%" backgroundColor="#ffffff" borderColor="#cfcfcf" backgroundAlpha="0.25">
+			<s:Scroller width="100%" height="100%">
+				<s:VGroup width="100%" height="100%" paddingTop="10" visible="true">
+					<s:VGroup width="100%" horizontalAlign="center">
+						<s:HGroup width="100%">
+							<s:VGroup width="30%" paddingLeft="20" height="100%" horizontalAlign="center">
+								<s:VGroup id="vbox_checkin" width="150" horizontalAlign="left">
+									<s:HGroup width="100%">
+										<s:Button id="btn_checkin" icon="{checkinIconClass}" width="150" height="100" label.not_logged_in="Check-In" label.logged_in="Your Check-In Complete" styleName="SmallButtons" iconPlacement="top" enabled.logged_in="false" enabled.not_logged_in="true" click="btn_checkin_clickHandler(event)" touchTap="btn_checkin_touchTapHandler(event)"/>
+										<s:Button id="btn_logout" width="150" height="130" label="Logout" styleName="SmallButtons" iconPlacement="top" enabled.logged_in="true" enabled.not_logged_in="false" visible="false" includeInLayout="false" click="btn_logout_clickHandler(event)" touchTap="btn_logout_touchTapHandler(event)"/>
+										<s:Button id="btn_test_email" label="Test Email" styleName="SmallButtons" iconPlacement="top" visible="{Capabilities.isDebugger}" includeInLayout="{this.btn_test_email.visible}" click="btn_test_email_clickHandler(event)" touchTap="btn_test_email_touchTapHandler(event)"/>
+									</s:HGroup>
+								</s:VGroup>
+								<s:VGroup width="{this.vbox_checkin.width}" horizontalAlign="left" visible="false" includeInLayout="false">
+									<s:Button id="btn_venues" icon="{venuesIconClass}" label="Find a Starbucks" styleName="SmallButtons" iconPlacement="top" click="btn_venues_clickHandler(event)" touchTap="btn_venues_touchTapHandler(event)"/>
+								</s:VGroup>
+							</s:VGroup>
+						</s:HGroup>
+					</s:VGroup>
+					<s:HGroup width="100%">
+						<s:HGroup width="50%" paddingLeft="10">
+							<s:Image id="starbucksCard_image" width="100%" height="100%" source="{starbucksCardIconClass}"/>
+						</s:HGroup>
+						<s:HGroup width="50%" paddingLeft="10" paddingRight="10">
+							<s:Image id="starbucksLogo_image" width="100%" height="100%" source="{starbucksIconClass}"/>
+						</s:HGroup>
+					</s:HGroup>
+					<s:Group id="info_container">
+						<s:VGroup width="100%" height="100%">
+							<s:HGroup width="100%" horizontalAlign="center">
+								<controls:UITextField id="lbl_starbucksCard" text="{this.symbol_starbucksCard_text}" height="100%" is_wordWrap="true" styleName="SmallLabels"/>
+							</s:HGroup>
+							<s:HGroup width="100%" horizontalAlign="center" paddingTop="30">
+								<mx:Spacer width="20"/>
+								<controls:UITextField id="lbl_versionInfo" text="Version {this.versionNumber}" is_wordWrap="true" styleName="SmallLabels"/>
+								<mx:Spacer width="20"/>
+								<s:HGroup paddingTop="5">
+									<s:Label id="lbl_sponsor" text="www.VyperLogix.Com" styleName="LinkLabels" click="lbl_sponsor_clickHandler(event)" touchTap="lbl_sponsor_touchTapHandler(event)" creationComplete="lbl_sponsor_creationCompleteHandler(event)"/>
+								</s:HGroup>
+							</s:HGroup>
+						</s:VGroup>
+					</s:Group>
+				</s:VGroup>
+			</s:Scroller>  
+		</s:BorderContainer>
+	</s:VGroup>
+	<s:Group x="0" y="{this.height-100}" width="100%">
+		<s:HGroup width="100%" height="0" horizontalAlign="left">
+			<s:Group id="adModContent" width="100%" height="50" creationComplete="adModContent_creationCompleteHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup id="container_txt_output" width="100%" height="20%" visible="{this.isDebugger}" includeInLayout="{this.isDebugger}">
+			<s:TextArea id="txt_output" styleName="Debugger" width="100%" height="100" editable="false" selectable="false" creationComplete="txt_output_creationCompleteHandler(event)"/>
+		</s:HGroup>
+	</s:Group>
+</s:Group>

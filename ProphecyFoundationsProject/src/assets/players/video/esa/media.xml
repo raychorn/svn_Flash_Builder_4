@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+  <items autoplay='No-on first video' looping='oneTime' preloading='Yes-always' smoothing='true' random='No-always' linkTarget='_blank' displayImage='first-last-frames' displayPlayBtn='first-last-frames' instance='application' dynamicStream='true' autoSwitch='false' blankMedia='' bandwidthTest='http://components.earthscienceagency.com/sw_includes/images/bandwidth.jpg' categories='Video, Audio, Image, Caption, Overlay, Preroll, All'>
+	<item id='1' name='Avatar' category='video, all' keywords='trailer, action, scifi, youtube, progressive, movie'>
+		<playlist  thumb='http://components.earthscienceagency.com/sw_includes/images/avatar.jpg'><![CDATA[<span class='plStyle1'>Avatar</span><br><span class='plStyle2'>YouTube Video<br>Small,Medium,HD</span><br><span class='plStyle3'>03:36</span>]]></playlist>
+		<media image='http://components.earthscienceagency.com/sw_includes/images/avatar.jpg'>http://www.youtube.com/v/aVdO-cx-McA</media>
+		<mediaHD kbps='4000'>http://www.youtube.com/v/aVdO-cx-McA</mediaHD>
+		<mediaLD kbps='600'>http://www.youtube.com/v/aVdO-cx-McA</mediaLD>		
+	</item> 
+	<item id='2' name='Sarah Marshall' category='video, all' keywords='h264, progressive, movie, trailer, comedy'>
+		<playlist  thumb='http://components.earthscienceagency.com/sw_includes/images/sarahmarshall.jpg'><![CDATA[<span class='plStyle1'>Sarah Marshall</span><br><span class='plStyle2'>Progressive Video<br>300,600,1200 kbps</span><br><span class='plStyle3'>02:38</span>]]></playlist>
+		<media  link='http://www.forgettingsarahmarshall.com/' image='http://components.earthscienceagency.com/sw_includes/images/sarahmarshall.jpg'>http://components.earthscienceagency.com/sw_includes/videos/sarahmarshall_md.mov</media>
+		<mediaHD kbps='1200'>http://components.earthscienceagency.com/sw_includes/videos/sarahmarshall_hd.mp4</mediaHD>
+		<mediaLD kbps='600'>http://components.earthscienceagency.com/sw_includes/videos/sarahmarshall_ld.mp4</mediaLD>				
+	</item> 
+	<item id='3' name='Smart People' category='video, overlay, all' keywords='h264, progressive, movie, trailer, comedy'>
+		<playlist  thumb='http://components.earthscienceagency.com/sw_includes/images/smartpeople.jpg'><![CDATA[<span class='plStyle1'>Smart People</span><br><span class='plStyle2'>Video w/Overlay<br>300,600,1200 kbps</span><br><span class='plStyle3'>02:31</span>]]></playlist>
+		<media  link='http://www.smartpeople-themovie.com/' image='http://components.earthscienceagency.com/sw_includes/images/smartpeople.jpg'>http://components.earthscienceagency.com/sw_includes/videos/smartpeople_md.mov</media>
+		<mediaHD kbps='1200'>http://components.earthscienceagency.com/sw_includes/videos/smartpeople_hd.mp4</mediaHD>
+		<mediaLD kbps='600'>http://components.earthscienceagency.com/sw_includes/videos/smartpeople_ld.mp4</mediaLD>		
+		<overlay  time='1' dur='8' id='1' name='midroll'><![CDATA[<span class='mpStyle1'>Midroll Overlays</span><br><span class='mpStyle2'>This feature can be used to display clickable text and graphics at specific times, making it easy to incorporate your own custom captions, titles, ads, and interactive overlays.</span>]]></overlay>
+		<overlay  time='10' dur='8'  id='2' name='smartpeople'><![CDATA[<img src='http://components.earthscienceagency.com/sw_includes/images/smartpeople.jpg' hspace='4' vspace='2' width='106' height='60'><span class='mpStyle1'><a href="http://www.smartpeople-themovie.com/" target="_blank">Smart People</a></span><br><span class='mpStyle2'>You can also use this feature to present supplemental information for the current video or to advertise the next video.</span>]]></overlay>
+		<overlay  time='20' dur='8' id='3' name='bandwidth'><![CDATA[<span class='mpStyle1'>Bandwidth Profiling</span><br><span class='mpStyle2'>When the player loads on the page it can determine the user's bandwidth and select the appropriate video; and the the user can manually switch to a higher or lower quality version.</span>]]></overlay>
+	</item> 	
+	<item id='4' name='Baby Mama' category='video, preroll, all' keywords='h264, progressive, movie, trailer, comedy'>
+		<playlist  thumb='http://components.earthscienceagency.com/sw_includes/images/babymama.jpg'><![CDATA[<span class='plStyle1'>Baby Mama</span><br><span class='plStyle2'>Video w/Preroll<br>300,600,1200 kbps</span><br><span class='plStyle3'>02:38</span>]]></playlist>
+		<media  link='http://www.babymamamovie.net/' image='http://components.earthscienceagency.com/sw_includes/images/babymama.jpg'>http://components.earthscienceagency.com/sw_includes/videos/babymama_md.mov</media>
+		<mediaHD kbps='1200'>http://components.earthscienceagency.com/sw_includes/videos/babymama_hd.mp4</mediaHD>
+		<mediaLD kbps='600'>http://components.earthscienceagency.com/sw_includes/videos/babymama_ld.mp4</mediaLD>
+		<roll  link='http://ge.ecomagination.com' id='1' name='ge'>http://erweb.earthscienceagency.com/sw_includes/videos/gefrog.flv</roll>
+	</item> 
+	<item id='5' name='Beck' category='audio, all' keywords='m4a, progressive, song, track, alternative'>
+		<playlist  thumb='http://components.earthscienceagency.com/sw_includes/images/beck.jpg'><![CDATA[<span class='plStyle1'>Beck</span><br><span class='plStyle2'>Progressive Audio<br>M4A w/JPG</span><br><span class='plStyle3'>03:23</span>]]></playlist>
+		<media image='http://components.earthscienceagency.com/sw_includes/images/beck.jpg'>http://components.earthscienceagency.com/sw_includes/videos/Beck.m4a</media>
+	</item> 
+	<item id='6' name='Kravitz' category='audio, all' keywords='mp3, progressive, song, track, rock'>
+		<playlist  thumb='http://components.earthscienceagency.com/sw_includes/images/kravitz.jpg'><![CDATA[<span class='plStyle1'>Lenny Kravitz</span><br><span class='plStyle2'>Progressive Audio<br>MP3 w/JPG</span><br><span class='plStyle3'>03:34</span>]]></playlist>
+		<media  link='http://www.lennykravitz.com/' image='http://components.earthscienceagency.com/sw_includes/images/kravitz.jpg'>http://components.earthscienceagency.com/sw_includes/videos/Kravitz.mp3</media>
+	</item> 
+	<item id='7' name='White Stripes' category='audio, all' keywords='mp3, progressive, song, track, rock'>
+		<playlist  thumb='http://components.earthscienceagency.com/sw_includes/images/whitestripes.jpg'><![CDATA[<span class='plStyle1'>White Stripes</span><br><span class='plStyle2'>Progressive Audio<br>MP3 w/JPG</span><br><span class='plStyle3'>02:13</span>]]></playlist>
+		<media  image='http://components.earthscienceagency.com/sw_includes/images/whitestripes.jpg'>http://components.earthscienceagency.com/sw_includes/videos/WhiteStripes.mp3</media>
+	</item> 
+	<item id='8' name='Car' category='video, caption, all' keywords='flv, progressive, clip, captions'>
+		<playlist  thumb='http://components.earthscienceagency.com/sw_includes/images/car.jpg'><![CDATA[<span class='plStyle1'>Einstein's Relativity</span><br><span class='plStyle2'>Video w/Captions<br>CCForFlash</span><br><span class='plStyle3'>00:50</span>]]></playlist>
+		<media  cctype='external' ccsrc='http://components.earthscienceagency.com/flash_media_player/skins/captions.dfxp.xml' cclang='en' ccstyle='true' image='http://components.earthscienceagency.com/sw_includes/images/car.jpg'>http://components.earthscienceagency.com/sw_includes/videos/car.flv</media>
+	</item> 
+	<item id='9' name='Lake Tahoe' category='image, overlay, all' keywords='jpg, progressive, image, slideshow'>
+		<playlist  thumb='http://components.earthscienceagency.com/sw_includes/images/tahoe.jpg'><![CDATA[<span class='plStyle1'>Lake Tahoe</span><br><span class='plStyle2'>Image w/Overlay<br>JPG</span><br><span class='plStyle3'>00:10</span>]]></playlist>
+		<media image='http://components.earthscienceagency.com/sw_includes/images/tahoe.jpg'>http://components.earthscienceagency.com/sw_includes/videos/blank_10sec.flv</media>
+		<overlay  time='0' dur='0' id='4' name='slideshow'><![CDATA[<span class='mpStyle1'>Slideshow or Banner Rotator</span><br><span class='mpStyle2'>Images are loaded into the player with a blank media file to enable all of the player features including this overlay.</span>]]></overlay>
+	</item> 
+ </items>

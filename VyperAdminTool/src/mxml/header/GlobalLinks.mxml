@@ -1,0 +1,480 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+	width="100%" height="{componentHeight}" verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+	creationComplete="init()">
+		<mx:HBox id="container" horizontalGap="{gLinksGap}" verticalAlign="middle"
+			paddingTop="3" verticalScrollPolicy="off" horizontalScrollPolicy="off"
+			horizontalAlign="right" width="100%" height="{componentHeight}"
+			paddingRight="{gLinksPadR}">
+		</mx:HBox>
+		<mx:Script>
+			<![CDATA[
+				import utils.objects.ObjectUtils;
+				import mx.events.FlexEvent;
+				import mxml.header.utils.EditableLabel;
+				import mx.collections.errors.CursorError;
+				import mx.managers.CursorManager;
+				import communication.WebServices;
+				import models.Menu_Model;
+				import libs.utils.ErrorMessages;
+				import mx.controls.Label;
+				import mx.controls.Image;
+				import utils.displayObject.DuplicateImage;
+				import libs.vo.GlobalsVO;
+				import libs.utils.ExtendedChars;
+			
+				[Bindable]
+				public var componentHeight:Number;
+								
+				[Bindable]
+				private var tabWidth:Number;
+				
+				[Bindable]
+				private var gLinksGap:Number;
+				
+				[Bindable]
+				private var gLinksPadR:Number;
+				
+				private var _mcr:*;
+				private var lobCount:int;
+				private var arr:Array;
+				private var _divider:Image;
+				private var _tabBackground:Image;
+				private var _currentSelect:Object;
+				private var _tabOrder:int = 0;
+				private var _extVars:Object = GlobalsVO.getGlobal(GlobalsVO.EXTERNALVARS);
+				private var _isAdmin:Boolean = Boolean(GlobalsVO.getGlobal(GlobalsVO.ISADMIN));
+				private var _cartInfo:Array;
+
+				private var model:* = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL);
+				private var hash:* = model.metaData.hash;
+				
+				// CSS Style
+				private const DEFAULT_STYLE:String = "HeaderGlinkSelect";
+				
+				// Graphic Assets
+				private const P1:String = "image_gLinkDivAsset";		// Divider asset
+				private const P2:String = "image_glinkShoppingCart";
+				
+				// Style Mode
+				private const MODE:String = "select";
+				
+
+				private const DIVIDER_WIDTH:Number = 1;			// Tab Divider witth
+
+				// Mouse
+				private const HLSM:String = "HeaderGlinkSelect";
+				private const HLMOVER:String = "HeaderGlinkSelect";
+				private const HLS:String = "HeaderGlinkSelect";
+				private const HLMOUT:String = "HeaderGlinkSelect";
+				private const HLD:String = "HeaderGlinkMouseOut";
+				private const CART_EMPTY:String = "CartEmpty";
+				private const VIEW_CART:String = "ViewCart";
+				private const MCR:String = "MenuController";
+				
+				public static function build_label(_this:*,arr:Array,lobCount:int,default_style:String,onMouse:Function):Label {
+					// Add new label field to the hBox
+					var l:Label = new Label();
+					l.mouseChildren = false;
+					l.buttonMode = true;
+					l.useHandCursor = true;
+					arr[lobCount].label = l;
+					
+					// Add new tabContainer to the array
+					arr[lobCount].component = l;
+					arr[lobCount].mode = null;
+					l.styleName = default_style;
+					
+					// Define the textfield with the text title
+					var item:Object = arr[lobCount];
+					var text:String = item.name;
+					text = (text is String) ? text : item[_this.hash.label];
+					l.htmlText = new ExtendedChars().convertHTML(text.toString());
+					
+					// Setup mouse listeners for the new tabContainer
+					l.addEventListener(MouseEvent.MOUSE_OVER,onMouse);
+					l.addEventListener(MouseEvent.MOUSE_OUT,onMouse);
+					l.addEventListener(MouseEvent.CLICK,onMouse);
+					
+					return l;
+				}
+				
+
+				public static function build_editable_label(_this:*,ar:Array,arr:Array,lobCount:int,default_style:String,onMouse:Function,onCreation:Function):EditableLabel {
+					// Add new label field to the hBox
+					var l:EditableLabel = new EditableLabel();
+					l._mouseChildren = false;
+					l._buttonMode = true;
+					l._useHandCursor = true;
+
+					var onClickHandler:Function = function (e:*):void {
+			   			var mcr:* = GlobalsVO.getGlobal('MenuController');
+		      			if ( (mcr) && (mcr.onMouseClickMenuGLinks_callback) ) {
+		      				mcr.onMouseClickMenuGLinks_callback(e, l);
+		      			}
+					};
+					l.addEventListener(MouseEvent.CLICK,onClickHandler);
+					l.onCreationCompleteHandler = GlobalsVO.getGlobal(GlobalsVO.EDITABLEGLINKS_onCreationComplete);
+					
+					// Add new tabContainer to the array
+					l._styleName = default_style;
+					
+					// Define the textfield with the text title
+					var item:Object = arr[lobCount];
+					var text:String = item.name;
+					text = (text is String) ? text : item[_this.hash.label];
+					l._htmlText = ((text is String) && (text.length > 0)) ? new ExtendedChars().convertHTML(text.toString()) : '';
+					
+					l._dataProvider = arr[lobCount];
+					l.currentData = ar[lobCount];
+					l.currentDataContainer = ar;
+					
+					// Setup mouse listeners for the new tabContainer
+					if (onMouse is Function) {
+						l._addEventListener(MouseEvent.MOUSE_OVER,onMouse,'aLabel');
+						l._addEventListener(MouseEvent.MOUSE_OUT,onMouse,'aLabel');
+						//l._addEventListener(MouseEvent.CLICK,onClickHandler,'aLabel');
+					}
+					if (onCreation is Function) {
+						l._addCallbacks(onCreation,'aLabel');
+					}
+					
+					return l;
+				}
+				
+				public function init():void {
+					
+		   			this._mcr = GlobalsVO.getGlobal(MCR);
+
+					componentHeight = Number(GlobalsVO.getCSSProperty("headerGlinksH"));
+					
+					// BEGIN: WARNING - DO NOT DO A DEEP COPY HERE OR THE ADMIN TOOL WILL FAIL...
+
+					// Get Header Data
+					arr = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL).getHeaderData(GlobalsVO.GLINKS,!this._isAdmin,this._isAdmin);
+					
+					// Get cart information for URL
+					_cartInfo = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL).getHeaderData(GlobalsVO.CARTURL,!this._isAdmin,this._isAdmin);
+
+					// END!  WARNING - DO NOT DO A DEEP COPY HERE OR THE ADMIN TOOL WILL FAIL...
+				
+					// Set gap per glink
+					gLinksGap = Number(GlobalsVO.getCSSProperty("headerGlinksGap"));
+					
+					// Container padding right
+					gLinksPadR = Number(GlobalsVO.getCSSProperty("headerGlinksPadR"));
+					
+					// Build new header links
+					buildHeaderGLinks();
+					
+				}
+				
+				
+				private function addIcon(ar:Array):void {
+					var l:*;
+					l = new EditableLabel();
+					l._mouseChildren = false;
+					l._buttonMode = true;
+					l._useHandCursor = true;
+					l._styleName = DEFAULT_STYLE;
+
+					var _this:* = this;
+					var onClickHandler:Function = function (e:*):void {
+		      			if ( (_this._mcr) && (_this._mcr.onMouseClickMenuGLinkRoot_callback) ) {
+		      				_this._mcr.onMouseClickMenuGLinkRoot_callback(e, l);
+		      			}
+					};
+					l.addEventListener(MouseEvent.CLICK,onClickHandler);
+
+					l.onCreationCompleteHandler = GlobalsVO.getGlobal(GlobalsVO.EDITABLEICON_onCreationComplete);
+					l._dataProvider = arr;
+					l.currentData = ar;
+					l.currentState = "NoLabels";
+					container.addChild(l);
+					addDivider();
+				}				
+				
+				public function buildHeaderGLinks():void {
+					var l:*;
+
+					var model:Menu_Model = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL);
+					var ar:Array = model.headerData.data.gLinks[model.headerData.name];
+
+					/* Iterate through the array of objects
+					 * and setup the line of business tabs */
+					 this.addIcon(ar);
+					for(lobCount=0; lobCount<arr.length;++lobCount) {
+						
+						if (this._isAdmin) {
+							l = GlobalLinks.build_editable_label(this,ar,arr,lobCount,DEFAULT_STYLE,this.onMouse,this.onCreation);
+						} else {
+							l = GlobalLinks.build_label(this,arr,lobCount,DEFAULT_STYLE,this.onMouse);
+							
+							this.onCreation(l);
+						}
+						
+						// Add the new tabContainer to the main container
+						try { container.addChild(l); addDivider(); } catch (err:Error) {}
+					}
+					
+					
+					lobCount++;
+					shoppingCart(); // this causes problems for the Admin Tool because it shoves a GUI component into the data model and that makes sending the JSON back tot he server a bit of a problem as one might be able to imagine.
+				}
+				
+				
+				
+				
+				private function shoppingCart():void {
+					var h:HBox = new HBox();
+					h.setStyle("horizontalGap","0");
+					var c:Canvas = new Canvas();
+					h.addChild(c);
+					
+					// Add cart image
+					var asset:Object = DuplicateImage.validate(GlobalsVO.getGlobal(P2),this);
+					var cart:Image = DuplicateImage.copy(asset.image,false,true);
+			
+			
+					if(asset.error != null) new ErrorMessages(cart,asset.error);
+					c.addChild(cart);
+					
+					// Position cart image
+					cart.y = Number(GlobalsVO.getCSSProperty("headerGlinksCartY"));
+					
+					// Add this shopping cart object to the array
+					var obj:Object = new Object();
+					obj.component = h;
+					
+					
+					// Add cart textfield				
+					var l:*;
+					if (!this._isAdmin) {
+						l = new Label();
+						if (_extVars.cartStatus != null) {
+							l.htmlText = _cartInfo[_extVars.cartStatus].name;
+						}
+						obj.name = l.htmlText;
+						h.mouseChildren = false;
+						h.buttonMode = false;
+						h.useHandCursor = false;
+						if(Number(_extVars.cartStatus) == 0 || this._isAdmin) {
+							l.styleName = CART_EMPTY;
+							obj.value =  null;
+						} else {
+							l.styleName = VIEW_CART;
+							h.buttonMode = true;
+							h.useHandCursor = true;
+							
+							obj.target = _cartInfo[_extVars.cartStatus].target;
+							obj.value =  _cartInfo[_extVars.cartStatus].value;
+							
+							// Setup mouse listeners for the new tabContainer
+							h.addEventListener(MouseEvent.CLICK,onMouse);
+						}
+						
+						// Set style for shopping cart
+						GlobalsVO.setStyle(l);
+					} else {
+						var model:* = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL);
+						var hash:* = model.metaData.hash;
+						var ar:Array = model.headerData.data.cart[model.headerData.name];
+
+						l = new EditableLabel();
+						l._mouseChildren = true;
+						l._buttonMode = true;
+						l._useHandCursor = true;
+						
+						l._selector = hash.label;
+
+						var _this:* = this;
+						var onClickHandler:Function = function (e:*):void {
+							var editableLabel:EditableLabel = e.currentTarget.parentDocument as EditableLabel;
+							var id:String = e.currentTarget.id;
+							var i:int = (id == 'aLabel') ? 0 : 1;
+							editableLabel.currentData = editableLabel.currentDataContainer[i];
+							//trace(this.className+'.shoppingCart().1 --> ('+i+') e.currentTarget='+e.currentTarget);
+			      			if ( (_this._mcr) && (_this._mcr.onMouseClickMenuShoppingCart_callback) ) {
+			      				_this._mcr.onMouseClickMenuShoppingCart_callback(e, editableLabel);
+			      			}
+						};
+						l.onClickHandler = onClickHandler;
+						l.onCreationCompleteHandler = GlobalsVO.getGlobal(GlobalsVO.NONEDITABLELABEL_onCreationComplete);
+						
+						l._styleName = DEFAULT_STYLE;
+						
+						l._dataProvider = _cartInfo;
+						l.currentData = ar;  // this gets updated when the item is clicked...
+						l.currentDataContainer = ar;
+						
+						// ==========================================================
+//						var model:* = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL);
+//						var hash:* = model.metaData.hash;
+//
+//						l = new ClickableLabel();
+//						l.mouseChildren = false;
+//						l.buttonMode = true;
+//						l.useHandCursor = true;
+//						
+//						var _this:* = this;
+//						var onClickHandler:Function = function (e:*):void {
+//			      			if ( (_this._mcr) && (_this._mcr.onMouseClickMenuShoppingCart_callback) ) {
+//			      				_this._mcr.onMouseClickMenuShoppingCart_callback(e, l);
+//			      			}
+//						};
+//						l.addEventListener(MouseEvent.CLICK,onClickHandler);
+//						l.addEventListener(FlexEvent.CREATION_COMPLETE,GlobalsVO.getGlobal(GlobalsVO.NONEDITABLELABEL_onCreationComplete));
+//						
+//						l.styleName = DEFAULT_STYLE;
+//						
+//						l._dataProvider = _cartInfo;
+						// ==========================================================
+					}
+					
+					// Add cart to hBox
+					h.addChild(l);
+					
+					// Add hBox to container
+					container.addChild(h);
+					
+					// Set focus listener and it's tab priority
+					GlobalsVO.addFocus(h,_tabOrder++);
+
+					if (!this._isAdmin) {
+						arr.push(obj);
+					}
+				}
+				
+				
+				
+				
+				/**
+				 * Add graphic divider
+				 */
+				 
+				private function _addDivider(container:*):void {
+					var c:Canvas = new Canvas();
+					
+					var asset:Object = DuplicateImage.validate(GlobalsVO.getGlobal(P1),this);
+					var divider:Image = DuplicateImage.copy(asset.image,false,false);
+					
+					
+					if(asset.error != null) new ErrorMessages(divider,asset.error);
+					c.addChild(divider);
+					divider.y = Number(GlobalsVO.getCSSProperty("headerGlinksDivY"));
+					container.addChild(c);
+					divider.height = componentHeight;
+					divider.width = DIVIDER_WIDTH;
+				}
+				
+				
+				public function addDivider():void {
+					this._addDivider(this.container);
+				}
+				
+				
+				
+				
+				
+				/**
+				 * Accessibility, get the current selected
+				 * instance from this class
+				 * @see Accessibility_Model:talk()
+				 */
+				 
+				public function getDataByAccessibility(instance:*):Object {
+					for(var i:int = 0; i<arr.length; ++i) {
+						if(instance.name.toString() == arr[i].component.name.toString()) {
+							return arr[i];
+						}
+					}
+					
+					return null;
+				}				
+				
+				
+				private function onCreation(aLabel:Label):void {
+					GlobalsVO.setStyle(aLabel);
+
+					// Set focus listener and it's tab priority
+					GlobalsVO.addFocus(aLabel,_tabOrder++);
+				}
+				
+				
+				/**
+				 * Check the array with the current
+				 * selected component to see if the
+				 * component should be styled differently
+				 * @param:MouseEvent - Any mouse event
+				 */
+				private function onMouse(e:MouseEvent):void {
+					
+					var i:int=0;
+					switch(e.type) {
+						
+						case MouseEvent.MOUSE_OVER :
+							for(; i<arr.length; ++i) { 
+								if(arr[i].component == e.currentTarget) {
+									onHighlight(_currentSelect = arr[i],e);
+								}
+							}
+									
+						break;
+						
+						
+						case MouseEvent.MOUSE_OUT :
+							for(; i<arr.length; ++i)  
+								if(arr[i].component == e.currentTarget)
+									onHighlight(arr[i],e);
+									
+						break;
+						
+						case MouseEvent.CLICK :
+						
+						
+							var myarr:Array = arr;
+						
+						
+						
+						
+							for(var c:int = 0; c < arr.length; ++c) {
+								if(e.currentTarget.toString() == arr[c].component.toString()) {
+									// If Sign in link selected use JS interface
+									if(arr[c].label.text == arr[0].label.text) {
+										//trace("###### click: signInDialog.render();");
+										ExternalInterface.call("signInDialog.render");
+									} else if (!_isAdmin) {
+										WebServices.navigateToUrl(arr[c].value,arr[c].target);						
+									}
+								//trace("##e.currentTarget.toString(): "+e.currentTarget.toString());
+								}
+							}
+							
+						break;
+					}
+				}
+				
+				
+				
+				
+				/**
+				 * Based on the component match, determine
+				 * if the component should be styled differently
+				 */
+				 
+				private function onHighlight(item:Object,e:MouseEvent):void {
+					switch(e.type) {
+						case MouseEvent.MOUSE_OVER:
+							item.useHandCursor = true;
+							item.mode == MODE ? item.label.styleName = HLSM : item.label.styleName = HLMOVER;
+							GlobalsVO.setStyle(item.label);
+						break;
+						case MouseEvent.MOUSE_OUT:
+							item.mode == MODE ? item.label.styleName = HLS : item.label.styleName = HLMOUT;
+							GlobalsVO.setStyle(item.label);
+						break;
+					}
+				}
+			]]>
+	</mx:Script>
+</mx:Canvas>

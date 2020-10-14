@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel 
+    horizontalAlign="center"
+    verticalAlign="middle"
+    xmlns:mx="http://www.adobe.com/2006/mxml"
+    title="Product List">
+
+    <mx:DataGrid 
+        width="233" height="101">
+        <mx:columns>
+            <mx:DataGridColumn headerText="Product A"/>
+            <mx:DataGridColumn headerText="Product B"/>
+            <mx:DataGridColumn headerText="Product C"/>
+        </mx:columns>
+    </mx:DataGrid>
+
+</mx:Panel>

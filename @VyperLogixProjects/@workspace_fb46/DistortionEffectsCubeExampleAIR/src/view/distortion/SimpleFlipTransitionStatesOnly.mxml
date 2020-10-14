@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:sides="view.sides.*"
+    xmlns:mxeffects="com.adobe.ac.mxeffects.*">
+
+    <mx:states>
+        <mx:State name="registrationState">
+            <mx:RemoveChild target="{ login }"/>
+            <mx:AddChild>
+                <sides:Registration id="registration"
+                    change="currentState = ''"
+                    title="Registration"/>
+            </mx:AddChild>
+        </mx:State>
+    </mx:states>
+
+    <sides:Login id="login"
+        change="currentState = 'registrationState';"
+        title="Login"/>
+
+</mx:Canvas>

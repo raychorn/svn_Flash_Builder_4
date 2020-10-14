@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="100%" 
+	xmlns:controls="vzw.controls.*">
+	<mx:states>
+		<mx:State name="loggedIn">
+		</mx:State>
+	</mx:states>
+	<mx:Script>
+		<![CDATA[
+			import vzw.utils.ObjectExplainer;
+			import mx.events.FlexEvent;
+
+			[Bindable]
+			private var _dataProvider:Object = {};
+
+			[Bindable]
+			public var _rolesList:*;
+			
+			[Bindable]
+			public var onChange:Function;
+			
+			[Bindable]
+			public var symbol_roles_label:String = '';
+
+//			[Bindable]
+//			public var onCreationComplete_options:Function;
+			
+			public function set dataProvider(dataProvider:Object):void {
+				if (this._dataProvider != dataProvider) {
+					this._dataProvider = dataProvider;
+					//trace(this.className+'.dataProvider() setter --> \n'+(new ObjectExplainer(dataProvider)).explainThisWay('\n'));
+					this.onCreationComplete_options();
+				}
+			}
+
+			public function get dataProvider():Object {
+				return (this._dataProvider) ? this._dataProvider : {};
+			}
+
+			public function get asObject():Object {
+				var sources:Array = [
+										this.options
+									];
+				var obj:Object = {};
+				var aSource:*;
+				for (var i:String in sources) {
+					aSource = sources[i];
+					obj[aSource.id] = aSource.asObject;
+				}
+				return obj;
+			}
+
+			private function dataProvider_for(name:String):* {
+				var value:* = (this._dataProvider != null) ? this._dataProvider[name] : null;
+				//trace(this.className+'.dataProvider_for('+name+') --> '+(new ObjectExplainer(value)).explainThisWay()+'\n');
+				return value;
+			}
+			
+			private function onCreationComplete_options():void {
+				this.options.dataProvider = this.dataProvider_for('options');
+			}
+		]]>
+	</mx:Script>
+	<mx:Spacer width="5"/>
+	<controls:AdminOptions id="options" width="100%" rb_oneBill_tooltip="This checkbox tells the URL to not display for one-bill customers." rb_alltel_tooltip="This checkbox tells the URL to substitute alltel customers." rb_alltel_url_tooltip="This is the URL that is used whenever the Alltel checkbox button is selected but not otherwise." hbxlink_label="HBXLink: lid=" txt_hbxlink_tooltip="This is the hbxlink info, you know, lid=" rb_oneBill_onChange_handler="{this.onChange}" rb_alltel_onChange_handler="{this.onChange}" rb_neither_onChange_handler="{this.onChange}" rb_alltel_url_onChange_handler="{this.onChange}" cb_roles_onChange_handler="{this.onChange}" txt_hbxlink_onChange_handler="{this.onChange}" currentState="horizontal+{(this.currentState) ? this.currentState : 'loggedIn'}" roles_label="{this.symbol_roles_label}" creationComplete="onCreationComplete_options()"/>
+	<mx:Spacer width="5"/>
+</mx:HBox>

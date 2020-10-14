@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<view:CubeSide xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:view="view.cube.*"
+    title="Login" xmlns:videos="controls.videos.*">
+	<mx:Script>
+		<![CDATA[
+			[Bindable]
+			public var video_id:String = "H9f01wqqLAg";
+		]]>
+	</mx:Script>
+	<view:sideContent>
+
+        <mx:VBox id="loginView2">
+            <mx:ViewStack id="loginViewStack">
+
+                <mx:Form id="loginView">
+                    <mx:FormItem label="Username">
+                        <mx:TextInput/>
+                    </mx:FormItem>
+
+                    <mx:FormItem label="Password">
+                        <mx:TextInput displayAsPassword="true"/>
+                    </mx:FormItem>
+
+                    <mx:FormItem>
+                        <mx:Button 
+                            label="Watch Video"
+                            click="loginViewStack.selectedChild = videoView;"/>
+                    </mx:FormItem>
+
+                    <mx:LinkButton label="Forgotten Password? Click Here."/>
+                    <mx:LinkButton label="Not Registered? Click Here."/>
+                </mx:Form>
+
+                <mx:VBox id="videoView">
+					<videos:YouTubeVideo id="youtube" x="0" y="0" width="100%" height="100%" video_id="{this.video_id}" horizontalScrollPolicy="off" verticalScrollPolicy="off"/>
+                    <mx:Button 
+                        label="Watch Video"
+                        click="loginViewStack.selectedChild = loginView;"/>
+                </mx:VBox>
+
+            </mx:ViewStack>
+        </mx:VBox>
+    </view:sideContent>
+
+</view:CubeSide>

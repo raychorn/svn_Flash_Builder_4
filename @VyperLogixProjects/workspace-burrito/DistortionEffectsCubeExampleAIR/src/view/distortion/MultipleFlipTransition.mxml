@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:sides="view.sides.*"
+    xmlns:mxeffects="com.adobe.ac.mxeffects.*">
+
+    <mx:states>
+        <mx:State name="registrationState">
+            <mx:RemoveChild target="{ login }"/>
+            <mx:AddChild creationPolicy="all">
+                <sides:Registration id="registration"
+                    change="currentState = ''"
+                    title="Registration"/>
+            </mx:AddChild>
+        </mx:State>
+        <mx:State name="searchState">
+            <mx:RemoveChild target="{ search }"/>
+            <mx:AddChild creationPolicy="all">
+                <sides:Search id="search"
+                    change="currentState = ''"
+                    title="Search"/>
+            </mx:AddChild>
+        </mx:State>
+    </mx:states>
+
+    <mx:transitions>
+        <mx:Transition fromState=""
+            toState="searchState"
+            effect="{ flipTo }"/>
+        <mx:Transition fromState="searchState"
+            toState=""
+            effect="{ flipBack }"/>
+    </mx:transitions>
+
+    <mx:Sequence id="flipTo">
+        <mxeffects:CubeRotate 
+            direction="RIGHT"
+            target="{ login }"
+            siblings="{ [ registration, search ] }"
+            duration="1000"/>
+        <mx:RemoveChildAction target="{ login }"/>
+        <mx:AddChildAction target="{ search }"/>
+    </mx:Sequence>
+
+    <mx:Sequence id="flipBack">
+        <mxeffects:CubeRotate 
+            direction="LEFT"
+            target="{ search }"
+            siblings="{ [ registration, login ] }"/>
+        <mx:RemoveChildAction target="{ registration }"/>
+        <mx:AddChildAction target="{ login }"/>
+    </mx:Sequence>
+
+    <sides:Login id="login"
+        change="currentState = 'searchState';"
+        title="Login"/>
+
+</mx:Canvas>

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" implements="mx.controls.listClasses.IListItemRenderer">
+	<mx:Label x="10" width="100%" text="{data.label}" verticalCenter="0"/>
+</mx:Canvas>

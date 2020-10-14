@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   minWidth="955" minHeight="600" 
+			   creationComplete="application1_creationCompleteHandler(event)" 
+			   xmlns:views="views.*">
+	<fx:Style source="SVNCloudPortal.css"/>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.vyperlogix.AdHocOperation;
+			import com.vyperlogix.AdHocService;
+			
+			import controls.Alert.AlertPopUp;
+			
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;
+			private static var isLoggedIn:Boolean = false;
+			
+			private var _this:SVNCloudPortal;
+
+			[Bindable]
+			private var __version__:String = 'SVN Cloud 0.1';
+
+			public function setBusyCursor(aParent:*):void {
+				CursorManager.setBusyCursor();
+				if (aParent) {
+					aParent.enabled = false;
+				}
+			}
+			
+			public function removeBusyCursor(aParent:*):void {
+				CursorManager.removeBusyCursor();
+				if (aParent) {
+					aParent.enabled = true;
+				}
+			}
+			
+			public function get_product_version(url:String):void {
+				try {
+					var svc:AdHocService = new AdHocService();
+					var op:AdHocOperation = svc.custom(url);
+					op.addEventListener(Event.COMPLETE,
+						function (event:Event):void {
+							_this.removeBusyCursor(_this);
+							try {
+								var data:* = event.target.data;
+							} catch (err:Error) {trace(err.toString()+'\n'+err.getStackTrace())}
+							//_this.callLater(_this.refresh_data,[]);
+						}
+					);
+					op.addEventListener(ErrorEvent.ERROR,
+						function (event:ErrorEvent):void {
+							_this.removeBusyCursor(_this);
+							var msg:String = 'Because: "' + ((event.text is String) && (event.text.length > 0)) ? event.text : event.toString() + '"';
+							AlertPopUp.errorNoOkay('Cannot process the request for the data from "'+url+'" at this time.\n\nPlease try back later.\n\n'+msg+'\n','ERROR.101');
+						}
+					);
+					this.setBusyCursor(this);
+					op.execute();
+				} catch (err:Error) {
+					AlertPopUp.errorNoOkay(err.toString()+'\n\n'+err.getStackTrace().substr(0,512)+'\n','WARNING.101');
+				}
+			}
+			
+			protected function application1_creationCompleteHandler(event:FlexEvent):void {
+				_this = this;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Panel id="titleWindow" width="100%" height="100%" enabled="true" title="{this.__version__}">
+		<views:ImageViewer x="10" y="0" id="imageViewer" width="200" height="150" random="true" interval="5000"/>
+	</s:Panel>
+</s:Application>

@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   minWidth="955" minHeight="600" 
+			   initialize="application1_initializeHandler(event)" 
+			   xmlns:local="*" 
+			   xmlns:demos="demos.*" xmlns:flow="controls.flow.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ObjectUtils;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.ToolTips.HTMLToolTip;
+			
+			import mobile.MobileDebuggerUtils;
+			
+			import mx.events.FlexEvent;
+			import mx.managers.ToolTipManager;
+			
+			import spark.events.TextOperationEvent;
+			
+			private var __isJavaScriptReady__:Boolean = false;
+			
+			private var __JavaScriptReadyTimer__:Timer = new Timer(250,0);
+			
+			private var __delayed__:Array = [];
+			private var __delayed_timer__:Timer = new Timer(100,0);
+			
+			[Bindable]
+			private var __configs__:Array = [];
+
+			private var __channels__:*;
+			
+			private function issue_debug_message(message:String):void {
+				//this.debug.text = message;
+			}
+			
+			public function set debug_message(message:String):void {
+//				if (this.debug) {
+//					this.debug.text = message;
+//				} else {
+//					this.__delayed__.push({'func':this.issue_debug_message,'args':[message]});
+//				}
+				//trace(message);
+			}
+			
+			private function checkJavaScriptReady():Boolean {
+				this.__isJavaScriptReady__ = ExternalInterface.call("isReady");
+				return this.__isJavaScriptReady__;
+			}
+						
+			private function add_channel(value:String):void {
+				var count:int = this.__configs__.length;
+				var s:String = value.replace('../includes/player/','/miq/includes/player/');
+				this.__configs__.push(s);
+				this.player.configs = this.__configs__;
+				this.debug_message = 'RECEIVED: ('+count+') --> ('+this.__configs__.length+') '+s;
+			}
+			
+			private function add_channels(value:*):void {
+//				var ar:Array = [];
+//				var val:*;
+//				var keys:Array = ObjectUtils.keys(value);
+//				var keys2:Array;
+//				for (var i:int = 0; i < keys.length; i++) {
+//					val = value[keys[i]];
+//					keys2 = ObjectUtils.keys(val);
+//					ar.push(typeof(val)+'\n'+'keys2='+keys2); 
+//				}
+//				AlertPopUp.surpriseNoOkay(typeof(value)+'\n'+'keys='+keys+'\n'+ar.join('\n')+'\n'+'\n'+MobileDebuggerUtils.explainThis(value),'DEBUG');
+				this.__channels__ = value; // list of objects each of which defines a specific channel...
+				this.debug_message = 'RECEIVED: channels !!!';
+			}
+			
+			private function establish_externalInterface():void {
+				if (ExternalInterface.available) {
+					ExternalInterface.addCallback('add_channel',this.add_channel);
+					ExternalInterface.addCallback('add_channels',this.add_channels);
+					this.debug_message = this.className+'.establish_externalInterface().1 --> Established communication with JavaScript... awaiting channels.';
+				} else {
+					//AlertPopUp.surpriseNoOkay('Cannot establish the required connection with JavaScript therefore cannot display channels !!!','WARNING');
+				}
+			}
+			
+			private function javascript_ready_timerHandler(event:TimerEvent):void {
+				this.__isJavaScriptReady__ = checkJavaScriptReady();
+				this.debug_message = this.className+'.javascript_ready_timerHandler().1 --> this.__isJavaScriptReady__='+this.__isJavaScriptReady__;
+				if (this.__isJavaScriptReady__) {
+					this.debug_message = this.className+'.javascript_ready_timerHandler().2 --> this.__isJavaScriptReady__='+this.__isJavaScriptReady__;
+					this.__JavaScriptReadyTimer__.removeEventListener(TimerEvent.TIMER, this.javascript_ready_timerHandler);
+					Timer(event.target).stop();
+				}
+			}
+			
+			private function handle_delayed_timer(event:TimerEvent):void {
+				var vector:*;
+				var func:Function;
+				var args:*;
+				while (this.__delayed__.length > 0) {
+					vector = this.__delayed__.pop();
+					if (vector) {
+						func = vector['func'];
+						if (func is Function) {
+							try {
+								args = vector['args'];
+								(args) ? func(args) : func();
+							} catch (err:Error) {
+								trace(this.className+'.handle_delayed_timer().1 --> err='+err.toString()+'\n'+err.getStackTrace());
+							}
+						}
+					}
+				}
+			}
+			
+			protected function application1_initializeHandler(event:FlexEvent):void {
+				ToolTipManager.toolTipClass = HTMLToolTip;
+				this.__delayed_timer__.addEventListener(TimerEvent.TIMER, this.handle_delayed_timer);
+				this.__delayed_timer__.reset();
+				this.__delayed_timer__.start();
+				try {
+					this.debug_message = this.className+'.application1_initializeHandler().1 --> ExternalInterface.available='+ExternalInterface.available;
+					if (ExternalInterface.available) {
+						this.establish_externalInterface();
+					} else {
+						this.debug_message = this.className+'.application1_initializeHandler().2 --> ExternalInterface.available='+ExternalInterface.available;
+						this.__JavaScriptReadyTimer__.addEventListener(TimerEvent.TIMER, this.javascript_ready_timerHandler);
+						this.__JavaScriptReadyTimer__.reset();
+						this.__JavaScriptReadyTimer__.start();
+					}
+				} catch (err:SecurityError) {
+					//AlertPopUp.surpriseNoOkay('Cannot establish the required connection with JavaScript therefore cannot display channels !!!','SECURITY ERROR');
+					this.debug_message = this.className+'.application1_initializeHandler().3 --> SECURITY ERROR: '+err.toString()+'\n'+err.getStackTrace();
+				} catch (err:Error) {
+					//AlertPopUp.surpriseNoOkay('Cannot establish the required connection with JavaScript therefore cannot display channels !!!','ERROR');
+					this.debug_message = this.className+'.application1_initializeHandler().4 --> ERROR: '+err.toString()+'\n'+err.getStackTrace();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<demos:FlowPlayerProofOfConcept id="player" x="0" y="0" width="100%" height="100%"/>
+</s:Application>

@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   initialize="windowedapplication1_initializeHandler(event)" 
+					   applicationDeactivate="windowedapplication1_applicationDeactivateHandler(event)"
+					   creationComplete="windowedapplication1_creationCompleteHandler(event)" 
+					   xmlns:application="application.*" currentState="mainView"
+					   width="0" height="0" visible="false" includeInLayout="false" xmlns:navigators="controls.navigators.*"
+					   >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:states>
+		<mx:State name="noView"/>
+		<mx:State name="mainView"/>
+		<mx:State name="updaterView"/>
+		<mx:State name="pythonEggView"/>
+		<mx:State name="py2exeSetupView"/>
+	</s:states>
+		<fx:Style>
+		@namespace application "application.*";
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel.ttf");
+			fontFamily: NeoSansIntel;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Light.ttf");
+			fontFamily: NeoSansIntelLight;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium2;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/CALIBRI.TTF");
+			fontFamily: Calibri;
+			embedAsCFF: false;
+		}
+		
+		s|Application {
+			backgroundColor: silver;
+			color: #000000;
+			fontFamily: Calibri;
+			fontSize: 16;
+		}
+		
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.AIREvent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			import mx.events.ResizeEvent;
+			
+			import spark.effects.Resize;
+			
+			import controls.AppIcon;
+			import controls.Alert.AlertPopUp;
+			import controls.navigators.events.FolderNavigatorChangedEvent;
+			
+			import utils.FileSystem.FileSystemSearcher;
+			
+			[Bindable]
+			private var _this:Py2ExeBuildManager;
+			
+			[Bindable]
+			private var __menubar__:ArrayCollection = new ArrayCollection();
+
+			[Bindable]
+			public var _copyrightMessage:String;
+
+			[Bindable]
+			private var _creditsMessage:String = "Produced by:\nVyper Logix Corp. (http://www.VyperLogix.Com)\nand Ray C Horn (http://RayCHorn.Com)";
+
+			private var icon:Loader = new Loader();
+			private var systray:SystemTrayIcon;
+			private var dock:DockIcon;
+
+			private var copyrightCommand:NativeMenuItem = new NativeMenuItem(_copyrightMessage);
+			private var creditsCommand:NativeMenuItem = new NativeMenuItem("Credits");
+			private var exitCommand:NativeMenuItem = new NativeMenuItem("Exit");
+
+			private var _icon:AppIcon = new AppIcon(['assets/icons/app_icon_16.png','assets/icons/app_icon_32.png','assets/icons/app_icon_48.png','assets/icons/app_icon_128.png']);
+
+			[Bindable]
+			private var _current_folder:String = 'c:\\';
+			
+			[Bindable]
+			public var baseState:String = 'mainView';
+			
+			private var __py2exe_setup_fpath__:String;
+			
+			private var __python_eggs__:Array = [];
+			
+			private var __searcher__:FileSystemSearcher;
+			
+			private function iconLoadComplete(e:Event):void {
+				NativeApplication.nativeApplication.icon.bitmaps=[e.target.content.bitmapData];
+			}
+			
+			private function undock(e:Event):void {
+				this.stage.nativeWindow.restore();
+			}
+			
+			private function closeApp(e:Event):void {
+				this.exit_app();
+			}
+			
+			private function createIconMenu(_sysTray:Boolean):NativeMenu {
+				var _this:* = this;
+				var iconMenu:NativeMenu = new NativeMenu();
+				iconMenu.addItem(copyrightCommand);
+				iconMenu.addItem(new NativeMenuItem("", true));
+				iconMenu.addItem(creditsCommand);
+				creditsCommand.addEventListener(Event.SELECT, function (event:Event):void {
+					AlertPopUp.infoNoOkay(_this._creditsMessage,'Credits');
+				});
+				if (_sysTray) {
+					iconMenu.addItem(new NativeMenuItem("", true));
+					iconMenu.addItem(exitCommand);
+					exitCommand.addEventListener(Event.SELECT, this.closeApp);
+				}
+				return iconMenu;
+			}
+			
+			private function trayIcon(_sysTray:Boolean, _dock:Boolean):void {
+				if (_sysTray) {
+					icon.contentLoaderInfo.addEventListener(Event.COMPLETE, this.iconLoadComplete);
+					icon.load(new URLRequest("assets/icons/app_icon_16.png"));
+					systray=NativeApplication.nativeApplication.icon as SystemTrayIcon;
+					systray.tooltip=this._copyrightMessage;
+					systray.menu=this.createIconMenu(_sysTray);
+				}
+				if (_dock) {
+					icon.contentLoaderInfo.addEventListener(Event.COMPLETE, this.iconLoadComplete);
+					icon.load(new URLRequest("assets/icons/app_icon_128.png"));
+					NativeApplication.nativeApplication.addEventListener(InvokeEvent.INVOKE, undock);
+					dock=NativeApplication.nativeApplication.icon as DockIcon;
+					dock.menu=this.createIconMenu(_sysTray);
+				}
+			}
+			
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void {
+				trace(this.className+'.windowedapplication1_creationCompleteHandler().1 !');
+				
+				trace(this.className+'.windowedapplication1_creationCompleteHandler().2 --> Capabilities.screenResolutionX='+Capabilities.screenResolutionX);
+				trace(this.className+'.windowedapplication1_creationCompleteHandler().3 --> Capabilities.screenResolutionY='+Capabilities.screenResolutionY);
+				
+				this.nativeWindow.x = 50;
+				this.nativeWindow.y = 25;
+				
+				var timer:Timer = new Timer(500);
+				timer.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						_this.visible = _this.includeInLayout = true;
+						_this.includeInLayout = true;
+						timer.stop();
+					}
+				);
+				timer.start();
+				
+				var e:Resize = new Resize();
+				e.heightTo = Capabilities.screenResolutionY - ((DebuggerUtils.isDebugging) ? 50 : 50);
+				e.widthTo = Capabilities.screenResolutionX - 100;
+				e.duration = 500;
+				e.target = this.nativeWindow;
+				e.play();
+				
+				this.title = this.AppNameSpace.app_name + ' v' + this.AppNameSpace.versionNumber + ' ' + this.AppNameSpace.copyrightMessage;
+
+				this.trayIcon(NativeApplication.supportsSystemTrayIcon, NativeApplication.supportsDockIcon);
+				
+				this._icon.addEventListener(Event.COMPLETE,function():void {
+					trace(_this.className+'.windowedapplication1_creationCompleteHandler.1 --> _this._icon.bitmaps.length='+_this._icon.bitmaps.length);
+					NativeApplication.nativeApplication.icon.bitmaps = _this._icon.bitmaps;
+				});
+				this._icon.loadImages();
+			}
+			
+			private function file_open_action():void {
+				AlertPopUp.infoNoOkay('file_open_action()', 'Not Yet Implemented !!!');
+			}
+			
+			private function file_create_action():void {
+				AlertPopUp.infoNoOkay('file_create_action()', 'Not Yet Implemented !!!');
+			}
+			
+			private function file_delete_action():void {
+				AlertPopUp.infoNoOkay('file_delete_action()', 'Not Yet Implemented !!!');
+			}
+			
+			protected function menubar_initializeHandler():void {
+				var item:Object;
+				var children:ArrayCollection = new ArrayCollection();
+				var child:Object;
+
+				item = {'label':'File','enabled':true};
+				
+				child = {'label':'Open...','enabled':true,'action':this.file_open_action};
+				children.addItem(child);
+				child = {'label':'Create...','enabled':true,'action':this.file_create_action};
+				children.addItem(child);
+				child = {'label':'Delete...','enabled':true,'action':this.file_delete_action};
+				children.addItem(child);
+				child = {'label':'Exit','enabled':true,'action':exit_app};
+				children.addItem(child);
+				
+				item['children'] = children;
+				this.__menubar__.addItem(item);
+				
+				/*
+				item = {'label':'Options','enabled':true};
+				children = new ArrayCollection();
+				child = {'label':'Edit','enabled':true};
+				children.addItem(child);
+				item['children'] = children;
+
+				this.__menubar__.addItem(item);
+				*/
+			}
+			
+			protected function windowedapplication1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				this.menubar_initializeHandler();
+				trace(this.className+'.windowedapplication1_initializeHandler().1 !');
+			}
+
+			private function _closeApplicaton():void {
+				trace(this.className+'._closeApplicaton().1 --> Deactivation Event !');
+			}
+			
+			private function exit_app():void {
+				var popup:Alert = AlertPopUp.confirm('Are you sure you want to exit ?','Confirmation',
+					function (event:CloseEvent):void {
+						if (event.detail == Alert.OK) {
+							_this.exit();
+						}
+					},'OK','Cancel');
+			}
+			
+			protected function windowedapplication1_applicationDeactivateHandler(event:AIREvent):void {
+				this._closeApplicaton();
+			}
+			
+			private function __hide_nativeWindow__():void {
+				FlexGlobals.topLevelApplication.nativeWindow.minSize = new Point(0,0);
+				FlexGlobals.topLevelApplication.nativeWindow.height = 0;
+				FlexGlobals.topLevelApplication.nativeWindow.width = 0;
+				FlexGlobals.topLevelApplication.nativeWindow.visible = false;
+			}
+			
+			private function __show_nativeWindow__(width:Number,height:Number):void {
+				FlexGlobals.topLevelApplication.nativeWindow.minSize = new Point(width,height);
+				FlexGlobals.topLevelApplication.nativeWindow.height = height;
+				FlexGlobals.topLevelApplication.nativeWindow.width = width;
+				FlexGlobals.topLevelApplication.nativeWindow.visible = true;
+			}
+			
+			private function OnSysTrayMenuInit(menu:NativeMenu):void {
+				var testCommand:NativeMenuItem = new NativeMenuItem("Testing...");
+				testCommand.addEventListener(Event.SELECT, function (event:Event):void {
+					_this.__show_nativeWindow__(600,400);
+					/*
+					var popup:Alert = AlertPopUp.infoNoOkay('+++','DEBUG',
+					function (event:CloseEvent):void {
+					_this.__hide_nativeWindow__();
+					}
+					);
+					*/
+					//popup.width = 550;
+					//popup.height = 350;
+				});
+				for (var i:String in menu.items) {
+					var anItem:NativeMenuItem = menu.items[i] as NativeMenuItem;
+					if (anItem.label.indexOf('Vyper Logix Corp') > -1) {
+						var _creditsMessage:String;
+						try {_creditsMessage = FlexGlobals.topLevelApplication.AppNameSpace._creditsMessage;} catch (err:Error) {}
+						anItem.addEventListener(Event.SELECT,
+							function (event:*):void {
+								_this.__show_nativeWindow__(600,400);
+								/*
+								var popup:Alert = AlertPopUp.infoNoOkay('(c). Copyright, Vyper Logix Corp., All Rights Reserved...\nhttp://www.VyperLogixCorp.Com\n'+_creditsMessage,anItem.label,
+								function (event:CloseEvent):void {
+								_this.__hide_nativeWindow__();
+								}
+								);
+								*/
+								//popup.width = 550;
+								//popup.height = 350;
+							}
+						);
+						break;
+					}
+				}
+				menu.addItem(testCommand);
+				var exitCommand:NativeMenuItem = new NativeMenuItem("Exit");
+				exitCommand.addEventListener(Event.SELECT, function (event:Event):void {
+					setTimeout(FlexGlobals.topLevelApplication.closeApplicaton,100);
+				});
+				menu.addItem(exitCommand);
+			}
+			
+			protected function appProxy_creationCompleteHandler(event:FlexEvent):void {
+				this.appProxy.OnSysTrayMenuInit = this.OnSysTrayMenuInit;
+				trace(this.className+'.onCreationComplete_appProxy().1 !');
+			}
+			
+			protected function menuBar_itemClickHandler(event:MenuEvent):void {
+				var item:Object = event.item;
+				var action:Function = item['action'] as Function;
+				if (action is Function) {
+					try {
+						action();
+					} catch (err:Error) {
+						AlertPopUp.errorNoOkay(err.message, 'ERROR from menu item "'+item['label']+'".');
+					}
+				}
+			}
+			
+			private function onCreationComplete_AppNameSpace():void {
+				this._copyrightMessage = this.AppNameSpace._copyrightMessage;
+				trace(this.className+'.onCreationComplete_AppNameSpace().1 --> this._copyrightMessage='+this._copyrightMessage);
+			}
+			
+			private function onFolderNavigatorChanged(event:FolderNavigatorChangedEvent):void {
+				trace(event.toString());
+			}
+			
+			protected function btn_folders_creationCompleteHandler(event:FlexEvent):void {
+				this.addEventListener(FolderNavigatorChangedEvent.TYPE_FOLDER_NAVIGATOR_CHANGED, onFolderNavigatorChanged);
+			}
+			
+			protected function folders_creationCompleteHandler(event:FlexEvent):void {
+				this.folders.homePath = this._current_folder;
+			}
+			
+			private function next_file():File {
+				var file:File = this.__searcher__.next();
+				var i:int = this.__searcher__.i;
+				this.events.handle_event = i + ' --> ' + file.nativePath;
+				return file;
+			}
+			
+			protected function btn_begin_clickHandler(event:MouseEvent):void {
+				this.__searcher__ = new FileSystemSearcher('c:\\',this,this.events);
+				this.btn_next.enabled = true;
+				this.next_file();
+			}
+			
+			protected function btn_next_clickHandler(event:MouseEvent):void {
+				var file:File = this.next_file();
+				while (this.cb_next_auto.selected && (file is File)) {
+					file = this.next_file();
+				}
+			}
+			
+			protected function events_creationCompleteHandler(event:FlexEvent):void {
+				this.folders.event_viewer = event.currentTarget as EventViewer;
+			}
+			
+			protected function cb_next_auto_clickHandler(event:MouseEvent):void {
+				var cb:CheckBox = event.currentTarget as CheckBox;
+				trace('cb_next_auto_clickHandler().1 --> cb.selected='+cb.selected);
+			}
+			
+		]]>
+	</fx:Script>
+	<application:ApplicationNamespace id="AppNameSpace" x="0" y="0" width="0" height="0" creationComplete="onCreationComplete_AppNameSpace()"/>
+	<application:ApplicatonProxy id="appProxy" creationComplete="appProxy_creationCompleteHandler(event)"/>
+	<mx:ApplicationControlBar id="appBar" width="100%">
+		<mx:MenuBar id="menuBar" dataProvider="{this.__menubar__}" itemClick="menuBar_itemClickHandler(event)" includeIn="noView"/>
+		<s:HGroup width="100%">
+			<s:HGroup>
+				<s:Label text="{this.AppNameSpace.description}"/>
+			</s:HGroup>
+			<s:HGroup>
+				<s:Button id="btn_begin" label="(Begin)" click="btn_begin_clickHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup>
+				<s:Button id="btn_next" label="(Next)" enabled="false" click="btn_next_clickHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup>
+				<s:CheckBox id="cb_next_auto" label="(Auto-Next)" enabled="{this.btn_next.enabled}" selected="false" click="cb_next_auto_clickHandler(event)"/>
+			</s:HGroup>
+		</s:HGroup>
+	</mx:ApplicationControlBar>
+	<s:VGroup width="100%" height="100%" paddingTop="30" verticalAlign="top" horizontalAlign="left">
+		<navigators:FolderNavigatorCanvas id="folders" width="100%" height="100" visible="false" includeInLayout="false" visible.py2exeSetupView="true" includeInLayout.py2exeSetupView="true" visible.pythonEggView="true" includeInLayout.pythonEggView="true" creationComplete="folders_creationCompleteHandler(event)"/>
+		<navigators:EventViewer id="events" title="Events" width="100%" height.mainView="100%" height="250" creationComplete="events_creationCompleteHandler(event)"/>
+	</s:VGroup>
+</s:WindowedApplication>

@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%" creationComplete="init()">
+	<mx:HBox id="backgroundContainer" width="100%"
+		verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		<mx:Canvas id="imgBackground" width="100%" height="{componentHeight}"
+			verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		</mx:Canvas>
+	</mx:HBox>
+	<mx:HBox id="headerBorderContainer" y="{headerBottomY}" width="100%"
+		verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		<mx:Canvas id="headerBottomBorder" width="100%" height="{componentHeight}"
+			verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		</mx:Canvas>
+	</mx:HBox>
+	<mx:HBox id="headerContainer" horizontalAlign="center" 
+		verticalAlign="top" horizontalGap="0" width="100%" x="0">
+		<mx:Canvas id="header" height="{componentHeight}"
+			verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+			width="{componentWidth}" x="0" y="0">
+		</mx:Canvas>
+	</mx:HBox>
+	<mx:HBox id="headerBottomContainer" horizontalAlign="center" 
+		verticalAlign="top" horizontalGap="0" width="100%" x="0" y="{headerBottomY}">
+		<mx:Canvas id="headerBottom" height="{componentHeight}"
+			verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+			width="{componentWidth}" x="0" y="0">
+		</mx:Canvas>
+	</mx:HBox>
+		<mx:Script>
+			<![CDATA[
+				import mx.controls.Label;
+				import mx.controls.Text;
+				import controller.MenuController;
+				import mxml.CategoryItem;
+				import libs.utils.ErrorMessages;
+				import mx.logging.Log;
+				import mx.events.*;
+				import mx.controls.Image;
+				import utils.displayObject.DuplicateImage;
+				import libs.vo.GlobalsVO;
+			
+				[Bindable]
+				public var componentHeight:Number;
+				
+				[Bindable]
+				public var headerBottomY:Number;
+				
+				[Bindable]
+				public var componentWidth:Number;
+		
+				private var img:Image;
+				private var img2:Image;
+				private var img3:Image;
+
+				private var menuController:MenuController;
+				private var lsHbox:HBox;
+								
+				private const P1:String = "image_headerBackgroundAsset";		// Background asset
+				private const P2:String = "image_headerBottomBackgroundAsset";		// Background asset
+				private const P3:String = "image_headerBottomBackgroundBorderAsset";		// Background asset
+		
+		
+		
+				/**
+				 * Initialize and get the background
+				 * image from GlobalsVO
+				 */
+				 		
+				public function init():void {
+					
+					componentWidth = Number(GlobalsVO.getCSSProperty("interfaceWidth"));
+					
+					// Set the header bottom X and Y
+					headerBottomY = Number(GlobalsVO.getCSSProperty("headerBottomY"));
+					
+					// Display background image
+					var asset:Object = DuplicateImage.validate(GlobalsVO.getGlobal(P1),this);
+					
+					if(asset.error != null) {
+						img = DuplicateImage.copy(asset.image,false,true);
+						new ErrorMessages(img,asset.error);
+					} else {
+						// Catch missing graphic asset error message					
+						img = DuplicateImage.copy(asset.image,true,false);
+					}
+
+					
+					imgBackground.addChild(img);
+					img.width = this.width;
+					backgroundContainer.addEventListener(ResizeEvent.RESIZE,onResize);
+					
+					
+					/* var tfc:Canvas = new Canvas();
+					tfc.width = 100;
+					tfc.height = 50;
+					var txtf:Label = new Label();
+					txtf.text = String(GlobalsVO.benchMark);
+					tfc.addChild(txtf);
+					header.addChild(tfc); */
+					
+					
+					// If logged in state add header bottom graphic
+					if(!GlobalsVO.ISLoggedOut) {
+						// Display background image for header bottom
+						asset = DuplicateImage.validate(GlobalsVO.getGlobal(P2),this);
+						if(asset.error != null) {
+							img2 = DuplicateImage.copy(asset.image,false,true);
+							new ErrorMessages(img,asset.error);
+						} else {
+							// Catch missing graphic asset error message					
+							img2 = DuplicateImage.copy(asset.image,true,true);
+						}
+						
+						headerBottom.addChild(img2);
+						img2.width = this.width;
+						
+						// Display background border image for header bottom
+						asset = DuplicateImage.validate(GlobalsVO.getGlobal(P3),this);
+						if(asset.error != null) {
+							img3 = DuplicateImage.copy(asset.image,false,true);
+							new ErrorMessages(img,asset.error);
+						} else {
+							// Catch missing graphic asset error message					
+							img3 = DuplicateImage.copy(asset.image,true,false);
+						}
+						
+						headerBottomBorder.addChild(img3);
+						img3.width = this.width;
+					} 
+					
+					
+					
+					
+					var extVars:Object = GlobalsVO.getGlobal(GlobalsVO.EXTERNALVARS);
+					var isAdmin:Boolean = Boolean(GlobalsVO.getGlobal(GlobalsVO.ISADMIN));
+					
+					if(Number(extVars.logoDisplay) != 0 || isAdmin) {
+					
+						// Load Logo
+						var logo:Logo = new Logo();
+						header.addChild(logo);
+						///logo.x = Number(GlobalsVO.getCSSProperty("headerLogoX"));
+						logo.y = Number(GlobalsVO.getCSSProperty("headerLogoY"));
+					}
+					
+					//trace("## GlobalsVO.ISLoggedOut1112: "+GlobalsVO.ISLoggedOut);
+					if(GlobalsVO.ISLoggedOut) {
+						if(Number(extVars.gLinksDisplay) != 0 || isAdmin) {
+							// Load Global Links
+							var glinks:GlobalLinks = new GlobalLinks();
+							header.addChild(glinks);
+							glinks.x = Number(GlobalsVO.getCSSProperty("headerGlinksX"));
+							glinks.y = Number(GlobalsVO.getCSSProperty("headerGlinksY"));
+						}
+					} else {
+						if(Number(extVars.gLinksDisplay) != 0 || isAdmin) {
+							// Load Global Links
+							var glinksLogin:GlobalLinksLogin = new GlobalLinksLogin();
+							headerBottom.addChild(glinksLogin);
+							//glinksLogin.y = Number(GlobalsVO.getCSSProperty("headerGlinksY"));
+						}
+					}
+						
+						
+					if (GlobalsVO.ISLoggedOut) {
+						if(Number(extVars.lobDisplay) != 0 || isAdmin) {
+							// Load Header Category buttons
+							var hbt:LineOfBusinessTabs = new LineOfBusinessTabs();
+							header.addChild(hbt);
+							hbt.x = Number(GlobalsVO.getCSSProperty("headerLOBX"));
+							hbt.y = Number(GlobalsVO.getCSSProperty("headerLOBY"));
+						}
+						
+						
+						
+						
+						if(Number(extVars.searchDisplay) != 0 || isAdmin) {
+							// Load Search
+							var search:Search = new Search();
+							header.addChild(search);
+							search.searchPadR = Number(GlobalsVO.getCSSProperty("headerSearchPadR"));
+							search.y = Number(GlobalsVO.getCSSProperty("headerSearchY"));
+							search.searchField.width = Number(GlobalsVO.getCSSProperty("headerSearchBarW"));
+						}
+						
+						//trace('#### new Location() !');
+						//if(Number(extVars.zipDisplay) != 0) {
+							var location:Location = new Location();
+							header.addChild(location);
+							location.y = Number(GlobalsVO.getCSSProperty("headerLocationY"));
+						//}
+					} else {
+						// Home Button
+						var homeButton:HomeButton = new HomeButton();
+						header.addChild(homeButton);
+						homeButton.x = Number(GlobalsVO.getCSSProperty("headerHomeX"));
+						homeButton.y = Number(GlobalsVO.getCSSProperty("headerHomeY"));
+						
+						lsHbox = new HBox();
+						
+						// Login State
+						var loginState:LoginState = new LoginState();
+						
+						lsHbox.addChild(loginState);
+						header.addChild(lsHbox);
+						
+						adjustHeaderItems(null);
+					}
+					
+					
+					if (GlobalsVO.ISLoggedOut == false) {
+						this.addEventListener(Event.ADDED, adjustHeaderItems);
+						this.addEventListener(Event.RENDER, adjustHeaderItems);
+						this.addEventListener(FlexEvent.UPDATE_COMPLETE, adjustHeaderItems);
+					}
+					
+					
+					if (GlobalsVO.ISLoggedOut == false) {
+						this.headerContainer.verticalScrollPolicy = 'off';
+						this.headerContainer.horizontalScrollPolicy = 'off';
+					}
+				}
+				
+				public function adjustHeaderItems(event:*):void {
+					var _isAdmin:Boolean = Boolean(GlobalsVO.getGlobal(GlobalsVO.ISADMIN));
+					try {
+						lsHbox.x = header.width - (Number(GlobalsVO.getCSSProperty("headerLoginStatePadR")) + ((_isAdmin) ? 0 : 0));
+					} catch(e:Error){}
+				}
+
+				public function onResize(e:ResizeEvent):void {
+					img.width = e.currentTarget.width;
+					if(img3 != null) img3.width = e.currentTarget.width;
+					
+				}
+			]]>
+	</mx:Script>
+</mx:Canvas>

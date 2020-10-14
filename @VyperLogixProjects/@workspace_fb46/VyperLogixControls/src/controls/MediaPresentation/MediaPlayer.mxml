@@ -1,0 +1,3442 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 width="100%" height="100%" 
+		 initialize="group1_initializeHandler(event)" 
+		 xmlns:CustomEditor="controls.MediaPresentation.CustomEditor.*" 
+		 xmlns:popups="controls.popups.*" 
+		 xmlns:MediaPresentation="controls.MediaPresentation.*" xmlns:mx="library://ns.adobe.com/flex/mx">
+	<s:states>
+		<mx:State name="normal"/>
+		<mx:State name="information"/>
+		<mx:State name="error"/>
+		<mx:State name="debugger"/>
+		<mx:State name="changes"/>
+		<mx:State name="credits"/>
+		<mx:State name="options"/>
+		<mx:State name="title"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="ChangeActionBarTitle", type="controls.MediaPresentation.events.ChangeActionBarTitle")]
+		[Event(name="changeActionBar", type="controls.MediaPresentation.events.ChangeActionBar")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.ArrayCollectionUtils;
+			import com.ArrayUtils;
+			import com.DateUtils;
+			import com.DisplayObjectUtils;
+			import com.GUID;
+			import com.Generator;
+			import com.HTMLUtils;
+			import com.MathHelper;
+			import com.ObjectUtils;
+			import com.XMLObjectUtils;
+			import com.XMLUtils;
+			import com.logger.LogFile;
+			
+			import controls.Alert.AlertAlternative;
+			import controls.MediaPresentation.Buttons.VCR.VCRBackButton;
+			import controls.MediaPresentation.Buttons.VCR.VCRBeginButton;
+			import controls.MediaPresentation.Buttons.VCR.VCREndButton;
+			import controls.MediaPresentation.Buttons.VCR.VCRForwardButton;
+			import controls.MediaPresentation.Buttons.VCR.VCRMenuButton;
+			import controls.MediaPresentation.Buttons.VCR.VCRStartButton;
+			import controls.MediaPresentation.Buttons.VCR.VCRTilesButton;
+			import controls.MediaPresentation.CustomEditor.events.ItemUpdateEvent;
+			import controls.MediaPresentation.DropDownList.events.SelectedTabFromListEvent;
+			import controls.MediaPresentation.events.ChangeActionBar;
+			import controls.MediaPresentation.events.ChangeActionBarTitle;
+			import controls.MediaPresentation.events.ChangeNavBar;
+			import controls.MediaPresentation.events.ClickedHotSpotEvent;
+			import controls.MediaPresentation.events.ModifyCenterHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyLowerLeftHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyLowerLeftLeftHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyLowerLeftRightHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyLowerRightHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyLowerRightLeftHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyLowerRightRightHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyUpperLeftHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyUpperLeftLeftHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyUpperLeftRightHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyUpperRightHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyUpperRightLeftHotSpotCoordEvent;
+			import controls.MediaPresentation.events.ModifyUpperRightRightHotSpotCoordEvent;
+			import controls.MediaPresentation.events.SpecificButtonClickEvent;
+			import controls.WebViewComponent;
+			import controls.google.YouTubeVideoPlayer;
+			import controls.popups.WinProgressBar;
+			
+			import flash.desktop.NativeApplication;
+			import flash.desktop.SystemIdleMode;
+			import flash.filesystem.File;
+			import flash.utils.getTimer;
+			
+			import mobile.MobileDebuggerUtils;
+			
+			import mx.charts.CategoryAxis;
+			import mx.collections.ArrayCollection;
+			import mx.controls.SWFLoader;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.ItemClickEvent;
+			import mx.events.ResizeEvent;
+			import mx.events.StateChangeEvent;
+			import mx.events.TouchInteractionEvent;
+			import mx.graphics.BitmapScaleMode;
+			import mx.managers.PopUpManager;
+			import mx.managers.SystemManager;
+			import mx.utils.DisplayUtil;
+			import mx.utils.ObjectProxy;
+			
+			import spark.components.Application;
+			import spark.components.Button;
+			import spark.components.ButtonBarButton;
+			import spark.components.Group;
+			import spark.components.Image;
+			import spark.components.VideoPlayer;
+			import spark.events.IndexChangeEvent;
+			
+			import utils.AIRHelper;
+			import utils.MediaHelper;
+			
+			import vyperlogix.FileIO.serializer.FileWriter;
+			
+			public var default_root_file_name_xml:String = 'root.xml';
+			
+			public var data_file_name_xml:String = null;
+			
+			public var __root__:* = null;
+			
+			public var __resultObj__:* = null;
+			
+			public var __data__:* = null;
+			
+			private var _this:MediaPlayer;
+
+			[Bindable]
+			private var __resetDebugger__:*;
+			
+			[Bindable]
+			private var __showVersion__:*;
+			
+			[Bindable]
+			private var __showCredits__:*;
+			
+			[Bindable]
+			private var __showChanges__:*;
+			
+			[Bindable]
+			private var __showDebugger__:*;
+			
+			[Bindable]
+			private var __is_showing_title_image__:Boolean = false;
+			
+			[Bindable]
+			private var __actionBarTitle__:String;
+			
+			private var version_replacement_symbol:String = '{this.parentApplication.versionNumber}';
+			
+			[Bindable]
+			private var __root_title__:String;
+			
+			[Bindable]
+			private var __root_title_delay__:int = -1;
+			
+			[Bindable]
+			private var __title__:String = 'Cisco Amazon Kindle Fire Demo v'+version_replacement_symbol;
+			
+			[Bindable]
+			private var __autoplay__:String; // tabName.itemName
+			
+			[Bindable]
+			private var __autoplay_timer__:Timer; // waits for the autoplay spec to arrive with a time-out as soon as the data has been loaded...
+			
+			[Bindable]
+			private var __delayed_autoplay_actions__:Array = [];
+			
+			[Bindable]
+			public var __current_tab__:*;
+			
+			[Bindable]
+			public var __current_asset__:int = 0;
+			
+			[Bindable]
+			private var __tabs__:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			public var __is_playing_media__:Boolean = false;
+			
+			[Bindable]
+			private var __is_showing_media_navBar__:Boolean = false;
+			
+			[Bindable]
+			private var __is_showing_media_navBar_while_playing_media__:Boolean = false;
+			
+			[Bindable]
+			private var __is_showing_hotspots__:Boolean = false;
+			
+			[Bindable]
+			private var is_editingMode:Boolean = false;
+			
+			[Bindable]
+			private var __is_editing_allowed__:Boolean = false;
+			
+			[Bindable]
+			private var __is_canvas_clickTouchHandler_active__:Boolean = true;
+			
+			[Bindable]
+			private var can_play_auto:Boolean = false;
+			
+			[Bindable]
+			public var canvas:ItemCanvas;
+			
+			public var parentView:*;
+			
+			private var btnBarNav:CustomButtonBar;
+			
+			private var is_about_to_add_hotspots_from_xml:Boolean = false;
+			private var is_adding_hotspots_from_xml:Boolean = false;
+			
+			private const title_separator_symbol:String = ' :: ';
+			
+			private const edit_mode_symbol:String = 'edit_mode';
+			
+			private const hotspot_clickHandler_symbol:String = 'hotspot_clickHandler';
+			private const hotspot_touchTapHandler_symbol:String = 'hotspot_touchTapHandler';
+			private const hotspot_mouseMoveHandler_symbol:String = 'hotspot_mouseMoveHandler';
+			private const hotspot_touchMoveHandler_symbol:String = 'hotspot_touchMoveHandler';
+			
+			[Bindable]
+			private var nav_edit_mode_symbol:String = 'Edit ';
+			
+			private const nav_edit_symbol:String = 'Edit...';
+			private const nav_begin_symbol:String = '|<';
+			private const nav_next_symbol:String = '>';
+			private const nav_prev_symbol:String = '<';
+			private const nav_menu_symbol:String = '[Menu]';
+			private const nav_end_symbol:String = '>|';
+			private const nav_auto_symbol:String = '>>';
+			private const nav_tiles_symbol:String = '[(..)]';
+			private const nav_add_symbol:String = '+';
+			private const nav_remove_symbol:String = '-';
+			
+			[Bindable]
+			[Embed(source="/controls/MediaPresentation/assets/images/missing-image.jpg")]
+			public static var missingImageClass:Class;
+			
+			[Bindable]
+			[Embed(source="/controls/MediaPresentation/assets/buttons/vcr/web-icons-white-circle-back_button_32x32.png")]
+			public static var backImageClass:Class;
+			
+			[Bindable]
+			[Embed(source="/controls/MediaPresentation/assets/buttons/vcr/web-icons-white-circle-begin_button_32x32.png")]
+			public static var beginImageClass:Class;
+			
+			[Bindable]
+			[Embed(source="/controls/MediaPresentation/assets/buttons/vcr/web-icons-white-circle-end_button_32x32.png")]
+			public static var endImageClass:Class;
+			
+			[Bindable]
+			[Embed(source="/controls/MediaPresentation/assets/buttons/vcr/web-icons-white-circle-forward_button_32x32.png")]
+			public static var forwardImageClass:Class;
+			
+			[Bindable]
+			[Embed(source="/controls/MediaPresentation/assets/buttons/vcr/web-icons-white-circle-play_button_32x32.png")]
+			public static var playImageClass:Class;
+			
+			[Bindable]
+			[Embed(source="/controls/MediaPresentation/assets/buttons/vcr/web-icons-white-circle-stop_button_32x32.png")]
+			public static var stopImageClass:Class;
+			
+			private var nav_buttons:Array = [
+				{'label':nav_begin_symbol,'type':VCRBeginButton,'width':32,'enabled':"true",'styleName':'NavBeginButton','editing_mode':false},
+				{'label':nav_prev_symbol,'type':VCRBackButton,'width':32,'enabled':"true",'styleName':'NavBackButton','editing_mode':false},
+				{'label':nav_next_symbol,'type':VCRForwardButton,'width':32,'enabled':"true",'styleName':'NavForwardButton','editing_mode':false},
+				{'label':nav_end_symbol,'type':VCREndButton,'width':32,'enabled':"true",'styleName':'NavEndButton','editing_mode':false},
+				{'label':nav_auto_symbol,'type':VCRStartButton,'width':32,'enabled':"true",'styleName':'NavPlayButton','editing_mode':false},
+				{'label':nav_tiles_symbol,'type':VCRTilesButton,'width':32,'enabled':"true",'editing_mode':false},
+				{'label':nav_menu_symbol,'type':VCRMenuButton,'width':32,'enabled':"true",'styleName':'NavPlayButton','editing_mode':true}
+			];
+			
+			private var __prefix__:String;
+			
+			private var hotspot:HotSpotGraphic;
+			private var hotspots:Array = [];
+			
+			private var __click_delay__:Number = 0;
+			
+			private var __touches__:Array = [];
+			
+			private var prevMovePoint:Point;
+			
+			private var __is_root_information__:Boolean;
+			
+			private var __information_timer__:Timer = new Timer(1000);
+			
+			private var __auto_timer__:Timer;
+			
+			private var __has_navBar_been_requested__:Boolean = false;
+			
+			private var __navBar_timer__:Timer;
+			private var __navBar_timer_default_delay__:int = 5000;
+			
+			private var __version_timer__:Timer;
+			
+			private var __hotspots_timer__:Timer;
+			
+			private var __delayed_information__:Array = [];
+			
+			private var __logger__:LogFile;
+			
+			public function get is_able_to_autoplay():Boolean {
+				return ( (this.__autoplay__ is String) && (this.__autoplay__.length > 0) );
+			}
+			
+			public function get is_canvas_clickTouchHandler_active():Boolean {
+				return this.__is_canvas_clickTouchHandler_active__;
+			}
+			
+			private function get is_showNavBar_present():Boolean {
+				return (this.parentView['showNavBar'] != null);
+			}
+			
+			private function get is_hideNavBar_present():Boolean {
+				return (this.parentView['hideNavBar'] != null);
+			}
+			
+			private function get is_showNavBar_visible():Boolean {
+				return (this.is_showNavBar_present && this.parentView['showNavBar']['visible'] == true);
+			}
+			
+			private function get is_hideNavBar_visible():Boolean {
+				return (this.is_hideNavBar_present && this.parentView['hideNavBar']['visible'] == true);
+			}
+			
+			private function get is_showNavBar_includeInLayout():Boolean {
+				return (this.is_showNavBar_present && this.parentView['showNavBar']['includeInLayout'] == true);
+			}
+			
+			private function get is_hideNavBar_includeInLayout():Boolean {
+				return (this.is_hideNavBar_present && this.parentView['hideNavBar']['includeInLayout'] == true);
+			}
+			
+			private function get is_navBar_able_to_hide_show():Boolean {
+				return ( (this.is_showNavBar_present && this.is_showNavBar_visible && this.is_showNavBar_includeInLayout) && (this.is_hideNavBar_present && this.is_hideNavBar_visible && this.is_hideNavBar_includeInLayout) );
+			}
+			
+			public function set is_canvas_clickTouchHandler_active(is_canvas_clickTouchHandler_active:Boolean):void {
+				if (this.__is_canvas_clickTouchHandler_active__ != is_canvas_clickTouchHandler_active) {
+					this.__is_canvas_clickTouchHandler_active__ = is_canvas_clickTouchHandler_active;
+					if (!is_canvas_clickTouchHandler_active) {
+						if (this.is_navBar_able_to_hide_show) {
+							this.canvas.show_nav();
+						}
+					} else {
+						if (this.is_navBar_able_to_hide_show) {
+							this.canvas.hide_nav();
+						}
+					}
+				}
+			}
+			
+			public function get resetDebugger():* {
+				return this.__resetDebugger__;
+			}
+			
+			public function set resetDebugger(resetDebugger:*):void {
+				if (this.__resetDebugger__ != resetDebugger) {
+					this.__resetDebugger__ = resetDebugger;
+				}
+			}
+			
+			public function get showChanges():* {
+				return this.__showChanges__;
+			}
+			
+			public function set showChanges(showChanges:*):void {
+				if (this.__showChanges__ != showChanges) {
+					this.__showChanges__ = showChanges;
+				}
+			}
+			
+			public function get showVersion():* {
+				return this.__showVersion__;
+			}
+			
+			public function set showVersion(showVersion:*):void {
+				if (this.__showVersion__ != showVersion) {
+					this.__showVersion__ = showVersion;
+				}
+			}
+			
+			public function get showCredits():* {
+				return this.__showCredits__;
+			}
+			
+			public function set showCredits(showCredits:*):void {
+				if (this.__showCredits__ != showCredits) {
+					this.__showCredits__ = showCredits;
+				}
+			}
+			
+			public function get showDebugger():* {
+				return this.__showDebugger__;
+			}
+			
+			public function set showDebugger(showDebugger:*):void {
+				if (this.__showDebugger__ != showDebugger) {
+					this.__showDebugger__ = showDebugger;
+				}
+			}
+			
+			public function get actionBarTitle():String {
+				return this.__actionBarTitle__;
+			}
+			
+			public function set actionBarTitle(actionBarTitle:String):void {
+				if (this.__actionBarTitle__ != actionBarTitle) {
+					this.__actionBarTitle__ = actionBarTitle;
+				}
+			}
+			
+			private function get showNavBar_enabled():Boolean {
+				try {
+					return this.parentView['showNavBar']['enabled'];
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+					trace(this.className+'.showNavBar_enabled.1 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+				return false;
+			}
+			
+			private function set showNavBar_enabled(showNavBar_enabled:Boolean):void {
+				try {
+					this.parentView['showNavBar']['enabled'] = showNavBar_enabled;
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+					trace(this.className+'.showNavBar_enabled.2 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+			}
+			
+			private function get hideNavBar_enabled():Boolean {
+				try {
+					return this.parentView['hideNavBar']['enabled'];
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+					trace(this.className+'.hideNavBar_enabled.1 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+				return false;
+			}
+			
+			private function set hideNavBar_enabled(hideNavBar_enabled:Boolean):void {
+				try {
+					this.parentView['hideNavBar']['enabled'] = hideNavBar_enabled;
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+					trace(this.className+'.hideNavBar_enabled.2 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+			}
+			
+			private function get resetDebugger_enabled():Boolean {
+				try {
+					return this.parentView['resetDebugger']['enabled'];
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+					trace(this.className+'.resetDebugger_enabled.1 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+				return false;
+			}
+			
+			private function set resetDebugger_enabled(resetDebugger_enabled:Boolean):void {
+				try {
+					this.parentView['resetDebugger']['enabled'] = resetDebugger_enabled;
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+					trace(this.className+'.resetDebugger_enabled.2 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+			}
+			
+			private function get showVersion_enabled():Boolean {
+				try {
+					return this.parentView['showVersion']['enabled'];
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+					trace(this.className+'.showVersion_enabled.1 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+				return false;
+			}
+			
+			private function set showVersion_enabled(showVersion_enabled:Boolean):void {
+				try {
+					this.parentView['showVersion']['enabled'] = showVersion_enabled;
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+					trace(this.className+'.showVersion_enabled.2 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+			}
+			
+			private function get showCredits_enabled():Boolean {
+				try {
+					return this.parentView['showCredits']['enabled'];
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+					trace(this.className+'.showCredits_enabled.1 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+				return false;
+			}
+			
+			private function set showCredits_enabled(showCredits_enabled:Boolean):void {
+				try {
+					this.parentView['showCredits']['enabled'] = showCredits_enabled;
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+					trace(this.className+'.showCredits_enabled.2 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+			}
+			
+			private function get showChanges_enabled():Boolean {
+				try {
+					return this.parentView['showChanges']['enabled'];
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+					trace(this.className+'.showChanges_enabled.1 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+				return false;
+			}
+			
+			private function set showChanges_enabled(showChanges_enabled:Boolean):void {
+				try {
+					this.parentView['showChanges']['enabled'] = showChanges_enabled;
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+					trace(this.className+'.showChanges_enabled.2 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+			}
+			
+			private function get showDebugger_enabled():Boolean {
+				try {
+					return this.parentView['showDebugger']['enabled'];
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+					trace(this.className+'.showDebugger_enabled.1 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+				return false;
+			}
+			
+			private function set showDebugger_enabled(showDebugger_enabled:Boolean):void {
+				try {
+					this.parentView['showDebugger']['enabled'] = showChanges_enabled;
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+					trace(this.className+'.showDebugger_enabled.2 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+			}
+			
+			private function get showOptions_enabled():Boolean {
+				try {
+					return this.parentView['showOptions']['enabled'];
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+					trace(this.className+'.showOptions_enabled.1 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+				return false;
+			}
+			
+			private function set showOptions_enabled(showOptions_enabled:Boolean):void {
+				try {
+					this.parentView['showOptions']['enabled'] = showOptions_enabled;
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+					trace(this.className+'.showOptions_enabled.2 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+			}
+			
+			private function get has_root_title():Boolean {
+				return ( (this.__root_title__ is String) && (this.__root_title__.length > 0) );
+			}
+			
+			private function get is_editing():Boolean {
+				return (this.is_playing_media && this.is_editingMode);
+			}
+			
+			private function get is_delaying_information():Boolean {
+				return (this.__delayed_information__.length > 0);
+			}
+			
+			private function get edit_mode_status():String {
+				return ((!this.is_editingMode) ? 'OFF' : 'ON');
+			}
+			
+			private function get edit_mode_styleName():String {
+				return ((this.is_editingMode) ? 'EditModeCheckBoxOn' : 'EditModeCheckBoxOff');
+			}
+			
+			private function get click_delay():int {
+				return this.__click_delay__;
+			}
+			
+			private function set click_delay(delay:int):void {
+				if (this.__click_delay__ != delay) {
+					this.__click_delay__ = delay;
+				}
+			}
+			
+			private function set_click_delay_offset(delay_in_milliseconds:int):void {
+				if (delay_in_milliseconds > 0) {
+					this.click_delay = getTimer() + delay_in_milliseconds;
+				}
+			}
+			
+			private function get prefix():String {
+				var prefix:String = '*UNDEFINED*';
+				if (this.__prefix__ == null) {
+					try {
+						var fPath:String = File.documentsDirectory.nativePath;
+						
+						var app_id:String = this.parentApplication.app_id;
+						
+						this.__prefix__ = fPath+File.separator+app_id;
+					} catch (err:Error) {
+						this.error = 'Error #111 due to "'+MobileDebuggerUtils.explainThis(err)+'".';
+					}
+				}
+				return this.__prefix__;
+			}
+			
+			private function get is_debugging_info_visible():Boolean {
+				return this.parentApplication.is_debugging;
+			}
+			
+			private function get is_playing_media():Boolean {
+				return this.__is_playing_media__;
+			}
+			
+			private function set is_playing_media(is_playing_media:Boolean):void {
+				if (this.__is_playing_media__ != is_playing_media) {
+					this.__is_playing_media__ = is_playing_media;
+					this.showVersion_enabled = !this.__is_playing_media__;
+					this.showCredits_enabled = !this.__is_playing_media__;
+					this.showOptions_enabled = !this.__is_playing_media__;
+					this.showChanges_enabled = !this.__is_playing_media__;
+					this.showDebugger_enabled = !this.__is_playing_media__;
+					this.resetDebugger_enabled = !this.__is_playing_media__;
+				}
+			}
+			
+			public function get is_showing_media_navBar():Boolean {
+				this.__is_showing_media_navBar_while_playing_media__ = this.__is_showing_media_navBar__ && this.__is_playing_media__;
+				return this.__is_showing_media_navBar_while_playing_media__;
+			}
+			
+			public function set is_showing_media_navBar(is_showing_media_navBar:Boolean):void {
+				if (this.__is_showing_media_navBar__ != is_showing_media_navBar) {
+					this.__is_showing_media_navBar__ = is_showing_media_navBar;
+					this.__is_showing_media_navBar_while_playing_media__ = this.__is_showing_media_navBar__ && this.__is_playing_media__;
+				}
+			}
+			
+			private function get is_showing_media_navBar_while_playing_media():Boolean {
+				return this.__is_showing_media_navBar_while_playing_media__;
+			}
+			
+			public function get is_editing_allowed():Boolean {
+				return this.__is_editing_allowed__ && this.is_playing_media;
+			}
+			
+			public function set is_editing_allowed(is_editing_allowed:Boolean):void {
+				if (this.__is_editing_allowed__ != is_editing_allowed) {
+					this.__is_editing_allowed__ = is_editing_allowed;
+				}
+			}
+			
+			private function get_item_target_from(aTargetSpec:String,aTab:*=null):* {
+				var toks:Array = ( ( (aTargetSpec is String) && (aTargetSpec.length > 0) ) ? aTargetSpec.split('.') : []);
+				if (toks.length == 2) {
+					var vector:* = this.get_tabs_image_list_from(aTab);
+					var images:Array = vector['images'];
+					if (toks[0] == aTab['name']) {
+						var f:int = ArrayUtils.indexOf(images,
+							function (item:*, i:int, source:*, selector:*, aValue:*):Boolean {
+								return (item[selector] == aValue);
+							}, 
+							'name', toks[toks.length-1]);
+						if (f > -1) {
+							return {'function':goto_and_play_item_num,'args':[f],'tab':aTab,'num':f};
+						}
+					}
+				}
+				return null;
+			}
+			
+			private function get_gotoandplay_options_for(aTargetSpec:String):Object {
+				var aTab:*;
+				var options:*;
+				for (var i:int = 0; i < this.__tabs__.length; i++) {
+					aTab = this.__tabs__[i];
+					options = this.get_item_target_from(aTargetSpec,aTab);
+					if (options) {
+						if (options['tab']) {
+							options['tabNum'] = i;
+						}
+						return options;
+					}
+				}
+				return null;
+			}
+			
+			private function get_autoplay_options_for(aTab:*):Object {
+				return this.get_item_target_from(((this.is_able_to_autoplay) ? this.__autoplay__ : ''),aTab);
+//				var vector:* = this.get_tabs_image_list_from(aTab);
+//				var images:Array = vector['images'];
+//				var num_with_delay:int = vector['num_with_delay'];
+//				var toks:Array = (this.is_able_to_autoplay) ? this.__autoplay__.split('.') : [];
+//				trace(this.className+'.get_autoplay_options_for.1 --> toks.length='+toks.length);
+//				if (toks.length == 2) {
+//					if (toks[0] == aTab['name']) {
+//						var f:int = ArrayUtils.indexOf(images,
+//							function (item:*, i:int, source:*, selector:*, aValue:*):Boolean {
+//								return (item[selector] == aValue);
+//							}, 
+//							'name', toks[toks.length-1]);
+//						trace(this.className+'.get_autoplay_options_for.2 --> f='+f);
+//						if (f > -1) {
+//							trace(this.className+'.get_autoplay_options_for.3 --> f='+f);
+//							this.__current_tab__ = aTab;
+//							return {'function':goto_and_play_item_num,'args':[f],'tab':aTab,'num':f};
+//						}
+//					}
+//				}
+//				return null;
+			}
+			
+			private function get_autoplay_options():Object {
+				var aTab:*;
+				var options:*;
+				for (var i:int = 0; i < this.__tabs__.length; i++) {
+					aTab = this.__tabs__[i];
+					options = this.get_autoplay_options_for(aTab);
+					if (options) {
+						if (options['tab']) {
+							options['tabNum'] = i;
+						}
+						return options;
+					}
+				}
+				return null;
+			}
+			
+			private function handle_autoplay_options_for(aTab:*):void {
+				var vector:* = this.get_autoplay_options_for(aTab);
+				if (vector) {
+					this.__current_tab__ = vector['tab'];
+					this.__delayed_autoplay_actions__.push({'function':goto_and_play_item_num,'args':[vector['num']]});
+				}
+			}
+			
+			private function perform_delayed_autoplay_actions():void {
+				var anAction:* = (this.__delayed_autoplay_actions__.length > 0) ? this.__delayed_autoplay_actions__.pop() : null;
+				if (anAction) {
+					var func:Function = anAction['function'];
+					if (func is Function) {
+						this.callLater(func,anAction['args']);
+					}
+				}
+			}
+			
+			private function get is_data_valid():Boolean {
+				try {
+					this.__logger__.write('1. __root__='+MobileDebuggerUtils.explainThis(__root__)+'\n');
+					if (__root__ != null) {
+						var aFile:File = new File(__root__['source']);
+						this.__logger__.write('2. (__data__ is Array)='+(__data__ is Array)+', (__data__ is ArrayCollection)='+(__data__ is ArrayCollection)+'\n');
+						this.__logger__.write('2.1 __data__='+MobileDebuggerUtils.explainThis(__data__)+'\n');
+						if ( (__data__ is Array) || (__data__ is ArrayCollection) ) {
+							var aTab:*;
+							var _tabs_:ArrayCollection = new ArrayCollection();
+							var toks:Array = aFile.nativePath.split(File.separator);
+							toks.pop();
+							var f:File;
+							var prefix:String = toks.join(File.separator);
+							var source:String;
+							this.__tabs__.removeAll();
+							var images:*;
+							for (var i:int = 0; i < __data__.length; i++) {
+								try {
+									aTab = __data__.getItemAt(i);
+								} catch (err:Error) {
+									aTab = __data__[i];
+								}
+								images = this.get_current_tabs_image_list_from(aTab);
+								if (images) {
+									this.__logger__.write('3.1 images.length='+images.length+'\n');
+								}
+								this.__logger__.write('3.2 aTab='+MobileDebuggerUtils.explainThis(aTab)+'\n');
+								if ( (images) && (images.length > 0) ) {
+									if ( (aTab['title'] is String) && (aTab['uid'] is String) && (aTab['name'] is String) ) {
+										this.__tabs__.addItem(aTab);
+										this.handle_autoplay_options_for(aTab);
+									} else {
+										this.error = 'Warning #101 - Invalid data in Tab #'+i+'.';
+										this.__logger__.write('4.1 return false !!!\n');
+										return false;
+									}
+								}
+								if ( (aTab['title'] is String) && (aTab['uid'] is String) && (aTab['name'] is String) ) {
+									_tabs_.addItem(aTab);
+								}
+							}
+							this.__logger__.write('5. this.__tabs__.length='+this.__tabs__.length+', __data__.length='+__data__.length+'\n');
+							if (_tabs_.length == __data__.length) {
+								this.btnBar.dataProvider = this.__tabs__;
+								this.update_btnBar_layout();
+								this.__logger__.write('6. return true !!!\n');
+								return true;
+							} else {
+								this.error = 'Error in is_data_valid.';
+							}
+						}
+					}
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+					trace(err.toString()+'\n'+err.getStackTrace());
+				}
+				this.__logger__.write('7. return false !!!\n');
+				return false;
+			}
+			
+			private function handle_settings_for(root:*):void {
+				if (root != null) {
+					try {
+						if (root['title'] is String) {
+							this.__root_title__ = root['title'];
+						} else {
+							this.__root_title__ = this.__title__;
+						}
+						if (root['title.delay'] is int) {
+							this.__root_title_delay__ = root['title.delay'];
+							if (this.__root_title_delay__ < 1000) {
+								this.__root_title_delay__ *= 1000;
+							}
+						}
+						if (root['autoplay'] is String) {
+							this.__autoplay__ = root['autoplay'];
+						}
+						if (root['SystemIdleMode'] is String) {
+							if (root['SystemIdleMode'] == SystemIdleMode.KEEP_AWAKE) {
+								NativeApplication.nativeApplication.systemIdleMode = SystemIdleMode.KEEP_AWAKE;
+							} else {
+								NativeApplication.nativeApplication.systemIdleMode = SystemIdleMode.NORMAL;
+							}
+						}
+						if (this.is_boolean(root['information'])) {
+							__is_root_information__ = this.is_boolean_true(root['information']);
+						}
+						this.dispatchEvent(new ChangeActionBarTitle(ChangeActionBarTitle.TYPE_CHANGE_ACTIONBAR_TITLE,this.__root_title__,this.__root_title_delay__));
+					} catch (err:Error) {
+						this.error = MobileDebuggerUtils.explainThis(err);
+						this.error = 'handle_settings_for.6 --> Error #101 - Error due to '+MobileDebuggerUtils.explainThis(err);
+					}
+				}
+			}
+			
+			private function handle_xml_result(xmlStr:String):void {
+				this.__resultObj__ = XMLObjectUtils.xmlConverter(xmlStr);
+				this.__logger__.write('handle_xml_result.0.1 resultObj='+MobileDebuggerUtils.explainThis(this.__resultObj__,',\n'));
+				try {
+					if (this.__resultObj__['root'] != null) {
+						this.handle_settings_for(this.__resultObj__['root']);
+						try {
+							this.__logger__.write(MobileDebuggerUtils.explainThis(this.__resultObj__));
+							if (this.__resultObj__) {
+								__data__ = this.tabs_data_from(this.raw_data_from(this.__resultObj__));
+							}
+						} catch (err:Error) {
+							this.error = 'handle_xml_result.3 --> Error #103.1 - Error due to '+MobileDebuggerUtils.explainThis(err);
+						}
+						try {
+							if (this.is_data_valid) {
+								var prefix:String = this.prefix;
+								var msg:String = 'Good to go !!!';
+								this.information = msg;
+							} else {
+								__data__ = null;
+								this.error = 'WARNING - Data is NOT valid, something is missing...';
+							}
+						} catch (err:Error) {
+							this.error = 'handle_xml_result.5 --> Error #103.3 - Error due to '+MobileDebuggerUtils.explainThis(err);
+						}
+					}
+				} catch (err:Error) {
+					this.error = 'handle_xml_result.6 --> Error #101 - Error due to '+MobileDebuggerUtils.explainThis(err);
+				}
+			}
+			
+			private function get is_information():Boolean {
+				return this.currentState == 'information';
+			}
+			
+			public function get information():String {
+				return this.informationMessage.text;
+			}
+			
+			private function get is_error():Boolean {
+				return this.currentState == 'error';
+			}
+			
+			private function _information_(prefix:String,information:String):void {
+				if (this.informationMessage is Label) {
+					if (this.__information_timer__.running) {
+						this.__delayed_information__.push({'state':'information','information':(((prefix is String) && (prefix.length > 0)) ? prefix : 'INFO: ')+information});
+					} else {
+						this.informationMessage.text = information;
+						this.__information_timer__.reset();
+						this.__information_timer__.start();
+					}
+				}
+			}
+			
+			public function set information(information:String):void {
+				this._information_('INFO: ',information);
+				trace('INFO: '+information);
+			}
+			
+			public function set warning(information:String):void {
+				this._information_('WARNING: ',information);
+				trace('WARNING: '+information);
+			}
+			
+			public function set error(information:String):void {
+				this._information_('ERROR: ',information);
+				trace('ERROR: '+information);
+			}
+			
+			private function _loadData(aFileOrUrl:*):void {
+				var aFile:File;
+				this.__logger__.write('_loadData.1 '+'INFO: (aFileOrUrl is File)='+(aFileOrUrl is File));
+				if (aFileOrUrl is File) {
+					aFile = aFileOrUrl as File;
+					var aFileStream:FileStream = new FileStream();
+					var str:String = "";
+					try {
+						this.__logger__.write('_loadData.2 --> Reading data file from "'+aFile.nativePath+'"... please stand-by...');
+					} catch (err:Error) {}
+					try {
+						aFileStream.open(aFile, FileMode.READ);
+						data_file_name_xml = aFile.nativePath;
+						this.__logger__.write('_loadData.3 --> INFO: data_file_name_xml='+data_file_name_xml);
+						str = aFileStream.readMultiByte(aFileStream.bytesAvailable, "iso-8859-1");
+						this.__logger__.write('_loadData.4 --> INFO: str='+str);
+						this.handle_xml_result(str);
+						this.__logger__.write('_loadData.5 --> INFO: handle_xml_result is done!!!');
+						aFileStream.close();
+					} catch (err:Error) {
+						this.error = '_loadData.6 --> ERROR due to "'+MobileDebuggerUtils.explainThis(err);
+					}
+				} else if (aFileOrUrl is String) {
+					this.__logger__.write('_loadData.7 --> Reading data via http file from "'+aFileOrUrl+'"... please stand-by...');
+					HTMLUtils.load_data(aFileOrUrl, function (data:String):void {
+						_this.handle_xml_result(data);
+					});
+				} else {
+					var info:String;
+					if (aFileOrUrl is File) {
+						info = File(aFileOrUrl).nativePath;
+					} else {
+						info = aFileOrUrl;
+					}
+					this.error = '_loadData.8 '+'WARNING -- Cannot load data for this unknown source "'+info+'"... Sorry.';
+				}
+			}
+			
+			private function loadData(src:String):void {
+				var aFile:File;
+				if (src == null) {
+					__root__ = {'source':this.prefix+File.separator+default_root_file_name_xml};
+					src = __root__['source'];
+					aFile = new File(src);
+				} else {
+					aFile = new File(src);
+					if (aFile.isDirectory) {
+						this.__prefix__ = aFile.nativePath;
+					} else {
+						this.__prefix__ = AIRHelper.get_directory_from(aFile).nativePath;
+					}
+					__root__ = {'source':src};
+				}
+				this._loadData(aFile);
+			}
+			
+			private function uncaughtErrorHandler(event:UncaughtErrorEvent):void {
+				this.error = event.error;
+			}			
+			
+			private function next_information_message():void {
+				if (this.__delayed_information__.length > 0) {
+					var info:Object = this.__delayed_information__[0];
+					if (info['state']) {
+						_this.currentState = info['state'];
+					}
+					this.informationMessage.text = '('+this.__delayed_information__.length+') :: '+info['information'];
+					this.__logger__.write(_this.informationMessage.text);
+					this.__delayed_information__.splice(0,1);
+					this.__information_timer__.reset();
+					this.__information_timer__.start();
+				} else {
+					//this.currentState = 'normal';
+				}
+			}
+			
+			protected function canvas_resizeHandler():void {
+				this.canvas.width = this.width;
+				this.canvas.height = this.height;
+			}
+			
+			private function remove_canvas():void {
+				if (this.canvas) {
+					//PopUpManager.removePopUp(this.canvas);
+					this.end_hiding_media_navBar();
+					this.btnBar.selectedIndex = -1;
+					this.canvas.visible = this.canvas.includeInLayout = false;
+					//this.canvas = null;
+				}
+			}
+
+			private function add_canvas():void {
+				if (this.canvas == null) {
+					this.canvas = PopUpManager.createPopUp(this,ItemCanvas,false) as ItemCanvas;
+					this.canvas.x = 0;
+					this.canvas.y = 0;
+					this.canvas.width = this.width;
+					this.canvas.height = this.height;
+					this.canvas.addEventListener(FlexEvent.CREATION_COMPLETE, 
+						function (event:FlexEvent):void {
+							_this.canvas.itemsCanvas.addEventListener(MouseEvent.CLICK,_this.canvas_clickHandler);
+							_this.canvas.itemsCanvas.addEventListener(TouchEvent.TOUCH_BEGIN,_this.canvas_touchBeginHandler);
+							_this.canvas.itemsCanvas.addEventListener(TouchEvent.TOUCH_END,_this.canvas_touchEndHandler);
+							_this.canvas.itemsCanvas.addEventListener(TouchEvent.TOUCH_TAP,_this.canvas_touchTapHandler);
+							_this.canvas.itemsCanvas.addEventListener(MouseEvent.MOUSE_MOVE,_this.canvas_mouseMoveHandler);
+							_this.canvas.itemsCanvas.addEventListener(TouchEvent.TOUCH_MOVE,_this.canvas_mouseMoveHandler);
+							_this.canvas.itemsCanvas.addEventListener(TouchInteractionEvent.TOUCH_INTERACTION_START,_this.canvas_touchInteractionStartHandler);
+							_this.canvas.itemsCanvas.addEventListener(TouchInteractionEvent.TOUCH_INTERACTION_END,_this.canvas_touchInteractionEndHandler);
+							_this.canvas.itemsCanvas.addEventListener(TouchInteractionEvent.TOUCH_INTERACTION_STARTING,_this.canvas_touchInteractionStartingHandler);
+							_this.btnBarNav_creationCompleteHandler({'currentTarget':_this.canvas.nav.btnBarNav});
+							_this.canvas.nav.btnBarNav.addEventListener("change",
+								function (event:IndexChangeEvent):void {
+									_this.btnBarNav_changeHandler(event);
+								}
+							);
+							_this.canvas.nav.items.addEventListener("change",
+								function (event:IndexChangeEvent):void {
+									var index:int = event.newIndex;
+									try {
+										_this.canvas.nav.hide_items_tiles();
+										_this.goto_and_play_item_num(index);
+									} catch (err:Error) {}
+								}
+							);
+							_this.canvas.nav.btnBarNav.addEventListener(ItemClickEvent.ITEM_CLICK,
+								function (event:ItemClickEvent):void {
+									var ii:int = -1;
+								}
+							);
+							_this.canvas.nav.btnBarNav.addEventListener(SpecificButtonClickEvent.TYPE_SPECIFIC_BUTTON_CLICK,
+								function (event:ItemClickEvent):void {
+									var ii:int = -1;
+								}
+							);
+							_this.canvas.nav.btnBarNav.addEventListener(SelectedTabFromListEvent.TYPE_SELECTED_TAB_FROM_LIST,
+								function (event:ItemClickEvent):void {
+									var ii:int = -1;
+								}
+							);
+							//_this.callLater(_this.perform_delayed_autoplay_actions); 
+							PopUpManager.bringToFront(_this.canvas)
+						}
+					);
+				}
+			}
+
+			private function startUp_information_display():void {
+				this.__information_timer__.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						if (_this.__logger__) {
+							_this.next_information_message();
+						}
+					}
+				);
+				this.__information_timer__.start();
+			}
+			
+			public function initialize_using_root_xml(root_file_name_xml:String):void {
+				this.__title__ = this.__title__.replace(this.version_replacement_symbol,this.parentApplication.versionNumber).split(this.title_separator_symbol).shift();
+				this.add_canvas();
+				this.loadData(root_file_name_xml);
+			}
+			
+			private function is_url(url:String):Boolean {
+				return (url.indexOf('://') > -1);
+			}
+			
+			private function is_boolean_true(value:*):Boolean {
+				return ( (value === 'true') || (value == true) || (value == '1') || (value == 1) );
+			}
+			
+			private function is_boolean_false(value:*):Boolean {
+				return ( (value === 'false') || (value == false) || (value == '0') || (value == 0) );
+			}
+			
+			private function is_boolean(value:*):Boolean {
+				return ( (this.is_boolean_true(value)) || (this.is_boolean_false(value)) );
+			}
+			
+			private function clear_assets():void {
+				this.canvas.removeAllItemsCanvasElements();
+				MediaHelper.stopAudio();
+				this.is_playing_media = false;
+				this.btnBar.selectedIndex = -1;
+				if (this.has_root_title) {
+					this.__title__ = this.__root_title__;
+				}
+				//this.__title__ = this.__title__.replace(this.version_replacement_symbol,this.parentApplication.versionNumber).split(this.title_separator_symbol).shift();
+				this.callLater(this.handle_nav_button_state);
+			}
+			
+			private function raw_data_from(source:*):* {
+				this.__logger__.write('raw_data_from.1 --> source='+MobileDebuggerUtils.explainThis(source,',\n'));
+				var gen:Generator = new Generator(source,function (parent:Generator,item:*):void {
+					_this.__logger__.write('raw_data_from.2 --> item='+MobileDebuggerUtils.explainThis(item,',\n')+', (item is ArrayCollection)='+(item is ArrayCollection));
+					try {
+						if (item is ArrayCollection) {
+							var anItem:*;
+							var source:* = parent.dataSource;
+							var keys:Array = ObjectUtils.keys(source);
+							for (var i:int=0; i < keys.length; i++) {
+								anItem = source[keys[i]];
+								try {
+									if ( (anItem is ArrayCollection) && (anItem.source is Array) ) {
+										source[keys[i]] = anItem.source;
+									}
+								} catch (err:Error) {
+									_this.error = 'raw_data_from.4 --> '+MobileDebuggerUtils.explainThis(err);
+								}
+							}
+						}
+					} catch (err:Error) {
+						_this.error = 'raw_data_from.5 --> '+MobileDebuggerUtils.explainThis(err);
+					}
+				},_this.__logger__);
+				return source;
+			}
+			
+			private function is_tab_item_node(item:*):Boolean {
+				return ( ( (item['name'] is String) && (item['name'].length > 0) ) && ( ( (item['source'] is String) && (item['source'].length > 0) ) || ( (item['play'] is String) && (item['play'].length > 0) ) ) );
+			}
+			
+			private function is_tab_node(item:*):Boolean {
+				return ( ( (item['name'] is String) && (item['name'].length > 0) ) && ( (item['title'] is String) && (item['title'].length > 0) ) );
+			}
+			
+			private function tabs_data_from(source:*):* {
+				var ac:* = source;
+				var gen:Generator = new Generator(source,function (parent:Generator,item:*):void {
+					var anItem:*;
+					var _keys:Array;
+					var isFound:Boolean = false;
+					var keys:Array = ObjectUtils.keys(item);
+					try {
+						if (is_tab_node(item)) {
+							if (ac == source) {
+								ac = parent.dataSource;
+								if ( (!(ac is Array)) && (!(ac is ArrayCollection)) ) {
+									ac = [item];
+								}
+							}
+						}
+					} catch (err:Error) {
+					}
+				},this.__logger__);
+				return ac;
+			}
+			
+			private function current_tabs_image_data_from(source:*):* {
+				var ac:*;
+				var gen:Generator = new Generator(source,function (parent:Generator,item:*):void {
+					var anItem:*;
+					var _keys:Array;
+					var isFound:Boolean = false;
+					var keys:Array = ObjectUtils.keys(item);
+					try {
+						if ( (item is Array) || (item is ArrayCollection) ) {
+							if (ac == null) {
+								ac = item;
+							}
+						} else if (is_tab_item_node(item)) {
+							if (ac == null) {
+								ac = [item];
+							}
+						}
+					} catch (err:Error) {
+					}
+				},this.__logger__);
+				return ac;
+			}
+			
+			private function get_current_tabs_image_list_from(tab:*):* {
+				var ac:*;
+				try {
+					ac = this.current_tabs_image_data_from(tab);
+				} catch (err:Error) {}
+				return ac;
+			}
+			
+			private function get_tabs_image_list_from(aTab:*):* {
+				var images:Array = this.get_current_tabs_image_list_from(aTab);
+				var anImage:*;
+				var delay:Number;
+				var num_with_delay:int = 0;
+				for (var i:int=0; i < images.length; i++) {
+					anImage = images[i];
+					delay = Number(anImage['delay']);
+					if ( (delay is Number) && (delay > 0) ) {
+						num_with_delay++;
+					}
+				}
+				return {'images':images,'num_with_delay':num_with_delay};
+			}
+			
+			private function get current_tabs_image_list():* {
+				var vector:* = this.get_tabs_image_list_from(this.__current_tab__);
+				var images:Array = vector['images'];
+				var num_with_delay:int = vector['num_with_delay'];
+				this.can_play_auto = (num_with_delay == images.length);
+				
+				var autoBtn:* = this.canvas.nav.get_button_bar_by_label(this.nav_auto_symbol);
+				if (autoBtn) {
+					autoBtn.enabled = this.can_play_auto;
+				}
+				return images;
+			}
+			
+			private function get current_tabs_asset():Object {
+				var asset:Object = null;
+				try {
+					var images:Array = this.current_tabs_image_list;
+					asset = images[this.__current_asset__];
+				} catch (err:Error) {
+					asset = null;
+				}
+				return asset;
+			}
+			
+			private function set current_tabs_asset(asset:Object):void {
+				try {
+					this.current_tabs_image_list[this.__current_asset__] = asset;
+					this.update_and_save_current_data_as_xml();
+				} catch (err:Error) {
+					this.error = MobileDebuggerUtils.explainThis(err);
+				}
+			}
+			
+			private function get has_hotspots():Boolean {
+				var hot:HotSpotGraphic;
+				var hots:Array = [];
+				for (var i:int=0; i < this.hotspots.length; i++) {
+					hot = this.hotspots[i];
+					if (!hot.invisible) {
+						hots.push(hot);
+					}
+				}
+				return hots.length > 0;
+			}
+			
+			private function get has_hotspots_and_not_showing_hotspots():Boolean {
+				return this.has_hotspots && !this.__is_showing_hotspots__;
+			}
+			
+			private function get has_hotspots_and_showing_hotspots():Boolean {
+				return this.has_hotspots && this.__is_showing_hotspots__;
+			}
+			
+			private function no_editable_hostspots():void {
+				var hot:HotSpotGraphic;
+				for (var i:int = 0; i < this.hotspots.length; i++) {
+					hot = this.hotspots[i];
+					hot.editable = false;
+				}
+			}
+			
+			private function update_and_save_current_data_as_xml():void {
+				var hots:Array = [];
+				var hot:HotSpotGraphic;
+				this.information = 'Writing data file... please stand-by...';
+				for (var i:int = 0; i < this.hotspots.length; i++) {
+					hot = this.hotspots[i];
+					hots.push(hot.params);
+				}
+				var asset:Object = this.current_tabs_asset;
+				asset['hotspots'] = hots;
+				var xmlString:String = XMLUtils.objectToXMLAsString('root',__data__);
+				var aFile:File = new File(data_file_name_xml);
+				if (aFile.exists) {
+					aFile.deleteFile();
+				}
+				var aFileStream:FileStream = FileWriter.createSync(data_file_name_xml,null);
+				if (aFileStream is FileStream) {
+					try {
+						aFileStream.writeMultiByte(xmlString, "iso-8859-1");
+						aFileStream.close();
+						this.information = 'File Saved !!!';
+					} catch (err:Error) {
+						var msg:String = 'Cannot save the primary data file in "'+data_file_name_xml+'".';
+						this.error = 'WARNING -- '+msg+' Reason: '+MobileDebuggerUtils.explainThis(err);
+					}
+				}
+			}
+			
+			private function get current_item():* {
+				var anItem:*;
+				var items:* = this.current_tabs_image_list;;
+				try {
+					anItem = items.getItemAt(__current_asset__);
+				} catch (err:Error) {
+					anItem = items[__current_asset__];
+				}
+				return anItem;
+			}
+			
+			private function _display_current_asset():void {
+				this.clear_assets();
+				var f:File;
+				var fPlay:File;
+				var playingMsg:String = '';
+				var image:SWFLoader;
+				var videoPlayer:YouTubeVideoPlayer;
+				var img:Image;
+				var is_playing_sound:Boolean = false;
+				try {
+					if ( (this.current_tabs_image_list is Array) || (this.current_tabs_image_list is ArrayCollection) ) {
+						var anItem:* = this.current_item;
+						this.__title__ = this.__title__.replace(this.version_replacement_symbol,this.parentApplication.versionNumber).split(this.title_separator_symbol).shift() + title_separator_symbol + 'Viewing "'+this.currently_selected_tab_label+'" '+(this.__current_asset__+1).toString()+' of '+(this.current_tabs_image_list.length)+'.';
+						var sKeys:Array = ObjectUtils.keys(anItem['source']);
+						var source:String = (sKeys.length > 0) ? anItem['source']['value'] : anItem['source'];
+						var sType:String = (sKeys.length > 0) ? anItem['source']['type'] : null;
+						var play:String;
+						var videoID:String;
+						try {
+							play = anItem['play'];
+						} catch (err:Error) {}
+						try {
+							videoID = anItem['youtube'];
+						} catch (err:Error) {}
+						source = ((source is String) ? this.prefix+File.separator+source.replace('/',File.separator) : source);
+						if ( (play is String) && (play.length > 0) ) {
+							if (!this.is_url(play)) {
+								play = this.prefix+File.separator+play.replace('/',File.separator);
+								if (MediaHelper.play_sound_file(play)) {
+									this.is_playing_media = true;
+									playingMsg = 'Playing "'+fPlay.name+'"';
+									this.information = playingMsg+'.';
+									is_playing_sound = true;
+									this.callLater(this.handle_nav_button_state);
+								}
+							}
+						}
+						var video:VideoPlayer;
+						var maintainAspectRatio:Boolean = false;
+						var scaleContent:Boolean = false;
+						if ( (play is String) && ( (this.is_url(play)) || (videoID is String) ) ) {
+							this.is_canvas_clickTouchHandler_active = this.__has_navBar_been_requested__;
+							this.canvas.removeAllItemsCanvasElements();
+							try {
+								videoPlayer = new YouTubeVideoPlayer();
+								videoPlayer.x = 0;
+								videoPlayer.y = 0;
+								videoPlayer.width = this.canvas.width;
+								videoPlayer.height = this.canvas.height - ((this.canvas.is_showing_nav) ? this.canvas.nav.height : 0);
+								if (this.is_url(play)) {
+									var toks:Array = play.split('/');
+									videoPlayer.videoID = toks[toks.length-1].split('?')[0];
+								} else if (videoID is String) {
+									videoPlayer.videoID = videoID;
+								}
+								trace('(+++) videoPlayer.videoID='+videoPlayer.videoID);
+							} catch (err:Error) {
+								trace('(+++).err --> '+err.toString()+'\n'+err.getStackTrace());
+								this.error = MobileDebuggerUtils.explainThis(err);
+							}
+							this.canvas.addItemsCanvasElement(videoPlayer);
+							this.is_playing_media = true;
+							this.information = 'Playing a streaming video "'+play+'".';
+							this.callLater(this.handle_nav_button_state);
+						} else {
+							f = (((source is String) || (play is String)) ? new File( (play && MediaHelper.is_video(fPlay.nativePath)) ? play : source ) : null);
+							if (f) {
+							}
+							if ( (f == null) || ( (f is File) && ( (!f.exists) || (f.isDirectory) ) ) ) {
+								if (f) {
+								}
+								this.is_canvas_clickTouchHandler_active = true;
+								this.canvas.removeAllItemsCanvasElements();
+								image = new SWFLoader();
+								image.source = missingImageClass;
+								image.x = 0;
+								image.y = 0;
+								image.scaleContent = true;
+								image.maintainAspectRatio = false;
+								image.showBusyCursor = true;
+								image.width = this.canvas.width;
+								image.height = this.canvas.height - ((this.canvas.is_showing_nav) ? this.canvas.nav.height : 0);
+								this.canvas.addItemsCanvasElement(image);
+								this.is_playing_media = true;
+								this.information = ((is_playing_sound) ? playingMsg+' and ' : '') + 'Displaying "missingImageClass".';
+								this.callLater(this.handle_nav_button_state);
+								return;
+							} else if ( (f is File) && (f.exists) && (!f.isDirectory) ) {
+								var mar:*;
+								if (f) {
+									//trace('(+++).222.2 --> f='+f.nativePath+', f.exists='+f.exists+', f.isDirectory='+f.isDirectory);
+								}
+								if (MediaHelper.is_image(f.nativePath)) {
+									this.canvas.removeAllItemsCanvasElements();
+									if ( (f.name.toLowerCase().indexOf('.jpg') > -1) || (sType == 'image') ) {
+										this.is_canvas_clickTouchHandler_active = true;
+										img = new Image();
+										img.source = f.nativePath;
+										img.x = 0;
+										img.y = 0;
+										var _bitmapScaleMode:String = BitmapScaleMode.STRETCH;
+										if ( (anItem['option']) && (anItem['option']['BitmapScaleMode']) ) {
+											mar = anItem['option']['BitmapScaleMode'];
+											try {_bitmapScaleMode = BitmapScaleMode[mar];} catch (err:Error) {}
+										}
+										img.scaleMode = _bitmapScaleMode;
+										img.width = this.canvas.width;
+										img.height = this.canvas.height - ((this.canvas.is_showing_nav) ? this.canvas.nav.height : 0);
+										img.addEventListener(HTTPStatusEvent.HTTP_STATUS, 
+											function (event:HTTPStatusEvent):void {
+												if (event.status >= 200) {
+													img.source = missingImageClass;
+												}
+											}
+										);
+										img.addEventListener(IOErrorEvent.IO_ERROR, 
+											function (event:HTTPStatusEvent):void {
+												img.source = missingImageClass;
+											}
+										);
+										this.canvas.addItemsCanvasElement(img);
+									} else {
+										this.is_canvas_clickTouchHandler_active = true;
+										image = new SWFLoader();
+										image.source = f.url;
+										image.x = 0;
+										image.y = 0;
+										image.showBusyCursor = true;
+										maintainAspectRatio = false;
+										if ( (anItem['option']) && (anItem['option']['maintainAspectRatio']) ) {
+											mar = anItem['option']['maintainAspectRatio'];
+											maintainAspectRatio = this.is_boolean_true(mar);
+										}
+										image.maintainAspectRatio = maintainAspectRatio;
+										scaleContent = false;
+										if ( (anItem['option']) && (anItem['option']['scaleContent']) ) {
+											var s:* = anItem['option']['scaleContent'];
+											scaleContent = this.is_boolean_true(s);
+										}
+										image.scaleContent = scaleContent;
+										image.width = this.canvas.width;
+										image.height = this.canvas.height - ((this.canvas.is_showing_nav) ? this.canvas.nav.height : 0);
+										image.addEventListener(IOErrorEvent.IO_ERROR, 
+											function (event:IOErrorEvent):void {
+												image.source = f.nativePath;
+											}
+										);
+										image.addEventListener(Event.OPEN, 
+											function (event:Event):void {
+												_this.canvas.progress.visible = true;
+											}
+										);
+										image.addEventListener(ProgressEvent.PROGRESS, 
+											function (event:ProgressEvent):void {
+												_this.canvas.progress.setProgress(event.bytesLoaded,event.bytesTotal);
+												_this.canvas.progress.label.text = 'Loading "'+f.nativePath+'"';
+											}
+										);
+										image.addEventListener('complete', 
+											function (event:*):void {
+												_this.canvas.progress.visible = false;
+											}
+										);
+										this.canvas.addItemsCanvasElement(image);
+									}
+									this.is_playing_media = true;
+									this.information = ((is_playing_sound) ? playingMsg+' and ' : '') + 'Displaying "'+f.name+', maintainAspectRatio='+maintainAspectRatio+'".';
+									this.callLater(this.handle_nav_button_state);
+								} else if (MediaHelper.is_video(f.nativePath)) {
+									this.is_canvas_clickTouchHandler_active = this.__has_navBar_been_requested__;
+									video = new VideoPlayer();
+									video.x = 0;
+									video.y = 0;
+									video.width = this.canvas.width;
+									video.height = this.canvas.height - ((this.canvas.is_showing_nav) ? this.canvas.nav.height : 0);
+									video.addEventListener(FlexEvent.CREATION_COMPLETE, 
+										function (event:FlexEvent):void {
+											if (is_playing_sound) {
+												MediaHelper.stopAudio();
+											}
+											video.source = f.url;
+											_this.is_playing_media = true;
+											_this.information = 'Playing video "'+f.name+'".';
+											_this.callLater(_this.handle_nav_button_state);
+										}
+									);
+									this.canvas.addItemsCanvasElement(video);
+								} else {
+									this.error = 'WARNING -- Not sure what to do with the unknown media asset at ('+__current_asset__+').';
+								}
+							} else {
+								this.error = 'Warning #301 - Cannot display the current image "'+f.nativePath+'" ('+this.prefix+') at '+__current_asset__+'.';
+							}
+						}
+						if (this.is_about_to_add_hotspots_from_xml) {
+							this.is_adding_hotspots_from_xml = true;
+							var hots:*;
+							var i:int;
+							try {
+								if (anItem['hotspots']) {
+									if (anItem['hotspots']['item']) {
+										hots = anItem['hotspots']['item'];
+										if (hots is Array) {
+											for (i=0; i < hots.length; i++) {
+												this.hotspot = null; // forces the new hotspot to be created...
+												this._create_new_hotspot_using(hots[i]);
+											}
+											this.hotspot = null;
+										} else {
+											this.hotspot = null; // forces the new hotspot to be created...
+											this._create_new_hotspot_using(hots);
+										}
+									} else {
+										hots = anItem['hotspots'];
+										if (hots is Array) {
+											for (i=0; i < hots.length; i++) {
+												this.hotspot = null; // forces the new hotspot to be created...
+												this._create_new_hotspot_using(hots[i]);
+											}
+											this.hotspot = null;
+										} else {
+											this.hotspot = null; // forces the new hotspot to be created...
+											this._create_new_hotspot_using(hots);
+										}
+									}
+								}
+							} catch (err:Error) {
+								this.error = MobileDebuggerUtils.explainThis(err);
+							}
+							this.is_adding_hotspots_from_xml = false;
+							this.is_about_to_add_hotspots_from_xml = false;
+						}
+					}
+				} catch (err:Error) {
+					this.error = 'Error #401 - Error due to '+MobileDebuggerUtils.explainThis(err);
+					trace(err.getStackTrace());
+				}
+				this.refresh_menu();
+			}
+			
+			private function nav_idx_for(aSymbol:String):int {
+				for (var i:String in this.nav_buttons) {
+					if (this.nav_buttons[i]['label'] == aSymbol) {
+						return int(i);
+					}
+				}
+				return -1;
+			}
+			
+			private function get nav_next_idx():int {
+				return this.nav_idx_for(this.nav_next_symbol);
+			}
+			
+			private function get nav_prev_idx():int {
+				return this.nav_idx_for(this.nav_prev_symbol);
+			}
+			
+			private function get nav_menu_idx():int {
+				return this.nav_idx_for(this.nav_menu_symbol);
+			}
+			
+			private function toggleButton(btns:*, idx:uint, selected:Boolean):void {
+				var children:Array = btns.getChidren;
+				if ( (idx > -1) && (idx < children.length-1) ) {
+					var item:Object = btns.dataProvider.getItemAt(idx);
+					item['enabled'] = selected.toString();
+					btns.dataProvider.setItemAt(item,idx);
+					var child:Button = children[idx];
+					child.enabled = selected;
+				}
+			}
+			
+			private function handle_nav_button_state():void {
+				var items:* = this.current_tabs_image_list;
+				var isPrevAllowed:Boolean = this.__current_asset__ > 0;
+				var isNextAllowed:Boolean = this.__current_asset__ < (items.length-1);
+			}
+			
+			private function display_current_asset():void {
+				this.is_about_to_add_hotspots_from_xml = true; // any item can have hotspots, not just the first...
+				this._display_current_asset();
+			}
+			
+			private function display_first_asset():void {
+				__current_asset__ = 0;
+				if (!this.is_navBar_able_to_hide_show) {
+					this.canvas.show_nav();
+				}
+				this.display_current_asset();
+			}
+			
+			private function display_last_asset():void {
+				var items:* = this.current_tabs_image_list;
+				__current_asset__ = items.length-1;
+				this.display_current_asset();
+			}
+			
+			private function display_prev_asset():void {
+				try {
+					if (this.current_tabs_image_list) {
+						var items:* = this.current_tabs_image_list;
+						__current_asset__--;
+						this.is_about_to_add_hotspots_from_xml = true; // any item can have hotspots, not just the first...
+						if (__current_asset__ < 0) {
+							__current_asset__ = items.length-1;
+						} else if (__current_asset__ == 0) {
+							this.display_first_asset();
+							return;
+						}
+						this._display_current_asset();
+					}
+				} catch (err:Error) {
+					this.error = 'Error #301.1 - Error due to '+MobileDebuggerUtils.explainThis(err);
+				}
+			}
+			
+			private function display_next_asset():void {
+				try {
+					if (this.current_tabs_image_list) {
+						var item:* = this.current_item;
+						var gotoandplay:String = item['goto-and-play'];
+						if (gotoandplay) {
+							var vector:* = this.get_gotoandplay_options_for(gotoandplay);
+							__current_asset__ = (vector['num']) ? vector['num'] : 0;
+							callLater(handle_btnBar_selection, [(vector['tabNum']) ? vector['tabNum'] : 0]);
+							return; 
+						}
+						var items:* = this.current_tabs_image_list;
+						this.is_about_to_add_hotspots_from_xml = true; // any item can have hotspots, not just the first...
+						if (++__current_asset__ > items.length-1) {
+							__current_asset__ = 0;
+						} else if (__current_asset__ == 0) {
+							this.display_first_asset();
+							return;
+						}
+						this._display_current_asset();
+					}
+				} catch (err:Error) {
+					this.error = 'Error #301.2 - Error due to '+MobileDebuggerUtils.explainThis(err);
+				}
+			}
+			
+			protected function handle_btnBar_selection(i:int):void {
+				try {
+					if ( (i > -1) && (i <= __data__.length) ) {
+						try {
+							this.__current_tab__ = __data__.getItemAt(i);
+						} catch (err:Error) {
+							this.__current_tab__ = __data__[i];
+						}
+						push_items_into_items_nav();
+						if (this.canvas == null) {
+							this.add_canvas();
+						} else {
+							this.canvas.visible = this.canvas.includeInLayout = true;
+						}
+						this.canvas_resizeHandler();
+						this.handle_settings_for(this.__current_tab__);
+						display_first_asset();
+						this.showNavBar_enabled = true;
+						this.navCanvas.styleName = this.canvas.styleName = (!this.showNavBar_enabled) ? 'showingNavBar' : 'hidingNavBar';
+						this.hide_hotspots();
+					} else {
+						this.canvas.removeAllElements();
+						this.showNavBar_enabled = false;
+						this.hide_hotspots();
+					}
+				} catch (err:Error) {
+					this.error = 'Error #201 - Error due to '+MobileDebuggerUtils.explainThis(err);
+					return;
+				}
+			}
+			
+			protected function btnBar_changeHandler(event:IndexChangeEvent):void {
+				var i:int = event.newIndex;
+				this.handle_btnBar_selection(i);
+			}
+			
+			private function _canvas_clickTouchHandler(event:*):void {
+				this.__touches__.push({'event':event,'t':getTimer(),'type':'clickTouch'});
+				if ( (this.click_delay > 0) && (this.click_delay > getTimer()) ) {
+					var value:int = this.click_delay - getTimer();
+					return;
+				}
+				this.__click_delay__ = 0;
+				var _is1_:Boolean = (this.hotspot) ? (this.hotspot.is_moving && this.hotspot.is_editable) : false;
+				var _is2_:Boolean = (this.hotspot) ? (this.hotspot.is_resizing) : false;
+				if (!this.is_playing_media) {
+					this.showNavBar_enabled = true;
+					this.hideNavBar_enabled = false;
+				}
+				if ( (this.hotspot is HotSpotGraphic) && (_is1_) ) {
+					this.__logger__.write(this.className+'._canvas_clickTouchHandler.1 --> is_editable='+_is1_);
+				} else if ( (this.hotspot is HotSpotGraphic) && (_is2_) ) {
+					this.__logger__.write(this.className+'._canvas_clickTouchHandler.2 --> is_resizing='+_is2_);
+				} else if (this.__is_canvas_clickTouchHandler_active__) {
+					this._display_next_asset();
+				}
+			}
+			
+			protected function canvas_clickHandler(event:MouseEvent):void {
+				this._canvas_clickTouchHandler(event);
+			}
+			
+			protected function canvas_touchTapHandler(event:TouchEvent):void {
+				this._canvas_clickTouchHandler(event);
+			}
+			
+			protected function canvas_touchBeginHandler(event:TouchEvent):void {
+				var msg:String = 'canvas_touchBeginHandler.1 --> '+getTimer();
+				trace(msg);
+				this.information = msg;
+			}
+			
+			protected function canvas_touchEndHandler(event:TouchEvent):void {
+				var msg:String = 'canvas_touchEndHandler.1 --> '+getTimer();
+				trace(msg);
+				this.information = msg;
+			}
+			
+			protected function canvas_touchInteractionStartHandler(event:TouchInteractionEvent):void {
+				var msg:String = 'canvas_touchInteractionStartHandler.1 --> '+getTimer();
+				trace(msg);
+				this.information = msg;
+			}
+			
+			protected function canvas_touchInteractionEndHandler(event:TouchInteractionEvent):void {
+				var msg:String = 'canvas_touchInteractionEndHandler.1 --> '+getTimer();
+				trace(msg);
+				this.information = msg;
+			}
+			
+			protected function canvas_touchInteractionStartingHandler(event:TouchInteractionEvent):void {
+				var msg:String = 'canvas_touchInteractionStartingHandler.1 --> '+getTimer();
+				this.information = msg;
+			}
+			
+			private function handle_touch_swipe(event:*):void {
+				var _is_:Boolean = false;
+				var _f:int = ArrayUtils.findIf(this.__touches__, 
+					function (item:*, j:int, source:Array, selector:String, aValue:*):Boolean {
+						var bool:Boolean = false;
+						if (aValue is String) {
+							bool = (item[selector] == aValue);
+							if (bool) {
+								var n:int = 0;
+								for (var i:int = j; i >= 0; i--) {
+									if (source[i]['type'] == 'touchMove') {
+										n++;
+									}
+								}
+								bool = bool && (n > 1);
+							}
+							return bool;
+						}
+						return false;
+					},
+					'type','touchMove',
+					function (j:int, source:Array):void {
+						var item:* = source[j];
+						var dx:Number;
+						var dy:Number;
+						var dX:Number;
+						var dY:Number;
+						var xVector:Boolean;
+						var yVector:Boolean;
+						var numXIncreasers:int = 0;
+						var numYIncreasers:int = 0;
+						var numXDecreasers:int = 0;
+						var numYDecreasers:int = 0;
+						var isXIncreaser:Boolean;
+						var isXDecreaser:Boolean;
+						var isYIncreaser:Boolean;
+						var isYDecreaser:Boolean;
+						var totXIncreaser:Number = 0;
+						var totYIncreaser:Number = 0;
+						var totXDecreaser:Number = 0;
+						var totYDecreaser:Number = 0;
+						var avgXIncreaser:Number = 0;
+						var avgYIncreaser:Number = 0;
+						var avgXDecreaser:Number = 0;
+						var avgYDecreaser:Number = 0;
+						var w2:Number = _this.width*0.50;
+						var h2:Number = _this.height*0.40;
+						var cache:Array = [];
+						for (var i:int=j; i >= 0; i--) {
+							dx = source[j]['event']['stageX'] - source[i]['event']['stageX'];
+							dy = source[j]['event']['stageY'] - source[i]['event']['stageY'];
+							dX = dY = -1;
+							xVector = yVector = null
+							if (cache.length > 0) {
+								dX = dx - cache[cache.length-1]['dx'];
+								dY = dy - cache[cache.length-1]['dy'];
+							}
+							if (cache.length > 1) {
+								xVector = (cache[cache.length-1]['dX'] >= cache[cache.length-2]['dX']);
+								yVector = (cache[cache.length-1]['dY'] >= cache[cache.length-2]['dY']);
+							}
+							cache.push({'dx':dx,'dy':dy,'dX':dX,'dY':dY,'xVector':xVector,'yVector':yVector});
+							if ( (Math.abs(dy) > h2) || (dx >= w2) ) {
+								for (i=0; i < cache.length; i++) {
+									isXIncreaser = (cache[i]['xVector'] is Boolean) && (cache[i]['xVector']);
+									isYIncreaser = (cache[i]['yVector'] is Boolean) && (cache[i]['yVector']);
+									isXDecreaser = (cache[i]['xVector'] is Boolean) && (!cache[i]['xVector']);
+									isYDecreaser = (cache[i]['yVector'] is Boolean) && (!cache[i]['yVector']);
+									numXIncreasers += ((isXIncreaser) ? 1 : 0);
+									numYIncreasers += ((isYIncreaser) ? 1 : 0);
+									numXDecreasers += ((isXDecreaser) ? 1 : 0);
+									numYDecreasers += ((isYDecreaser) ? 1 : 0);
+									if (isXIncreaser) {
+										totXIncreaser += cache[i]['dX'];
+									}
+									if (isYIncreaser) {
+										totYIncreaser += cache[i]['dY'];
+									}
+									if (isXDecreaser) {
+										totXDecreaser += cache[i]['dX'];
+									}
+									if (isYDecreaser) {
+										totYDecreaser += cache[i]['dY'];
+									}
+								}
+								avgXIncreaser = totXIncreaser / numXIncreasers;
+								avgYIncreaser = totYIncreaser / numYIncreasers;
+								avgXDecreaser = totXDecreaser / numXDecreasers;
+								avgYDecreaser = totYDecreaser / numYDecreasers;
+								_is_ = ( (Math.abs(dy) <= h2) && (Math.abs(dx) >= w2) );
+								break;
+							}
+						}
+						//_this.__logger__.write('handle_touch_swipe.1.action --> ('+_is_+') dx='+dx+', dy='+dy+', length_of_swipe='+(j-i));
+						//trace('handle_touch_swipe.1.action --> ('+_is_+') dx='+dx+', dy='+dy+', w2='+w2+', h2='+h2+', length_of_swipe='+(j-i));
+					}
+				);
+				if (_is_) {
+					this.__touches__.splice(0,this.__touches__.length);
+					this.is_showing_media_navBar = this.is_not_showing_media_navBar;
+				} else {
+					this.__touches__.splice(0,this.__touches__.length);
+				}
+			}
+			
+			protected function _canvas_moveHandler(event:*):void {
+//				this.__touches__.push({'event':event,'t':getTimer(),'type':'touchMove'});
+//				this.handle_touch_swipe(event);
+//				trace('_canvas_moveHandler.1b --> !!!');
+//				var last_touch:Object;
+//				var deltaT:int;
+//				var _is_:Boolean = false;
+//				var touch:Object = {'event':event,'t':getTimer()};
+//				if (this.__touches__.length > 0) {
+//					trace('_canvas_moveHandler.1 --> this.__touches__.length='+this.__touches__.length);
+//					last_touch = this.__touches__.pop();
+//					deltaT = last_touch['t'] - touch['t'];
+//					if (deltaT > 1000) {
+//						_is_ = true;
+//					}
+//				}
+//				if (_is_) {
+//					trace('_canvas_moveHandler.2 --> LONG-PRESS !!!');
+//				} else {
+//					trace('_canvas_moveHandler.1b --> !!!');
+//				}
+			}
+			
+			protected function canvas_mouseMoveHandler(event:MouseEvent):void {
+				this._canvas_moveHandler(event);
+			}
+			
+			protected function canvas_touchMoveHandler(event:TouchEvent):void {
+				this._canvas_moveHandler(event);
+			}
+			
+			protected function __canvas_moveHandler(event:*):void {
+				var pt:Point;
+				var ptOff:Point;
+				var _is_:Boolean = (this.hotspot) ? (this.hotspot.is_moving || this.hotspot.is_resizing) : false;
+				if ( (this.hotspot is HotSpotGraphic) && (_is_) && ( (event is MouseEvent) || (event is TouchEvent) ) ) {
+					pt = new Point(event.stageX,event.stageY);
+					if (this.hotspot) {
+						if (this.hotspot.is_resizingUR) {
+							if (this.prevMovePoint is Point) {
+								ptOff = pt.subtract(this.prevMovePoint);
+								this.__logger__.write(this.className+'._canvas_moveHandler.3 --> pt='+pt+', this.prevMovePoint='+this.prevMovePoint+', ptOff='+ptOff);
+								//this.update_hotspot_size(ptOff.x,0);
+							}
+						} else if (this.hotspot.is_resizingLR) {
+							if (this.prevMovePoint is Point) {
+								var pt1:Point = this.prevMovePoint.subtract(pt);
+								var pt2:Point = pt.subtract(this.prevMovePoint);
+								var angle1:Number = MathHelper.FindAngleAsDegrees(pt,this.prevMovePoint);
+								var angle2:Number = MathHelper.FindAngleAsDegrees(this.prevMovePoint,pt);
+								var msg:String = 'pt='+pt+', pt1='+pt1+', pt2='+pt2+', this.prevMovePoint='+this.prevMovePoint+', angle1='+angle1+', angle2='+angle2;
+								this.__logger__.write(this.className+'._canvas_moveHandler.4 --> '+msg);
+								this.update_hotspot_size(pt1.x,pt1.y);
+							}
+						} else if (this.hotspot.is_resizingLL) {
+							if (this.prevMovePoint is Point) {
+								ptOff = pt.subtract(this.prevMovePoint);
+								this.__logger__.write(this.className+'._canvas_moveHandler.5 --> pt='+pt+', this.prevMovePoint='+this.prevMovePoint+', ptOff='+ptOff);
+								//this.update_hotspot_size(0,ptOff.y);
+							}
+						} else {
+							this.callLater(this.update_hotspot_xy,[pt.x,pt.y-(this.header.height)-(this.hotspot.height)]);
+						}
+					}
+					this.prevMovePoint = pt;
+				}
+			}
+			
+			protected function btnBarNav_creationCompleteHandler(event:*):void {
+				var btns:* = event.currentTarget;
+				if (btns) {
+					btns.dataProvider = new ArrayCollection(this.nav_buttons);
+					try {
+						var custBtn:CustomButton = this.canvas.nav.get_button_bar_by_label(this.nav_edit_symbol);
+						if (custBtn is Button) {
+							custBtn.visible = custBtn.includeInLayout = this.is_editingMode;
+						}
+					} catch (err:Error) {}
+				}
+			}
+			
+			private function release_nav_buttons():void {
+			}
+			
+			private function get is_hotspot_hidden():Boolean {
+				var _is_:Boolean = true;
+				try {
+					_is_ = (this.hotspot == null);
+				} catch (err:Error) {
+					var ii:int = -1;
+				}
+				return _is_;
+			}
+			
+			private function get is_hotspot_visible():Boolean {
+				return (!this.is_hotspot_hidden);
+			}
+			
+			private function begin_showing_hotspots():void {
+				if ( (this.__hotspots_timer__ == null) || (!this.__hotspots_timer__.running) ) {
+					this.__hotspots_timer__ = new Timer(5000,1);
+					this.__hotspots_timer__.addEventListener(TimerEvent.TIMER_COMPLETE, 
+						function (event:TimerEvent):void {
+							_this.end_showing_hotspots();
+						}
+					);
+					this.__hotspots_timer__.start();
+					//this.showHotSpots.enabled = !this.has_hotspots;
+					//this.hideHotSpots.enabled = this.has_hotspots;
+				}
+			}
+			
+			private function end_showing_hotspots():void {
+				if (this.__hotspots_timer__ is Timer) {
+					this.__hotspots_timer__.stop();
+					this.__hotspots_timer__ = null;
+					this.hide_hotspots();
+					//this.showHotSpots.enabled = !this.has_hotspots;
+					//this.hideHotSpots.enabled = this.has_hotspots;
+				}
+			}
+			
+			private function hide_hotspots():void {
+				var hot:HotSpotGraphic;
+				for (var i:int=0; i < this.hotspots.length; i++) {
+					hot = this.hotspots[i];
+					hot.invisible = true;
+				}
+			}
+			
+			private function show_hotspots():void {
+				var hot:HotSpotGraphic;
+				for (var i:int=0; i < this.hotspots.length; i++) {
+					hot = this.hotspots[i];
+					hot.invisible = false;
+				}
+			}
+			
+			private function hide_hotspot_editors():void {
+				var hot:HotSpotGraphic;
+				while (this.hotspots.length > 0) {
+					hot = this.hotspots.pop();
+					if (hot is HotSpotGraphic) {
+						try {
+							this.canvas.removeElement(hot);
+						} catch (err:Error) {
+							//this.error = 'hide_hotspot_editors.1 err='+MobileDebuggerUtils.explainThis(err);
+						}
+					}
+				}
+				//this.showHotSpots.enabled = this.has_hotspots_and_not_showing_hotspots;
+				//this.hideHotSpots.enabled = this.has_hotspots_and_showing_hotspots;
+				this.hotspot = null;
+			}
+			
+			private function get custom_button():CustomButton {
+				var custBtn:CustomButton;
+				try {
+					custBtn = this.canvas.nav.get_button_bar_by_label(this.nav_edit_symbol);
+				} catch (err:Error) {
+					var ij:int = -1;
+				}
+				if (custBtn == null) {
+					var ii:int = -1;
+				}
+				return custBtn;
+			}
+			
+			private function reset_edit_nav_bar_button():void {
+				var aBtn:CustomButton = this.custom_button;
+				if (aBtn is CustomButton) {
+					aBtn.btn.enabled = true;
+				}
+			}
+			
+			private function handle_hotspot_close_event():void {
+				this.reset_edit_nav_bar_button();
+				this.hide_hotspot_editors();
+			}
+			
+			private function toggle_hotspot_edit_mode():void {
+				if (this.hotspot) {
+					if (is_hotspot_visible) {
+						if (this.hotspot.name != edit_mode_symbol) {
+							this.hotspot.name = edit_mode_symbol;
+							this.hotspot.show_editing_images = true;
+						} else {
+							this.hotspot.name = '';
+							this.hotspot.show_editing_images = false;
+						}
+					}
+				}
+			}
+			
+			private function remove_this_hotspot(hot:HotSpotGraphic):void {
+				var refIndex:int = this.hotspots.indexOf(hot);
+				if (refIndex > -1) {
+					this.hotspots.splice(refIndex,1);
+					this.canvas.removeElement(hot);
+					this.hotspot = null;
+					if (!this.is_adding_hotspots_from_xml) {
+						this.update_and_save_current_data_as_xml();
+					}
+					//this.showHotSpots.enabled = this.has_hotspots_and_not_showing_hotspots;
+					//this.hideHotSpots.enabled = this.has_hotspots_and_showing_hotspots;
+				}
+			}
+			
+			private function _create_new_hotspot_using(item:Object):void { // ,is_editing:Boolean
+				var klass:String = item['class'];
+				var x:Number = Number(item['x']);
+				var y:Number = Number(item['y']);
+				var width:Number = Number(item['width']);
+				var height:Number = Number(item['height']);
+				var target:* = item['target'];
+				if (klass == 'HotSpotGraphic') {
+					if (x is Number) {
+						if (y is Number) {
+							if (width is Number) {
+								if (height is Number) {
+									this.information = 'INFO: Creating HotSpot from data file -- ('+x+','+y+','+width+','+height+') --> '+((target) ? MobileDebuggerUtils.explainThis(target) : 'NO TARGET SPECIFIED !!!');
+									this.create_new_hotspot(x,y,width,height,target);
+									//this.showHotSpots.enabled = !this.has_hotspots;
+									//this.hideHotSpots.enabled = this.has_hotspots;
+								} else {
+									this.error = 'WARNING -- Invalid HotSpot height of "'+x+'".';
+								}
+							} else {
+								this.error = 'WARNING -- Invalid HotSpot width of "'+x+'".';
+							}
+						} else {
+							this.error = 'WARNING -- Invalid HotSpot y coordinate of "'+x+'".';
+						}
+					} else {
+						this.error = 'WARNING -- Invalid HotSpot x coordinate of "'+x+'".';
+					}
+				} else {
+					this.error = 'WARNING -- Invalid HotSpot Class of "'+klass+'".';
+				}
+			}
+			
+			private function _find_hotspot_target_for(target:*,action:Function):void {
+				var custBtn:CustomButton = this.canvas.nav.get_button_bar_by_label(this.nav_edit_symbol);
+				if (custBtn is CustomButton) {
+					var list:ArrayCollection = custBtn.listDataProvider;
+					if (list == null) {
+						list = this.get_detailed_list_data_from(this.__tabs__);
+					}
+					var _index_:int = ArrayCollectionUtils.findIndexOfItemCaseless(list,target, 
+						function (item:*,obj:*):Boolean {
+							var i:int;
+							var aKey:String;
+							var score:Object = {};
+							var _keys:Array = ObjectUtils.keys(obj);
+							var keys:Array = ObjectUtils.keys_filtered(item,
+								function (i:String):String {
+									var _f:Boolean = (_keys.indexOf(i) > -1);
+									var resp:String = ((_f) ? i : null);
+									return resp;
+								}
+							);
+							var k:String;
+							var _is_:Boolean = true;
+							for (i=0; i < keys.length; i++) {
+								aKey = keys[i];
+								if (_keys.indexOf(aKey) == -1) {
+									_is_ = false;
+									break;
+								} else {
+									if (item[aKey] != obj[aKey]) {
+										_is_ = false;
+										break;
+									} else {
+										k = MobileDebuggerUtils.explainThis(obj);
+										if (score[k] == null) {
+											score[k] = 0;
+										}
+										score[k]++;
+									}
+								}
+							}
+							if (_is_) {
+								var aScore:*;
+								var aScoreKey:*;
+								var sKeys:Array = ObjectUtils.keys(score);
+								for (i=0; i < sKeys.length; i++) {
+									aScoreKey = sKeys[i];
+									aScore = score[aScoreKey];
+									if (aScore == keys.length) {
+										return true;
+									}
+								}
+								
+							}
+							return false;
+						}
+					);
+					if (_index_ > -1) {
+						try {
+							var item:* = list.getItemAt(_index_);
+							if ( (item) && (action is Function) ) {
+								action(item);
+							}
+						} catch (err:Error) {
+							this.error = MobileDebuggerUtils.explainThis(err);
+						}
+					}
+				}
+			}
+			
+			private function make_drop_down_list_selection(target:*):void {
+				function action(item:*):void {
+					var custBtn:CustomButton = this.canvas.nav.get_button_bar_by_label(this.nav_edit_symbol);
+					if (custBtn is CustomButton) {
+						if (custBtn.tabs.selectedLabel == null) {
+							custBtn.tabs.selectedLabel = 'title';
+						}
+						custBtn.tabs.selectedItem = item;
+					}
+				}
+				this._find_hotspot_target_for(target,action);
+			}
+			
+			private function push_items_into_items_nav():void {
+				try {
+					var dp:ArrayCollection = new ArrayCollection(this.get_current_tabs_image_list_from(_this.__current_tab__));
+					this.canvas.nav.items.dataProvider = dp;
+				} catch (err:Error) {}
+			}
+			
+			private function goto_and_play_item_num(i:int):void {
+				this.__current_asset__ = i;
+				push_items_into_items_nav();
+				this.hide_hotspot_editors();
+				this.is_about_to_add_hotspots_from_xml = true;
+				this._display_current_asset();
+			}
+
+			private function goto_and_play_for(target:*):void {
+				function action(item:*):void {
+					try {
+						var tabs:* = _this.__tabs__;
+						if ( (item) && (item['title']) ) {
+							var toks:Array = item['title'].split(title_separator_symbol);
+							var _f:int = ArrayCollectionUtils.findIndexOfItem(tabs,'title',toks[0]);
+							if (_f > -1) {
+								var i:int = int(toks.pop().split('#').pop());
+								_this.__tabs__ = tabs;
+								_this.goto_and_play_item_num(i);
+//								_this.__current_asset__ = i;
+//								_this.__current_tab__ = tabs[_f];
+//								push_items_into_items_nav();
+//								_this.hide_hotspot_editors();
+//								_this.is_about_to_add_hotspots_from_xml = true;
+//								_this._display_current_asset();
+							} else {
+								this.information = 'Invalid HotSpot target because the target cannot be found however the next item is being displayed.';
+								this.display_next_asset();
+							}
+						}
+					} catch (err:Error) {
+						_this.error = MobileDebuggerUtils.explainThis(err);
+					}
+				}
+				this._find_hotspot_target_for(target,action);
+			}
+			
+			private function create_new_hotspot(x:Number,y:Number,width:Number,height:Number,target:*):void {
+				if (this.hotspot == null) {
+					this.hotspot = new HotSpotGraphic();
+					this.hotspot.id = 'hotspot_'+(this.hotspots.length+1);
+					this.hotspot.name = '';
+					this.hotspot.x = x;
+					this.hotspot.y = y;
+					this.hotspot.width = width;
+					this.hotspot.height = height;
+					this.hotspot.target = target;
+					this.hotspot.invisible = true;
+					this.hotspot.addEventListener(MouseEvent.CLICK, 
+						function (event:MouseEvent):void {
+						}
+					);
+					this.hotspot.addEventListener(StateChangeEvent.CURRENT_STATE_CHANGE, 
+						function (event:StateChangeEvent):void {
+							var hot:HotSpotGraphic = event.currentTarget as HotSpotGraphic;
+							var oldState:String = event.oldState;
+							var newState:String = event.newState;
+							if (newState == 'placed') {
+								reset_edit_nav_bar_button();
+								var was_resizing:Boolean = oldState.toLowerCase().indexOf('resizing') > -1;
+								if (was_resizing) {
+									var refIndex:int = _this.hotspots.indexOf(hot);
+									if (refIndex > -1) {
+										var hotR:Rectangle = new Rectangle(hot.x,hot.y,hot.width,hot.height);
+										_this.hotspots.splice(refIndex,1);
+										_this.canvas.removeElement(hot);
+										_this.hotspot = null;
+										_this.create_new_hotspot(hotR.x,hotR.y,hotR.width,hotR.height,target);
+									}
+								}
+							} else if ( (newState.toLowerCase() == 'moving') || (newState.toLowerCase() == 'sizing') ) {
+								var map:Object = {'move':'moving', 'size':'sizing'};
+								if ( (_this.hotspot is HotSpotGraphic) && (_this.hotspot != hot) ) {
+									_this.hotspot.is_stationary = true;
+								}
+								_this.hotspot = event.currentTarget as HotSpotGraphic;
+								if (_this.btnBarNav is CustomButtonBar) {
+									var children:Array = _this.canvas.nav.btnBarNav.getChidren;
+									var custBtn:CustomButton;
+									var label:String;
+									var state:String;
+									for (var i:String in children) {
+										custBtn = children[0] as CustomButton;
+										if (custBtn is CustomButton) {
+											if (newState.toLowerCase() != 'placed') {
+												var item:Object;
+												var dp:ArrayCollection = custBtn.btnBar.dataProvider as ArrayCollection;
+												for (var j:int = 0; j < dp.length; j++) {
+													item = dp.getItemAt(j);
+													if (item) {
+														label = map[item[custBtn.btnBar.labelField].toLowerCase()];
+														if (newState.toLowerCase().toLowerCase() == label) {
+															custBtn.btnBar.selectedIndex = j;
+															custBtn.btnBar.enabled = custBtn.incrementGroup.enabled = true;
+															custBtn.incrementGroup.visible = custBtn.incrementGroup.includeInLayout = true;
+															break;
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					);
+					this.hotspot.addEventListener(ClickedHotSpotEvent.TYPE_CLICKED_HOTSPOT, 
+						function (event:ClickedHotSpotEvent):void {
+							var target:*;
+							var hot:HotSpotGraphic = event.currentTarget as HotSpotGraphic;
+							if (!hot.is_editable) {
+								if (!_this.cb_editingMode.selected) {
+									target = hot.target;
+									if (target) {
+										_this.goto_and_play_for(target);
+									}
+									_this.__logger__.write('ClickedHotSpotEvent.TYPE_CLICKED_HOTSPOT.2 --> cb_editingMode='+_this.cb_editingMode.selected+', target='+target+'\n');
+								} else {
+									_this.no_editable_hostspots();
+									hot.editable = true;
+								}
+							} else {
+								if (_this.cb_editingMode.selected) {
+									target = hot.target;
+									if (target) {
+										_this.make_drop_down_list_selection(target);
+									}
+									_this.__logger__.write('ClickedHotSpotEvent.TYPE_CLICKED_HOTSPOT.1 --> cb_editingMode='+_this.cb_editingMode.selected+'\n');
+								}
+							}
+							_this.set_click_delay_offset(250);
+						}
+					);
+					this.hotspot.addEventListener(ModifyCenterHotSpotCoordEvent.TYPE_MOFIDY_CENTER_HOTSPOT, 
+						function (event:ModifyCenterHotSpotCoordEvent):void {
+							var hot:HotSpotGraphic = event.currentTarget as HotSpotGraphic;
+							if (hot.is_placed) {
+							}
+							_this.set_click_delay_offset(1000);
+						}
+					);
+					this.hotspot.addEventListener(ModifyLowerLeftHotSpotCoordEvent.TYPE_MOFIDY_LOWER_LEFT_HOTSPOT, 
+						function (event:ModifyLowerLeftHotSpotCoordEvent):void {
+							var hot:HotSpotGraphic = event.currentTarget as HotSpotGraphic;
+							var custBtn:CustomButton = _this.custom_button;
+							var value:Number = Number((custBtn is CustomButton) ? custBtn.units_value : 1);
+							var msg:String = '';
+							if (hot.is_moving) {
+								msg += 'moving...';
+								hot.x -= value;
+								hot.y += value;
+								if (!_this.is_adding_hotspots_from_xml) {
+									_this.update_and_save_current_data_as_xml();
+								}
+							} else if (hot.is_sizing) {
+								msg += 'sizing...';
+							}
+							_this.set_click_delay_offset(1000);
+						}
+					);
+					this.hotspot.addEventListener(ModifyLowerLeftLeftHotSpotCoordEvent.TYPE_MOFIDY_LOWER_LEFT_LEFT_HOTSPOT, 
+						function (event:ModifyLowerLeftLeftHotSpotCoordEvent):void {
+							var hot:HotSpotGraphic = event.currentTarget as HotSpotGraphic;
+							var custBtn:CustomButton = _this.custom_button;
+							var value:Number = Number((custBtn is CustomButton) ? custBtn.units_value : 1);
+							var msg:String = '';
+							if (hot.is_moving) {
+								msg += 'moving...';
+								hot.x -= value;
+							} else if (hot.is_sizing) {
+								msg += 'sizing...';
+								hot.width -= value;
+							}
+							if ( (hot.is_moving || hot.is_sizing) && (!_this.is_adding_hotspots_from_xml) ) {
+								_this.update_and_save_current_data_as_xml();
+							}
+							_this.set_click_delay_offset(1000);
+						}
+					);
+					this.hotspot.addEventListener(ModifyLowerLeftRightHotSpotCoordEvent.TYPE_MOFIDY_LOWER_LEFT_RIGHT_HOTSPOT, 
+						function (event:ModifyLowerLeftRightHotSpotCoordEvent):void {
+							var hot:HotSpotGraphic = event.currentTarget as HotSpotGraphic;
+							var custBtn:CustomButton = _this.custom_button;
+							var value:Number = Number((custBtn is CustomButton) ? custBtn.units_value : 1);
+							var msg:String = '';
+							if (hot.is_moving) {
+								msg += 'moving...';
+								hot.y += value;
+							} else if (hot.is_sizing) {
+								msg += 'sizing...';
+								hot.height += value;
+							}
+							if ( (hot.is_moving || hot.is_sizing) && (!_this.is_adding_hotspots_from_xml) ) {
+								_this.update_and_save_current_data_as_xml();
+							}
+							_this.set_click_delay_offset(1000);
+						}
+					);
+					this.hotspot.addEventListener(ModifyLowerRightHotSpotCoordEvent.TYPE_MOFIDY_LOWER_RIGHT_HOTSPOT, 
+						function (event:ModifyLowerRightHotSpotCoordEvent):void {
+							var hot:HotSpotGraphic = event.currentTarget as HotSpotGraphic;
+							var custBtn:CustomButton = _this.custom_button;
+							var value:Number = Number((custBtn is CustomButton) ? custBtn.units_value : 1);
+							var msg:String = '';
+							if (hot.is_moving) {
+								msg += 'moving...';
+								hot.x += value;
+								hot.y += value;
+							} else if (hot.is_sizing) {
+								msg += 'sizing...';
+							}
+							if ( (hot.is_moving || hot.is_sizing) && (!_this.is_adding_hotspots_from_xml) ) {
+								_this.update_and_save_current_data_as_xml();
+							}
+							_this.set_click_delay_offset(1000);
+						}
+					);
+					this.hotspot.addEventListener(ModifyLowerRightLeftHotSpotCoordEvent.TYPE_MOFIDY_LOWER_RIGHT_LEFT_HOTSPOT, 
+						function (event:ModifyLowerRightLeftHotSpotCoordEvent):void {
+							var hot:HotSpotGraphic = event.currentTarget as HotSpotGraphic;
+							var custBtn:CustomButton = _this.custom_button;
+							var value:Number = Number((custBtn is CustomButton) ? custBtn.units_value : 1);
+							var msg:String = '';
+							if (hot.is_moving) {
+								msg += 'moving...';
+								hot.y += value;
+							} else if (hot.is_sizing) {
+								msg += 'sizing...';
+								hot.height += value;
+							}
+							if ( (hot.is_moving || hot.is_sizing) && (!_this.is_adding_hotspots_from_xml) ) {
+								_this.update_and_save_current_data_as_xml();
+							}
+							_this.set_click_delay_offset(1000);
+						}
+					);
+					this.hotspot.addEventListener(ModifyLowerRightRightHotSpotCoordEvent.TYPE_MOFIDY_LOWER_RIGHT_RIGHT_HOTSPOT, 
+						function (event:ModifyLowerRightRightHotSpotCoordEvent):void {
+							var hot:HotSpotGraphic = event.currentTarget as HotSpotGraphic;
+							var custBtn:CustomButton = _this.custom_button;
+							var value:Number = Number((custBtn is CustomButton) ? custBtn.units_value : 1);
+							var msg:String = '';
+							if (hot.is_moving) {
+								msg += 'moving...';
+								hot.x += value;
+							} else if (hot.is_sizing) {
+								msg += 'sizing...';
+								hot.width += value;
+							}
+							if ( (hot.is_moving || hot.is_sizing) && (!_this.is_adding_hotspots_from_xml) ) {
+								_this.update_and_save_current_data_as_xml();
+							}
+							_this.set_click_delay_offset(1000);
+						}
+					);
+					this.hotspot.addEventListener(ModifyUpperLeftHotSpotCoordEvent.TYPE_MOFIDY_UPPER_LEFT_HOTSPOT, 
+						function (event:ModifyUpperLeftHotSpotCoordEvent):void {
+							var hot:HotSpotGraphic = event.currentTarget as HotSpotGraphic;
+							var custBtn:CustomButton = _this.custom_button;
+							var value:Number = Number((custBtn is CustomButton) ? custBtn.units_value : 1);
+							var msg:String = '';
+							if (hot.is_moving) {
+								msg += 'moving...';
+								hot.x -= value;
+								hot.y -= value;
+							} else if (hot.is_sizing) {
+								msg += 'sizing...';
+							}
+							if ( (hot.is_moving || hot.is_sizing) && (!_this.is_adding_hotspots_from_xml) ) {
+								_this.update_and_save_current_data_as_xml();
+							}
+							_this.set_click_delay_offset(1000);
+						}
+					);
+					this.hotspot.addEventListener(ModifyUpperLeftRightHotSpotCoordEvent.TYPE_MOFIDY_UPPER_LEFT_RIGHT_HOTSPOT, 
+						function (event:ModifyUpperLeftRightHotSpotCoordEvent):void {
+							var hot:HotSpotGraphic = event.currentTarget as HotSpotGraphic;
+							var custBtn:CustomButton = _this.custom_button;
+							var value:Number = Number((custBtn is CustomButton) ? custBtn.units_value : 1);
+							var msg:String = '';
+							if (hot.is_moving) {
+								msg += 'moving...';
+								hot.y -= value;
+							} else if (hot.is_sizing) {
+								msg += 'sizing...';
+							}
+							if ( (hot.is_moving || hot.is_sizing) && (!_this.is_adding_hotspots_from_xml) ) {
+								_this.update_and_save_current_data_as_xml();
+							}
+							_this.set_click_delay_offset(1000);
+						}
+					);
+					this.hotspot.addEventListener(ModifyUpperLeftLeftHotSpotCoordEvent.TYPE_MOFIDY_UPPER_LEFT_LEFT_HOTSPOT, 
+						function (event:ModifyUpperLeftLeftHotSpotCoordEvent):void {
+							var hot:HotSpotGraphic = event.currentTarget as HotSpotGraphic;
+							var custBtn:CustomButton = _this.custom_button;
+							var value:Number = Number((custBtn is CustomButton) ? custBtn.units_value : 1);
+							var msg:String = '';
+							if (hot.is_moving) {
+								msg += 'moving...';
+								hot.x -= value;
+							} else if (hot.is_sizing) {
+								msg += 'sizing...';
+							}
+							if ( (hot.is_moving || hot.is_sizing) && (!_this.is_adding_hotspots_from_xml) ) {
+								_this.update_and_save_current_data_as_xml();
+							}
+							_this.set_click_delay_offset(1000);
+						}
+					);
+					this.hotspot.addEventListener(ModifyUpperRightHotSpotCoordEvent.TYPE_MOFIDY_UPPER_RIGHT_HOTSPOT, 
+						function (event:ModifyUpperRightHotSpotCoordEvent):void {
+							var hot:HotSpotGraphic = event.currentTarget as HotSpotGraphic;
+							var custBtn:CustomButton = _this.custom_button;
+							var value:Number = Number((custBtn is CustomButton) ? custBtn.units_value : 1);
+							var msg:String = '';
+							if (hot.is_moving) {
+								msg += 'moving...';
+								hot.x += value;
+								hot.y -= value;
+							} else if (hot.is_sizing) {
+								msg += 'sizing...';
+							}
+							if ( (hot.is_moving || hot.is_sizing) && (!_this.is_adding_hotspots_from_xml) ) {
+								_this.update_and_save_current_data_as_xml();
+							}
+							_this.set_click_delay_offset(1000);
+						}
+					);
+					this.hotspot.addEventListener(ModifyUpperRightLeftHotSpotCoordEvent.TYPE_MOFIDY_UPPER_RIGHT_LEFT_HOTSPOT, 
+						function (event:ModifyUpperRightLeftHotSpotCoordEvent):void {
+							var hot:HotSpotGraphic = event.currentTarget as HotSpotGraphic;
+							var custBtn:CustomButton = _this.custom_button;
+							var value:Number = Number((custBtn is CustomButton) ? custBtn.units_value : 1);
+							var msg:String = '';
+							if (hot.is_moving) {
+								msg += 'moving...';
+								hot.y -= value;
+							} else if (hot.is_sizing) {
+								msg += 'sizing...';
+								hot.height -= value;
+							}
+							if ( (hot.is_moving || hot.is_sizing) && (!_this.is_adding_hotspots_from_xml) ) {
+								_this.update_and_save_current_data_as_xml();
+							}
+							_this.set_click_delay_offset(1000);
+						}
+					);
+					this.hotspot.addEventListener(ModifyUpperRightRightHotSpotCoordEvent.TYPE_MOFIDY_UPPER_RIGHT_RIGHT_HOTSPOT, 
+						function (event:ModifyUpperRightRightHotSpotCoordEvent):void {
+							var hot:HotSpotGraphic = event.currentTarget as HotSpotGraphic;
+							var custBtn:CustomButton = _this.custom_button;
+							var value:Number = Number((custBtn is CustomButton) ? custBtn.units_value : 1);
+							var msg:String = '';
+							if (hot.is_moving) {
+								msg += 'moving...';
+								hot.x += value;
+							} else if (hot.is_sizing) {
+								msg += 'sizing...';
+								hot.width += value;
+							}
+							if ( (hot.is_moving || hot.is_sizing) && (!_this.is_adding_hotspots_from_xml) ) {
+								_this.update_and_save_current_data_as_xml();
+							}
+							_this.set_click_delay_offset(1000);
+						}
+					);
+					this.hotspots.push(this.hotspot);
+					this.canvas.addItemsCanvasElement(this.hotspot);
+					if (!this.is_adding_hotspots_from_xml) {
+						this.update_and_save_current_data_as_xml();
+					}
+				}
+			}
+			
+			protected function btnBarNav_itemClickHandler(event:ItemClickEvent):void {
+				if (this.hotspot is HotSpotGraphic) {
+					if (event.label.toLowerCase() == 'move') {
+						this.hotspot.is_moving = true;
+					} else if (event.label.toLowerCase() == 'size') {
+						this.hotspot.is_sizing = true;
+					}
+				}
+			}
+			
+			private function _display_next_asset():void {
+				if (is_hotspot_visible) {
+					this.hide_hotspot_editors();
+				}
+				this.cb_editingMode.selected = false;            // option: stay in edit mode whenever possible.
+				this.toggle_editingMode(this.cb_editingMode);    // option: stay in edit mode whenever possible.
+				this.display_next_asset();
+			}
+			
+			private function stop_auto_play_mode():void {
+				if ( (this.__auto_timer__ is Timer) && (this.__auto_timer__.running) ) {
+					this.__auto_timer__.reset();
+					this.__auto_timer__.stop();
+				}
+			}
+			
+			private function refresh_menu():void {
+				this.canvas.nav.tabNum.visible = this.canvas.nav.tabNum.includeInLayout = (this.__tabs__.length > 1);
+				this.canvas.nav.tabNum.text = (this.__current_tab__['name']) ? this.__current_tab__['name'] : '';
+				this.canvas.nav.counter.text = (this.__current_asset__+1).toString();
+				try {
+					var navBeginBtn:Button = this.canvas.nav.get_button_bar_by_label(this.nav_begin_symbol);
+					if (navBeginBtn is Button) {
+						navBeginBtn.enabled = this.__current_asset__ > 0;
+					}
+				} catch (err:Error) {}
+				try {
+					var navPrevBtn:Button = this.canvas.nav.get_button_bar_by_label(this.nav_prev_symbol);
+					if (navPrevBtn is Button) {
+						navPrevBtn.enabled = this.__current_asset__ > 0;
+					}
+				} catch (err:Error) {}
+				try {
+					var navNextBtn:Button = this.canvas.nav.get_button_bar_by_label(this.nav_next_symbol);
+					if (navNextBtn is Button) {
+						navNextBtn.enabled = this.__current_asset__ < this.current_tabs_image_list.length-1;
+					}
+				} catch (err:Error) {}
+				try {
+					var navEndBtn:Button = this.canvas.nav.get_button_bar_by_label(this.nav_end_symbol);
+					if (navEndBtn is Button) {
+						navEndBtn.enabled = this.__current_asset__ < this.current_tabs_image_list.length-1;
+					}
+				} catch (err:Error) {}
+				this.canvas.nav.total.text = this.get_current_tabs_image_list_from(this.__current_tab__).length;
+			}
+			
+			private function handle_navMenu_action():void {
+				this.hide_hotspot_editors();
+				this.clear_assets();
+				this.cb_editingMode.selected = false;            // option: stay in edit mode whenever possible.
+				this.is_showing_media_navBar = false;
+				this.showNavBar_enabled = true;
+				this.hideNavBar_enabled = false;
+				this.navCanvas.visible = this.navCanvas.includeInLayout = true;
+				this.navCanvas.styleName = (this.navCanvas.visible) ? 'showingNavBar' : 'hidingNavBar';
+				this.canvas.styleName = (this.navCanvas.visible) ? 'showingNavBar' : 'hidingNavBar';
+				this.toggle_editingMode(this.cb_editingMode);    // option: stay in edit mode whenever possible.
+			}
+			
+			private function handle_navBegin_action():void {
+				this.hide_hotspot_editors();
+				this.cb_editingMode.selected = false;            // option: stay in edit mode whenever possible.
+				this.toggle_editingMode(this.cb_editingMode);    // option: stay in edit mode whenever possible.
+				this.display_first_asset();
+			}
+			
+			private function handle_navEnd_action():void {
+				this.hide_hotspot_editors();
+				this.cb_editingMode.selected = false;            // option: stay in edit mode whenever possible.
+				this.toggle_editingMode(this.cb_editingMode);    // option: stay in edit mode whenever possible.
+				this.display_last_asset();
+			}
+			
+			private function handle_navAuto_action():void {
+				if (this.can_play_auto) {
+					var autoBtn:* = this.canvas.nav.get_button_bar_by_label(this.nav_auto_symbol);
+					if (autoBtn) {
+						autoBtn.enabled = false;
+					}
+					var images:Array = this.get_current_tabs_image_list_from(this.__current_tab__);
+					var delayed_images:Array = [];
+					for (var ii:int=0; ii < images.length; ii++) {
+						delayed_images.push({'current_asset':ii,'delay':int(images[ii]['delay'])});
+					}
+					this.clear_assets();
+					var aVector:* = delayed_images[0];
+					__current_asset__ = aVector['current_asset'];
+					this.display_current_asset();
+					this.__auto_timer__ = new Timer(int(images[0]['delay'])*1000,images.length-1);
+					this.__auto_timer__.addEventListener(TimerEvent.TIMER, 
+						function (event:TimerEvent):void {
+							__auto_timer__.stop();
+							delayed_images.splice(0,1);
+							if (delayed_images.length > 0) {
+								aVector = delayed_images[0];
+								__current_asset__ = aVector['current_asset'];
+								display_current_asset();
+								__auto_timer__.delay = aVector['delay']*1000;
+								__auto_timer__.reset();
+								__auto_timer__.start();
+							} else {
+								if (autoBtn is Button) {
+									autoBtn.enabled = true;
+								}
+							}
+						}
+					);
+					__auto_timer__.start();
+				} else {
+					this.parentApplication.popUpHelpWindow(this,10,this.infoCanvas.y+this.infoCanvas.height,this.width - 10,this.height - 10,
+						'Auto Play Mode only works when ALL items for a Tab have a delay value specified as a value greater than 0.\n\nPlease double-check all items for the current Tab to make sure all delay values are greater than 0.\n\nThe delay value for each item specifies the number of seconds of delay until the next item is displayed.\n\nThe delay value for the last item is not used however for completeness one must specify a value for all items.\n\nAuto Play Mode can be stopped by pressing any Navigation Button while Auto Play Mode is running.'
+					);
+				}
+			}
+			
+			private function handle_navNext_action():void {
+				this._display_next_asset();
+			}
+			
+			private function handle_navPrev_action():void {
+				this.hide_hotspot_editors();
+				this.cb_editingMode.selected = false;            // option: stay in edit mode whenever possible.
+				this.toggle_editingMode(this.cb_editingMode);    // option: stay in edit mode whenever possible.
+				this.display_prev_asset();
+			}
+			
+			protected function btnBarNav_changeHandler(event:IndexChangeEvent):void {
+				var btn:Button;
+				var i:int = event.newIndex;
+				var btns:CustomButtonBar = event.currentTarget as CustomButtonBar;
+				try {
+					if ( (i > -1) && (i < btns.dataProvider.length) ) {
+						var aBtn:Button = btns.getChidren[i] as Button;
+						var item:* = btns.dataProvider.getItemAt(i);
+						this.callLater(this.release_nav_buttons);
+						this.stop_auto_play_mode();
+						if (item[btns.labelField] == this.nav_menu_symbol) {
+							this.begin_hiding_media_navBar();
+							this.handle_navMenu_action();
+							this.callLater(this.remove_canvas);
+						} else if (item[btns.labelField] == this.nav_begin_symbol) {
+							this.handle_navBegin_action();
+						} else if (item[btns.labelField] == this.nav_end_symbol) {
+							this.handle_navEnd_action();
+						} else if (item[btns.labelField] == this.nav_auto_symbol) {
+							this.handle_navAuto_action();
+						} else if (item[btns.labelField] == this.nav_next_symbol) {
+							this.handle_navNext_action();
+						} else if (item[btns.labelField] == this.nav_prev_symbol) {
+							this.handle_navPrev_action();
+						} else if (item[btns.labelField] == this.nav_tiles_symbol) {
+							if (this.canvas.nav.is_items_tiles_showing) {
+								this.canvas.nav.hide_items_tiles();
+							} else {
+								this.canvas.nav.show_items_tiles();
+							}
+						} else if (item[btns.labelField] == this.nav_edit_symbol) {
+							var custBtn:CustomButton = btns.getChidren[i] as CustomButton;
+							if (custBtn is CustomButton) {
+								//custBtn.btn.enabled = false;
+							}
+							if (this.is_hotspot_hidden) {
+								MediaHelper.stopAudio();
+								this.create_new_hotspot(100,100,100,100,null);
+							}
+						}
+						if (!this.is_currently_selected_tab_navbar_autohide) {
+							this.end_hiding_media_navBar();
+						} else if ( (this.__navBar_timer__) && (this.__navBar_timer__.running) ) {
+							this.__navBar_timer__.stop();
+							this.__navBar_timer__.reset();
+							this.__navBar_timer__.start();
+						}
+					}
+				} catch (err:Error) {
+					this.error = 'Error #501 - Error due to '+MobileDebuggerUtils.explainThis(err);
+					trace(err.toString()+'\n'+err.getStackTrace());
+					return;
+				}
+			}
+			
+			private function get currently_selected_tab_label():String {
+				var label:String;
+				if (this.__current_tab__['title']) {
+					label = this.__current_tab__['title'];
+				}
+				return label;
+			}
+			
+			public function get is_currently_selected_tab_navbar_autohide():Boolean {
+				var _is_:Boolean = false;
+				var autohide:*;
+				if (this.__current_tab__['navbar']) {
+					autohide = this.__current_tab__['navbar']['autohide'];
+					_is_ = this.is_boolean_true(autohide);
+				}
+				return _is_;
+			}
+			
+			private function get currently_selected_tab_navbar_autohide_delay():Number {
+				var _delay_:Number = this.__navBar_timer_default_delay__;
+				var _number_:Number;
+				var autohide:*;
+				if (this.__current_tab__['navbar']) {
+					autohide = this.__current_tab__['navbar']['autohide'];
+					_number_ = Number(autohide);
+					if ( (_number_ is Number) && (_number_ > 1) ) {
+						_delay_ = _number_;
+					}
+				}
+				return _delay_;
+			}
+			
+			private function _update_hotspot_xy(x:Number,y:Number):void {
+				if (this.hotspot) {
+					if (is_hotspot_visible) {
+						var xy:Point = new Point(x,y);
+						var pt:Point = this.hotspot.localToContent(xy);
+						this.hotspot.x = pt.x;
+						this.hotspot.y = pt.y;
+						if (!this.is_adding_hotspots_from_xml) {
+							this.update_and_save_current_data_as_xml();
+						}
+					}
+				}
+			}
+			
+			private function update_hotspot_xy(x:Number,y:Number):void {
+				var timer:Timer = new Timer(250,1);
+				var handler:Function = function (event:TimerEvent):void {
+					_update_hotspot_xy(x,y);
+					timer.removeEventListener(TimerEvent.TIMER_COMPLETE, handler);
+					timer.stop();
+				};
+				timer.addEventListener(TimerEvent.TIMER_COMPLETE, handler);
+				timer.start();
+			}
+			
+			private function _update_hotspot_size(xOff:Number,yOff:Number):void {
+				if (this.hotspot) {
+					if (is_hotspot_visible && this.hotspot.is_resizing) {
+						if (this.hotspot.is_resizing) {
+							var oldSize:Point = new Point(this.hotspot.width,this.hotspot.height);
+							var newSize:Point = new Point(this.hotspot.width+xOff,this.hotspot.height+yOff);
+							this.hotspot.width = newSize.x;
+							this.hotspot.height = newSize.y;
+							if (!this.is_adding_hotspots_from_xml) {
+								this.update_and_save_current_data_as_xml();
+							}
+						}
+					}
+				}
+			}
+			
+			private function update_hotspot_size(xOff:Number,yOff:Number):void {
+				var timer:Timer = new Timer(250,1);
+				var handler:Function = function (event:TimerEvent):void {
+					_update_hotspot_size(xOff,yOff);
+					timer.removeEventListener(TimerEvent.TIMER_COMPLETE, handler);
+					timer.stop();
+				};
+				timer.addEventListener(TimerEvent.TIMER_COMPLETE, handler);
+				timer.start();
+			}
+			
+			public function view1_mouseMoveHandler(event:MouseEvent):void {
+			}
+			
+			public function view1_touchMoveHandler(event:TouchEvent):void {
+			}
+			
+			public function view1_clickHandler(event:MouseEvent):void {
+			}
+			
+			public function view1_touchTapHandler(event:TouchEvent):void {
+			}
+			
+			protected function btnBarNav_specificButtonClickHandler(event:SpecificButtonClickEvent):void {
+				if (event.label == nav_add_symbol) {
+					MediaHelper.stopAudio();
+					var w:Number = this.width / 100;
+					var h:Number = this.height / 100;
+					var n:Number = this.hotspots.length / w;
+					var y:int = int(n) * 100;
+					var x:int =  int((n-int(n))*w) * 100;
+					this.hotspot = null; // force the new hotspot to be created...
+					if (y < (int(h)*100)) {
+						this.create_new_hotspot(x,y,100,100,null);
+						this.hotspot = null;
+					}
+				} else if (event.label == nav_remove_symbol) {
+					if (this.hotspot) {
+						this.remove_this_hotspot(this.hotspot);
+					}
+				}
+			}
+			
+			protected function closeInformation_clickHandler(event:MouseEvent):void {
+				this.next_information_message();
+			}
+			
+			public function view1_stateChangeCompleteHandler(event:FlexEvent):void {
+			}
+			
+			private function get_detailed_list_data_from(source:ArrayCollection):ArrayCollection {
+				var aTab:*;
+				var anItem:*;
+				var items:*;
+				var detailed_items:ArrayCollection = new ArrayCollection();
+				for (var i:int=0; i<source.length; i++) {
+					aTab = source.getItemAt(i);
+					items = this.current_tabs_image_data_from(aTab);
+					if ( (items is Array) || (items is ArrayCollection) ) {
+						for (var ii:int=0; ii<items.length; ii++) {
+							try {
+								anItem = items.getItemAt(ii);	// at some point each item needs a unique name...
+							} catch (err:Error) {
+								anItem = items[ii];	// at some point each item needs a unique name...
+							}
+							detailed_items.addItem({'title':aTab['title']+title_separator_symbol+'Item #'+ii.toString(),'name':aTab['name'],'uid':aTab['uid']});
+						}
+					} else {
+						//detailed_items.addItem({'title':aTab['title'],'name':aTab['name'],'uid':aTab['uid']});
+					}
+				}
+				return detailed_items;
+			}
+			
+			private function toggle_editingMode(currentTarget:CheckBox):void {
+				var custBtn:CustomButton;
+				if (currentTarget is CheckBox) {
+					this.is_editingMode = currentTarget.selected;
+					currentTarget.label = this.nav_edit_mode_symbol+this.edit_mode_status;
+					currentTarget.styleName = this.edit_mode_styleName;
+					try {
+						custBtn = this.canvas.nav.get_button_bar_by_label(this.nav_edit_symbol);
+						if (custBtn is CustomButton) {
+							custBtn.listDataProvider = this.get_detailed_list_data_from(this.__tabs__);
+							custBtn.visible = custBtn.includeInLayout = this.is_editingMode;
+						}
+						this.__logger__.write('cb_editingMode_clickHandler.1 --> is_editingMode='+this.is_editingMode);
+						if (this.hotspot) {
+							var target:* = this.hotspot.target;
+							if (target) {
+								this.make_drop_down_list_selection(target);
+							}
+							this.hotspot.editable = this.is_editingMode;
+						}
+						if (this.is_editingMode) {
+							if (this.editor) {
+								this.editor.dataProvider = this.current_tabs_asset; // automatically updates the data file...
+							} else {
+								this.error = 'cb_editingMode_clickHandler.1a Cannot access the Item Editor...';
+							}
+						}
+						custBtn = this.canvas.nav.get_button_bar_by_label(this.nav_edit_symbol);
+						if (custBtn is CustomButton) {
+							custBtn.listDataProvider = this.get_detailed_list_data_from(this.__tabs__);
+							custBtn.visible = custBtn.includeInLayout = this.is_editingMode;
+						}
+						var children:Array = this.canvas.nav.btnBarNav.getChidren;
+						var i:int;
+						var _f:int;
+						for (i=0; i < this.nav_buttons.length; i++) {
+							var _item:* = _this.nav_buttons[i];
+							_f = ArrayUtils.findIf(children,
+								function (item:*, j:int, source:*, selector:String, aValue:*):Boolean {
+									if (aValue is String) {
+										return (item[selector] == aValue);
+									}
+									return false;
+								},
+								'label',children[i]['label'],
+								function (j:int, source:*):void {
+									if (_item['editing_mode']) {
+										source[j]['enabled'] = source[j]['visible'] = source[j]['includeInLayout'] = true;
+									} else {
+										source[j]['enabled'] = source[j]['visible'] = source[j]['includeInLayout'] = !_this.is_editingMode;
+									}
+									_this.__logger__.write(source[j]['label']+', source['+j+'][\'enabled\']='+source[j]['enabled']+', source['+j+'][\'visible\']='+source[j]['visible']+', source['+j+'][\'includeInLayout\']='+source[j]['includeInLayout']);
+								}
+							);
+						}
+					} catch (err:Error) {
+						this.error = 'cb_editingMode_clickHandler.2 --> err='+MobileDebuggerUtils.explainThis(err);
+						trace('cb_editingMode_clickHandler.2a --> err='+err.toString()+'\n'+err.getStackTrace());
+					}
+				}
+			}
+			
+			protected function cb_editingMode_clickHandler(event:MouseEvent):void {
+				var currentTarget:CheckBox = event.currentTarget as CheckBox;
+				this.toggle_editingMode(currentTarget);
+			}
+			
+			protected function btnBarNav_selectedTabFromListHandler(event:SelectedTabFromListEvent):void {
+				this.__logger__.write('btnBarNav_selectedTabFromListHandler.1 --> item='+event.item);
+				if (this.hotspot is HotSpotGraphic) {
+					this.hotspot.target = event.item;
+					this.update_and_save_current_data_as_xml();
+				} else {
+					this.error = 'WARNING: Cannot perform this operation at this time.';
+				}
+				var ii:int = -1;
+			}
+			
+			protected function editor_itemUpdateHandler(event:ItemUpdateEvent):void {
+				this.__logger__.write('editor_itemUpdateHandler.1 --> event.item='+MobileDebuggerUtils.explainThis(event.item));
+				this.current_tabs_asset = event.item; // automatically updates the data file...
+				this.update_and_save_current_data_as_xml();
+				//this._display_current_asset(); // clean this up later...
+			}
+			
+			protected function hgroup1_clickHandler(event:MouseEvent):void {
+				try {
+					this.next_information_message();
+				} catch (err:Error) {}
+			}
+			
+			private function popUpDebuggerWindow():void {
+				this.toggle_DebuggerWindowVisible();
+			}
+			
+			private function toggle_DebuggerWindowVisible():void {
+				this.currentState = (this.currentState == 'debugger') ? 'normal' : 'debugger';
+			}
+			
+			private function toggle_ChangesWindowVisible():void {
+				this.currentState = (this.currentState == 'changes') ? 'normal' : 'changes';
+				var window:PopUpWindow = this.popUpWindow;
+				var rows:Array = this.parentApplication.description.split('\n');
+				for (var i:String in rows) {
+					window.text = rows[i];
+				}
+			}
+			
+			private function toggle_CreditsWindowVisible():void {
+				this.currentState = (this.currentState == 'credits') ? 'normal' : 'credits';
+				var rows:Array = this.parentApplication.credits.split('\n');
+				var window:PopUpWindow = this.popUpWindow;
+				for (var i:String in rows) {
+					window.text = rows[i];
+				}
+			}
+			
+			private function toggle_OptionsWindowVisible():void {
+				this.currentState = (this.currentState == 'options') ? 'normal' : 'options';
+			}
+			
+			public function showDebugger_clickHandler(event:MouseEvent):void {
+				this.showCredits_enabled = false;
+				this.showOptions_enabled = false;
+				this.showVersion_enabled = false;
+				this.showChanges_enabled = false;
+				this.showDebugger_enabled = false;
+				this.resetDebugger_enabled = false;
+				this.toggle_DebuggerWindowVisible();
+			}
+			
+			public function showChanges_clickHandler(event:MouseEvent):void {
+				this.showCredits_enabled = false;
+				this.showOptions_enabled = false;
+				this.showVersion_enabled = false;
+				this.showChanges_enabled = false;
+				this.showDebugger_enabled = false;
+				this.resetDebugger_enabled = false;
+				this.toggle_ChangesWindowVisible();
+			}
+			
+			public function showCredits_clickHandler(event:MouseEvent):void {
+				this.showCredits_enabled = false;
+				this.showOptions_enabled = false;
+				this.showVersion_enabled = false;
+				this.showChanges_enabled = false;
+				this.showDebugger_enabled = false;
+				this.resetDebugger_enabled = false;
+				this.toggle_CreditsWindowVisible();
+			}
+			
+			public function showOptions_clickHandler(event:MouseEvent):void {
+				this.showCredits_enabled = false;
+				this.showOptions_enabled = false;
+				this.showVersion_enabled = false;
+				this.showChanges_enabled = false;
+				this.showDebugger_enabled = false;
+				this.resetDebugger_enabled = false;
+				this.toggle_OptionsWindowVisible();
+			}
+			
+			protected function errorWindow_creationCompleteHandler(event:FlexEvent):void {
+				var window:PopUpWindow = event.currentTarget as PopUpWindow;
+				window.btnClose.addEventListener(MouseEvent.CLICK, 
+					function (event:MouseEvent):void {
+						_this.currentState = 'normal';
+						_this.showCredits_enabled = !_this.is_playing_media;
+						_this.showOptions_enabled = !_this.is_playing_media;
+						_this.showVersion_enabled = !_this.is_playing_media;
+						_this.showChanges_enabled = !_this.is_playing_media;
+						_this.showDebugger_enabled = !_this.is_playing_media;
+						_this.resetDebugger_enabled = !_this.is_playing_media;
+					}
+				);
+				this.__logger__ = new LogFile(File.desktopDirectory.nativePath,window);
+			}
+			
+			protected function popUpWindow_creationCompleteHandler(event:FlexEvent):void {
+				var window:PopUpWindow = event.currentTarget as PopUpWindow;
+				window.btnClose.addEventListener(MouseEvent.CLICK, 
+					function (event:MouseEvent):void {
+						_this.currentState = 'normal';
+						_this.showCredits_enabled = !_this.is_playing_media;
+						_this.showOptions_enabled = !_this.is_playing_media;
+						_this.showVersion_enabled = !_this.is_playing_media;
+						_this.showChanges_enabled = !_this.is_playing_media;
+						_this.showDebugger_enabled = !_this.is_playing_media;
+						_this.resetDebugger_enabled = !_this.is_playing_media;
+					}
+				);
+			}
+			
+			public function view1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				Multitouch.inputMode = MultitouchInputMode.GESTURE;
+			}
+			
+			public function resetDebugger_clickHandler(event:MouseEvent):void {
+				this.__logger__.selector = this.errorWindow.labelField;
+				this.__logger__.write_to_file(this.prefix,this.errorWindow.dataProvider);
+				this.errorWindow.reset();
+				this.information = 'Activity was saved to "'+this.__logger__.logFile.nativePath.replace(this.prefix,'')+'" and Activity Window has been reset.';
+			}
+			
+			private function begin_hiding_media_navBar():void {
+				if (this.is_not_showing_media_navBar) {
+					if ( (this.__navBar_timer__) && (!this.__navBar_timer__.running) ) {
+						this.end_hiding_media_navBar();
+						return;
+					}
+					this.__navBar_timer__ = new Timer(this.currently_selected_tab_navbar_autohide_delay,1);
+					this.__navBar_timer__.addEventListener(TimerEvent.TIMER_COMPLETE, 
+						function (event:TimerEvent):void {
+							_this.end_hiding_media_navBar();
+						}
+					);
+					this.__navBar_timer__.start();
+					this.is_showing_media_navBar = this.__is_playing_media__;
+					if (!this.canvas.is_showing_nav) {
+						if (this.is_navBar_able_to_hide_show) {
+							this.canvas.show_nav();
+						}
+					}
+				}
+			}
+			
+			public function end_hiding_media_navBar():void {
+				if ( (this.__navBar_timer__ is Timer) && (this.__navBar_timer__.running) ) {
+					this.__navBar_timer__.stop();
+					this.__navBar_timer__ = null;
+				}
+				this.is_showing_media_navBar = false;
+				this.showNavBar_enabled = true;
+				this.hideNavBar_enabled = false;
+				if (this.is_navBar_able_to_hide_show) {
+					this.canvas.hide_nav();
+				}
+			}
+			
+			public function get is_not_showing_media_navBar():Boolean {
+				return ( (this.__navBar_timer__ == null) || (!this.__navBar_timer__.running) );
+			}
+			
+			public function showNavBar_clickHandler(event:MouseEvent):void {
+				this.is_showing_media_navBar = this.is_not_showing_media_navBar;
+				this.dispatchEvent(new ChangeNavBar(ChangeNavBar.TYPE_CHANGE_NAVBAR,'showNavBar','enabled',false));
+				this.dispatchEvent(new ChangeNavBar(ChangeNavBar.TYPE_CHANGE_NAVBAR,'hideNavBar','enabled',true));
+				if (this.is_navBar_able_to_hide_show) {
+					this.canvas.show_nav();
+				}
+				this.__has_navBar_been_requested__ = !this.__has_navBar_been_requested__;
+				if (this.is_currently_selected_tab_navbar_autohide) {
+					this.begin_hiding_media_navBar();
+				}
+			}
+			
+			protected function showHotSpots_clickHandler(event:MouseEvent):void {
+				this.__is_showing_hotspots__ = true;
+				this.show_hotspots();
+				this.begin_showing_hotspots();
+			}
+			
+			protected function hideHotSpots_clickHandler(event:MouseEvent):void {
+				this.__is_showing_hotspots__ = false;
+				this.hide_hotspots();
+				this.end_showing_hotspots();
+			}
+			
+			public function showNavBar_creationCompleteHandler(event:FlexEvent):void {
+				//this.showNavBar.enabled = false;
+			}
+			
+			protected function navMenu_clickHandler(event:MouseEvent):void {
+				this.handle_navMenu_action();
+			}
+			
+			protected function navBegin_clickHandler(event:MouseEvent):void {
+				this.handle_navBegin_action();
+			}
+			
+			protected function navEnd_clickHandler(event:MouseEvent):void {
+				this.handle_navEnd_action();
+			}
+			
+			protected function navAuto_clickHandler(event:MouseEvent):void {
+				this.handle_navAuto_action();
+			}
+			
+			protected function navNext_clickHandler(event:MouseEvent):void {
+				this.handle_navNext_action();
+			}
+			
+			protected function navPrev_clickHandler(event:MouseEvent):void {
+				this.handle_navPrev_action();
+			}
+			
+			private function begin_hiding_view_title_bar():void {
+				var _title_:String = this.actionBarTitle;
+				if ( (this.__version_timer__ == null) || (!this.__version_timer__.running) ) {
+					this.__version_timer__ = new Timer(5000,1);
+					this.__version_timer__.addEventListener(TimerEvent.TIMER_COMPLETE, 
+						function (event:TimerEvent):void {
+							_this.showCredits_enabled = !_this.is_playing_media;
+							_this.showOptions_enabled = !_this.is_playing_media;
+							_this.showVersion_enabled = !_this.is_playing_media;
+							_this.showChanges_enabled = !_this.is_playing_media;
+							_this.showDebugger_enabled = !_this.is_playing_media;
+							_this.resetDebugger_enabled = !_this.is_playing_media;
+							_this.__version_timer__.stop();
+							_this.dispatchEvent(new ChangeActionBarTitle(ChangeActionBarTitle.TYPE_CHANGE_ACTIONBAR_TITLE,_title_,this.__root_title_delay__));
+							_this.dispatchEvent(new ChangeActionBar(ChangeActionBar.TYPE_CHANGE_ACTIONBAR, false));
+						}
+					);
+					var today:Date = new Date();
+					this.showCredits_enabled = false;
+					this.showOptions_enabled = false;
+					this.showVersion_enabled = false;
+					this.showChanges_enabled = false;
+					this.showDebugger_enabled = false;
+					this.resetDebugger_enabled = false;
+					_this.dispatchEvent(new ChangeActionBar(ChangeActionBar.TYPE_CHANGE_ACTIONBAR, true));
+					_this.dispatchEvent(new ChangeActionBarTitle(ChangeActionBarTitle.TYPE_CHANGE_ACTIONBAR_TITLE,this.__title__.replace(this.version_replacement_symbol,this.parentApplication.versionNumber).split(this.title_separator_symbol).shift()+' ('+DateUtils.toShortDateUTCString(today)+')',this.__root_title_delay__));
+					this.__version_timer__.start();
+				}
+			}
+			
+			public function showVersion_clickHandler(event:MouseEvent):void {
+				this.begin_hiding_view_title_bar();
+			}
+			
+			protected function group1_resizeHandler(event:ResizeEvent):void {
+				if (this.is_boolean(this.__resultObj__['stage.autoOrients'])) {
+					this.parentApplication.stage.autoOrients = this.is_boolean_true(this.__resultObj__['stage.autoOrients']);
+				}
+			}
+			
+			private function check_for_autoplay(event:TimerEvent):void {
+				var is_autoPlay:Boolean = this.is_able_to_autoplay;
+				var dataProvider:* = this.btnBar.dataProvider;
+				if (is_autoPlay && dataProvider) {
+					if (this.__autoplay_timer__.running) {
+						this.__autoplay_timer__.stop();
+					}
+					//trace('(+++) Should be able to begin the autoplay now !!!');
+					var options:* = _this.get_autoplay_options();
+					if (options) {
+						callLater(handle_btnBar_selection, [(options['tabNum']) ? options['tabNum'] : 0]);
+					} 
+//					var timer:Timer = new Timer(250,1);
+//					timer.addEventListener(TimerEvent.TIMER_COMPLETE, 
+//						function (event:TimerEvent):void {
+//							var options:* = _this.get_autoplay_options();
+//							trace('(+++) Should be able to begin the autoplay now !!!');
+//							callLater(handle_btnBar_selection, [(options['tabNum']) ? options['tabNum'] : 0]);
+//							timer.stop();
+//						}
+//					);
+//					timer.start();
+				}
+			}
+			
+			protected function group1_initializeHandler(event:FlexEvent):void {
+				var timer:Timer = new Timer(250);
+				timer.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						try {
+							if (_this.stage) {
+								if ( (_this.is_able_to_autoplay) && (!_this.__autoplay_timer__) ) {
+									_this.__autoplay_timer__ = new Timer(250);
+									_this.__autoplay_timer__.addEventListener(TimerEvent.TIMER, _this.check_for_autoplay);
+									_this.__autoplay_timer__.start();
+								}
+								timer.stop();
+							}
+						} catch(err:Error) {}
+					}
+				);
+				timer.start();
+			}
+			
+			private function update_btnBar_layout():void {
+				var layout:TileLayout = this.btnBar.layout as TileLayout;
+				layout.columnWidth = this.tileLayout_columnWidth;
+				layout.requestedColumnCount = this.tileLayout_requestedColumnCount;
+				layout.requestedRowCount = this.tileLayout_requestedRowCount;
+			}
+			
+			protected function btnBar_creationCompleteHandler(event:FlexEvent):void {
+				this.update_btnBar_layout();
+			}
+			
+			private function get tileLayout_requestedRowCount():int {
+				var value:int = (this.btnBar.dataProvider) ? int(this.btnBar.dataProvider.length/4)+1 : 1;
+				trace('(+++) '+this.className+'.tileLayout_requestedRowCount.1 --> value='+value);
+				return value;
+			}
+
+			private function get tileLayout_requestedColumnCount():int {
+				var value:int = int(this.tileLayout_requestedRowCount/4)+1;
+				trace('(+++) '+this.className+'.tileLayout_requestedColumnCount.1 --> value='+value);
+				return value;
+			}
+			
+			private function get tileLayout_columnWidth():Number {
+				var value:Number = this.width/this.tileLayout_requestedColumnCount;
+				trace('(+++) '+this.className+'.tileLayout_columnWidth.1 --> value='+value);
+				return value;
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup id="navCanvas" width="100%" height="100%" 
+			  visible="true" includeInLayout="true" styleName="showingNavBar"
+			  >
+		<s:VGroup id="header" width="100%">
+			<s:HGroup width="100%" paddingTop="5" paddingLeft="5" paddingRight="5" paddingBottom="5">
+				<s:HGroup width="100%">
+					<s:CheckBox 
+						id="cb_editingMode" width="90"
+						label="{this.nav_edit_mode_symbol}{this.edit_mode_status}" 
+						styleName="{this.edit_mode_styleName}" 
+						click="cb_editingMode_clickHandler(event)"
+						visible="{this.__is_editing_allowed__}" includeInLayout="{this.__is_editing_allowed__}"
+						/>
+					<s:ButtonBar 
+						id="btnBar" 
+						width="100%" labelField="title"
+						change="btnBar_changeHandler(event)" 
+						creationComplete="btnBar_creationCompleteHandler(event)" 
+						visible="{!this.__is_playing_media__}" includeInLayout="{!this.__is_playing_media__}"
+						>
+						<s:layout>
+							<s:TileLayout 
+								orientation="rows" 
+								rowAlign="justifyUsingHeight" 
+								columnAlign="justifyUsingWidth"
+								/>
+						</s:layout>
+					</s:ButtonBar>
+				</s:HGroup>
+			</s:HGroup>
+			<s:VGroup id="infoCanvas" width="100%"
+					  paddingTop="0" paddingLeft="0" paddingRight="0" paddingBottom="0" 
+					  click="hgroup1_clickHandler(event)"
+					  visible.normal="false" 
+					  visible.information="true" 
+					  visible.error="true" 
+					  visible.debugger="false" 
+					  visible.changes="false" 
+					  includeInLayout.normal="false" 
+					  includeInLayout.information="true" 
+					  includeInLayout.error="true"
+					  includeInLayout.debugger="false" 
+					  includeInLayout.changes="false" 
+					  >
+				<s:VGroup width="100%" 
+						  visible="false" includeInLayout="false" 
+						  >
+					<!--
+					visible="{this.__is_showing_media_navBar_while_playing_media__}" 
+					includeInLayout="{this.__is_showing_media_navBar_while_playing_media__}"
+					-->
+					<s:Label id="informationMessage" width="100%" 
+							 styleName.information="informationMessage" 
+							 styleName.error="informationErrorMessage"/>
+					<s:HGroup paddingTop="-5" visible="false" includeInLayout="false">
+						<s:Button id="closeInformation" label="(close)"
+								  click="closeInformation_clickHandler(event)"
+								  width="60" height="25"
+								  styleName="closeInformationButton"/>
+					</s:HGroup>
+					<s:HGroup id="infoDescCanvas"
+							  width="100%" 
+							  >
+						<s:Label id="informationDescMessage" width="100%"
+								 text="(See the Activity Log from the Application Menu for the details...)"
+								 styleName.information="informationMessageItalicSmall" 
+								 styleName.error="informationErrorMessageItalicSmall"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:VGroup>
+		</s:VGroup>
+		<MediaPresentation:ImageCanvas id="titleImageCanvas" 
+									   x="0" y="0"
+									   width="100%" height="100%"
+									   visible.normal="false" 
+									   includeInLayout.normal="false" 
+									   visible.information="false" 
+									   includeInLayout.information="false" 
+									   visible.error="false" 
+									   includeInLayout.error="false"
+									   visible.debugger="false" 
+									   includeInLayout.debugger="false"
+									   visible.changes="false" 
+									   includeInLayout.changes="false"
+									   visible.credits="false" 
+									   includeInLayout.credits="false"
+									   visible.title="true" 
+									   includeInLayout.title="true"
+									   />
+		<popups:PopUpWindow id="errorWindow" 
+							width="100%" height="100%"
+							visible.normal="false" 
+							visible.information="false" 
+							visible.error="false" 
+							visible.debugger="true" 
+							visible.changes="false" 
+							visible.credits="false" 
+							visible.title="false" 
+							includeInLayout.title="false"
+							includeInLayout.normal="false" 
+							includeInLayout.information="false" 
+							includeInLayout.error="false"
+							includeInLayout.debugger="true"
+							includeInLayout.changes="false"
+							includeInLayout.credits="false"
+							creationComplete="errorWindow_creationCompleteHandler(event)"
+							/>
+		<popups:PopUpWindow id="popUpWindow" 
+							width="100%" height="100%"
+							visible.normal="false" 
+							visible.information="false" 
+							visible.error="false" 
+							visible.debugger="false" 
+							visible.changes="true" 
+							visible.credits="true" 
+							visible.title="false" 
+							includeInLayout.title="false"
+							includeInLayout.normal="false" 
+							includeInLayout.information="false" 
+							includeInLayout.error="false"
+							includeInLayout.debugger="false"
+							includeInLayout.changes="true"
+							includeInLayout.credits="true"
+							creationComplete="popUpWindow_creationCompleteHandler(event)"
+							/>
+	</s:VGroup>
+	<CustomEditor:CustomEditor id="editor" 
+							   x="5" 
+							   y="{this.infoCanvas.y+this.infoCanvas.height}" 
+							   width="{this.width-this.editor.x-5}" 
+							   visible="{this.cb_editingMode.selected}"
+							   itemUpdate="editor_itemUpdateHandler(event)"
+							   includeInLayout="{this.cb_editingMode.selected}"
+							   />
+</s:Group>

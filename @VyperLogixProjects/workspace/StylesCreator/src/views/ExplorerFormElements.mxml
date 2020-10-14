@@ -1,0 +1,1155 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+	<mx:VBox width="100%" height="100%" xmlns:mx="http://www.adobe.com/2006/mxml" verticalScrollPolicy="off" xmlns:views="views.*">
+	
+	<mx:HBox width="100%" height="100%">
+
+
+
+	<mx:VBox height="100%" width="430" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="STYLE CONTROLS"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+			<mx:TabNavigator width="100%" id="controlNavigator" height="500" styleName="styleControlTabNavigator">
+			
+			
+			<mx:Box label="TextInput" >
+				<mx:Form styleName="noPadding">
+				
+				<mx:FormItem label="Background Alpha">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="1"
+						id="myBackgroundAlphatextInput"
+						
+						snapInterval=".01"
+						change="setValue('backgroundAlpha', event.target.value , 'number', 'textInput');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+				<mx:FormItem label="Background Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xFFFFFF" id="myBackgroundColortextInput"
+								close="setValue('backgroundColor', event.target.selectedColor, 'color', 'textInput')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myColortextInput"
+								close="setValue('color', event.target.selectedColor, 'color', 'textInput')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Border Style">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBBorderTextInput" label="none"
+								labelPlacement="right" click="myTextInput.setStyle('borderStyle', 'none');
+								setCSS('borderStyle', 0, 'none', 'textInput');"/>
+							<mx:RadioButton groupName="SBBorderTextInput" label="solid"  
+								labelPlacement="right" click="myTextInput.setStyle('borderStyle', 'solid');
+								setCSS('borderStyle', 0, 'solid', 'textInput');"/>
+						</mx:HBox>
+						<mx:HBox>
+							<mx:RadioButton groupName="SBBorderTextInput" label="inset" selected="true" id="myBorderStyletextInput"
+								labelPlacement="right" click="myTextInput.setStyle('borderStyle', 'inset');
+								setCSS('borderStyle', 0, 'inset', 'textInput');"/>
+							<mx:RadioButton groupName="SBBorderTextInput" label="outset"  
+								labelPlacement="right" click="myTextInput.setStyle('borderStyle', 'outset');
+								setCSS('borderStyle', 0, 'outset', 'textInput');"/>
+						</mx:HBox>
+						
+					</mx:FormItem>
+				
+				<mx:FormItem label="Border Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xB7BABC" id="myBorderColortextInput"
+								close="setValue('borderColor', event.target.selectedColor, 'color', 'textInput')"/>
+				</mx:FormItem>
+				
+				
+				<mx:FormItem label="Border Thickness">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="1"
+						id="myBorderThicknesstextInput"
+						
+						snapInterval="1"
+						change="setValue('borderThickness', event.target.value , 'number', 'textInput');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Corner Radius">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="0"
+						id="myCornerRadiustextInput"
+						
+						snapInterval="1"
+						change="setValue('cornerRadius', event.target.value , 'number', 'textInput');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+				<mx:FormItem label="Text Indent">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="0"
+						id="myTextIndenttextInput"
+						
+						snapInterval="1"
+						change="setValue('textIndent', event.target.value , 'number', 'textInput');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+				<mx:FormItem label="Drop Shadow Enabled">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBDropShadowEnabledtextInput" label="true"  labelPlacement="right"
+								click="myTextInput.setStyle('dropShadowEnabled', true); enableShadowItemsTextInput();
+									   setCSS('dropShadowEnabled', 0, 'true', 'textInput');"
+									   />
+							<mx:RadioButton groupName="SBDropShadowEnabledtextInput" label="false" labelPlacement="right" selected="true"  id="myDropShadowEnabledtextInput" 
+								click="myTextInput.setStyle('dropShadowEnabled', false); enableShadowItemsTextInput();
+								 setCSS('dropShadowEnabled', 0, 'false', 'textInput');"/>
+						</mx:HBox>
+					</mx:FormItem>
+				<mx:Box styleName="conditionalBox" >			
+				<mx:Form styleName="conditionalForm"  >
+				<mx:FormItem label="Shadow Direction">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBShadowDirectiontextInput" label="left"  id="myShadowDirection2textInput" enabled="false"
+								labelPlacement="right" click="myTextInput.setStyle('shadowDirection', 'left'); setCSS('shadowDirection', 0, 'left', 'textInput');"/>
+							<mx:RadioButton groupName="SBShadowDirectiontextInput" label="center" id="myShadowDirectiontextInput" enabled="false"
+								selected="true" labelPlacement="right" click="myTextInput.setStyle('shadowDirection', 'center'); setCSS('shadowDirection', 0, 'center', 'textInput');"/>
+							<mx:RadioButton groupName="SBShadowDirectiontextInput" label="right" id="myShadowDirection3textInput" enabled="false"
+								selected="true" labelPlacement="right" click="myTextInput.setStyle('shadowDirection', 'right'); setCSS('shadowDirection', 0, 'right', 'textInput');"/>
+						</mx:HBox>
+					</mx:FormItem>
+				<mx:FormItem label="Shadow Distance">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="2"
+						enabled="false"
+						id="myShadowDistancetextInput"
+						
+						snapInterval="1"
+						change="setValue('shadowDistance', event.target.value , 'number', 'textInput');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+					<mx:FormItem label="Drop Shadow Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x000000" id="myDropShadowColortextInput" enabled="false"
+								close="setValue('dropShadowColor', event.target.selectedColor, 'color', 'textInput')"/>
+				</mx:FormItem>
+				</mx:Form>
+				</mx:Box>
+				
+				
+				
+				</mx:Form>
+			</mx:Box>
+			<mx:Box label="NumericStepper">
+				<mx:Form paddingLeft="0" paddingRight="0" paddingTop="0" paddingBottom="0">
+				
+				<mx:FormItem label="Background Alpha">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="1"
+						id="myBackgroundAlphanumericStepper"
+						
+						snapInterval=".01"
+						change="setValue('backgroundAlpha', event.target.value, 'number', 'numericStepper');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+				<mx:FormItem label="Background Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xFFFFFF" id="myBackgroundColornumericStepper"
+								close="setValue('backgroundColor', event.target.selectedColor, 'color', 'numericStepper')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myColornumericStepper"
+								close="setValue('color', event.target.selectedColor, 'color', 'numericStepper')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Border Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xB7BABC" id="myBorderColornumericStepper"
+								close="setValue('borderColor', event.target.selectedColor, 'color', 'numericStepper')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Border Style">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBBorderNumericStepper" label="none"
+								labelPlacement="right" click="myNumericStepper.setStyle('borderStyle', 'none');
+								enableBorderItemsnumericStepper();
+								setCSS('borderStyle', 0, 'none', 'numericStepper');"/>
+							<mx:RadioButton groupName="SBBorderNumericStepper" label="solid"  id="myBorderStylenumericStepper2"
+								labelPlacement="right" click="myNumericStepper.setStyle('borderStyle', 'solid');
+								enableBorderItemsnumericStepper();
+								setCSS('borderStyle', 0, 'solid', 'numericStepper');"/>
+						</mx:HBox>
+						<mx:HBox>
+							<mx:RadioButton groupName="SBBorderNumericStepper" label="inset" selected="true" id="myBorderStylenumericStepper"
+								labelPlacement="right" click="myNumericStepper.setStyle('borderStyle', 'inset');
+								enableBorderItemsnumericStepper();
+								setCSS('borderStyle', 0, 'inset', 'numericStepper');"/>
+							<mx:RadioButton groupName="SBBorderNumericStepper" label="outset"  
+								labelPlacement="right" click="myNumericStepper.setStyle('borderStyle', 'outset');
+								enableBorderItemsnumericStepper();
+								setCSS('borderStyle', 0, 'outset', 'numericStepper');"/>
+						</mx:HBox>
+						
+					</mx:FormItem>
+					<mx:Box styleName="conditionalBox" >			
+					<mx:Form styleName="conditionalForm"  >
+			
+				<mx:FormItem label="Border Thickness">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="1"
+						id="myBorderThicknessnumericStepper"
+						enabled="false"
+						snapInterval="1"
+						change="setValue('borderThickness', event.target.value , 'number', 'numericStepper');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			</mx:Form>
+			</mx:Box>
+				<mx:FormItem label="Corner Radius">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="0"
+						id="myCornerRadiusnumericStepper"
+						
+						snapInterval="1"
+						change="setValue('cornerRadius', event.target.value , 'number', 'numericStepper');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Highlight Alphas">
+				<mx:HBox>
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value=".30"
+						id="highlightAlpha1numericStepper"
+						
+						snapInterval=".01"
+						change="myNumericStepper.setStyle('highlightAlphas',[highlightAlpha1numericStepper.value , highlightAlpha2numericStepper.value ]);
+						setArrayCSS('highlightAlphas', highlightAlpha1numericStepper.value, highlightAlpha2numericStepper.value, false, 'numericStepper')"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="0"
+						id="highlightAlpha2numericStepper"
+						
+						snapInterval=".01"
+						change="myNumericStepper.setStyle('highlightAlphas',[highlightAlpha1numericStepper.value , highlightAlpha2numericStepper.value]);
+						setArrayCSS('highlightAlphas', highlightAlpha1numericStepper.value, highlightAlpha2numericStepper.value, false, 'numericStepper')"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+					</mx:HBox>
+				</mx:FormItem>
+			
+			
+			
+			
+				<mx:Box styleName="conditionalBox" toolTip="Note: This is an array of four colors, the second two being the fill colors on roll over.">
+				<mx:HBox width="100%">
+				<mx:Box width="100%" horizontalAlign="left" paddingLeft="5" paddingTop="5">
+				<mx:Image id="alert" source="@Embed('assets/alert.png')" />	
+				</mx:Box>
+				
+				<mx:Form styleName="conditionalForm" >
+				
+					<mx:FormItem label="Fill Alphas">
+					<mx:HBox  horizontalGap="2">
+					<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".60"
+								id="myFillAlpha1numericStepper"
+								
+								snapInterval=".01"
+								change="myNumericStepper.setStyle('fillAlphas', [myFillAlpha1numericStepper.value, myFillAlpha2numericStepper.value, myFillAlpha3numericStepper.value, myFillAlpha4numericStepper.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1numericStepper.value, myFillAlpha2numericStepper.value, myFillAlpha3numericStepper.value, myFillAlpha4numericStepper.value, false, 'numericStepper');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".40"
+								id="myFillAlpha2numericStepper"
+								
+								snapInterval=".01"
+								change="myNumericStepper.setStyle('fillAlphas', [myFillAlpha1numericStepper.value, myFillAlpha2numericStepper.value, myFillAlpha3numericStepper.value, myFillAlpha4numericStepper.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1numericStepper.value, myFillAlpha2numericStepper.value, myFillAlpha3numericStepper.value, myFillAlpha4numericStepper.value, false, 'numericStepper');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".75"
+								id="myFillAlpha3numericStepper"
+								
+								snapInterval=".01"
+								change="myNumericStepper.setStyle('fillAlphas', [myFillAlpha1numericStepper.value, myFillAlpha2numericStepper.value, myFillAlpha3numericStepper.value, myFillAlpha4numericStepper.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1numericStepper.value, myFillAlpha2numericStepper.value, myFillAlpha3numericStepper.value, myFillAlpha4numericStepper.value, false, 'numericStepper');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".65"
+								id="myFillAlpha4numericStepper"
+								
+								snapInterval=".01"
+								change="myNumericStepper.setStyle('fillAlphas', [myFillAlpha1numericStepper.value, myFillAlpha2numericStepper.value, myFillAlpha3numericStepper.value, myFillAlpha4numericStepper.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1numericStepper.value, myFillAlpha2numericStepper.value, myFillAlpha3numericStepper.value, myFillAlpha4numericStepper.value, false, 'numericStepper');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							</mx:HBox>
+						</mx:FormItem>
+						<mx:FormItem label="Fill Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="fill1numericStepper" height="23" width="35" selectedColor="0xFFFFFF"
+								close="myNumericStepper.setStyle('fillColors', [fill1numericStepper.selectedColor, fill2numericStepper.selectedColor, fill3numericStepper.selectedColor, fill4numericStepper.selectedColor]);
+								setArrayFourCSS('fillColors', fill1numericStepper.selectedColor, fill2numericStepper.selectedColor, fill3numericStepper.selectedColor, fill4numericStepper.selectedColor, true, 'numericStepper');
+								"/>
+								<mx:ColorPicker id="fill2numericStepper" height="23" width="35" selectedColor="0xCCCCCC"
+								close="myNumericStepper.setStyle('fillColors', [fill1numericStepper.selectedColor, fill2numericStepper.selectedColor, fill3numericStepper.selectedColor, fill4numericStepper.selectedColor]);
+								setArrayFourCSS('fillColors', fill1numericStepper.selectedColor, fill2numericStepper.selectedColor, fill3numericStepper.selectedColor, fill4numericStepper.selectedColor, true, 'numericStepper');
+								"/>
+								<mx:ColorPicker id="fill3numericStepper" height="23" width="35" selectedColor="0xFFFFFF"
+								close="myNumericStepper.setStyle('fillColors', [fill1numericStepper.selectedColor, fill2numericStepper.selectedColor, fill3numericStepper.selectedColor, fill4numericStepper.selectedColor]);
+								setArrayFourCSS('fillColors', fill1numericStepper.selectedColor, fill2numericStepper.selectedColor, fill3numericStepper.selectedColor, fill4numericStepper.selectedColor, true, 'numericStepper');
+								"/>
+								<mx:ColorPicker id="fill4numericStepper" height="23" width="35" selectedColor="0xEEEEEE"
+								close="myNumericStepper.setStyle('fillColors', [fill1numericStepper.selectedColor, fill2numericStepper.selectedColor, fill3numericStepper.selectedColor, fill4numericStepper.selectedColor]);
+								setArrayFourCSS('fillColors', fill1numericStepper.selectedColor, fill2numericStepper.selectedColor, fill3numericStepper.selectedColor, fill4numericStepper.selectedColor, true, 'numericStepper');
+								"/>
+							
+							</mx:HBox>
+						</mx:FormItem>
+						
+				
+				
+				</mx:Form>
+				</mx:HBox>
+				</mx:Box>
+				<mx:FormItem label="Theme Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x009Dff" id="myThemeColornumericStepper"
+								close="setValue('themeColor', event.target.selectedColor, 'color', 'numericStepper')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Drop Shadow Enabled">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBDropShadowEnablednumericStepper" label="true"  labelPlacement="right"
+								click="myNumericStepper.setStyle('dropShadowEnabled', true); enableShadowItemsNumericStepper();
+									   setCSS('dropShadowEnabled', 0, 'true', 'numericStepper');"
+									   />
+							<mx:RadioButton groupName="SBDropShadowEnablednumericStepper" label="false" labelPlacement="right" selected="true"  id="myDropShadowEnablednumericStepper" 
+								click="myNumericStepper.setStyle('dropShadowEnabled', false); enableShadowItemsNumericStepper();
+								 setCSS('dropShadowEnabled', 0, 'false', 'numericStepper');"/>
+						</mx:HBox>
+					</mx:FormItem>
+				
+				<mx:FormItem label="Shadow Direction">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBShadowDirectionnumericStepper" label="left"  id="myShadowDirection2numericStepper" enabled="false"
+								labelPlacement="right" click="myNumericStepper.setStyle('shadowDirection', 'left'); setCSS('shadowDirection', 0, 'left', 'numericStepper');"/>
+							<mx:RadioButton groupName="SBShadowDirectionnumericStepper" label="center" id="myShadowDirectionnumericStepper" enabled="false"
+								selected="true" labelPlacement="right" click="myNumericStepper.setStyle('shadowDirection', 'center'); setCSS('shadowDirection', 0, 'center', 'numericStepper');"/>
+							<mx:RadioButton groupName="SBShadowDirectionnumericStepper" label="right" id="myShadowDirection3numericStepper" enabled="false"
+								selected="true" labelPlacement="right" click="myNumericStepper.setStyle('shadowDirection', 'right'); setCSS('shadowDirection', 0, 'right', 'numericStepper');"/>
+						</mx:HBox>
+					</mx:FormItem>
+				<mx:FormItem label="Shadow Distance">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="2"
+						enabled="false"
+						id="myShadowDistancenumericStepper"
+						
+						snapInterval="1"
+						change="setValue('shadowDistance', event.target.value , 'number', 'numericStepper');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+					
+			<mx:FormItem label="Drop Shadow Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x000000" id="myDropShadowColornumericStepper" enabled="false"
+								close="setValue('dropShadowColor', event.target.selectedColor, 'color', 'textInput')"/>
+				</mx:FormItem>
+			
+			
+				</mx:Form>
+			</mx:Box>
+			<mx:Box label="ComboBox">
+				<mx:Form paddingLeft="0" paddingRight="0" paddingTop="0" paddingBottom="0">
+				
+				<mx:FormItem label="Background Alpha">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="1"
+						id="myBackgroundAlphacomboBox"
+						
+						snapInterval=".01"
+						change="setValue('backgroundAlpha', event.target.value, 'number', 'comboBox');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+				<mx:FormItem label="Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myColorcomboBox"
+								close="setValue('color', event.target.selectedColor, 'color', 'comboBox')"/>
+				</mx:FormItem>
+				
+				
+			<mx:FormItem label="Border Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xB7BABC" id="myBorderColorcomboBox"
+								close="setValue('borderColor', event.target.selectedColor, 'color', 'comboBox')"/>
+				</mx:FormItem>
+				
+			<mx:FormItem label="Corner Radius">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="5"
+						id="myCornerRadiuscomboBox"
+						
+						snapInterval="1"
+						change="setValue('cornerRadius', event.target.value , 'number', 'comboBox');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+				
+				
+				<mx:FormItem label="Highlight Alphas">
+				<mx:HBox>
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value=".30"
+						id="highlightAlpha1comboBox"
+						
+						snapInterval=".01"
+						change="myComboBox.setStyle('highlightAlphas',[highlightAlpha1comboBox.value , highlightAlpha2comboBox.value ]);
+						setArrayCSS('highlightAlphas', highlightAlpha1comboBox.value , highlightAlpha2comboBox.value , false, 'comboBox')"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="0"
+						id="highlightAlpha2comboBox"
+						
+						snapInterval=".01"
+						change="myComboBox.setStyle('highlightAlphas',[highlightAlpha1comboBox.value , highlightAlpha2comboBox.value ]);
+						setArrayCSS('highlightAlphas', highlightAlpha1comboBox.value, highlightAlpha2comboBox.value, false, 'comboBox')"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+					</mx:HBox>
+				</mx:FormItem>
+			
+			
+			
+			
+				<mx:Box styleName="conditionalBox" width="275" horizontalAlign="right" toolTip="Note: This is an array of four colors, the second two being the fill colors on roll over.">
+				<mx:HBox width="100%">
+				<mx:Box width="100%" horizontalAlign="left" paddingLeft="5" paddingTop="5">
+				<mx:Image id="alert2" source="@Embed('assets/alert.png')" />	
+				</mx:Box>
+				
+				<mx:Form styleName="conditionalForm"  >
+				
+					<mx:FormItem label="Fill Alphas">
+					<mx:HBox  horizontalGap="2">
+					<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".60"
+								id="myFillAlpha1comboBox"
+								
+								snapInterval=".01"
+								change="myComboBox.setStyle('fillAlphas', [myFillAlpha1comboBox.value, myFillAlpha2comboBox.value, myFillAlpha3comboBox.value, myFillAlpha4comboBox.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1comboBox.value, myFillAlpha2comboBox.value, myFillAlpha3comboBox.value, myFillAlpha4comboBox.value, false, 'comboBox');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".40"
+								id="myFillAlpha2comboBox"
+								
+								snapInterval=".01"
+								change="myComboBox.setStyle('fillAlphas', [myFillAlpha1comboBox.value, myFillAlpha2comboBox.value, myFillAlpha3comboBox.value, myFillAlpha4comboBox.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1comboBox.value, myFillAlpha2comboBox.value, myFillAlpha3comboBox.value, myFillAlpha4comboBox.value, false, 'comboBox');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".75"
+								id="myFillAlpha3comboBox"
+								
+								snapInterval=".01"
+								change="myComboBox.setStyle('fillAlphas', [myFillAlpha1comboBox.value, myFillAlpha2comboBox.value, myFillAlpha3comboBox.value, myFillAlpha4comboBox.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1comboBox.value, myFillAlpha2comboBox.value, myFillAlpha3comboBox.value, myFillAlpha4comboBox.value, false, 'comboBox');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".65"
+								id="myFillAlpha4comboBox"
+								
+								snapInterval=".01"
+								change="myComboBox.setStyle('fillAlphas', [myFillAlpha1comboBox.value, myFillAlpha2comboBox.value, myFillAlpha3comboBox.value, myFillAlpha4comboBox.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1comboBox.value, myFillAlpha2comboBox.value, myFillAlpha3comboBox.value, myFillAlpha4comboBox.value, false, 'comboBox');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							</mx:HBox>
+						</mx:FormItem>
+						<mx:FormItem label="Fill Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="fill1comboBox" height="23" width="35" selectedColor="0xFFFFFF"
+								close="myComboBox.setStyle('fillColors', [fill1comboBox.selectedColor, fill2comboBox.selectedColor, fill3comboBox.selectedColor, fill4comboBox.selectedColor]);
+								setArrayFourCSS('fillColors', fill1comboBox.selectedColor, fill2comboBox.selectedColor, fill3comboBox.selectedColor, fill4comboBox.selectedColor, true, 'comboBox');
+								"/>
+								<mx:ColorPicker id="fill2comboBox" height="23" width="35" selectedColor="0xCCCCCC"
+								close="myComboBox.setStyle('fillColors', [fill1comboBox.selectedColor, fill2comboBox.selectedColor, fill3comboBox.selectedColor, fill4comboBox.selectedColor]);
+								setArrayFourCSS('fillColors', fill1comboBox.selectedColor, fill2comboBox.selectedColor, fill3comboBox.selectedColor, fill4comboBox.selectedColor, true, 'comboBox');
+								"/>
+								<mx:ColorPicker id="fill3comboBox" height="23" width="35" selectedColor="0xFFFFFF"
+								close="myComboBox.setStyle('fillColors', [fill1comboBox.selectedColor, fill2comboBox.selectedColor, fill3comboBox.selectedColor, fill4comboBox.selectedColor]);
+								setArrayFourCSS('fillColors', fill1comboBox.selectedColor, fill2comboBox.selectedColor, fill3comboBox.selectedColor, fill4comboBox.selectedColor, true, 'comboBox');
+								"/>
+								<mx:ColorPicker id="fill4comboBox" height="23" width="35" selectedColor="0xEEEEEE"
+								close="myComboBox.setStyle('fillColors', [fill1comboBox.selectedColor, fill2comboBox.selectedColor, fill3comboBox.selectedColor, fill4comboBox.selectedColor]);
+								setArrayFourCSS('fillColors', fill1comboBox.selectedColor, fill2comboBox.selectedColor, fill3comboBox.selectedColor, fill4comboBox.selectedColor, true, 'comboBox');
+								"/>
+							
+							</mx:HBox>
+						</mx:FormItem>
+						
+				
+				
+				</mx:Form>
+				</mx:HBox>
+				</mx:Box>
+				<mx:Box styleName="conditionalBox" width="370"  toolTip="Note: Unique styles for the dropdown can be set with dropDownstyleName">
+				<mx:HBox width="100%">
+				<mx:Box width="100%" horizontalAlign="left" paddingLeft="5" paddingTop="5">
+				<mx:Image source="@Embed('assets/alert.png')" />	
+				</mx:Box>
+				
+				<mx:Form styleName="conditionalForm"  >
+				
+				<mx:FormItem label="Selection Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x7FCDFE" id="mySelectionColorcomboBox"
+								close="setValue('selectionColor', event.target.selectedColor, 'color', 'comboBox')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Text Selected Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myTextSelectedColorcomboBox"
+								close="setValue('textSelectedColor', event.target.selectedColor, 'color', 'comboBox')"/>
+				</mx:FormItem>
+				
+				<mx:FormItem label="Use Rollover">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBUseRollOvercomboBox" label="true"  labelPlacement="right" selected="true"  id="myUseRollOvercomboBox"
+								click="myComboBox.setStyle('useRollOver', true); enableRollOverItemsComboBox();
+									   setCSS('useRollOver', 0, 'true', 'comboBox');"
+									   />
+							<mx:RadioButton groupName="SBUseRollOvercomboBox" label="false" labelPlacement="right"  
+								click="myComboBox.setStyle('useRollOver', false); enableRollOverItemsComboBox();
+								 setCSS('useRollOver', 0, 'false', 'comboBox');"/>
+						</mx:HBox>
+					</mx:FormItem>
+				<mx:FormItem label="Roll Over Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xAADEFF" id="myRollOverColorcomboBox"
+								close="setValue('rollOverColor', event.target.selectedColor, 'color', 'comboBox')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Text Roll Over Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myTextRollOverColorcomboBox"
+								close="setValue('textRollOverColor', event.target.selectedColor, 'color', 'comboBox')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Theme Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x009DFF" id="myThemeColorcomboBox"
+								close="setValue('themeColor', event.target.selectedColor, 'color', 'comboBox')"/>
+				</mx:FormItem>
+				
+				<mx:FormItem label="Alternating Item Colors">
+					<mx:HBox paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0">
+							<mx:ColorPicker id="alternate1comboBox" height="23" width="70" selectedColor="0xffffff" 
+								close="myComboBox.setStyle('alternatingItemColors', [alternate1comboBox.selectedColor, alternate2comboBox.selectedColor]);
+								setArrayCSS('alternatingItemColors', alternate1comboBox.selectedColor, alternate2comboBox.selectedColor, true, 'comboBox')"/>
+							<mx:ColorPicker  id="alternate2comboBox" height="23" width="70" selectedColor="0xffffff" 
+								close="myComboBox.setStyle('alternatingItemColors', [alternate1comboBox.selectedColor, alternate2comboBox.selectedColor]); 
+								setArrayCSS('alternatingItemColors', alternate1comboBox.selectedColor, alternate2comboBox.selectedColor, true, 'comboBox')"/>
+					</mx:HBox>	
+				</mx:FormItem>
+				</mx:Form>
+				</mx:HBox>
+				</mx:Box>
+				<mx:FormItem label="Open Duration">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="10"
+						maximum="2000"
+						value="250"
+						id="myOpenDurationcomboBox"
+						
+						snapInterval="1"
+						change="setValue('openDuration', event.target.value , 'number', 'comboBox');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Close Duration">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="10"
+						maximum="2000"
+						value="250"
+						id="myCloseDurationcomboBox"
+						
+						snapInterval="1"
+						change="setValue('closeDuration', event.target.value , 'number', 'comboBox');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+				
+				
+				
+				</mx:Form>
+			</mx:Box>
+			<mx:Box label="CheckBox &amp; RadioButton">
+				<mx:Form paddingLeft="0" paddingRight="0" paddingTop="0" paddingBottom="0">
+				
+				
+				
+				<mx:FormItem label="Border Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xB7BABC" id="myBorderColorcheckBox"
+								close="setValue('borderColor', event.target.selectedColor, 'color', 'checkBox')"/>
+				</mx:FormItem>
+				
+				
+				
+				
+				
+				
+				
+				<mx:FormItem label="Highlight Alphas">
+				<mx:HBox>
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value=".30"
+						id="highlightAlpha1checkBox"
+						
+						snapInterval=".01"
+						change="myCheckBox.setStyle('highlightAlphas',[highlightAlpha1checkBox.value , highlightAlpha2checkBox.value ]);
+						myRadioButton.setStyle('highlightAlphas',[highlightAlpha1checkBox.value , highlightAlpha2checkBox.value ]);
+						setArrayCSS('highlightAlphas', highlightAlpha1checkBox.value , highlightAlpha2checkBox.value , false, 'checkBox')"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="0"
+						id="highlightAlpha2checkBox"
+						
+						snapInterval=".01"
+						change="myCheckBox.setStyle('highlightAlphas',[highlightAlpha1checkBox.value , highlightAlpha2checkBox.value ]);
+						myRadioButton.setStyle('highlightAlphas',[highlightAlpha1checkBox.value , highlightAlpha2checkBox.value ]);
+						setArrayCSS('highlightAlphas', highlightAlpha1checkBox.value , highlightAlpha2checkBox.value , false, 'checkBox')"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+					</mx:HBox>
+				</mx:FormItem>
+			
+			
+				<mx:Box styleName="conditionalBox" width="275" horizontalAlign="right" toolTip="Note: This is an array of four colors, the second two being the fill colors on roll over.">
+				<mx:HBox width="100%">
+				<mx:Box width="100%" horizontalAlign="left" paddingLeft="5" paddingTop="5">
+				<mx:Image id="alert3" source="@Embed('assets/alert.png')" />	
+				</mx:Box>
+				
+				<mx:Form paddingTop="8" paddingBottom="5" paddingRight="5" paddingLeft="5"  >
+				
+					<mx:FormItem label="Fill Alphas">
+					<mx:HBox  horizontalGap="2">
+					<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".60"
+								id="myFillAlpha1checkBox"
+								
+								snapInterval=".01"
+								change="myCheckBox.setStyle('fillAlphas', [myFillAlpha1checkBox.value, myFillAlpha2checkBox.value, myFillAlpha3checkBox.value, myFillAlpha4checkBox.value]);
+								myRadioButton.setStyle('fillAlphas', [myFillAlpha1checkBox.value, myFillAlpha2checkBox.value, myFillAlpha3checkBox.value, myFillAlpha4checkBox.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1checkBox.value, myFillAlpha2checkBox.value, myFillAlpha3checkBox.value, myFillAlpha4checkBox.value, false, 'checkBox');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".40"
+								id="myFillAlpha2checkBox"
+								
+								snapInterval=".01"
+								change="myCheckBox.setStyle('fillAlphas', [myFillAlpha1checkBox.value, myFillAlpha2checkBox.value, myFillAlpha3checkBox.value, myFillAlpha4checkBox.value]);
+								myRadioButton.setStyle('fillAlphas', [myFillAlpha1checkBox.value, myFillAlpha2checkBox.value, myFillAlpha3checkBox.value, myFillAlpha4checkBox.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1checkBox.value, myFillAlpha2checkBox.value, myFillAlpha3checkBox.value, myFillAlpha4checkBox.value, false, 'checkBox');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".75"
+								id="myFillAlpha3checkBox"
+								
+								snapInterval=".01"
+								change="myCheckBox.setStyle('fillAlphas', [myFillAlpha1checkBox.value, myFillAlpha2checkBox.value, myFillAlpha3checkBox.value, myFillAlpha4checkBox.value]);
+								myRadioButton.setStyle('fillAlphas', [myFillAlpha1checkBox.value, myFillAlpha2checkBox.value, myFillAlpha3checkBox.value, myFillAlpha4checkBox.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1checkBox.value, myFillAlpha2checkBox.value, myFillAlpha3checkBox.value, myFillAlpha4checkBox.value, false, 'checkBox');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".65"
+								id="myFillAlpha4checkBox"
+								
+								snapInterval=".01"
+								change="myCheckBox.setStyle('fillAlphas', [myFillAlpha1checkBox.value, myFillAlpha2checkBox.value, myFillAlpha3checkBox.value, myFillAlpha4checkBox.value]);
+								myRadioButton.setStyle('fillAlphas', [myFillAlpha1checkBox.value, myFillAlpha2checkBox.value, myFillAlpha3checkBox.value, myFillAlpha4checkBox.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1checkBox.value, myFillAlpha2checkBox.value, myFillAlpha3checkBox.value, myFillAlpha4checkBox.value, false, 'checkBox');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							</mx:HBox>
+						</mx:FormItem>
+						<mx:FormItem label="Fill Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="fill1checkBox" height="23" width="35" selectedColor="0xFFFFFF"
+								close="myCheckBox.setStyle('fillColors', [fill1checkBox.selectedColor, fill2checkBox.selectedColor, fill3checkBox.selectedColor, fill4checkBox.selectedColor]);
+								myRadioButton.setStyle('fillColors', [fill1checkBox.selectedColor, fill2checkBox.selectedColor, fill3checkBox.selectedColor, fill4checkBox.selectedColor]);
+								setArrayFourCSS('fillColors', fill1checkBox.selectedColor, fill2checkBox.selectedColor, fill3checkBox.selectedColor, fill4checkBox.selectedColor, true, 'checkBox');
+								"/>
+								<mx:ColorPicker id="fill2checkBox" height="23" width="35" selectedColor="0xCCCCCC"
+								close="myCheckBox.setStyle('fillColors', [fill1checkBox.selectedColor, fill2checkBox.selectedColor, fill3checkBox.selectedColor, fill4checkBox.selectedColor]);
+								myRadioButton.setStyle('fillColors', [fill1checkBox.selectedColor, fill2checkBox.selectedColor, fill3checkBox.selectedColor, fill4checkBox.selectedColor]);
+								setArrayFourCSS('fillColors', fill1checkBox.selectedColor, fill2checkBox.selectedColor, fill3checkBox.selectedColor, fill4checkBox.selectedColor, true, 'checkBox');
+								"/>
+								<mx:ColorPicker id="fill3checkBox" height="23" width="35" selectedColor="0xFFFFFF"
+								close="myCheckBox.setStyle('fillColors', [fill1checkBox.selectedColor, fill2checkBox.selectedColor, fill3checkBox.selectedColor, fill4checkBox.selectedColor]);
+								myRadioButton.setStyle('fillColors', [fill1checkBox.selectedColor, fill2checkBox.selectedColor, fill3checkBox.selectedColor, fill4checkBox.selectedColor]);
+								setArrayFourCSS('fillColors', fill1checkBox.selectedColor, fill2checkBox.selectedColor, fill3checkBox.selectedColor, fill4checkBox.selectedColor, true, 'checkBox');
+								"/>
+								<mx:ColorPicker id="fill4checkBox" height="23" width="35" selectedColor="0xEEEEEE"
+								close="myCheckBox.setStyle('fillColors', [fill1checkBox.selectedColor, fill2checkBox.selectedColor, fill3checkBox.selectedColor, fill4checkBox.selectedColor]);
+								myRadioButton.setStyle('fillColors', [fill1checkBox.selectedColor, fill2checkBox.selectedColor, fill3checkBox.selectedColor, fill4checkBox.selectedColor]);
+								setArrayFourCSS('fillColors', fill1checkBox.selectedColor, fill2checkBox.selectedColor, fill3checkBox.selectedColor, fill4checkBox.selectedColor, true, 'checkBox');
+								"/>
+							
+							</mx:HBox>
+						</mx:FormItem>
+						
+				
+				
+				</mx:Form>
+				</mx:HBox>
+				</mx:Box>
+				
+				
+				
+				<mx:FormItem label="Color" toolTip="Note: The label can be further styled via a LabelstyleName declaration.">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myColorcheckBox"
+								close="setValue('color', event.target.selectedColor, 'color', 'checkBox')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Text Selected Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myTextSelectedColorcheckBox"
+								close="setValue('textSelectedColor', event.target.selectedColor, 'color', 'checkBox')"/>
+				</mx:FormItem>
+				
+				<mx:FormItem label="Theme Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x009DFF" id="myThemeColorcheckBox"
+								close="setValue('themeColor', event.target.selectedColor, 'color', 'checkBox')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Text Roll Over Color" toolTip="Note: Leave this blank for no rollover">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myTextRollOverColorcheckBox"
+								close="setValue('textRollOverColor', event.target.selectedColor, 'color', 'checkBox')"/>
+				</mx:FormItem>
+				
+					
+				</mx:Form>
+			</mx:Box>
+			<mx:Box label="Sliders">
+				<mx:Form paddingLeft="0" paddingRight="0" paddingTop="0" paddingBottom="0">
+			
+			<mx:FormItem label="Label Offset">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="-50"
+						maximum="50"
+						value="-8"
+						id="myLabelOffsethSlider"
+						
+						snapInterval="1"
+						change="setValue('labelOffset', event.target.value , 'number', 'hSlider');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Thumb Offset">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="-50"
+						maximum="50"
+						value="0"
+						id="myThumbOffsethSlider"
+						
+						snapInterval="1"
+						change="setValue('thumbOffset', event.target.value , 'number', 'hSlider');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Data Tip Offset" toolTip="Note: Also available for toolTips include DataTipPlacement and DataTipstyleName">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="-50"
+						maximum="50"
+						value="16"
+						id="myDataTipOffsethSlider"
+						snapInterval="1"
+						change="setValue('dataTipOffset', event.target.value , 'number', 'hSlider');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Tick Length">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="4"
+						id="myTickLengthhSlider"
+						
+						snapInterval="1"
+						change="setValue('tickLength', event.target.value , 'number', 'hSlider');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Tick Offset">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="-50"
+						maximum="50"
+						value="-6"
+						id="myTickOffsethSlider"
+						
+						snapInterval="1"
+						change="setValue('tickOffset', event.target.value , 'number', 'hSlider');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Tick Thickness">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="1"
+						id="myTickThicknesshSlider"
+						
+						snapInterval="1"
+						change="setValue('tickThickness', event.target.value , 'number', 'hSlider');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Tick Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x6F7777" id="myTickColorhSlider"
+								close="setValue('tickColor', event.target.selectedColor, 'color', 'hSlider')"/>
+				</mx:FormItem>
+			
+			
+			
+			
+			<mx:FormItem label="Show Track Highlight">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBTrackHighlighthSlider" label="true"  labelPlacement="right" 
+								click="mySlider.setStyle('showTrackHighlight', true);
+									   setCSS('showTrackHighlight', 0, 'true', 'hSlider');"
+									   />
+							<mx:RadioButton groupName="SBTrackHighlighthSlider" label="false" labelPlacement="right"  selected="true"  id="myTrackHighlighthSlider" 
+								click="mySlider.setStyle('showTrackHighlight', false); 
+								 setCSS('showTrackHighlight', 0, 'false', 'hSlider');"/>
+						</mx:HBox>
+					</mx:FormItem>
+				
+			
+			
+				<mx:FormItem label="Border Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x919999" id="myBorderColorhSlider"
+								close="setValue('borderColor', event.target.selectedColor, 'color', 'hSlider')"/>
+				</mx:FormItem>
+				
+			
+			<mx:FormItem label="Track Colors">
+					<mx:HBox paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0">
+							<mx:ColorPicker id="track1hSlider" height="23" width="70" selectedColor="0xffffff" 
+								close="mySlider.setStyle('trackColors', [track1hSlider.selectedColor, track2hSlider.selectedColor]);
+								setArrayCSS('trackColors', track1hSlider.selectedColor, track2hSlider.selectedColor, true, 'hSlider')"/>
+							<mx:ColorPicker  id="track2hSlider" height="23" width="70" selectedColor="0xffffff" 
+								close="mySlider.setStyle('trackColors', [track1hSlider.selectedColor, track2hSlider.selectedColor]); 
+								setArrayCSS('trackColors', track1hSlider.selectedColor, track2hSlider.selectedColor, true, 'hSlider')"/>
+					</mx:HBox>	
+				</mx:FormItem>
+			
+			<mx:FormItem label="Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myColorhSlider"
+								close="setValue('color', event.target.selectedColor, 'color', 'hSlider')"/>
+				</mx:FormItem>
+			
+			<mx:FormItem label="Theme Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x009DFF" id="myThemeColorhSlider"
+								close="setValue('themeColor', event.target.selectedColor, 'color', 'hSlider')"/>
+				</mx:FormItem>
+			
+			
+			
+			
+			
+				<mx:Box styleName="conditionalBox" toolTip="Note: This is an array of four colors, the second two being the fill colors on roll over.">
+				<mx:HBox width="100%">
+				<mx:Box width="100%" horizontalAlign="left" paddingLeft="5" paddingTop="5">
+				<mx:Image id="alert4" source="@Embed('assets/alert.png')" />	
+				</mx:Box>
+				
+				<mx:Form styleName="conditionalForm"  >
+				
+					<mx:FormItem label="Fill Alphas">
+					<mx:HBox  horizontalGap="2">
+					<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value="0.06"
+								id="myFillAlpha1hSlider"
+								
+								snapInterval=".01"
+								change="mySlider.setStyle('fillAlphas', [myFillAlpha1hSlider.value, myFillAlpha2hSlider.value, myFillAlpha3hSlider.value, myFillAlpha4hSlider.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1hSlider.value , myFillAlpha2hSlider.value , myFillAlpha3hSlider.value , myFillAlpha4hSlider.value, false, 'hSlider');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".4"
+								id="myFillAlpha2hSlider"
+								
+								snapInterval=".01"
+								change="mySlider.setStyle('fillAlphas', [myFillAlpha1hSlider.value, myFillAlpha2hSlider.value, myFillAlpha3hSlider.value, myFillAlpha4hSlider.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1hSlider.value, myFillAlpha2hSlider.value, myFillAlpha3hSlider.value, myFillAlpha4hSlider.value, false, 'hSlider');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".75"
+								id="myFillAlpha3hSlider"
+								
+								snapInterval=".01"
+								change="mySlider.setStyle('fillAlphas', [myFillAlpha1hSlider.value, myFillAlpha2hSlider.value, myFillAlpha3hSlider.value, myFillAlpha4hSlider.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1hSlider.value, myFillAlpha2hSlider.value, myFillAlpha3hSlider.value, myFillAlpha4hSlider.value, false, 'hSlider');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".65"
+								id="myFillAlpha4hSlider"
+								
+								snapInterval=".01"
+								change="mySlider.setStyle('fillAlphas', [myFillAlpha1hSlider.value, myFillAlpha2hSlider.value, myFillAlpha3hSlider.value, myFillAlpha4hSlider.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1hSlider.value , myFillAlpha2hSlider.value, myFillAlpha3hSlider.value, myFillAlpha4hSlider.value, false, 'hSlider');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							</mx:HBox>
+						</mx:FormItem>
+						<mx:FormItem label="Fill Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="fill1hSlider" height="23" width="35" selectedColor="0xFFFFFF"
+								close="mySlider.setStyle('fillColors', [fill1hSlider.selectedColor, fill2hSlider.selectedColor, fill3hSlider.selectedColor, fill4hSlider.selectedColor]);
+								setArrayFourCSS('fillColors', fill1hSlider.selectedColor, fill2hSlider.selectedColor, fill3hSlider.selectedColor, fill4hSlider.selectedColor, true, 'hSlider');
+								"/>
+								<mx:ColorPicker id="fill2hSlider" height="23" width="35" selectedColor="0xCCCCCC"
+								close="mySlider.setStyle('fillColors', [fill1hSlider.selectedColor, fill2hSlider.selectedColor, fill3hSlider.selectedColor, fill4hSlider.selectedColor]);
+								setArrayFourCSS('fillColors', fill1hSlider.selectedColor, fill2hSlider.selectedColor, fill3hSlider.selectedColor, fill4hSlider.selectedColor, true, 'hSlider');
+								"/>
+								<mx:ColorPicker id="fill3hSlider" height="23" width="35" selectedColor="0xFFFFFF"
+								close="mySlider.setStyle('fillColors', [fill1hSlider.selectedColor, fill2hSlider.selectedColor, fill3hSlider.selectedColor, fill4hSlider.selectedColor]);
+								setArrayFourCSS('fillColors', fill1hSlider.selectedColor, fill2hSlider.selectedColor, fill3hSlider.selectedColor, fill4hSlider.selectedColor, true, 'hSlider');
+								"/>
+								<mx:ColorPicker id="fill4hSlider" height="23" width="35" selectedColor="0xEEEEEE"
+								close="mySlider.setStyle('fillColors', [fill1hSlider.selectedColor, fill2hSlider.selectedColor, fill3hSlider.selectedColor, fill4hSlider.selectedColor]);
+								setArrayFourCSS('fillColors', fill1hSlider.selectedColor, fill2hSlider.selectedColor, fill3hSlider.selectedColor, fill4hSlider.selectedColor, true, 'hSlider');
+								"/>
+							
+							</mx:HBox>
+						</mx:FormItem>
+						
+				
+				
+				</mx:Form>
+				</mx:HBox>
+				</mx:Box>
+				
+			
+					
+				</mx:Form>
+			</mx:Box>
+			</mx:TabNavigator>
+		</mx:Box>
+		<mx:Box width="100%" paddingRight="5" paddingBottom="5" horizontalAlign="right">
+			<mx:LinkButton label="Restore Defaults" click="restoreDefaults()" styleName="undoLink" />
+		</mx:Box>
+	</mx:VBox>
+
+
+<!-- Sandbox -->
+<mx:VBox height="100%" width="100%" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="SANDBOX"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+		<mx:TextInput text="My Text Input" id="myTextInput" />
+		<mx:NumericStepper value="1" id="myNumericStepper" />
+		<mx:ComboBox id="myComboBox">
+							 <mx:dataProvider>
+								<mx:Array>
+									<mx:String>My Option 1</mx:String>
+									<mx:String>My Option 2</mx:String>
+									 <mx:String>My Option 3</mx:String>
+									 <mx:String>My Option 4</mx:String>
+								</mx:Array>
+							</mx:dataProvider>
+		</mx:ComboBox>
+		<mx:CheckBox id="myCheckBox" label="My Check Box" />
+		<mx:RadioButton id="myRadioButton" label="My Radio Button" />
+		<mx:HSlider		id="mySlider"
+						width="100%"
+						thumbCount="1"
+						minimum="0"
+						maximum="100"
+						value="50"
+						labels="['0','100']"
+						tickInterval="20"
+						showTrackHighlight="false"
+						snapInterval="1"
+						liveDragging="true"/>
+				
+				
+		</mx:Box>
+	</mx:VBox>
+
+
+<!-- CSS -->
+<mx:VBox height="100%" width="315" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="CSS"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+		
+			<mx:TextArea id="myCSS" width="100%" height="100%" styleName="cssTextArea"	/>
+		</mx:Box>
+</mx:VBox>
+
+	<mx:Script source="as/formelements.as" />
+	</mx:HBox>
+</mx:VBox>
+
+
+
+
+
+  
+
+
+

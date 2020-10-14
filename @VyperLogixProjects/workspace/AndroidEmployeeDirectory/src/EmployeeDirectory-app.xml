@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<application xmlns="http://ns.adobe.com/air/application/2.5">
+	<id>EmployeeDirectory</id>
+	<versionNumber>1.0.0</versionNumber>
+	<filename>EmployeeDirectory</filename>
+	<name>Employee Directory</name>
+	<supportedProfiles>mobileDevice</supportedProfiles>
+	<initialWindow>
+		<content>EmployeeDirectory.swf</content>
+		<visible>true</visible>
+		<!-- <autoOrients>true</autoOrients> -->
+	</initialWindow>
+	<android>
+	    <manifestAdditions>
+	    <![CDATA[
+	    <manifest android:installLocation="auto">
+	        <uses-permission android:name="android.permission.INTERNET"/>
+	        <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+	        <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+	        <uses-configuration android:reqFiveWayNav="true"/>
+	        <supports-screens android:normalScreens="true"/>
+	        <uses-feature android:required="true" android:name="android.hardware.touchscreen.multitouch"/>
+	        <application android:enabled="true">
+	            <activity android:excludeFromRecents="false">
+	                <intent-filter>
+	                    <action android:name="android.intent.action.MAIN"/>
+	                    <category android:name="android.intent.category.LAUNCHER"/>
+	                </intent-filter>
+	            </activity>
+	            <activity>
+	            </activity>
+	        </application>
+	    </manifest>
+	    ]]>
+	    </manifestAdditions>
+	</android>
+</application>

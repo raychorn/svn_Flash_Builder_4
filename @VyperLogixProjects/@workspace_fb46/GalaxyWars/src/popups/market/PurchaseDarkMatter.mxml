@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   width="100%" height="100%" initialize="titlewindow1_initializeHandler(event)">
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.StringUtils;
+			
+			import controls.Alert.AlertPopUp;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import popups.dialogs.ConfirmationDialog;
+
+			private var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+			
+			[Bindable]
+			private var __tiles__:ArrayCollection = new ArrayCollection();
+			
+			private function volume_value_string_to_number(value:String):Number {
+				var ch:String;
+				var num:Number = 0.0;
+				value = value.replace(',','');
+				var n:int = value.length-1;
+				var last_char:String = value.substr(value.length-1,1);
+				var is_K:Boolean = (last_char.toUpperCase() == 'K');
+				var is_M:Boolean = (last_char.toUpperCase() == 'M');
+				var mult:Number = (is_K) ? 1000 : (is_M) ? 1000000 : (Math.pow(10,n));
+				var __is__:Boolean;
+				var s:String;
+				for (var i:int = 0; i < value.length; i++) {
+					ch = value.substr(i,1);
+					if (StringUtils.isStringNumeric(ch)) {
+						num += Number(ch)*mult;
+						mult = mult / 10;
+						s = value.substr(i+1,n-i);
+						__is__ = StringUtils.has_repeatedChars(s,'0') || !StringUtils.isStringNumeric(s);
+						if (__is__) {
+							break;
+						}
+					}
+				}
+				return num;
+			}
+
+			private function make_purchase(data:*,target:spark.components.Panel):void {
+				var price:String = data.formatter_currency(data.price);
+				var volume:String = data.formatter_volume(data.volume);
+				var popUp:ConfirmationDialog = PopUpManager.createPopUp(this,ConfirmationDialog,true) as ConfirmationDialog;
+				popUp.width = 300;
+				popUp.height = 150;
+				popUp.addEventListener(CloseEvent.CLOSE, 
+					function (event:CloseEvent):void {
+						target.parentDocument.currentState = 'normal';
+						PopUpManager.removePopUp(popUp);
+					}
+				);
+				popUp.title = volume+' '+data.title;
+				popUp.image.source = Images.darkMatterLargeImageClass;
+				popUp.image.width = 50;
+				popUp.image.height = 50;
+				popUp.image.scaleMode = 'stretch';
+				popUp.label.text = 'US '+price;
+				popUp.btnOK.label = 'Buy Now';
+				popUp.btnOK.addEventListener(MouseEvent.CLICK, 
+					function (event:MouseEvent):void {
+						app.log = '(@@@).1 BUY NOW CLICKED, price is '+price+' and volume is '+volume+' !!!';
+						app.log = '(@@@).2 FlexGlobals.topLevelApplication.dark_matter_volume='+FlexGlobals.topLevelApplication.dark_matter_volume+' !!!';
+						var v:Number = volume_value_string_to_number(volume);
+						app.log = '(@@@).3 v='+v+' !!!';
+						FlexGlobals.topLevelApplication.dark_matter_volume = FlexGlobals.topLevelApplication.dark_matter_volume + v;
+						app.log = '(@@@).4 FlexGlobals.topLevelApplication.dark_matter_volume='+FlexGlobals.topLevelApplication.dark_matter_volume+' !!!';
+						target.parentDocument.currentState = 'normal';
+						PopUpManager.removePopUp(popUp);
+					}
+				);
+				popUp.btnCancel.addEventListener(MouseEvent.CLICK, 
+					function (event:MouseEvent):void {
+						target.parentDocument.currentState = 'normal';
+						PopUpManager.removePopUp(popUp);
+					}
+				);
+				
+				PopUpManager.centerPopUp(popUp);
+			}
+			
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void {
+				var item:Object;
+				item = {'title':' Dark Matter','volume':30000,'price':4.99,'formatter_currency':FlexGlobals.topLevelApplication.format_currency_values,'formatter_volume':FlexGlobals.topLevelApplication.format_volume_values,'callback':make_purchase};
+				this.__tiles__.addItem(item);
+				item = {'title':' Dark Matter','volume':90000,'price':(this.__tiles__.getItemAt(this.__tiles__.length-1).price*2)+0.01,'formatter_currency':FlexGlobals.topLevelApplication.format_currency_values,'formatter_volume':FlexGlobals.topLevelApplication.format_volume_values,'callback':make_purchase};
+				this.__tiles__.addItem(item);
+				item = {'title':' Dark Matter','volume':300000,'price':(this.__tiles__.getItemAt(this.__tiles__.length-1).price*2)+0.01,'formatter_currency':FlexGlobals.topLevelApplication.format_currency_values,'formatter_volume':FlexGlobals.topLevelApplication.format_volume_values,'callback':make_purchase};
+				this.__tiles__.addItem(item);
+				item = {'title':' Dark Matter','volume':800000,'price':(this.__tiles__.getItemAt(this.__tiles__.length-1).price*2)+0.01,'formatter_currency':FlexGlobals.topLevelApplication.format_currency_values,'formatter_volume':FlexGlobals.topLevelApplication.format_volume_values,'callback':make_purchase};
+				this.__tiles__.addItem(item);
+				item = {'title':' Dark Matter','volume':2000000,'price':(this.__tiles__.getItemAt(this.__tiles__.length-1).price*2)+0.01,'formatter_currency':FlexGlobals.topLevelApplication.format_currency_values,'formatter_volume':FlexGlobals.topLevelApplication.format_volume_values,'callback':make_purchase};
+				this.__tiles__.addItem(item);
+				item = {'title':' Dark Matter','volume':5000000,'price':(this.__tiles__.getItemAt(this.__tiles__.length-1).price*2)+0.01,'formatter_currency':FlexGlobals.topLevelApplication.format_currency_values,'formatter_volume':FlexGlobals.topLevelApplication.format_volume_values,'callback':make_purchase};
+				this.__tiles__.addItem(item);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:List id="active_build_items" width="100%" height="100%" labelField="info" dataProvider="{this.__tiles__}">
+			<s:layout>
+				<s:TileLayout verticalAlign="top" horizontalAlign="left" requestedColumnCount="3" requestedRowCount="3" verticalGap="10" horizontalGap="10" paddingTop="10" paddingLeft="10"/>
+			</s:layout>
+			<s:itemRenderer>
+				<fx:Component>
+					<s:ItemRenderer>
+						<fx:Script>
+							<![CDATA[
+								//import com.DebuggerUtils;
+								
+								//import controls.Alert.AlertPopUp;
+								
+								import mx.events.FlexEvent;
+								
+								protected function panel1_clickHandler(event:MouseEvent):void {
+									var panel:Panel = event.currentTarget as Panel;
+									if (data.callback is Function) {
+										try {
+											data.callback(data,panel);
+										} catch (err:Error) {
+											//AlertPopUp.surpriseNoOkay('Cannot make a purchase at this time due to some kind of system malfunction...','WARNING.Market.1');
+										}
+									} else {
+										//AlertPopUp.surpriseNoOkay('Cannot make a purchase at this time due to some kind of system malfunction...','WARNING.Market.2');
+									}
+								}
+								
+							]]>
+						</fx:Script>
+						<s:states>
+							<mx:State name="normal" />
+							<mx:State name="hovered" />
+							<mx:State name="selected" />
+						</s:states>
+						<s:Rect left="0" right="0" top="0" bottom="0">
+							<s:stroke>
+								<mx:SolidColorStroke color="0xCCCCCC" joints="round" weight="2"/>
+							</s:stroke>
+							<s:fill>
+								<mx:SolidColor color="0x999999" alpha="0" alpha.hovered="0.2" alpha.selected="0.6" />
+							</s:fill>
+						</s:Rect>
+						<s:Panel title="{data.formatter_volume(data.volume)} {data.title}" width="200" height="80" styleName.normal="DarkMatterMarketItemPanel" styleName.selected="DarkMatterMarketItemPanelHovered" styleName.hovered="DarkMatterMarketItemPanelHovered" click="panel1_clickHandler(event)">
+							<s:VGroup width="100%" height="100%">
+								<s:HGroup width="100%" paddingTop="10" paddingLeft="10">
+									<s:Label text="US {data.formatter_currency(data.price)}" width="100%" styleName.normal="DarkMatterMarketItemPriceLabel" styleName.selected="DarkMatterMarketItemPriceLabelHovered" styleName.hovered="DarkMatterMarketItemPriceLabelHovered"/>
+								</s:HGroup>
+							</s:VGroup>
+						</s:Panel>
+					</s:ItemRenderer>
+				</fx:Component>
+			</s:itemRenderer>
+		</s:List>
+	</s:VGroup>
+</s:TitleWindow>

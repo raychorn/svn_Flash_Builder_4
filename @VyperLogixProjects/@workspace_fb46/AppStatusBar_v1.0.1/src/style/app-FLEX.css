@@ -1,0 +1,46 @@
+﻿Application
+{
+	backgroundGradientColors: #000000, #532e01;
+	themeColor: #ff9900;
+	/* also give the background color of the buttonBar */
+	backgroundColor: #532e01;
+}
+
+LogComboBox
+{
+	color: #000000;
+}
+
+Button
+{
+	color: #000000;
+}
+
+.titlePanel
+{
+	color: #CCCCCC;
+}
+
+.statusBar
+{
+	verticalGap: 0;
+	font-size: 9;
+}
+
+.mainBar
+{
+	color: #CCCCCC;
+	backgroundColor: #000000;
+	paddingTop: 2;
+	paddingLeft: 2;
+	paddingRight: 2;
+	paddingBottom: 2;
+	verticalAlign: middle;
+}
+
+.buttonBar
+{
+	horizontalAlign: right;
+	paddingRight: 5;
+	horizontalGap: 2;
+}

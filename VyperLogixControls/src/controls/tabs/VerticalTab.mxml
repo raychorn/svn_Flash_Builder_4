@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   height="100%" 
+		   horizontalScrollPolicy="off" verticalScrollPolicy="off" 
+		   creationComplete="canvas1_creationCompleteHandler(event)">
+	<mx:states>
+		<s:State name="inactive"/>
+		<s:State name="active"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import controls.tabs.events.TabClickedEvent;
+			
+			import mx.events.FlexEvent;
+			
+			import spark.utils.TextFlowUtil;
+
+			[Embed(source="assets/tabs/vertical/tab-left-vertical.gif")]
+			[Bindable]
+			public var verticalInactiveTabCls:Class;
+			
+			[Embed(source="assets/tabs/vertical/tab-left-active-active.gif")]
+			[Bindable]
+			public var verticalActiveTabCls:Class;
+			
+			private var markup:String = '<TextFlow blockProgression="rl" fontFamily="NeoSansIntelLight" fontSize="18" paddingBottom="2" paddingLeft="5" paddingRight="2" paddingTop="10" whiteSpaceCollapse="preserve" xmlns="http://ns.adobe.com/textLayout/2008"><p><span>(+++)</span></p></TextFlow>';
+			
+			private var __label_text:String;
+			
+			public function get label_text():String {
+				return this.__label_text;
+			}
+			
+			public override function set currentState(stateName:String):void {
+				super.currentState = stateName;
+			}
+			
+			public function set label_text(label_text:String):void {
+				if (this.__label_text != label_text) {
+					this.__label_text = label_text;
+					this.markup = this.markup.replace('(+++)',label_text);
+				}
+			}
+
+			protected function label_creationCompleteHandler(event:FlexEvent):void {
+				var widget:* = event.currentTarget;
+				widget.textFlow = TextFlowUtil.importFromString(this.markup);
+			}
+
+			protected function image_creationCompleteHandler(event:FlexEvent):void {
+			}
+
+
+			protected function canvas1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:* = this;
+				this.buttonMode = this.useHandCursor = true;
+				this.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+					//_this.currentState = (_this.currentState == 'active') ? 'inactive' : 'active';
+					_this.dispatchEvent(new TabClickedEvent(TabClickedEvent.TYPE_TAB_CLICKED,_this.currentState));
+				});
+			}
+
+		]]>
+	</fx:Script>
+	<mx:VBox height="100%" horizontalAlign="center" verticalAlign="top">
+		<mx:Image id="is_active" includeIn="active" source="{this.verticalActiveTabCls}" creationComplete="image_creationCompleteHandler(event)"/>
+		<mx:Image id="is_inactive" includeIn="inactive" source="{this.verticalInactiveTabCls}" creationComplete="image_creationCompleteHandler(event)"/>
+		<mx:HBox horizontalAlign="center">
+			<s:TextArea id="tab_label" styleName="tab_label" width="20" editable="false" selectable="false" creationComplete="label_creationCompleteHandler(event)"/>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Canvas>

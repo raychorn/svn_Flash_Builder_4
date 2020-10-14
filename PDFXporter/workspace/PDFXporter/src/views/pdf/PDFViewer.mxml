@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				layout="absolute" width="100%" height="100%" 
+				showCloseButton="true" 
+				xmlns:controls="controls.*" 
+				xmlns:pdf="views.pdf.*" height.details="{this.parentApplication.height - this.parentApplication.splashPopUp.menuBar.height - 20}">
+	<mx:states>
+		<s:State name="State1"/>
+		<s:State name="details"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ArrayCollectionUtils;
+			
+			import controls.Alert.AlertPopUp;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.ListEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import utils.APIHelper;
+			import utils.PDFHelper;
+			
+			[Bindable]
+			private var _dataProvider:ArrayCollection;
+			
+			private var page_num:int = 1;
+
+			private function parse_pages_one_at_a_time():void {
+				var _this:PDFViewer = this;
+				var anItem:Object;
+				trace(this.className+'.parse_pages_one_at_a_time().1 --> this._dataProvider.length='+this._dataProvider.length);
+				for (var i:String in this._dataProvider) {
+					anItem = this.data_grid.dataProvider.source[i];
+					trace(this.className+'.parse_pages_one_at_a_time().2 --> anItem.parsed='+anItem.parsed);
+					if (anItem.parsed == false) {
+						trace(this.className+'.parse_pages_one_at_a_time().3 --> ('+i+') id='+anItem.id);
+						APIHelper.post(APIHelper.pageparser_endpoint,{'id':anItem.id},
+							function (event:ResultEvent,response:*):void {
+								anItem.items_cnt = response.items.length;
+								anItem.items = ArrayCollectionUtils.clone(new ArrayCollection(response.items));
+								anItem.parsed = true;
+								_this.data_grid.dataProvider = _this.data_grid.dataProvider;
+								trace(_this.className+'.parse_pages_one_at_a_time().4 --> ('+i+') ('+anItem.id+') anItem.items_cnt='+anItem.items_cnt);
+								//_this.data_grid.invalidateDisplayList(); // .dataProvider = _this._dataProvider;
+								_this.callLater(_this.parse_pages_one_at_a_time);
+								trace(_this.className+'.parse_pages_one_at_a_time().5 !!!');
+							}
+						);
+						break;
+					}
+				}
+			}
+			
+			public function get dataProvider():ArrayCollection {
+				return this._dataProvider;
+			}
+			
+			public function set dataProvider(dataProvider:ArrayCollection):void {
+				if (dataProvider != this._dataProvider) {
+					this._dataProvider = dataProvider;
+					this.data_grid.dataProvider = this._dataProvider;
+					this.callLater(this.parse_pages_one_at_a_time);
+				}
+			}
+
+			protected function data_grid_itemClickHandler(event:ListEvent):void {
+				var dg:DataGrid = DataGrid(event.currentTarget);
+				var anItem:Object = dg.dataProvider.source[event.rowIndex];
+				var statements:Object = PDFHelper.statements;
+				var items:ArrayCollection = anItem.items;
+				this.currentState = 'details';
+				trace(this.className+'.data_grid_itemClickHandler().1 --> this.currentState='+this.currentState);
+				this.dataEditor.dataProvider = items.source;
+			}
+
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%">
+		<controls:CheckBoxIcons id="cbIcons" width="0" height="0"/>
+		<mx:HBox width="100%">
+			<mx:DataGrid id="data_grid" width="100%" height="200" itemClick="data_grid_itemClickHandler(event)">
+				<mx:columns>
+					<mx:DataGridColumn headerText="Page #" dataField="page_num" width="200">
+						<mx:itemRenderer>
+							<fx:Component>
+								<mx:HBox horizontalAlign="center">
+									<mx:Label text="{data.page_num}"/>
+								</mx:HBox>
+							</fx:Component>
+						</mx:itemRenderer>
+					</mx:DataGridColumn>
+					<mx:DataGridColumn headerText="Items" dataField="items_cnt" width="200">
+						<mx:itemRenderer>
+							<fx:Component>
+								<mx:HBox horizontalAlign="center">
+									<mx:Label text="{data.items_cnt}"/>
+								</mx:HBox>
+							</fx:Component>
+						</mx:itemRenderer>
+					</mx:DataGridColumn>
+					<mx:DataGridColumn headerText="Scanned" dataField="scanned" width="200">
+						<mx:itemRenderer>
+							<fx:Component>
+								<mx:HBox horizontalAlign="center">
+									<mx:CheckBox enabled="false" selected="{data.scanned}" upIcon="{this.cbIcons.upIconCls}" overIcon="{this.cbIcons.overIconCls}" downIcon="{this.cbIcons.downIconCls}" selectedUpIcon="{this.cbIcons.upIconCls}" selectedOverIcon="{this.cbIcons.overIconCls}" selectedDownIcon="{this.cbIcons.downIconCls}"/>
+								</mx:HBox>
+							</fx:Component>
+						</mx:itemRenderer>
+					</mx:DataGridColumn>
+					<mx:DataGridColumn headerText="Parsed" dataField="parsed" width="200">
+						<mx:itemRenderer>
+							<fx:Component>
+								<mx:HBox horizontalAlign="center">
+									<mx:CheckBox enabled="false" selected="{data.parsed}" upIcon="{this.cbIcons.upIconCls}" overIcon="{this.cbIcons.overIconCls}" downIcon="{this.cbIcons.downIconCls}" selectedUpIcon="{this.cbIcons.upIconCls}" selectedOverIcon="{this.cbIcons.overIconCls}" selectedDownIcon="{this.cbIcons.downIconCls}"/>
+								</mx:HBox>
+							</fx:Component>
+						</mx:itemRenderer>
+					</mx:DataGridColumn>
+					<mx:DataGridColumn headerText="Processed" dataField="processed" width="200">
+						<mx:itemRenderer>
+							<fx:Component>
+								<mx:HBox horizontalAlign="center">
+									<mx:CheckBox enabled="false" selected="{data.processed}" upIcon="{this.cbIcons.upIconCls}" overIcon="{this.cbIcons.overIconCls}" downIcon="{this.cbIcons.downIconCls}" selectedUpIcon="{this.cbIcons.upIconCls}" selectedOverIcon="{this.cbIcons.overIconCls}" selectedDownIcon="{this.cbIcons.downIconCls}"/>
+								</mx:HBox>
+							</fx:Component>
+						</mx:itemRenderer>
+					</mx:DataGridColumn>
+				</mx:columns>
+			</mx:DataGrid>
+		</mx:HBox>
+		<pdf:PDFDataEditor id="dataEditor" width="100%" height="100%" visible.details="true" includeInLayout.details="true" visible.State1="false" includeInLayout.State1="false"/>
+	</mx:VBox>
+</mx:TitleWindow>

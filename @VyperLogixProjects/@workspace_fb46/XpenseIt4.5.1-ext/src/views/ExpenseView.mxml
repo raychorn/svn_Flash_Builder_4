@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" xmlns:dao="dao.*" xmlns:utils="utils.*" 
+		xmlns:components="components.*" 
+		title="{data.id>0? 'Edit Expense ':'New Expense'}">
+	
+	<fx:Script>
+		<![CDATA[
+			import dao.Expense;
+			
+			import events.ReportEvent;
+			
+			import flash.sensors.Geolocation;
+			
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			[Bindable]
+			protected var busy:Boolean = false;
+			
+			protected var locationDirty:Boolean = false;
+			
+			protected function save_clickHandler():void
+			{
+				data.date = new Date(Date.parse(date.text));
+				if (locationDirty)
+				{
+					var token:AsyncToken = geoUtil.geoCodeAddress(location.text);
+					token.addResponder(new AsyncResponder(
+						function(event:ResultEvent, token:AsyncToken):void
+						{
+							try
+							{
+								data.latitude = event.result.GeocodeResponse.result.geometry.location.lat;
+								data.longitude = event.result.GeocodeResponse.result.geometry.location.lng;
+							} 
+							catch(error:Error) 
+							{
+								// fail silently
+								trace(error.message);
+							}
+							saveExpense();
+						},
+						function (event:FaultEvent, token:AsyncToken):void
+						{
+							// fail silently
+						}));
+				}
+				else
+				{
+					saveExpense();
+				}
+			}
+			
+			protected function saveExpense():void
+			{
+				data.id = srv.saveExpense(data as Expense);
+				systemManager.dispatchEvent(new ReportEvent(ReportEvent.EXPENSE_SAVED, data));
+			}
+			
+			protected function geoUtil_locationUpdateHandler(event:Event):void
+			{
+				busy = false;
+				locationDirty = false;
+				data.location=geoUtil.location;
+				data.longitude=geoUtil.longitude;
+				data.latitude=geoUtil.latitude;
+				updateCount.text="count:"+geoUtil.updateCount;
+			}
+			
+			protected function gpsButton_clickHandler():void
+			{
+				busy = true;
+				geoUtil.getLocation();
+			}
+			
+		]]>
+	</fx:Script>
+		
+	<s:states>
+		<s:State name="portrait"/>
+		<s:State name="landscape"/>
+	</s:states>
+	
+	<fx:Declarations>
+		<dao:ExpenseReportDAO id="srv"/>
+		<s:DateTimeFormatter id="dtf" dateTimePattern="yyyy/MM/dd"/>
+		<s:CurrencyFormatter id="cf" useCurrencySymbol="true"/>
+		<utils:CameraUtil id="cameraUtil" fileReady="data.receiptURL=event.file.url"/>
+		<utils:GeolocationUtil id="geoUtil" locationUpdate="geoUtil_locationUpdateHandler(event)"/>
+		<components:CategoryPopUpList id="popup" x.portrait="450" y.portrait="105" x.landscape="530" y.landscape="105" 
+			close="data.category=event.data"/>
+	</fx:Declarations>
+
+	<s:navigationContent>
+		<s:Button skinClass="skins.BackButtonSkin" click="navigator.popView()"/>
+	</s:navigationContent>
+	
+	<s:actionContent>
+		<s:Button skinClass="skins.SaveButtonSkin" click="save_clickHandler()"/>
+	</s:actionContent>
+	
+	<s:VGroup paddingTop="20" paddingLeft="20" paddingBottom="20" paddingRight="20" width="100%" height="100%">
+		
+		<s:HGroup verticalAlign="middle">
+			<s:Label text="Category:" width="90"/>
+			<s:TextInput id="cat" text="@{data.category}" width="250" click="popup.open(this,true)" skinClass="skins.CategoryTextInputSkin" editable="false"/>
+		</s:HGroup>
+		
+		<s:HGroup verticalAlign="middle">
+			<s:Label text="Description:" width="90"/>
+			<s:TextInput id="description" text="@{data.description}" width="250"/>
+		</s:HGroup>
+
+		<s:HGroup verticalAlign="middle">
+			<s:Label text="Date:" width="90"/>
+			<s:TextInput id="date" text="{dtf.format(data.date)}" width="250"/>
+		</s:HGroup>
+		
+		<s:HGroup verticalAlign="middle">
+			<s:Label text="Location:" width="90"/>
+			<s:TextInput id="location" text="@{data.location}" width="250" change="locationDirty=true"/>
+			<s:Button click="gpsButton_clickHandler()" skinClass="skins.LocationButtonSkin" visible="{Geolocation.isSupported}"/>
+		</s:HGroup>
+		<!-- for debugging purpose here -->
+		<s:Label text="lng:{data.longitude} lat:{data.latitude}"/>
+		<s:Label id="updateCount"/>
+
+		
+		<s:HGroup verticalAlign="middle">
+			<s:Label text="Amount:" width="90"/>
+			<s:TextInput id="amount" text="@{data.amount}" width="250"/>
+		</s:HGroup>
+		
+		<s:Spacer height="10"/>
+		
+		<s:BorderContainer id="frame" width="100%" height="100%" backgroundColor="#F0F0F0">
+			<components:ImageViewer id="receipt" source="@{data.receiptURL}" ready="receipt.width=frame.width;receipt.height=frame.height;"/>
+			<s:Button skinClass="skins.CameraButtonSkin" verticalCenter="0" horizontalCenter="0" click="cameraUtil.takePicture()"/>
+		</s:BorderContainer>
+	</s:VGroup>
+	
+	<s:BusyIndicator visible="{busy}" verticalCenter="0" horizontalCenter="0"/>
+	
+</s:View>

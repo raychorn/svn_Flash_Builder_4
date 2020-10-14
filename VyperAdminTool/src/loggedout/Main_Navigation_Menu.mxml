@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" backgroundAlpha="0" verticalScrollPolicy="off" horizontalScrollPolicy="off"
+	layout="absolute" creationComplete="init()" alpha="1.0">
+	<mx:Script>
+		<![CDATA[
+			import controller.AppController;
+			
+			import flash.accessibility.*;
+			import flash.system.Capabilities;
+			import flash.utils.setInterval;
+			
+			import libs.vo.GlobalsVO;
+			
+			import mx.core.FlexGlobals;
+			
+			public function init():void {
+				// Clear Cygwin output window
+				for(var i:int = 0; i< 200; ++i) {
+					trace();
+				}
+				
+				
+				//trace("hasCapabilities: "+Capabilities.hasAccessibility);
+				
+				var applicationController:AppController = new AppController();
+				
+				// Set Application layout reference
+				GlobalsVO.setGlobal(GlobalsVO.APPLICATION,Layout);
+				
+				// Set Application Root Reference
+				GlobalsVO.setGlobal("_APPLICATION",FlexGlobals.topLevelApplication);
+				
+				// Alias for application reference
+				var app:Object = FlexGlobals.topLevelApplication;
+				
+				// Test application override
+				var overRide:String = new String();
+				
+				// Needed to test the external parameters locally
+				if(String(app.url).toLowerCase().indexOf("file://") > -1) {
+					
+					// Non-Compressed Datafile
+					//overRide = "?diag=false&img=http://127.0.0.1/gn/images/&cb=true&gn_category=7&css=http://127.0.0.1/gn/css/globalnav-flex.css&d=http://127.0.0.1/LoggedOutState_Header-json.txt&p=http://127.0.0.1/globalnavprop.txt";
+					
+					// Compressed Datafile
+					//overRide = "?img=http://127.0.0.1/gn/images/&diag=true&cb=true&gn_category=1&css=http://127.0.0.1/gn/css/globalnav-flex.css&d=http://127.0.0.1/LoggedOutState_Header-compressed-json.txt&p=http://127.0.0.1/globalnavprop.txt";
+					//overRide = "?img=http://127.0.0.1/gn/images/&diag=true&cb=true&gn_category=1&css=http://127.0.0.1/gn/css/globalnav-flex.css&d=http://127.0.0.1/LoggedOutState_Header-compressed-json.txt";
+					
+					// no css
+					overRide = "?CITY=Huntington%20Beach&STATE=CA&ZIPCODE=92647&gnversioncookie=2009NOV25&cartStatus=1&gLinksDisplay=1&zipDisplay=1&logoDisplay=1&lobDisplay=1&searchDisplay=1&loggedInURL=/b2c/myaccount/signin.jsp&gnversion=null&CITY=Huntington%20Beach&STATE=CA&ZIPCODE=92647&p=http://127.0.0.1/globalnavprop.txt&css=http://127.0.0.1/gn/css/globalnav-flex.css&diag=true&gn_category=1&d=http://127.0.0.1/LoggedOutState_Header-compressed-json.txt";
+				}
+				
+				// Get new application controller and initialize
+				applicationController.init(overRide);
+			}
+		]]>
+	</mx:Script>
+	<mx:Canvas right="0" left="0" bottom="0" top="0" id="Layout">
+	</mx:Canvas>
+</mx:Application>

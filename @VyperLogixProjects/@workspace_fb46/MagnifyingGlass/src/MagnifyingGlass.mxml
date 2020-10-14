@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   addedToStage="init()"
+					   minWidth="700" minHeight="500" width="1000" height="800">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import flash.display.Bitmap;
+			import flash.display.BitmapData;
+			import flash.display.BitmapDataChannel;
+			import flash.display.GradientType;
+			import flash.display.Loader;
+			import flash.display.Shape;
+			import flash.events.MouseEvent;
+			import flash.filters.DisplacementMapFilter;
+			import flash.filters.DisplacementMapFilterMode;
+			import flash.geom.Matrix;
+			import flash.geom.Point;
+			import flash.net.URLRequest;
+			
+			private var map:BitmapData ;
+			private var loader:Loader = new Loader();
+			
+			[Bindable]
+			private var __value__:Number = 35;
+
+			private function init():void {
+				
+				// Create the gradient circles that will together form the 
+				// displacement map image
+				var radius:uint = 50;
+				
+				var type:String = GradientType.LINEAR;
+				var redColors:Array = [0xFF0000, 0x000000];
+				var blueColors:Array = [0x0000FF, 0x000000];
+				var alphas:Array = [1, 1];
+				var ratios:Array = [0, 255];
+				var xMatrix:Matrix = new Matrix();
+				xMatrix.createGradientBox(radius * 2, radius * 2);
+				var yMatrix:Matrix = new Matrix();
+				yMatrix.createGradientBox(radius * 2, radius * 2, Math.PI / 2);
+				
+				var xCircle:Shape = new Shape();
+				xCircle.graphics.lineStyle(0, 0, 0);
+				xCircle.graphics.beginGradientFill(type, redColors, alphas, ratios, xMatrix);
+				xCircle.graphics.drawCircle(radius, radius, radius);
+				
+				var yCircle:Shape = new Shape();
+				yCircle.graphics.lineStyle(0, 0, 0);
+				yCircle.graphics.beginGradientFill(type, blueColors, alphas, ratios, yMatrix);
+				yCircle.graphics.drawCircle(radius, radius, radius);
+				
+				// Position the circles at the bottom of the screen, for reference.
+				ui.addChild(xCircle);
+				xCircle.y = stage.stageHeight - xCircle.height;
+				ui.addChild(yCircle);
+				yCircle.y = stage.stageHeight - yCircle.height;
+				yCircle.x = 200;
+				
+				// Load an image onto the Stage.
+				
+				var url1:URLRequest = new URLRequest("http://3.bp.blogspot.com/_Hrs6V0tSaZg/S9kwaLeTVOI/AAAAAAAAAR4/Fb2XbqV76IU/S226/ffffffffffff.jpg");
+				loader.addEventListener(MouseEvent.MOUSE_MOVE, moveMagnifier);
+				
+				loader.load(url1);
+				ui.addChild(loader);
+				
+				// Create the map image by combining the two gradient circles.
+				map = new BitmapData(xCircle.width, xCircle.height, false, 0x7F7F7F);
+				map.draw(xCircle);
+				var yMap:BitmapData = new BitmapData(yCircle.width, yCircle.height, false, 0x7F7F7F);
+				yMap.draw(yCircle);
+				map.copyChannel(yMap, yMap.rect, new Point(0, 0), BitmapDataChannel.BLUE, BitmapDataChannel.BLUE);
+				yMap.dispose();
+				
+				// Display the map image on the Stage, for reference.
+				var mapBitmap:Bitmap = new Bitmap(map);
+				//ui.addChild(mapBitmap);
+				mapBitmap.x = 400;
+				mapBitmap.y = stage.stageHeight - mapBitmap.height;	
+			}
+
+			// This function creates the displacement map filter at the mouse location.
+			public function magnify():void {
+				// Position the filter.
+				var filterX:Number = (loader.mouseX) - (map.width / 2);
+				var filterY:Number = (loader.mouseY) - (map.height / 2);
+				var pt:Point = new Point(filterX, filterY);
+				var xyFilter:DisplacementMapFilter = new DisplacementMapFilter();
+				xyFilter.mapBitmap = map;
+				xyFilter.mapPoint = pt;
+				// The red in the map image will control x displacement.
+				xyFilter.componentX = BitmapDataChannel.RED;
+				// The blue in the map image will control y displacement.
+				xyFilter.componentY = BitmapDataChannel.BLUE;
+				xyFilter.scaleX = this.__value__;
+				xyFilter.scaleY = this.__value__;
+				xyFilter.mode = DisplacementMapFilterMode.IGNORE;
+				loader.filters = [xyFilter];
+			}
+			
+			// This function is called when the mouse moves. If the mouse is
+			// over the loaded image, it applies the filter.
+			public function moveMagnifier(event:MouseEvent):void {
+				if (loader.hitTestPoint(loader.mouseX, loader.mouseY)) {
+					magnify();
+				}
+			}
+			
+			protected function slider1_changeHandler(event:Event):void {
+				//this.lbl.text = this.slider1.value;
+				this.__value__ = this.slider1.value;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<mx:UIComponent id="ui" width="100%" height="250"/>
+		<s:VGroup width="100%" horizontalAlign="left">
+			<s:HGroup paddingLeft="10">
+				<s:Label id="lbl" text="Scaler Value: {this.__value__}"/>
+			</s:HGroup>
+			<s:HGroup paddingLeft="10">
+				<s:HSlider id="slider1" minimum="5" maximum="100" value="35" stepSize="1"
+						   snapInterval="1" liveDragging="true" change="slider1_changeHandler(event)" />
+			</s:HGroup>
+		</s:VGroup>
+	</s:VGroup>
+</s:WindowedApplication>

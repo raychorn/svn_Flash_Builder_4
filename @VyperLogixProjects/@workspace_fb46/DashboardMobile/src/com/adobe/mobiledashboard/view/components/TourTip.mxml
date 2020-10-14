@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group width="360"
+		 height="88"
+		 click="closeButton_clickHandler(event)"
+		 xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Metadata>
+		[Event (name="close", type="mx.events.CloseEvent")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.CloseEvent;
+
+
+			[Bindable]
+			public var message:String="";
+
+			[Bindable]
+			public var showArrow:Boolean=true;
+
+			protected function closeButton_clickHandler(event:MouseEvent):void
+			{
+				dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+			}
+
+
+			protected function hideButton_clickHandler(event:MouseEvent):void
+			{
+				dispatchEvent(new Event("hideAll"));
+
+			}
+		]]>
+	</fx:Script>
+	<s:Rect left="10"
+			right="0"
+			top="0"
+			bottom="0"
+			radiusX="5"
+			radiusY="5">
+		<s:fill>
+			<s:SolidColor color="0x999999"/>
+		</s:fill>
+	</s:Rect>
+	<s:Path verticalCenter="0"
+			data="M 0 15 L 15 0 L 15 30 Z"
+			visible="{showArrow}">
+		<s:fill>
+			<s:SolidColor color="0x999999"/>
+		</s:fill>
+	</s:Path>
+	<s:Button id="closeButton"
+			  width="25"
+			  height="25"
+			  right="7"
+			  verticalCenter="0"
+			  skinClass="com.adobe.dashboard.view.skins.CloseButtonSkin"/>
+
+	<s:Label left="21"
+			 top="15"
+			 color="#656565"
+			 fontSize="16"
+			 text="NAVIGATION TIP:"/>
+
+	<s:Label left="21"
+			 top="40"
+			 color="#262626"
+			 fontSize="22"
+			 text="{message}"/>
+</s:Group>

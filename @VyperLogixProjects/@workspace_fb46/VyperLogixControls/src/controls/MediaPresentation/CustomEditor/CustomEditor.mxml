@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  width="100%" height="100%" 
+		  currentState="closed" 
+		  creationComplete="group1_creationCompleteHandler(event)" xmlns:mx="library://ns.adobe.com/flex/mx">
+	<s:states>
+		<mx:State name="open"/>
+		<mx:State name="closed"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="itemUpdate", type="controls.MediaPresentation.CustomEditor.events.ItemUpdateEvent")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			import spark.events.TextOperationEvent;
+			
+			import controls.MediaPresentation.CustomEditor.events.ItemUpdateEvent;
+			[Bindable]
+			private var __showing_editor__:Boolean = false;
+			
+			private var __dataProvider__:*;
+			
+			[Bindable]
+			private var __itemName__:String;
+			
+			[Bindable]
+			private var __itemPlay__:String;
+			
+			[Bindable]
+			private var __itemSource__:String;
+			
+			[Bindable]
+			private var __itemDelay__:int;
+			
+			private var __matrix__:Object = {
+				'itemName':'name',
+				'itemDelay':'delay',
+				'itemPlay':'play',
+				'itemSource':'source'
+			};
+
+			public function get showing_editor():Boolean {
+				return this.__showing_editor__;
+			}
+			
+			public function set showing_editor(showing_editor:Boolean):void {
+				if (this.__showing_editor__ != showing_editor) {
+					this.__showing_editor__ = showing_editor;
+				}
+			}
+			
+			public function get dataProvider():* {
+				return this.__dataProvider__;
+			}
+			
+			public function set dataProvider(dataProvider:*):void {
+				if (this.__dataProvider__ != dataProvider) {
+					this.__dataProvider__ = dataProvider;
+					for (var i:String in this.__matrix__) {
+						this[i] = dataProvider[this.__matrix__[i]];
+					}
+				}
+			}
+			
+			private function auto_update():void {
+				for (var i:String in this.__matrix__) {
+					dataProvider[this.__matrix__[i]] = this[i];
+				}
+				this.dispatchEvent(new ItemUpdateEvent(ItemUpdateEvent.TYPE_ITEM_UPDATE, this.dataProvider));
+			}
+			
+			public function get itemName():String {
+				return this.__itemName__;
+			}
+			
+			public function set itemName(name:String):void {
+				if (this.__itemName__ != name) {
+					this.__itemName__ = name;
+				}
+			}
+			
+			public function get itemPlay():String {
+				return this.__itemPlay__;
+			}
+			
+			public function set itemPlay(mp3_or_mp4:String):void {
+				if (this.__itemPlay__ != mp3_or_mp4) {
+					this.__itemPlay__ = mp3_or_mp4;
+				}
+			}
+			
+			public function get itemSource():String {
+				return this.__itemSource__;
+			}
+			
+			public function set itemSource(image_source:String):void {
+				if (this.__itemSource__ != image_source) {
+					this.__itemSource__ = image_source;
+				}
+			}
+			
+			public function get itemDelay():int {
+				return this.__itemDelay__;
+			}
+			
+			public function set itemDelay(delay:int):void {
+				if (this.__itemDelay__ != delay) {
+					this.__itemDelay__ = delay;
+				}
+			}
+			
+			protected function btnOpen_clickHandler(event:MouseEvent):void {
+				this.__showing_editor__ = !this.__showing_editor__;
+				this.currentState = ((this.__showing_editor__) ? 'open' : 'closed');
+			}
+			
+			protected function btnClose_clickHandler(event:MouseEvent):void {
+				this.__showing_editor__ = !this.__showing_editor__;
+				this.currentState = ((this.__showing_editor__) ? 'open' : 'closed');
+			}
+			
+			protected function name_of_item_changeHandler(event:TextOperationEvent):void {
+				var value:String = TextInput(event.currentTarget).text;
+				if (value is String) {
+					this.itemName = value;
+					this.auto_update();
+				}
+			}
+			
+			protected function delay_changeHandler(event:TextOperationEvent):void {
+				var value:int = int(TextInput(event.currentTarget).text);
+				if (value is int) {
+					this.itemDelay = value;
+					this.auto_update();
+				}
+			}
+			
+			protected function play_changeHandler(event:TextOperationEvent):void {
+				var value:String = TextInput(event.currentTarget).text;
+				if (value is String) {
+					this.itemPlay = value;
+					this.auto_update();
+				}
+			}
+			
+			protected function source_changeHandler(event:TextOperationEvent):void {
+				var value:String = TextInput(event.currentTarget).text;
+				if (value is String) {
+					this.itemSource = value;
+					this.auto_update();
+				}
+			}
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void {
+//				var gr:Graphics = this.graphics;
+//				gr.clear();
+//				gr.lineStyle(1,0x000000,1.0);
+//				gr.beginFill(0xffffff,0.5);
+//				gr.drawRect(0,0,this.width,this.height);
+//				gr.endFill();
+			}
+			
+			protected function btnFileExplorer_clickHandler(event:MouseEvent):void {
+				var btn:Button = event.currentTarget as Button;
+				this.parentApplication.popUpHelpWindow(this,10,btn.y - 10,this.width - 10,this.height - 10,
+					'An Interactive File Exporer would allow this App to become far more useful by allowing complete Multimedia Presentations to be created entirely on an Android device like the Amazon Kindle Fire.\n\nAn Interactive File Exporer allows the user to cruise through the file system looking for file names rather than having to enter the file names by typing them in with the virtual keyboard.\n\nUse of an Interactive File Exporer could make the process of creating Multimedia Presentations faster and more efficient because in this use-case the user would NOT have to edit the file offline using a Windows, Mac or Linux computer followed by using the USB Cable to place the XML file on the Android Device like an Amazon Kindle.\n\n'
+				);
+//				var window:TitleWindow = PopUpManager.createPopUp(this,TitleWindow,true) as TitleWindow;
+//				window.x = 10;
+//				window.y = btn.y - 10;
+//				window.width = this.width - 10;
+//				window.height = this.height - 10;
+//				window.title = '(Touch this window to dismiss...)';
+//				window.addEventListener(FlexEvent.CREATION_COMPLETE, 
+//					function (event:FlexEvent):void {
+//						var ta:TextArea = new TextArea();
+//						ta.x = 0;
+//						ta.y = 0;
+//						ta.editable = false;
+//						ta.percentWidth = 100;
+//						ta.percentHeight = 100;
+//						ta.text = 'An Interactive File Exporer would allow this App to become far more useful by allowing complete Multimedia Presentations to be created entirely on an Android device like the Amazon Kindle Fire.\n\nAn Interactive File Exporer allows the user to cruise through the file system looking for file names rather than having to enter the file names by typing them in with the virtual keyboard.\n\nUse of an Interactive File Exporer could make the process of creating Multimedia Presentations faster and more efficient because in this use-case the user would NOT have to edit the file offline using a Windows, Mac or Linux computer followed by using the USB Cable to place the XML file on the Android Device like an Amazon Kindle.\n\n';
+//						window.addElement(ta);
+//					}
+//				);
+//				window.addEventListener(MouseEvent.CLICK, 
+//					function (event:MouseEvent):void {
+//						PopUpManager.removePopUp(window);
+//					}
+//				);
+//				PopUpManager.centerPopUp(window);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%">
+		<s:HGroup id="canvas" width="100%">
+			<!-- this is where the buttons go... -->
+		</s:HGroup>
+		<s:HGroup horizontalAlign="right"
+				  visible.open="false" includeInLayout.open="false"
+				  visible.closed="true" includeInLayout.closed="true"
+				  >
+			<s:Button id="btnOpen" width="100%" minWidth="200" label="Open Item Editor..."
+					  click="btnOpen_clickHandler(event)"
+					  />
+		</s:HGroup>
+		<s:Panel id="panel"
+				 title="Item Editor" 
+				 width="100%"
+				 visible.open="true" includeInLayout.open="true"
+				 visible.closed="false" includeInLayout.closed="false"
+				 >
+			<s:VGroup width="100%">
+				<s:HGroup horizontalAlign="right" 
+						  paddingTop="5" paddingRight="5" paddingLeft="5"
+						  width.open="100%" 
+						  width.closed="0%"
+						  >
+					<s:Button id="btnClose" 
+							  label="Close" width="25%"
+							  click="btnClose_clickHandler(event)" 
+							  visible.open="true" includeInLayout.open="true"
+							  visible.closed="false" includeInLayout.closed="false"
+							  />
+				</s:HGroup>
+			</s:VGroup>
+			<s:VGroup width="100%" visible="{this.__showing_editor__}" includeInLayout="{this.__showing_editor__}">
+				<s:HGroup width="70%" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="0">
+					<s:HGroup width="100%">
+						<s:HGroup paddingTop="10">
+							<s:Label text="Name:"/>
+						</s:HGroup>
+						<s:TextInput id="name_of_item" text="{this.__itemName__}" width="100%" change="name_of_item_changeHandler(event)"/>
+					</s:HGroup>
+				</s:HGroup>
+				<s:HGroup width="70%" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="0">
+					<s:HGroup width="100%">
+						<s:VGroup>
+							<s:HGroup id="hgroup_delay" paddingTop="10" paddingLeft="0">
+								<s:Label text="Delay:"/>
+							</s:HGroup>
+							<s:HGroup paddingTop="0">
+								<s:Label text="(Secs)" styleName="SmallText"/>
+							</s:HGroup>
+						</s:VGroup>
+						<s:TextInput id="delay" text="{this.__itemDelay__}" width="100%" change="delay_changeHandler(event)"/>
+					</s:HGroup>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingLeft="5" paddingRight="5" paddingTop="0" paddingBottom="5">
+					<s:HGroup width="100%" paddingTop="10">
+						<s:VGroup>
+							<s:HGroup id="hgroup_play" paddingTop="10" paddingLeft="{this.hgroup_play.width/2}">
+								<s:Label text="Play:"/>
+							</s:HGroup>
+							<s:HGroup paddingTop="0" horizontalAlign="left">
+								<s:Label text="(.MP3 or .MP4)" styleName="SmallText"/>
+							</s:HGroup>
+						</s:VGroup>
+						<s:TextInput id="play" text="{this.__itemPlay__}" width="100%" change="play_changeHandler(event)"/>
+					</s:HGroup>
+					<s:HGroup>
+						<s:Button id="btnPlayFileExplorer" icon="@Embed(source='/controls/MediaPresentation/assets/buttons/mp3-folder_32x32.gif')" click="btnFileExplorer_clickHandler(event)"/>
+					</s:HGroup>
+				</s:HGroup>
+				<s:HGroup width="100%" paddingLeft="5" paddingRight="5" paddingTop="0" paddingBottom="5">
+					<s:HGroup width="100%" paddingTop="10">
+						<s:VGroup>
+							<s:HGroup id="hgroup_source" paddingTop="10" paddingLeft="{this.hgroup_source.width/2}">
+								<s:Label text="Source:"/>
+							</s:HGroup>
+							<s:HGroup paddingTop="0">
+								<s:Label text="(.JPG/.PNG for .MP3 only)" styleName="SmallText"/>
+							</s:HGroup>
+						</s:VGroup>
+						<s:TextInput id="source" text="{this.__itemSource__}" width="100%" change="source_changeHandler(event)"/>
+					</s:HGroup>
+					<s:HGroup>
+						<s:Button id="btnSourceFileExplorer" icon="@Embed(source='/controls/MediaPresentation/assets/buttons/mp3-folder_32x32.gif')" click="btnFileExplorer_clickHandler(event)"/>
+					</s:HGroup>
+				</s:HGroup>
+			</s:VGroup>
+		</s:Panel>
+	</s:VGroup>
+</s:Group>

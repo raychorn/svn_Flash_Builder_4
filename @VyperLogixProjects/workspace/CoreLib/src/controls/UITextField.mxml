@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" height="100%"
+		 creationComplete="group1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			import spark.core.SpriteVisualElement;
+			
+			[Bindable]
+			public var textfield:TextField;
+			
+			[Bindable]
+			private var _text:String = '';
+			
+			[Bindable]
+			public var is_multiline:Boolean = false;
+			
+			[Bindable]
+			public var is_selectable:Boolean = false;
+			
+			[Bindable]
+			public var is_wordWrap:Boolean = false;
+			
+			[Bindable]
+			public var textFormat:TextFormat;
+			
+			[Bindable]
+			public var use_textFormat:Boolean = false;
+			
+			public function get is_textFormat():Boolean {
+				return (this.textFormat is TextFormat);
+			}
+			
+			public function get text():String {
+				return this._text;
+			}
+			
+			public function set text(text:String):void {
+				if (this._text != text) {
+					this._text = text;
+					if (this.textfield is TextField) {
+						this.textfield.text = text;
+					}
+				}
+			}
+			
+			protected function add_textfield_to(container:*,name:String=null,is_multiline:Boolean=false,is_selectable:Boolean=false,is_wordWrap:Boolean=false):void {
+				if (container) {
+					var aSprite:SpriteVisualElement = new SpriteVisualElement();
+					this.textfield = new TextField();
+					this.textfield.x = 0;
+					this.textfield.y = 0;
+					this.textfield.name = name;
+					this.textfield.multiline = is_multiline;
+					this.textfield.selectable = is_selectable;
+					this.textfield.autoSize = TextFieldAutoSize.LEFT;
+					this.textfield.htmlText = this.text;
+					this.textfield.width = container.width;
+					this.textfield.height = container.height;
+					this.textfield.wordWrap = is_wordWrap;
+					
+					if (this.use_textFormat) {
+						if (!this.is_textFormat) {
+							this.textFormat = new TextFormat();
+							this.textFormat.font = "Verdana";
+							this.textFormat.color = 0x000000;
+							this.textFormat.size = 11;
+						}
+						this.textfield.defaultTextFormat = this.textFormat;
+					}
+					
+					aSprite.addChild(this.textfield);
+					container.addElement(aSprite);
+				}
+			}
+
+			protected function group1_creationCompleteHandler(event:FlexEvent):void {
+				this.add_textfield_to(this.parent,this.name+'_textfield',this.is_multiline,this.is_selectable,this.is_wordWrap);
+			}
+
+		]]>
+	</fx:Script>
+</s:Group>

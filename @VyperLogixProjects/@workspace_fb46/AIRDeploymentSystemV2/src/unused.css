@@ -1,0 +1,66 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+Application {
+	/*backgroundColor: #4f4f47; */
+	/*backgroundGradientColors: #4f4f47, #4f4f47; */
+	/*color: #4f4f47; */
+	themeColor: #09F4F1;
+	paddingLeft: 0;
+	paddingRight: 0;
+	paddingTop: 0;
+	paddingBottom: 0;
+	horizontalAlign: center;
+	verticalAlign: middle;
+	fontFamily: NeoSansIntel;
+	fontSize: 12;
+}
+
+Label {
+	fontFamily: NeoSansIntelMedium;
+	fontSize: 12;
+	fontWeight: "normal";
+}
+
+Button {
+	fontFamily: NeoSansIntelMedium;
+	fontSize: 11;
+	fontWeight: "normal";
+}
+
+ToolTip {
+	fontFamily: NeoSansIntelMedium;
+	fontSize: 12pt;
+	fontWeight: "normal";
+	backgroundColor: #e4b61b;
+	color: #4f4f47;
+}
+
+HDividedBox {
+	dividerColor: #0066ff;
+}
+
+MenuBar {
+	backgroundAlpha: 1;
+	highlightAlphas: 0.64, 0.42;
+	fillAlphas: 1, 0.46;
+	fillColors: #00ffff, #00ccff;
+	rollOverColor: #ffff00;
+	selectionColor: #ff0000;
+	fontFamily: NeoSansIntelMedium;
+	fontSize: 12pt;
+	backgroundColor: #ffff99;
+}
+
+List {
+	fontFamily: NeoSansIntel;
+	fontSize: 11;
+	fontWeight: "normal";
+	cornerRadius: 10;
+}
+
+SWFLoader {
+	borderStyle: solid;
+}
+

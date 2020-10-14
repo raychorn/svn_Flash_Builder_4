@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   width="100%" height="100%"
+		   horizontalScrollPolicy="off" verticalScrollPolicy="off"
+		   creationComplete="onCreationComplete()">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		.BoxRed {
+			backgroundColor: red;
+			borderStyle: solid;
+			borderVisible: true;
+		}
+
+		.BoxGreen {
+			backgroundColor: lime;
+			borderStyle: solid;
+			borderVisible: true;
+		}
+
+		.BoxCyan {
+			backgroundColor: cyan;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import dots.BlueDot;
+			
+			import mx.core.UIComponent;
+
+			public var box:UIComponent;
+
+			public var boxRight:Box;
+			public var boxBelow:Box;
+			public var boxLeft:Box;
+			public var boxAbove:Box;
+			
+			private var _dots:Object = {};
+
+			private var _lines:Object = {};
+			
+			public static const UPPER_LEFT:String = '0@0';
+			public static const UPPER_RIGHT:String = '1@0';
+			public static const LOWER_LEFT:String = '0@1';
+			public static const LOWER_RIGHT:String = '1@1';
+
+			public static const TYPE_UPPER_LEFT:String = 'UPPER_LEFT';
+			public static const TYPE_UPPER_RIGHT:String = 'UPPER_RIGHT';
+			public static const TYPE_LOWER_LEFT:String = 'LOWER_LEFT';
+			public static const TYPE_LOWER_RIGHT:String = 'LOWER_RIGHT';
+			
+			public function get isBoxRight():Boolean {
+				return this.boxRight is Box;
+			}
+			
+			public function get isBoxBelow():Boolean {
+				return this.boxBelow is Box;
+			}
+			
+			public function get isBoxLeft():Boolean {
+				return this.boxLeft is Box;
+			}
+			
+			public function get isBoxAbove():Boolean {
+				return this.boxAbove is Box;
+			}
+			
+			public function get dot_at_upper_left():BlueDot {
+				return this._dots[Box.UPPER_LEFT];
+			}
+			
+			public function set dot_at_upper_left(aDot:BlueDot):void {
+				if (this.dot_at_upper_left == null) {
+					this._dots[Box.UPPER_LEFT] = aDot;
+					var pt:Point = aDot.gridCoord_from_id;
+					aDot.x = 0;
+					aDot.y = 0;
+					aDot.parentBox = this;
+					this.addElement(aDot);
+				}
+			}
+			
+			public function get dot_at_upper_right():BlueDot {
+				return this._dots[Box.UPPER_RIGHT];
+			}
+			
+			public function set dot_at_upper_right(aDot:BlueDot):void {
+				if (this.dot_at_upper_right == null) {
+					this._dots[Box.UPPER_RIGHT] = aDot;
+					var xOffset:Number = (aDot.width / 2);
+					aDot.x = this.width - (xOffset * 0.75);
+					aDot.y = 0;
+					this.width += (xOffset * 0.5);
+					aDot.parentBox = this;
+					this.addElement(aDot);
+				}
+			}
+			
+			public function get dot_at_lower_left():BlueDot {
+				return this._dots[Box.LOWER_LEFT];
+			}
+			
+			public function set dot_at_lower_left(aDot:BlueDot):void {
+				if (this.dot_at_lower_left == null) {
+					this._dots[Box.LOWER_LEFT] = aDot;
+					var yOffset:Number = (aDot.height / 2);
+					aDot.x = 0;
+					aDot.y = this.height - (yOffset * 0.65);
+					this.height += (yOffset * 0.75);
+					aDot.parentBox = this;
+					this.addElement(aDot);
+				}
+			}
+			
+			public function get dot_at_lower_right():BlueDot {
+				return this._dots[Box.LOWER_RIGHT];
+			}
+			
+			public function set dot_at_lower_right(aDot:BlueDot):void {
+				if (this.dot_at_lower_right == null) {
+					this._dots[Box.LOWER_RIGHT] = aDot;
+
+					var xOffset:Number = (aDot.width / 2);
+					var yOffset:Number = (aDot.height / 2);
+					aDot.x = this.width - (xOffset * 1.4);
+					aDot.y = this.height - (yOffset * 1.4);
+					this.width += (xOffset * 0.12);
+					this.height += (yOffset * 0.12);
+					
+					aDot.parentBox = this;
+					this.addElement(aDot);
+				}
+			}
+			
+			public function green_box():void {
+				this.styleName = 'BoxGreen';
+			}
+			
+			public function red_box():void {
+				this.styleName = 'BoxRed';
+			}
+			
+			public function cyan_box():void {
+				if ( (this.styleName == null) || (this.styleName == '') ) {
+					this.styleName = 'BoxCyan';
+				}
+			}
+			
+			public function clear_box():void {
+				if (this.styleName == 'BoxCyan') {
+					this.styleName = null;
+				}
+			}
+			
+			public function get dots():Array {
+				var __dots:Array = [];
+				for (var i:String in this._dots) {
+					__dots.push(this._dots[i]);
+				}
+				return __dots;
+			}
+			
+			private function hang_the_dots_outer_column(row:int, col:int, onClick_Dot:Function):void {
+				var aDot:BlueDot;
+				aDot = new BlueDot();
+				aDot.id = row+'@'+(col+1);
+				aDot.toolTip = aDot.id;
+				aDot.onClick_callback = onClick_Dot;
+				this.dot_at_upper_right = aDot;
+			}
+			
+			private function hang_the_dots_outer_row(row:int, col:int, onClick_Dot:Function):void {
+				var aDot:BlueDot;
+				aDot = new BlueDot();
+				aDot.id = (row+1)+'@'+col;
+				aDot.toolTip = aDot.id;
+				aDot.onClick_callback = onClick_Dot;
+				this.dot_at_lower_left = aDot;
+			}
+			
+			private function hang_the_dots_outer_corner(row:int, col:int, onClick_Dot:Function):void {
+				var aDot:BlueDot;
+				aDot = new BlueDot();
+				aDot.id = (row+1)+'@'+(col+1);
+				aDot.toolTip = aDot.id;
+				aDot.onClick_callback = onClick_Dot;
+				this.dot_at_lower_right = aDot;
+			}
+			
+			public function hang_the_dots(row:int, col:int, rowMax:int, colMax:int, onClick_Dot:Function):void {
+				var aDot:BlueDot;
+				aDot = new BlueDot();
+				aDot.id = row+'@'+col;
+				aDot.toolTip = aDot.id;
+				aDot.onClick_callback = onClick_Dot;
+				this.dot_at_upper_left = aDot;
+				var isColMax:Boolean = false;
+				if (col == (colMax - 1)) {
+					this.hang_the_dots_outer_column(row,col,onClick_Dot);
+					isColMax = true;
+				}
+				var isRowMax:Boolean = false;
+				if (row == (rowMax - 1)) {
+					this.hang_the_dots_outer_row(row,col,onClick_Dot);
+					isRowMax = true;
+				}
+				if (isColMax && isRowMax) {
+					this.hang_the_dots_outer_corner(row,col,onClick_Dot);
+				}
+			}
+			
+			private function identify_pt_as_relative_coord(aPt:Point):String {
+				if (aPt.equals(this.dot_at_upper_left.asPoint)) {
+					return Box.UPPER_LEFT;
+				} else if (aPt.equals(this.dot_at_upper_right.asPoint)) {
+					return Box.UPPER_RIGHT;
+				} else if (aPt.equals(this.dot_at_lower_left.asPoint)) {
+					return Box.LOWER_LEFT;
+				} else if (aPt.equals(this.dot_at_lower_right.asPoint)) {
+					return Box.LOWER_RIGHT;
+				}
+				return null;
+			}
+			
+			private function identify_pts_as_normalized_relative_coords(aPt1:Point,aPt2:Point,isHorizontal:Boolean):Object {
+				var cPt1:String = this.identify_pt_as_relative_coord(aPt1);
+				var cPt2:String = this.identify_pt_as_relative_coord(aPt2);
+				var analysis:Object = {'from':BlueDot.gridCoord_from(Box.UPPER_LEFT),'to':BlueDot.gridCoord_from(Box.UPPER_RIGHT),'type':Box.TYPE_UPPER_LEFT,'isHorizontal':isHorizontal};
+				if ( (cPt1 == Box.UPPER_LEFT) && (cPt2 == Box.UPPER_LEFT) ) {
+					this._lines[Box.UPPER_LEFT] = analysis;
+				} else {
+					trace(0.0);
+				}
+				return analysis;
+			}
+			
+			public function draw_line(from:BlueDot,to:BlueDot):void {
+				var graphics:* = this.graphics;
+				graphics.lineStyle(2, 0x990000, .75);
+				graphics.beginFill(0x000000);
+				var _fromPt:Point = from.asPoint;
+				var _toPt:Point = to.asPoint;
+				var fromPt:Point = from.parentBox.contentToGlobal(_fromPt);
+				var toPt:Point = to.parentBox.contentToGlobal(_toPt);
+				var isHorizontal:Boolean = (fromPt.y == toPt.y);
+				var isVertical:Boolean = (fromPt.x == toPt.x);
+				var fromLocalPt:Point = this.globalToContent(fromPt);
+				var toLocalPt:Point = this.globalToContent(toPt);
+				graphics.moveTo(fromLocalPt.x, fromLocalPt.y);
+				graphics.lineTo(toLocalPt.x+((isHorizontal) ? (to.image.width / 2) : 0), toLocalPt.y+((isVertical) ? (to.image.height / 2) : 0));
+//				var _fromPt:Point = from.gridCoord_from_id;
+//				var _toPt:Point = to.gridCoord_from_id;
+				from.connectTo = to;
+				to.connectTo = from;
+				var boxFrom:Box;
+				var boxTo:Box;
+				var dotFrom:BlueDot;
+				var dotTo:BlueDot;
+				var analysis:Object = this.identify_pts_as_normalized_relative_coords(_fromPt,_toPt,isHorizontal);
+				if (analysis['type'] == Box.TYPE_UPPER_LEFT) {
+					boxFrom = this.boxAbove;
+					dotFrom = boxFrom.dot_at_lower_left;
+					boxTo = boxFrom.boxRight;
+					dotTo = boxTo.dot_at_lower_left;
+					boxFrom.draw_line(dotFrom,dotTo);
+				}
+				trace(this.className+'.draw_line() --> from.id='+from.id+', to.id='+to.id);
+			}
+			
+			private function onCreationComplete():void {
+				this.box = new UIComponent();
+				this.box.x = 0;
+				this.box.y = 0;
+				this.box.width = this.width;
+				this.box.height = this.height;
+				this.addChild(this.box);
+			}
+		]]>
+	</fx:Script>
+</mx:Canvas>

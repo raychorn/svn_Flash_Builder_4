@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" currentState="play" >
+	<mx:states>
+		<s:State name="State1"/>
+		<s:State name="play"/>
+		<s:State name="pause"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			[Embed(source="assets/icons/button-play_32x32.gif")]
+			[Bindable]
+			public var playSmallCls:Class;
+			
+			[Embed(source="assets/icons/button-pause_32x32.gif")]
+			[Bindable]
+			public var pauseSmallCls:Class;
+			
+			private function get getIconForState():Class {
+				return (this.currentState == 'play') ? this.pauseSmallCls : ((this.currentState == 'pause') ? this.playSmallCls : null);
+			}
+			
+			public function get isStatePlay():Boolean {
+				return this.currentState == 'play';
+			}
+			
+			public function get isStatePause():Boolean {
+				return this.currentState == 'pause';
+			}
+			
+			public function set_play_state():void {
+				this.currentState = 'play';
+			}
+			
+			public function set_pause_state():void {
+				this.currentState = 'pause';
+			}
+			
+			public override function set currentState(state:String):void {
+				super.currentState = state;
+				if (this.btn) {
+					this.btn.source = this.getIconForState;
+				}
+			}
+
+
+			protected function btn_creationCompleteHandler(event:FlexEvent):void {
+				this.btn.buttonMode = this.btn.useHandCursor = true;
+			}
+
+		]]>
+	</fx:Script>
+	<mx:Image x="0" y="0" id="btn" source="{this.getIconForState}" creationComplete="btn_creationCompleteHandler(event)"/>
+</mx:Canvas>

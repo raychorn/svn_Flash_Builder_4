@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+	<mx:VBox width="100%" height="100%" xmlns:mx="http://www.adobe.com/2006/mxml" verticalScrollPolicy="off" xmlns:views="views.*">
+	
+	<mx:HBox width="100%" height="100%">
+	<mx:VBox height="100%" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="STYLE CONTROLS"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+			<mx:Form styleName="noPadding">
+			
+			<mx:FormItem label="Corner Radius">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="28"
+						value="0"
+						id="myCornerRadius"
+						
+						snapInterval="1"
+						change="setValue('cornerRadius', event.target.value, 'number');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Border Thickness">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="15"
+						value="1"
+						id="myBorderThickness"
+						
+						snapInterval="1"
+						change="setValue('borderThickness', event.target.value, 'number');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Header Colors">
+					<mx:HBox paddingTop="0" paddingBottom="0" paddingLeft="0" paddingRight="0">
+							<mx:ColorPicker id="header1" height="23" width="70" selectedColor="0xE1E5EB"
+								close="myDateChooser.setStyle('headerColors', [header1.selectedColor, header2.selectedColor]);
+								setArrayCSS('headerColors', header1.selectedColor, header2.selectedColor, true)"/>
+							<mx:ColorPicker  id="header2" height="23" width="70" selectedColor="0xF4F5F7" 
+								close="myDateChooser.setStyle('headerColors', [header1.selectedColor, header2.selectedColor]); 
+								setArrayCSS('headerColors', header1.selectedColor, header2.selectedColor, true)"/>
+					</mx:HBox>	
+				</mx:FormItem>
+			
+			
+	<mx:FormItem label="Highlight Alphas">
+				<mx:HBox>
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value=".30"
+						id="highlightAlpha1"
+						
+						snapInterval=".01"
+						change="myDateChooser.setStyle('highlightAlphas',[highlightAlpha1.value, highlightAlpha2.value]);
+						setArrayCSS('highlightAlphas', highlightAlpha1.value, highlightAlpha2.value, false)"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="0"
+						id="highlightAlpha2"
+						
+						snapInterval=".01"
+						change="myDateChooser.setStyle('highlightAlphas',[highlightAlpha1.value, highlightAlpha2.value]);
+						setArrayCSS('highlightAlphas', highlightAlpha1.value, highlightAlpha2.value, false)"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+					</mx:HBox>
+				</mx:FormItem>
+			
+			
+			<mx:Box styleName="conditionalBox" width="275"  toolTip="Note: This is an array of four colors, the second two being the fill colors on roll over.">
+				<mx:HBox width="100%">
+				<mx:Box width="100%" horizontalAlign="left" paddingLeft="5" paddingTop="5">
+				<mx:Image id="alert" source="@Embed('assets/alert.png')" />	
+				</mx:Box>
+				
+				<mx:Form styleName="conditionalForm" >
+				
+					<mx:FormItem label="Fill Alphas">
+					<mx:HBox  horizontalGap="2">
+					<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".60"
+								id="myFillAlpha1"
+								
+								snapInterval=".01"
+								change="myDateChooser.setStyle('fillAlphas', [myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value, false);"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".40"
+								id="myFillAlpha2"
+								
+								snapInterval=".01"
+								change="myDateChooser.setStyle('fillAlphas', [myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value, false);"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".75"
+								id="myFillAlpha3"
+								
+								snapInterval=".01"
+								change="myDateChooser.setStyle('fillAlphas', [myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value, false);"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".65"
+								id="myFillAlpha4"
+								
+								snapInterval=".01"
+								change="myDateChooser.setStyle('fillAlphas', [myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1.value, myFillAlpha2.value, myFillAlpha3.value, myFillAlpha4.value, false);"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							</mx:HBox>
+						</mx:FormItem>
+						<mx:FormItem label="Fill Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="fill1" height="23" width="35" selectedColor="0xFFFFFF"
+								close="myDateChooser.setStyle('fillColors', [fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor]);
+								setArrayFourCSS('fillColors', fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor, true);
+								"/>
+								<mx:ColorPicker id="fill2" height="23" width="35" selectedColor="0xCCCCCC"
+								close="myDateChooser.setStyle('fillColors', [fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor]);
+								setArrayFourCSS('fillColors', fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor, true);
+								"/>
+								<mx:ColorPicker id="fill3" height="23" width="35" selectedColor="0xFFFFFF"
+								close="myDateChooser.setStyle('fillColors', [fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor]);
+								setArrayFourCSS('fillColors', fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor, true);
+								"/>
+								<mx:ColorPicker id="fill4" height="23" width="35" selectedColor="0xEEEEEE"
+								close="myDateChooser.setStyle('fillColors', [fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor]);
+								setArrayFourCSS('fillColors', fill1.selectedColor, fill2.selectedColor, fill3.selectedColor, fill4.selectedColor, true);
+								"/>
+							
+							</mx:HBox>
+						</mx:FormItem>
+				
+				</mx:Form>
+				</mx:HBox>
+				</mx:Box>
+		<mx:FormItem label="Today Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x818181" id="myTodayColor"
+								close="setValue('todayColor', event.target.selectedColor, 'color')"/>
+		</mx:FormItem>
+			<mx:FormItem label="Rollover Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xAADEFF" id="myRollOverColor"
+								close="setValue('rollOverColor', event.target.selectedColor, 'color')"/>
+		</mx:FormItem>
+	<mx:FormItem label="Selection Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x009DFF" id="mySelectionColor"
+								close="setValue('selectionColor', event.target.selectedColor, 'color')"/>
+		</mx:FormItem>
+			
+			<mx:FormItem label="Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myColor"
+								close="setValue('color', event.target.selectedColor, 'color')"/>
+		</mx:FormItem>
+			<mx:FormItem label="Border Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xAAB3B3" id="myBorderColor"
+								close="setValue('borderColor', event.target.selectedColor, 'color')"/>
+		</mx:FormItem>
+		
+		<mx:FormItem label="Background Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xFFFFFF" id="myBackgroundColor"
+								close="setValue('backgroundColor', event.target.selectedColor, 'color')"/>
+		</mx:FormItem>
+		<mx:FormItem label="Background Alpha">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="1"
+						id="myBackgroundAlpha"
+						snapInterval=".01"
+						change="setValue('backgroundAlpha', event.target.value, 'number');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+	<mx:FormItem label="Theme Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x009DFF" id="myThemeColor"
+								close="setValue('themeColor', event.target.selectedColor, 'color')"/>
+		</mx:FormItem>
+		<mx:FormItem label="Drop Shadow Enabled">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBDropShadowEnabled" label="true" labelPlacement="right" 
+								click="myDateChooser.setStyle('dropShadowEnabled', true);
+										enableShadowItems();
+									   setCSS('dropShadowEnabled', 0, 'true');"
+									   />
+							<mx:RadioButton groupName="SBDropShadowEnabled" label="false" labelPlacement="right" 
+							id="myDropShadowEnabled"  selected="true"
+								click="myDateChooser.setStyle('dropShadowEnabled', false);
+								enableShadowItems();
+								 setCSS('dropShadowEnabled', 0, 'false');"/>
+						</mx:HBox>
+					</mx:FormItem>
+					
+			<mx:Box styleName="conditionalBox" >			
+				<mx:Form paddingTop="8" paddingBottom="5" paddingRight="5" paddingLeft="5"  >
+				
+					<mx:FormItem label="Shadow Distance">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="2"
+						id="myShadowDistance"
+						snapInterval="1"
+						change="setValue('shadowDistance', event.target.value, 'number');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				</mx:FormItem>
+					<mx:FormItem label="Shadow Direction">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBShadowDirection" label="left"   id="myShadowDirection2"
+								labelPlacement="right" click="myDateChooser.setStyle('shadowDirection', 'left'); setCSS('shadowDirection', 0, 'left');"/>
+							<mx:RadioButton groupName="SBShadowDirection" label="center" id="myShadowDirection"
+								selected="true" labelPlacement="right" click="myDateChooser.setStyle('shadowDirection', 'center'); setCSS('shadowDirection', 0, 'center');"/>
+							<mx:RadioButton groupName="SBShadowDirection" label="right"  id="myShadowDirection3"
+								 labelPlacement="right" click="myDateChooser.setStyle('shadowDirection', 'right'); setCSS('shadowDirection', 0, 'right');"/>
+						</mx:HBox>
+					</mx:FormItem>
+					<mx:FormItem label="Drop Shadow Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x000000" id="myDropShadowColor"
+								close="setValue('dropShadowColor', event.target.selectedColor, 'color')"/>
+				</mx:FormItem>
+			</mx:Form>
+		</mx:Box>
+		
+		
+		
+		
+			<mx:HBox width="100%">
+			<mx:Image id="alert2" source="@Embed('assets/alert.png')" />	
+			<mx:Text width="100%" text="Note: For additional customization, use the weekDaystyleName, todaystyleName and headerstyleName declarations to create unique text styles for the week days, header text and today's date text." fontSize="9" color="#FFFFFF" />
+			</mx:HBox>
+		
+			
+			</mx:Form>
+			
+		</mx:Box>
+		<mx:Box width="100%" paddingRight="5" paddingBottom="5" horizontalAlign="right">
+			<mx:LinkButton label="Restore Defaults" click="restoreDefaults()" styleName="undoLink" />
+		</mx:Box>
+	</mx:VBox>
+
+
+<!-- Sandbox -->
+<mx:VBox height="100%" width="100%" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="SANDBOX"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+			<mx:DateChooser id="myDateChooser"  />
+			
+			</mx:Box>
+	</mx:VBox>
+
+
+<!-- CSS -->
+<mx:VBox height="100%" width="315" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="CSS"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+		
+			<mx:TextArea id="myCSS" width="100%" height="100%" styleName="cssTextArea"	/>
+		</mx:Box>
+</mx:VBox>
+
+	<mx:Script source="as/dateChooser.as" />
+	</mx:HBox>
+</mx:VBox>
+

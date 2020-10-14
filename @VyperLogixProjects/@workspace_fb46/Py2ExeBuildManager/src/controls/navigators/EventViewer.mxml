@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Panel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			
+			import spark.collections.Sort;
+			import spark.collections.SortField;
+
+			[Bindable]
+			private var __responses__:ArrayCollection = new ArrayCollection();
+			
+			private static function arrayCollectionSort(ar:ArrayCollection, fieldName:String, isNumeric:Boolean, isDescending:Boolean = true):void {
+				var dataSortField:SortField = new SortField();
+				dataSortField.name = fieldName;
+				dataSortField.numeric = isNumeric;
+				dataSortField.descending = isDescending;
+				var numericDataSort:Sort = new Sort();
+				numericDataSort.fields = [dataSortField];
+				ar.sort = numericDataSort;
+				ar.refresh();
+			}
+			
+			public function set handle_event(message:String):void {
+				var ms:Number = (new Date()).time;
+				this.__responses__.addItem({'__row__':ms,'__text__':message});
+				arrayCollectionSort(this.__responses__, '__row__', true, true);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup id="response_items_container" width="100%" height="100%">
+		<s:List id="response_items" width="100%" height="100%" labelField="info" dataProvider="{this.__responses__}">
+			<s:layout>
+				<s:VerticalLayout/>
+			</s:layout>
+			<s:itemRenderer>
+				<fx:Component>
+					<s:ItemRenderer>
+						<fx:Script>
+							<![CDATA[
+								import mx.controls.Alert;
+								import mx.core.FlexGlobals;
+								import mx.events.CloseEvent;
+								import mx.managers.PopUpManager;
+								
+								import controls.Alert.AlertPopUp;
+								
+								private function get top_level_app_width():Number {
+									return FlexGlobals.topLevelApplication.width;
+								}
+								
+								protected function hgroup1_clickHandler(event:MouseEvent):void {
+									var popup:Alert = AlertPopUp.infoNoOkay(data.__text__,data.__row__);
+									popup.width = Capabilities.screenResolutionX - 200;
+									popup.height = 400;
+									popup.addEventListener(CloseEvent.CLOSE, 
+										function (event:CloseEvent):void {
+											PopUpManager.removePopUp(popup);
+										}
+									);
+									PopUpManager.centerPopUp(popup);
+								}
+								
+							]]>
+						</fx:Script>
+						<s:states>
+							<mx:State name="normal" />
+							<mx:State name="hovered" />
+							<mx:State name="selected" />
+						</s:states>
+						<s:Rect left="0" right="0" top="0" bottom="0">
+							<s:stroke>
+								<mx:SolidColorStroke color="0xCCCCCC" joints="round" weight="2"/>
+							</s:stroke>
+							<s:fill>
+								<mx:SolidColor color="0x999999" alpha="0" alpha.hovered="0.2"
+											   alpha.selected="0.6" />
+							</s:fill>
+						</s:Rect>
+						<s:HGroup width="{top_level_app_width}" height="80" click="hgroup1_clickHandler(event)">
+							<s:HGroup paddingLeft="5" paddingRight="5" paddingTop="15" paddingBottom="15">
+								<s:Label id="__row__" text="{data.__row__}"/>
+							</s:HGroup>
+							<s:TextArea id="__text__" width="100%" height="100%" editable="false" text="{data.__text__}"/>
+						</s:HGroup>
+					</s:ItemRenderer>
+				</fx:Component>
+			</s:itemRenderer>
+		</s:List>
+	</s:VGroup>
+</s:Panel>

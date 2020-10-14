@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" showCloseButton="false">
+	<mx:states>
+		<mx:State name="has_choice"/>
+		<mx:State name="no_choice"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			[Bindable]
+			public var updateVersion:String;
+			
+			[Bindable]
+			private var _no_choice_:Boolean = false;
+			
+			public function get no_choice():Boolean {
+				return this._no_choice_;
+			}
+			
+			public function set no_choice(no_choice:Boolean):void {
+				if ( (this._no_choice_ != no_choice) && (no_choice is Boolean) ) {
+					this._no_choice_ = no_choice;
+					this.currentState = (no_choice) ? 'no_choice' : 'has_choice';
+				}
+			}
+		]]>
+	</fx:Script>
+	<mx:Canvas id="logoContainer" x="0" y="0" width="100%" height="100%">
+		<mx:HDividedBox width="100%" height="100%">
+			<mx:VBox width="70%" minWidth="{this.width*0.6}" height="100%" horizontalAlign="left" verticalAlign="top">
+				<mx:SWFLoader id="logo" width="80%" scaleContent="true" maintainAspectRatio="true"/>
+				<mx:VBox width="100%">
+					<mx:HBox width="100%">
+						<mx:VBox verticalAlign="top">
+							<s:Label text="New version {this.updateVersion} is available." />
+							<s:Label text="Do you want to download and install version {this.updateVersion}?" />
+						</mx:VBox>
+						<mx:HBox id="hbox_buttons" paddingLeft="20" horizontalAlign="left" verticalAlign="top" width="100%">
+							<s:Button id="btnYes" label="Yes"/>
+							<s:Button id="btnNo" label="No" visible.has_choice="true" includeInLayout.has_choice="true" visible.no_choice="false" includeInLayout.no_choice="false"/>
+						</mx:HBox>
+					</mx:HBox>
+					<mx:ProgressBar id="prgBar" label="Downloading %3%" visible="false" includeInLayout="false"/>
+				</mx:VBox>
+			</mx:VBox>
+			<mx:VBox horizontalAlign="left" verticalAlign="top" minWidth="{this.width*0.2}" width="30%" height="100%">
+				<s:TextArea id="details" width="100%" height="100%" editable="false" borderVisible="true"/>
+			</mx:VBox>
+		</mx:HDividedBox>
+	</mx:Canvas>
+</mx:TitleWindow>

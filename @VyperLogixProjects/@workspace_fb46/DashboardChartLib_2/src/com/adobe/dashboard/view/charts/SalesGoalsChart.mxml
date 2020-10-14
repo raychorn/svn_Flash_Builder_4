@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group 
+	
+	currentState="{chartPresenter.chartModel.chartType}"
+	xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:charts="mx.charts.*"
+	xmlns:series="mx.charts.series.*" xmlns:graphics="com.adobe.dashboard.view.graphics.*">
+
+	<fx:Metadata>
+		[Event (name="itemClick", type="mx.charts.events.ChartItemEvent")]
+	</fx:Metadata>
+
+	<fx:Declarations>
+		<mx:SeriesInterpolate id="seriesInterpolate" duration="500" elementOffset="0"/>
+		<s:CurrencyFormatter id="currencyFormatter" useCurrencySymbol="true" currencySymbol="$"/>
+		<mx:GridLines id="gridLines"
+					  gridDirection="both" 
+					  alpha="1"
+					  horizontalShowOrigin="false">
+			<mx:horizontalStroke>
+				<graphics:CustomLinearGradientStroke weight="2" />
+			</mx:horizontalStroke>
+			<mx:verticalStroke>
+				<graphics:CustomLinearGradientStroke weight="2" rotation="90" />
+			</mx:verticalStroke>
+		</mx:GridLines>
+		<s:SolidColorStroke id="axisStroke"
+							weight="2"
+							color="#808080"
+							alpha="1"/>
+		<s:LinearGradient id="graphFill" rotation="90">
+			<s:GradientEntry color="0x1F5DC4"/>
+			<s:GradientEntry color="0x173069"/>
+		</s:LinearGradient>
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.dashboard.presenter.ChartPresenter;
+
+			import mx.charts.HitData;
+			import mx.charts.chartClasses.IAxis;
+			import mx.charts.events.ChartItemEvent;
+
+
+			[Bindable]
+			public var chartPresenter:ChartPresenter;
+
+
+			private function dateParseFunction(value:String):Date
+			{
+				var d:Date = new Date();
+				d.time = Date.parse(value);
+				return d;
+			}
+
+
+			private function currencyParseFunction(labelValue:Object, previousValue:Object, axis:IAxis):String
+			{
+				return Number(labelValue) / 1000 + "k";
+			}
+
+			private function parseFunction(object:Object):Number
+			{
+				return int(object);
+			}
+
+			protected function dataTipFunction(hitData:HitData):String
+			{
+				if (hitData.chartItem.element["yField"] == "accumulatedGross")
+				{
+					return currencyFormatter.format(hitData.item.accumulatedGross);
+				}
+				else
+				{
+					return currencyFormatter.format(hitData.item.goalGross);
+				}
+
+			}
+		]]>
+	</fx:Script>
+
+	<!-- currentState bound to chartPresenter.chartModel.chartType -->
+	<s:states>
+		<s:State name="areaChart"/>
+		<s:State name="lineChart"/>
+		<s:State name="dataList"/>
+	</s:states>
+
+	<charts:AreaChart id="areaChart"
+		width="100%" height="100%"
+		dataProvider="{chartPresenter.dataProvider}"
+		includeIn="areaChart"
+		showDataTips="true"
+		dataTipFunction="dataTipFunction"
+		useHandCursor="true"
+		backgroundElements="{[gridLines]}">
+
+		<charts:series>
+
+			<series:AreaSeries yField="accumulatedGross" xField="date" showDataEffect="{seriesInterpolate}" areaFill="{graphFill}"/>
+
+
+			<series:AreaSeries yField="goalGross" xField="date" showDataEffect="{seriesInterpolate}">
+				<series:areaStroke>
+					<s:LinearGradientStroke weight="4" rotation="90">
+						<s:GradientEntry color="0xD6CE6B"/>
+						<s:GradientEntry color="0xB2CC4A"/>
+						<s:GradientEntry color="0x869938"/>
+					</s:LinearGradientStroke>
+				</series:areaStroke>
+				<series:areaFill>
+					<s:SolidColor color="0xFFFFFF" alpha="0"/>
+				</series:areaFill>
+			</series:AreaSeries>
+
+		</charts:series>
+
+		<charts:horizontalAxis>
+			<charts:DateTimeAxis id="areaChartDateTimeAxis"
+				dataUnits="days"
+				dataInterval="1"
+				interval="1"
+				labelUnits="days"
+				parseFunction="dateParseFunction"
+				alignLabelsToUnits="false"
+				/>
+			<!--<mx:CategoryAxis labelFunction="dateParseFunction" categoryField="date"/>-->
+		</charts:horizontalAxis>
+
+
+		<charts:verticalAxis>
+
+			<mx:LinearAxis id="areaChartVerticalAxis"
+				labelFunction="currencyParseFunction"
+				maximum="{chartPresenter.maxiumAxisValue}"
+				interval="1000"
+				parseFunction="parseFunction"
+				baseAtZero="true"
+				autoAdjust="true"/>
+		</charts:verticalAxis>
+		
+		<charts:verticalAxisRenderers>
+			<mx:AxisRenderer showLine="true"
+							 axis="{areaChartVerticalAxis}"
+							 color="#808080"
+							 tickPlacement="outside"
+							 tickLength="10"
+							 labelGap="10"
+							 axisStroke="{axisStroke}"
+							 tickStroke="{axisStroke}"
+							 minorTickPlacement="none"
+							 />
+		</charts:verticalAxisRenderers>
+
+		<charts:horizontalAxisRenderers>
+			<mx:AxisRenderer showLine="true"
+							 axis="{areaChartDateTimeAxis}"
+							 color="#808080"
+							 tickPlacement="outside"
+							 tickLength="10"
+							 labelGap="10"
+							 axisStroke="{axisStroke}"
+							 tickStroke="{axisStroke}"
+							 >
+			</mx:AxisRenderer>
+		</charts:horizontalAxisRenderers>
+	</charts:AreaChart>
+
+
+	<charts:ColumnChart id="lineChart"
+		width="100%" height="100%"
+		dataProvider="{chartPresenter.dataProvider}"
+		includeIn="lineChart"
+		type="overlaid"
+		dataTipFunction="dataTipFunction">
+
+		<charts:backgroundElements>
+			<mx:GridLines gridDirection="both" alpha="1"/>
+		</charts:backgroundElements>
+
+		<charts:series>
+			<series:ColumnSeries yField="goalGross" xField="date">
+				<!--<series:LineSeries yField="goalGross" xField="date">-->
+
+				<series:stroke>
+					<s:SolidColorStroke color="0xD6CE6B" weight="2"/>
+				</series:stroke>
+				<series:fill>
+					<s:LinearGradient rotation="90">
+						<s:GradientEntry color="0xD6CE6B"/>
+						<s:GradientEntry color="0xB2CC4A"/>
+						<s:GradientEntry color="0x869938"/>
+					</s:LinearGradient>
+				</series:fill>
+				<!--</series:LineSeries>-->
+
+			</series:ColumnSeries>
+
+			<series:ColumnSeries yField="accumulatedGross" xField="date">
+				<series:stroke>
+					<s:SolidColorStroke color="0xC81E89" weight="2"/>
+				</series:stroke>
+				<series:fill>
+					<s:LinearGradient rotation="90">
+						<s:GradientEntry color="0xE067B4"/>
+						<s:GradientEntry color="0xC81E89"/>
+						<s:GradientEntry color="0x8A155F"/>
+					</s:LinearGradient>
+				</series:fill>
+
+			</series:ColumnSeries>
+		</charts:series>
+
+		<charts:horizontalAxis>
+			<charts:DateTimeAxis direction="normal"/>
+		</charts:horizontalAxis>
+
+	</charts:ColumnChart>
+
+
+
+
+
+
+</s:Group>

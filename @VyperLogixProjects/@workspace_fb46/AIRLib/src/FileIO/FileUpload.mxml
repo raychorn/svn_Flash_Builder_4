@@ -1,0 +1,437 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   creationComplete="initApp()" 
+			   stateChangeComplete="titlewindow1_stateChangeCompleteHandler(event)"
+			   width="400"
+			   close="onClose()" title="Upload Files"
+			   styleName="FileUploader"
+			   xmlns:FileIO="vyperlogix.FileIO.*" 
+			   xmlns:controls="controls.*" 
+			   >
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import FileIO.events.FileBrowseCancelledEvent;
+			import FileIO.events.FileExeCompletedEvent;
+			import FileIO.events.FileFolderCompletedEvent;
+			import FileIO.events.FileUploadCompletedEvent;
+			import FileIO.events.FileUploadTermsAgreementEvent;
+			import FileIO.events.FileUploadTermsRequestedEvent;
+			
+			import com.EzHTTPService;
+			import com.adobe.serialization.json.JSON;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.winProgress;
+			
+			import flash.filesystem.File;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			[Event(name="fileUploadComplete", type="FileIO.events.FileUploadCompletedEvent")]
+			[Event(name="fileExeComplete", type="FileIO.events.FileExeCompletedEvent")]
+			[Event(name="fileBrowseCancelled", type="FileIO.events.FileBrowseCancelledEvent")]
+			
+			private const _strUploadDomain:String = FlexGlobals.topLevelApplication.domain;
+			private const _strUploadScript:String = _strUploadDomain + "fileUpload";
+			
+			private const _struploadVerifyScript:String = _strUploadDomain + "uploadVerify";
+			
+			private var _arrUploadFiles:Array;
+			private var _refAddFiles:FileReferenceList;	
+			private var _refUploadFile:FileReference;
+			
+			private var _queueUploadedFiles:Array;
+			
+			private var _queueVerifiedFiles:Array;
+			
+			private var _winProgress:controls.winProgress;
+			
+			private var _url:String = _strUploadScript;
+			
+			private var srvc:com.EzHTTPService;
+			
+			private var _uploadStatus:Object;
+			
+			public var file_filter_description:String = "Images (*.jpg, *.jpeg, *.gif, *.png)";
+			public var file_filter_types:String = "*.jpg;*.jpeg;*.gif;*.png";
+			public var file_filter_macType:String = null;
+			
+			public var file_begin_folder:String = null;
+			
+			public function set urlUploadScript(url:String):void {
+				this._url = url;
+			}
+			
+			public function get urlUploadScript():String {
+				return this._url;
+			}
+			
+			public function get urlServer():String {
+				var ar:Array = this._url.split("/");
+				ar.pop();
+				return ar.join("/");
+			}
+			
+			public function get uploadStatus():Object {
+				return this._uploadStatus;
+			}
+			
+			private function onClose():void {
+				if (this.isPopUp) {
+					PopUpManager.removePopUp(this);
+				} else {
+					this.visible = false;
+				}
+				//this.dispatchEvent(new FileUploadCompletedEvent(FileUploadCompletedEvent.TYPE_FILE_UPLOAD_COMPLETE, this._uploadStatus));
+			}
+			
+			private function refershButtonState():void {
+				this.btnUpload.enabled = false;
+				this.btnRemove.enabled = false;
+				this.btnAdd.enabled = true;
+				try { this.btnUpload.enabled = (this.listFiles.dataProvider.length > 0); } catch (err:Error) { }
+				try { this.btnRemove.enabled = (this.listFiles.dataProvider.length > 0); } catch (err:Error) { }
+				try { this.btnAdd.enabled = (this.listFiles.dataProvider.length == 0); } catch (err:Error) { }
+			}
+			
+			private function initApp():void {
+				try {
+					Security.allowDomain("*");
+				} catch (err:Error) {}
+				_arrUploadFiles = new Array();
+				_queueUploadedFiles = [];
+				_queueVerifiedFiles = [];
+				this.srvc = new EzHTTPService(false);
+				this.refershButtonState();
+			}			
+			
+			private function get is_choose_folder_state():Boolean {
+				return (['Choose_Folder','Choose_Folder_WithProgress'].indexOf(this.currentState) > -1);
+			}
+			
+			private function get is_choose_exe_state():Boolean {
+				return (['Choose_EXE'].indexOf(this.currentState) > -1);
+			}
+			
+			private function get isState_Choose_Folder_WithProgress():Boolean {
+				return this.currentState == 'Choose_Folder_WithProgress';
+			}
+			
+			public function addFiles():void {
+				var _this:FileUpload = this;
+				var filters:Array = [];
+				var directory:File;
+				if (this.is_choose_folder_state) {
+					directory = (this.file_begin_folder is String) ? new File(this.file_begin_folder) : File.documentsDirectory;
+					
+					try {
+						directory.browseForDirectory("Select JavaScript Root Directory");
+						directory.addEventListener(Event.SELECT, onSelectFile);
+						directory.addEventListener(Event.CANCEL, 
+							function (event:Event):void {
+								_this.dispatchEvent(new FileIO.events.FileBrowseCancelledEvent(FileBrowseCancelledEvent.TYPE_FILE_BROWSE_CANCELLED));
+							});
+					} catch (error:Error) {
+						//AlertPopUp.surpriseNoOkay(error.message,'WARNING');
+					}
+				} else if (this.is_choose_exe_state) {
+					directory = (this.file_begin_folder is String) ? new File(this.file_begin_folder) : File.applicationDirectory;
+					filters = [];
+					filters.push(new FileFilter(this.file_filter_description,this.file_filter_types,this.file_filter_macType));
+					try {
+						directory.browseForOpen("Select an Executable File.",filters);
+						directory.addEventListener(Event.SELECT, onSelectFile);
+						directory.addEventListener(Event.CANCEL, 
+							function (event:Event):void {
+								_this.dispatchEvent(new FileIO.events.FileBrowseCancelledEvent(FileBrowseCancelledEvent.TYPE_FILE_BROWSE_CANCELLED));
+							});
+					} catch (error:Error) {
+						//AlertPopUp.surpriseNoOkay(error.message,'WARNING');
+					}
+				} else {
+					filters = [];
+					filters.push(new FileFilter(this.file_filter_description,this.file_filter_types,this.file_filter_macType));
+					_refAddFiles = new FileReferenceList();
+					_refAddFiles.addEventListener(Event.SELECT, onSelectFile);
+					_refAddFiles.addEventListener(Event.CANCEL, 
+						function (event:Event):void {
+							_this.dispatchEvent(new FileBrowseCancelledEvent(FileBrowseCancelledEvent.TYPE_FILE_BROWSE_CANCELLED));
+						});
+					_refAddFiles.browse(filters);
+				}
+			}
+			
+			private function removeAllFiles():void {
+				_arrUploadFiles = [];
+				_queueUploadedFiles = [];
+				listFiles.dataProvider = _arrUploadFiles;
+			}
+			
+			private function refreshFileList():void {
+				listFiles.dataProvider = _arrUploadFiles;
+			}
+			
+			private function removeFiles():void {
+				var arrSelected:Array = listFiles.selectedIndices;
+				for (var i:Number = 0; i < arrSelected.length; i++) {
+					_arrUploadFiles[Number(arrSelected[i])] = null;
+				}
+				for (var j:Number = 0; j < _arrUploadFiles.length; j++) {
+					if (_arrUploadFiles[j] == null) {
+						_arrUploadFiles.splice(j, 1);
+						j--;
+					}
+				}
+				listFiles.dataProvider = _arrUploadFiles;
+				listFiles.selectedIndex = 0;
+				this.refershButtonState();
+			}
+			
+			private function onSelectFile(event:Event):void {
+				var aFile:File;
+				if (this.is_choose_folder_state) {
+					aFile = File(event.currentTarget);
+					this.dispatchEvent(new FileIO.events.FileFolderCompletedEvent(FileFolderCompletedEvent.TYPE_FILE_FOLDER_COMPLETE,aFile));
+				} else if (this.is_choose_exe_state) {
+					aFile = File(event.currentTarget);
+					this.dispatchEvent(new FileIO.events.FileExeCompletedEvent(FileExeCompletedEvent.TYPE_FILE_EXE_COMPLETE,aFile));
+				} else {
+					var arrFoundList:Array = new Array();
+					for (var i:Number = 0; i < _arrUploadFiles.length; i++) {
+						for (var j:Number = 0; j < _refAddFiles.fileList.length; j++) {
+							if (_arrUploadFiles[i].label == _refAddFiles.fileList[j].name) {
+								arrFoundList.push(_refAddFiles.fileList[j].name);
+								_refAddFiles.fileList.splice(j, 1);
+								j--;
+							}
+						}
+					}
+					if (_refAddFiles.fileList.length >= 1) {
+						for (var k:Number = 0; k < _refAddFiles.fileList.length; k++) {
+							if (_arrUploadFiles.length < 1) {
+								_arrUploadFiles.push({label:_refAddFiles.fileList[k].name, data:_refAddFiles.fileList[k]});
+							}
+						}
+						listFiles.dataProvider = _arrUploadFiles;
+						listFiles.selectedIndex = _arrUploadFiles.length - 1;
+					}				
+					if (arrFoundList.length >= 1) {
+						AlertPopUp.info("The file(s): \n\n• " + arrFoundList.join("\n• ") + "\n\n...are already on the upload list. Please change the filename(s) or pick a different file.", "File(s) already on list");
+					}
+				}
+				this.refershButtonState();
+			}
+			
+			
+			private function clearUpload():void {
+				_refUploadFile.removeEventListener(ProgressEvent.PROGRESS, onUploadProgress);
+				_refUploadFile.removeEventListener(Event.COMPLETE, onUploadComplete);
+				_refUploadFile.removeEventListener(IOErrorEvent.IO_ERROR, onUploadIoError);
+				_refUploadFile.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, onUploadSecurityError);
+				_refUploadFile.cancel();
+			}
+			
+			private function startUpload():void {
+				if (this.listFiles.dataProvider.length > 0) {
+					var obj:Object = _arrUploadFiles.pop();
+					this._queueUploadedFiles.push(obj);
+					_winProgress = winProgress(PopUpManager.createPopUp(this, winProgress, true));
+					_winProgress.btnCancel.removeEventListener("click", onUploadCanceled);
+					_winProgress.btnCancel.addEventListener("click", onUploadCanceled);
+					_winProgress.title = "Uploading file...";
+					_winProgress.txtFile.text = obj.label;
+					_winProgress.progBar.label = "0%";
+					PopUpManager.centerPopUp(_winProgress);
+					
+					// Variables to send along with upload
+					var sendVars:URLVariables = new URLVariables();
+					sendVars.action = "upload";
+					sendVars.userid = this.parentApplication.appProxy.user.id;
+					sendVars.session_key = this.parentApplication.appProxy.user.session_key;
+					
+					var request:URLRequest = new URLRequest();
+					request.data = sendVars;
+					request.url = this.urlUploadScript;
+					request.method = URLRequestMethod.POST;
+					
+					_refUploadFile = new FileReference();
+					_refUploadFile = obj.data;
+					_refUploadFile.addEventListener(ProgressEvent.PROGRESS, onUploadProgress);
+					_refUploadFile.addEventListener(Event.COMPLETE, onUploadComplete);
+					_refUploadFile.addEventListener(IOErrorEvent.IO_ERROR, onUploadIoError);
+					_refUploadFile.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onUploadSecurityError);
+					_refUploadFile.addEventListener(DataEvent.UPLOAD_COMPLETE_DATA, onDataUploadComplete);
+					
+					var mime:String = "image/" + _refUploadFile.type.replace(".", "");
+					var header:URLRequestHeader = new URLRequestHeader("Content-Type", mime);
+					request.requestHeaders.push(header);
+					
+					_refUploadFile.upload(request, "file", false);
+				}
+			}
+			
+			private function onDataUploadComplete(event:DataEvent):void {
+				this._uploadStatus = new Object();
+				var data:Object = {'success':false};
+				try {
+					data = com.adobe.serialization.json.JSON.decode(event.data);
+					this._uploadStatus["data"] = data;
+					this.dispatchEvent(new FileIO.events.FileUploadCompletedEvent(FileUploadCompletedEvent.TYPE_FILE_UPLOAD_COMPLETE, this._uploadStatus));
+				} catch (err:Error) {
+					//AlertPopUp.surpriseNoOkay(err.toString(),'WARNING - Programming Error...')
+				}
+			}
+			
+			private function onUploadCanceled(event:Event):void {
+				PopUpManager.removePopUp(_winProgress);
+				_winProgress = null;
+				_refUploadFile.cancel();
+				clearUpload();
+				this._uploadStatus = new Object();
+			}
+			
+			private function onUploadProgress(event:ProgressEvent):void {
+				var numPerc:Number = Math.round((Number(event.bytesLoaded) / Number(event.bytesTotal)) * 100);
+				_winProgress.progBar.setProgress(numPerc, 100);
+				_winProgress.progBar.label = numPerc + "%";
+				_winProgress.progBar.validateNow();
+				if (numPerc > 90) {
+					_winProgress.btnCancel.enabled = false;
+				} else {
+					_winProgress.btnCancel.enabled = true;
+				}
+			}
+			
+			private function onUploadComplete(event:Event):void {
+				this.refreshFileList();
+				PopUpManager.removePopUp(_winProgress);
+				this.refershButtonState();
+			}
+			
+			private function onUploadIoError(event:IOErrorEvent):void {
+				AlertPopUp.info("IO Error in uploading file.", "Error");
+				PopUpManager.removePopUp(_winProgress);
+				_winProgress = null;
+				_refUploadFile.cancel();
+				clearUpload();
+				this.refershButtonState();
+				this._uploadStatus = new Object();
+				this.dispatchEvent(new FileUploadCompletedEvent(FileUploadCompletedEvent.TYPE_FILE_UPLOAD_COMPLETE, this._uploadStatus));
+			}
+			
+			private function onUploadSecurityError(event:SecurityErrorEvent):void {
+				AlertPopUp.info("Security Error in uploading file.", "Error");
+				PopUpManager.removePopUp(_winProgress);
+				_winProgress = null;
+				_refUploadFile.cancel();
+				clearUpload();
+				this.refershButtonState();
+				this._uploadStatus = new Object();
+				this.dispatchEvent(new FileUploadCompletedEvent(FileUploadCompletedEvent.TYPE_FILE_UPLOAD_COMPLETE, this._uploadStatus));
+			}
+			
+			protected function btn_termsLink_clickHandler(event:MouseEvent):void {
+				this.dispatchEvent(new FileIO.events.FileUploadTermsRequestedEvent(FileUploadTermsRequestedEvent.TYPE_FILE_UPLOAD_TERMS_REQUEST));
+			}
+			
+			
+			protected function cb_termsAgreement_clickHandler(event:MouseEvent):void {
+				this.dispatchEvent(new FileIO.events.FileUploadTermsAgreementEvent(FileUploadTermsAgreementEvent.TYPE_FILE_UPLOAD_TERMS_AGREEMENT));
+			}
+			
+			private function get okay_to_upload():Boolean {
+				trace(this.className+'.get okay_to_upload --> this.listFiles.dataProvider.length='+((this.listFiles.dataProvider) ? this.listFiles.dataProvider.length : -1)+', this.cb_termsAgreement.selected='+this.cb_termsAgreement.selected);
+				return ( (this.listFiles.dataProvider) && (this.listFiles.dataProvider.length > 0) ) && (this.cb_termsAgreement.selected);
+			}
+			
+			private function get has_not_read_terms_and_conditions():Boolean {
+				return ( (FlexGlobals.topLevelApplication.appProxy.has_read_terms_and_conditions == false) || (FlexGlobals.topLevelApplication.appProxy.has_declined_terms_and_conditions) );
+			}
+			
+			private function get has_read_terms_and_conditions():Boolean {
+				return ( (FlexGlobals.topLevelApplication.appProxy.has_read_terms_and_conditions == true) && (FlexGlobals.topLevelApplication.appProxy.has_agreed_to_terms_and_conditions) );
+			}
+			
+			public function refresh_terms_and_conditions_checkbox_selection():void {
+				this.cb_termsAgreement.selected = this.has_read_terms_and_conditions;
+				this.cb_termsAgreement.enabled = (FlexGlobals.topLevelApplication.appProxy.has_read_terms_and_conditions == true);
+			}
+			
+			public function refresh_upload_button():void {
+				this.btnUpload.enabled = this.okay_to_upload;
+			}
+			
+			private function get get_upload_button_tooltip():String {
+				return (FlexGlobals.topLevelApplication.appProxy.has_read_terms_and_conditions == true) ? 'You must Agree to the Terms and Conditions before you can Scan your JavaScript files.' : 'You must Read the Terms and Conditions before you can continue.';
+			}
+			
+			protected function hbox_wrapper_creationCompleteHandler(event:FlexEvent):void {
+				var _this:FileUpload = this;
+				var hb:HBox = event.currentTarget as HBox;
+				hb.addChild(this.vbox_container);
+			}
+			
+			protected function titlewindow1_stateChangeCompleteHandler(event:FlexEvent):void {
+				if (this.currentState == 'No_Remove_File') {
+					this.btnRemove.visible = this.btnRemove.includeInLayout = false;
+				} else if (this.currentState == 'Choose_Folder') {
+					this.btnAdd.label = 'Choose folder...';
+					this.listFiles.visible = this.listFiles.includeInLayout = false;
+					this.btnUpload.visible = this.btnUpload.includeInLayout = false;
+					this.hbox_terms.visible = this.hbox_terms.includeInLayout = false;
+					this.container.visible = this.container.includeInLayout = false;
+				} else if (this.currentState == 'Choose_Folder_WithProgress') {
+					this.progress.visible = this.progress.includeInLayout = true;
+				} else if (this.currentState == 'Choose_EXE') {
+					this.btnAdd.label = 'Choose Executable...';
+					this.container.visible = this.container.includeInLayout = true;
+					this.height = 120;
+					this.btn_dismiss.visible = this.btn_dismiss.includeInLayout = false;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<mx:State name="No_Remove_File"/>
+		<mx:State name="Choose_Folder" basedOn="No_Remove_File"/>
+		<mx:State name="Choose_Folder_WithProgress" basedOn="Choose_Folder"/>
+		<mx:State name="Choose_EXE" basedOn="Choose_Folder"/>
+	</s:states>
+	
+	<mx:VBox id="container" width="100%" height="100%">
+		<controls:winProgress id="progress" width="100%" height="100%" currentState="NO_CANCEL" visible="false" includeInLayout="false"/>
+		<mx:HBox id="hbox_wrapper" width="100%" creationComplete="hbox_wrapper_creationCompleteHandler(event)">
+		</mx:HBox>
+		<mx:VBox id="vbox_container" width="100%">
+			<mx:List width="100%" id="listFiles" height="20" allowMultipleSelection="false"/>
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:Button label="Choose file..." id="btnAdd" enabled="{this.listFiles.dataProvider.length == 0}" click="addFiles()"/>
+				<mx:Spacer width="50%"/>
+				<mx:Button label="Remove file" id="btnRemove" enabled="{this.listFiles.dataProvider.length > 0}" click="removeFiles()"/>
+			</mx:HBox>
+		</mx:VBox>
+		<mx:ControlBar horizontalAlign="right">
+			<mx:Button label="Upload file" id="btnUpload" toolTip="{this.get_upload_button_tooltip}" enabled="{this.okay_to_upload}" click="startUpload()"/>
+			<mx:Spacer width="50%"/>
+			<mx:HBox id="hbox_terms">
+				<mx:CheckBox id="cb_termsAgreement" label="Terms and Conditions" enabled="{this.has_not_read_terms_and_conditions}" selected="{this.has_read_terms_and_conditions}" click="cb_termsAgreement_clickHandler(event)"/>
+				<mx:LinkButton id="btn_termsLink" label="(?)" useHandCursor="true" toolTip="Read and understand the Terms and Conditions before using this system; once you agree you will not be asked each time before uploading another Bank Statement PDF." click="btn_termsLink_clickHandler(event)"/>
+			</mx:HBox>
+			<mx:HBox id="hbox_dismiss">
+				<mx:Spacer width="50%"/>
+				<mx:Button label="Dismiss" id="btn_dismiss" click="onClose()"/>
+			</mx:HBox>
+		</mx:ControlBar>
+	</mx:VBox>
+</s:TitleWindow>

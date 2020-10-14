@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="100%" height="100%" 
+		 minWidth="250" minHeight="250"
+		 click="group1_clickHandler(event)" touchTap="group1_touchTapHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			
+			import core.SWFHelper;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import utils.AIRHelper;
+			
+			private function handle_sponsor_action():void {
+				try {
+					var url:String = FlexGlobals.topLevelApplication['sponsor_site'];
+					if (url is String) {
+						AIRHelper.navigate_to_url(url,'_blank');
+					}
+				} catch (err:Error) {}
+			}
+			
+			protected function group1_clickHandler(event:MouseEvent):void {
+				this.handle_sponsor_action();
+			}
+
+
+			protected function group1_touchTapHandler(event:TouchEvent):void {
+				this.handle_sponsor_action();
+			}
+
+			private function get vyperlogixLogoIcon():Class {
+				return FlexGlobals.topLevelApplication.vyperlogixLogoIcon;
+			}
+		]]>
+	</fx:Script>
+	<s:Group id="logo_container" x="{this.width/4}" width="100%">
+		<s:HGroup width="100%" paddingLeft="{this.width/10}">
+			<mx:SWFLoader id="loader" width="100%" scaleContent="true" maintainAspectRatio="true" source="{this.vyperlogixLogoIcon}"/>
+		</s:HGroup>
+	</s:Group>
+	<s:Group id="logo_image" x="{this.logo_container.x-40}" y="{this.logo_container.height-280}">
+		<s:Image source="@Embed('assets/VLC-header-world-05-11-2010b.png')" width="40%" scaleMode="stretch"/>
+	</s:Group>
+</s:Group>

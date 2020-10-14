@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (c) 2009 Taras Novak (www.randomfractals.com)
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+-->
+<mx:ViewStack xmlns:mx="http://www.adobe.com/2006/mxml"
+	xmlns:vis="com.nocreativity.soundCoolness.*"
+	xmlns:wave="org.bytearray.spectrums.*"	
+	width="420" height="300" 
+	creationPolicy="all" 
+	buttonMode="true" useHandCursor="true"
+	toolTip="Change Visualization"
+	initialize="initMusicVis()"
+	click="nextMusicVis();" 
+	resize="nextMusicVis(0);">			
+			
+	<mx:Script>
+		<![CDATA[
+			import mx.core.IUIComponent;
+									
+			private var _selectedMusicVis:IUIComponent;
+			
+			/**
+			 * Initializes music visualizer.
+			 */
+			private function initMusicVis():void
+			{
+				// set current vis.
+				this.selectedIndex = 0;
+				_selectedMusicVis = visualizr;
+			}
+			
+			//----------- Public Methods ------------------------
+			
+			/**
+			 * Loads the next music visualizer.
+			 */
+			public function nextMusicVis(index:int = -1):void
+			{				
+				if (index >= 0 && index < this.numChildren - 1)
+				{
+					// select the specivied music vis
+					this.selectedIndex = index;
+				}
+				else if (this.selectedIndex < this.numChildren -1)
+				{
+					// select the next music visualizer					
+					this.selectedIndex++;
+				}
+				else	
+				{
+					// show the first music vis
+					this.selectedIndex = 0;
+				}
+				
+				// determine the next music visualizer
+				var nextVisualizer:IUIComponent;				
+				switch (this.selectedIndex)
+				{
+					case 0:
+						nextVisualizer = visualizr;
+						break;											
+					case 1:
+						nextVisualizer = smoothSpectrum;
+						break;
+					// Note: add a case for the other music visualizers here
+				}
+				
+				if (nextVisualizer != _selectedMusicVis)
+				{
+					// NOTE: make sure rendering is disabled in your music vis.,
+					// when your visualizer is not enabled
+					// to save those preciouse CPU cycles 
+					// and skip all the bitmapdata and 
+					// blur filter changes that nobody will see :)
+					
+					// change selected visualizer					
+					nextVisualizer.enabled = true;
+					_selectedMusicVis.enabled = false;
+					_selectedMusicVis = nextVisualizer;
+				}
+			}
+			
+			/**
+			 * Returns the selected music visualization.
+			 */
+			public function get selectedMusicVis():IUIComponent
+			{
+				return _selectedMusicVis;
+			}			
+						
+		]]>
+	</mx:Script>
+				
+	<mx:VBox width="100%" height="100%" 
+		horizontalAlign="center"
+		verticalAlign="middle">
+		<vis:Visualizr id="visualizr" 
+			width="100%" height="100%" />				
+	</mx:VBox>
+				
+	<mx:VBox width="100%" height="100%"
+		horizontalAlign="center"
+		verticalAlign="middle" 
+		horizontalScrollPolicy="off" 
+		verticalScrollPolicy="off">	
+		<wave:SmoothSpectrum id="smoothSpectrum" enabled="false"
+			width="100%" height="100%" />
+	</mx:VBox>
+			
+	<!-- add other music visulizers to the music vis. stack here -->
+	
+</mx:ViewStack>

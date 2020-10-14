@@ -1,0 +1,593 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%" styleName="MusicPlayerPanel"
+		  horizontalScrollPolicy="off" verticalScrollPolicy="off" 
+		  resize="panel1_resizeHandler(event)" creationComplete="panel1_creationCompleteHandler(event)"
+		  xmlns:controls="com.randomFractals.media.controls.*" xmlns:local="*" xmlns:controls1="controls.*">
+	<mx:states>
+		<s:State name="State1"/>
+		<s:State name="video"/>
+		<s:State name="html"/>
+		<s:State name="audio"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:NumberFormatter id="percent_formatter" precision="0" rounding="up"/>
+		<mx:NumberFormatter id="number_formatter" precision="0" rounding="up"/>
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace controls "com.randomFractals.media.controls.*";
+		@namespace local "*";
+		
+		.MusicPlayerPanel {
+			borderColor: #000000;
+			borderAlpha: 0.5;
+			roundedBottomCorners: true;
+			cornerRadius: 5;
+			backgroundAlpha: 1;
+			headerHeight: 26;
+			highlightAlphas: 0.46, 0.29;
+			headerColors: #474747, #474747;
+			backgroundColor: #474747;
+			shadowDirection: right;
+			dropShadowColor: #333333;
+			titleStyleName: "MusicPlayerPanelTitle";
+		}
+		
+		.MusicPlayerPanelTitle {
+			color: #474747;
+			fontFamily: Verdana;
+			fontSize: 12;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.CapabilitiesUtils;
+			import com.ContentCache;
+			import com.HTMLUtils;
+			import com.ImageUtils;
+			import com.StringUtils;
+			import com.URLUtils;
+			import com.nocreativity.playr.*;
+			
+			import controls.Alert.AlertPopUp;
+			
+			import flash.filesystem.File;
+			import flash.html.HTMLLoader;
+			import flash.html.HTMLPDFCapability;
+			
+			import mx.controls.Alert;
+			import mx.controls.Image;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			import mx.events.SliderEvent;
+			import mx.events.VideoEvent;
+			import mx.managers.CursorManager;
+			import mx.managers.PopUpManager;
+			
+			import spark.components.VideoPlayer;
+			
+			import utils.AIRHelper;
+			
+			private var alert:Alert;
+			
+			private var __data__:Object;
+			
+			private var _this:*;
+			
+			private var _hasEnded:Boolean = false;
+			
+			[Bindable]
+			private var _videoState:String = '';
+			
+			[Bindable]
+			public var currentLocation:String = '';
+
+			[Bindable]
+			public var defaultLocation:String = '';
+			
+			[Bindable]
+			public var htmlContent:String;
+			
+			private var playList:PlaylistManager;			
+			
+			private var types:Object = {
+				'AFStudyGuideIcon' : function():void {},
+				'AudioIcon' : function():void {},
+				'BookIcon' : function():void {},
+				'KidStudyGuideIcon' : function():void {},
+				'StoraclesIcon' : function():void {},
+				'VideoIcon' : function():void {}
+			};
+			
+			public static var urls:Object = {
+				'default' : AIRHelper.default_prefix+'assets/content'+((FlexGlobals.topLevelApplication.language == FlexGlobals.topLevelApplication.Languages.English) ? '' : '-spanish')+'/default/Please_install_the_Adobe_Reader.htm'
+			};
+
+			public var videoPlayer:*;
+			
+			//public var htmlViewer:HTMLViewer;
+			public var htmlViewer:*;
+
+			public var pdfViewer:UIComponent;
+			
+			private var videoPlayer_width:Number;
+			private var videoPlayer_height:Number;
+			private var videoPlayer_currentTime:Number;
+			private var videoPlayer_beenResized:Boolean = false;
+			
+			public var audioPlayer:AudioPoster;
+			
+			private var _width:Number;
+			private var _height:Number;
+			
+			private var isFullScreen:Boolean = false;;
+			private var isSkippingVIdeoPlayerResize:Boolean = false;;
+
+			private function getURL(name:String):String {
+				var aUrl:String = DocumentViewer.urls[name];
+				if (aUrl is String) {
+					return aUrl;
+				}
+				AlertPopUp.surpriseNoOkay('Warning 201 :: Cannot locate the document "'+aUrl+'".','WARNING')
+				return '';
+			}
+			
+			public function getDefaultPage():String {
+				return this.getURL('default');
+			}
+			
+			protected function onCreationComplete_videoPlayer(event:FlexEvent):void {
+				var _this:* = this;
+				this.parentApplication.stage.addEventListener(FullScreenEvent.FULL_SCREEN, function (event:FullScreenEvent):void {
+					this.isFullScreen = event.fullScreen;
+					if (!this.isFullScreen) {
+						_this.videoPlayer.width = _this.videoPlayer_width;
+						_this.videoPlayer.height = _this.videoPlayer_height;
+						_this._resize_videoPlayer(true);
+					} else {
+						_this.videoPlayer.width = _this.parentApplication.width;
+						_this.videoPlayer.height = _this.parentApplication.height;
+						_this.isSkippingVIdeoPlayerResize = true;
+					}
+				});
+				var data:* = this.__data__;
+				var aFile:File = AIRHelper.resolve(data.data.media);
+
+//				if (CapabilitiesUtils.isOSMac() || CapabilitiesUtils.isOSLinux()) {
+//					var url:String = FlexGlobals.topLevelApplication.mainCanvas.webserver.url_from_nativePath(StringUtils.urlDecode(aFile.nativePath));
+//					trace(_this.className+'.onCreationComplete_videoPlayer().1 MP4 --> url='+url);
+//					this.videoPlayer.videoDisplay.source = url;
+//				} else if (CapabilitiesUtils.isOSWindows()) {
+//					this.videoPlayer.videoDisplay.source = ContentCache.cache(aFile.nativePath);
+//					trace(this.className+'.onCreationComplete_videoPlayer().1 --> this.videoPlayer.videoDisplay.source='+this.videoPlayer.videoDisplay.source);
+//					this.videoPlayer.videoDisplay.play();
+//				}
+
+				if (CapabilitiesUtils.isOSMac() || CapabilitiesUtils.isOSLinux()) {
+					if (this.videoPlayer is VideoPlayer) {
+						//this.videoPlayer.videoDisplay.source = AIRHelper.normalize_url(ContentCache.cache(aFile.nativePath));
+						this.videoPlayer.videoDisplay.source = AIRHelper.normalize_url(aFile.nativePath);
+						trace(this.className+'.onCreationComplete_videoPlayer().2 --> this.videoPlayer.videoDisplay.source='+this.videoPlayer.videoDisplay.source);
+						this.videoPlayer.videoDisplay.play();
+					} else if (this.videoPlayer is VideoViewer) {
+						this.videoPlayer.currentLocation = File.applicationDirectory.resolvePath('assets/players/video/esa/default.swf').nativePath+'?media='+File.applicationDirectory.resolvePath('assets/players/video/esa/media.xml').nativePath;
+						trace(this.className+'.onCreationComplete_videoPlayer().3 --> this.videoPlayer.currentLocation='+this.videoPlayer.currentLocation);
+					}
+				} else if (CapabilitiesUtils.isOSWindows()) {
+					trace(this.className+'.onCreationComplete_videoPlayer().1 --> aFile.nativePath='+aFile.nativePath);
+					if (URLUtils.isURLValid(aFile.nativePath)) {
+						if (this.videoPlayer is VideoPlayer) {
+							this.videoPlayer.videoDisplay.source = aFile.nativePath;
+							trace(this.className+'.onCreationComplete_videoPlayer().2 --> this.videoPlayer.videoDisplay.source='+this.videoPlayer.videoDisplay.source);
+							this.videoPlayer.videoDisplay.play();
+						} else if (this.videoPlayer is VideoViewer) {
+							this.videoPlayer.currentLocation = File.applicationDirectory.resolvePath('assets/players/video/esa/default.swf').nativePath+'?media='+File.applicationDirectory.resolvePath('assets/players/video/esa/media.xml').nativePath;
+							trace(this.className+'.onCreationComplete_videoPlayer().3 --> this.videoPlayer.currentLocation='+this.videoPlayer.currentLocation);
+						}
+					} else {
+						AlertPopUp.surpriseNoOkay('Missing Document...\nThe selected document is not present or inaccessible.','INFO');
+					}
+				}
+			}
+			
+			private function createTrack(artist:String, album:String, title:String, file:String, seconds:uint):PlayrTrack {
+				var track:PlayrTrack = new PlayrTrack();
+				track.artist = artist;
+				track.album = album;
+				track.title = title;
+				track.file = file;
+				track.totalSeconds = seconds;
+				
+				return track;
+			}
+			
+			public function get isVideoPlayer():Boolean {
+				return (this.videoPlayer is VideoPlayer);
+			}
+			
+			public function get isAudioPoster():Boolean {
+				return (this.audioPlayer is AudioPoster);
+			}
+			
+			public function get isHTMLViewer():Boolean {
+				return ( (this.htmlViewer is HTMLCanvas) || (this.htmlViewer is HTMLViewer) );
+			}
+			
+			public function detach_all_players():void {
+				if (this.isVideoPlayer) {
+					this.detach_video_Player();
+				} else if (this.isAudioPoster) {
+					this.detach_audio_Player();
+				} else if (this.isHTMLViewer) {
+					this.detach_html_viewer();
+				}
+			}
+			
+			private function attach_video_Player(callback:Function):void {
+				this.detach_all_players();
+				if (this.videoPlayer == null) {
+					this.videoPlayer = new VideoPlayer();
+					//this.videoPlayer = new VideoViewer();
+					this.videoPlayer.id = 'videoPlayer';
+					this.videoPlayer.x = 0;
+					this.videoPlayer.y = 0;
+					if (this.videoPlayer_beenResized) {
+						this.resize_videoPlayer();
+					}
+					this.videoPlayer.addEventListener(FlexEvent.CREATION_COMPLETE, function (event:FlexEvent):void {
+						var vp:VideoPlayer = event.currentTarget as VideoPlayer;
+						if (callback is Function) {
+							callback(event);
+						}
+					});
+					this.addChild(this.videoPlayer);
+				}
+			}
+			
+			public function detach_video_Player():void {
+				if (this.videoPlayer is VideoPlayer) {
+					this.videoPlayer.stop();
+					var i:int = this.getChildIndex(this.videoPlayer);
+					if (i > -1) {
+						this.removeChildAt(i);
+						this.videoPlayer = null;
+					}
+				}
+			}
+			
+			public function detach_audio_Player():void {
+				if (this.audioPlayer is AudioPoster) {
+					this.audioPlayer.musicPlayer.musicPlayer.stop();
+					var i:int = this.getChildIndex(this.audioPlayer);
+					if (i > -1) {
+						this.removeChildAt(i);
+						this.audioPlayer = null;
+					}
+				}
+			}
+			
+			private function attach_audio_Player(callback:Function=null):void {
+				var _this:DocumentViewer = this;
+				var data:* = this.__data__;
+				this.detach_all_players();
+				if (this.audioPlayer == null) {
+					this.audioPlayer = new AudioPoster();
+					this.audioPlayer.id = 'audioPlayer1';
+					this.audioPlayer.onCreationComplete_musicPlayer_callback = function (event:FlexEvent):void {
+						_this.audioPlayer.musicPlayer.MusicVisualizer.height = 0;
+						_this.audioPlayer.musicPlayer.musicPlayer.nextButton.visible = _this.audioPlayer.musicPlayer.musicPlayer.nextButton.includeInLayout = false;
+						_this.audioPlayer.musicPlayer.musicPlayer.previousButton.visible = _this.audioPlayer.musicPlayer.musicPlayer.previousButton.includeInLayout = false;
+						_this.audioPlayer.musicPlayer.musicPlayer.repeatButton.visible = _this.audioPlayer.musicPlayer.musicPlayer.repeatButton.includeInLayout = false;
+						_this.audioPlayer.musicPlayer.musicPlayer.viewModeButton.visible = _this.audioPlayer.musicPlayer.musicPlayer.viewModeButton.includeInLayout = false; 
+						
+						var aFile:File = AIRHelper.resolve(data.data.media);
+						if (URLUtils.isURLValid(aFile.nativePath)) {
+							_this.playList = new PlaylistManager();
+
+//							var fname:String = ((CapabilitiesUtils.isOSMac() || CapabilitiesUtils.isOSLinux())) ? ContentCache.cache(aFile.nativePath) : aFile.nativePath;
+//							trace(_this.className+'.attach_audio_Player().1 --> fname='+fname);
+//							_this.playList.addTrack( createTrack(data.data.title,'', '', fname, 30000) );
+
+//							var url:String = FlexGlobals.topLevelApplication.mainCanvas.webserver.url_from_nativePath(StringUtils.urlDecode(aFile.nativePath));
+//							trace(_this.className+'.attach_audio_Player().1 MP3 --> url='+url);
+//							_this.playList.addTrack( createTrack(data.data.title,'', '', url, 30000) );
+
+							var url:String;
+							if (CapabilitiesUtils.isOSMac() || CapabilitiesUtils.isOSLinux()) {
+								url = AIRHelper.normalize_url(StringUtils.urlDecode(aFile.nativePath));
+							} else if (CapabilitiesUtils.isOSWindows()) {
+								url = StringUtils.urlDecode(aFile.nativePath);
+							}
+							trace(_this.className+'.attach_audio_Player().1 MP3 --> url='+url);
+							_this.playList.addTrack( createTrack(data.data.title,'', '', url, 9999) );
+							//_this.playList.addTrack( createTrack(data.data.title,'', '', url, 9999) );
+							
+							_this.audioPlayer.musicPlayer.musicPlayer.autoPlay = false;
+							_this.audioPlayer.musicPlayer.musicPlayer.playlist = playList;
+							
+							var timer:Timer = new Timer(100,1);
+							timer.addEventListener(TimerEvent.TIMER_COMPLETE, function (event:TimerEvent):void {
+								trace(_this.className+'.attach_audio_Player().1a MP3 --> isPlaying='+_this.audioPlayer.musicPlayer.musicPlayer.isPlaying);
+								if (!_this.audioPlayer.musicPlayer.musicPlayer.isPlaying) {
+									trace(_this.className+'.attach_audio_Player().1b MP3 --> play() !');
+									_this.audioPlayer.musicPlayer.musicPlayer.play();
+								}
+							});
+							timer.start();
+						} else {
+							AlertPopUp.surpriseNoOkay('Missing Document...\nThe selected document is not present or inaccessible.','INFO');
+						}
+					}
+					this.audioPlayer.onCreationComplete_poster_image_callback = function (event:FlexEvent):void {
+						var img:Image = event.currentTarget as Image;
+						var aFile:File = AIRHelper.resolve(data.data.poster);
+						if (CapabilitiesUtils.isOSMac() || CapabilitiesUtils.isOSLinux()) {
+							ImageUtils.read_image2(aFile,function (image:UIComponent):void {
+								img.parent.addChildAt(image,0);
+								img.parent.removeChild(img);
+							});
+						} else if (CapabilitiesUtils.isOSWindows()) {
+							if (URLUtils.isURLValid(aFile.nativePath)) {
+								img.source = aFile.nativePath;
+								trace(_this.className+'.attach_audio_Player().1 --> img.source='+img.source);
+							} else {
+								AlertPopUp.surpriseNoOkay('Missing Document...\nThe selected document is not present or inaccessible.','INFO');
+							}
+						}
+					}
+					this.audioPlayer.x = 0;
+					this.audioPlayer.y = 0;
+					this.audioPlayer.width = this.parentApplication.width-300;
+					this.audioPlayer.height = this.parentApplication.height-200;
+					this.audioPlayer.addEventListener(FlexEvent.CREATION_COMPLETE, (callback is Function) ? callback : function(event:FlexEvent):void {
+					});
+					this.addChild(this.audioPlayer);
+				}
+			}
+			
+			private function attach_html_viewer(callback:Function=null):void {
+				var _this:DocumentViewer = this;
+				this.detach_all_players();
+				if (this.htmlViewer == null) {
+					//this.defaultLocation = this.getDefaultPage();
+					this.htmlViewer = new HTMLViewer();
+					//this.htmlViewer = ( (this.currentLocation.toLowerCase().indexOf('.pdf') > -1) && (HTMLLoader.pdfCapability == HTMLPDFCapability.STATUS_OK) ) ? new PDFViewer() : new HTMLViewer();
+					this.htmlViewer.id = 'htmlViewer';
+					this.htmlViewer.x = 0;
+					this.htmlViewer.y = 0;
+					this.htmlViewer.width = this._width;
+					this.htmlViewer.height = this._height;
+					this.htmlViewer.addEventListener(FlexEvent.CREATION_COMPLETE, function (event:FlexEvent):void {
+						_this.htmlViewer.currentLocation = _this.currentLocation;
+						trace(_this.className+'.attach_html_viewer().1 [FlexEvent.CREATION_COMPLETE] --> _this.currentLocation='+_this.currentLocation);
+						if (callback is Function) {
+							callback(event);
+						}
+					});
+					this.htmlViewer.onComplete = function (event:*):void {
+						_this.html0.visible = _this.html0.includeInLayout = false;
+					};
+					this.addChild(this.htmlViewer);
+				} else if (this.htmlViewer is HTMLViewer) {
+					this.htmlViewer.currentLocation = this.currentLocation;
+				}
+			}
+			
+			public function detach_html_viewer():void {
+				if (this.htmlViewer is HTMLViewer) {
+					var i:int = this.getChildIndex(this.htmlViewer);
+					if (i > -1) {
+						this.removeChildAt(i);
+						this.htmlViewer = null;
+					}
+				}
+			}
+			
+			public function detach_pdf_viewer():void {
+				if (this.pdfViewer is UIComponent) {
+					var i:int = this.getChildIndex(this.pdfViewer);
+					if (i > -1) {
+						this.removeChildAt(i);
+						this.pdfViewer = null;
+					}
+				}
+			}
+			
+			private function handle_docType():void {
+				var _this:DocumentViewer = this;
+				
+				this.types['VideoIcon'] = function():void {
+//					if (CapabilitiesUtils.isOSMac() || CapabilitiesUtils.isOSLinux()) {
+//						AIRHelper.resolve(_this.__data__.data.media).openWithDefaultApplication();
+//						FlexGlobals.topLevelApplication.mainCanvas.docsList.currentState = 'details';
+//					} else if (CapabilitiesUtils.isOSWindows()) {
+//						_this.currentState = 'video';
+//						_this.attach_video_Player(_this.onCreationComplete_videoPlayer);
+//					} else {
+//						AlertPopUp.surpriseNoOkay('Cannot display the selected document.','WARNING');
+//					}
+
+					_this.currentState = 'video';
+					_this.attach_video_Player(_this.onCreationComplete_videoPlayer);
+				};
+				this.types['AFStudyGuideIcon'] = function():void {
+					// BEGIN:  DO NOT REMOVE THIS BLOCK OF CODE.
+//					if (CapabilitiesUtils.isOSMac() || CapabilitiesUtils.isOSLinux()) {
+//						AIRHelper.resolve(_this.__data__.data.media).openWithDefaultApplication();
+//						FlexGlobals.topLevelApplication.mainCanvas.docsList.currentState = 'details';
+//					} else if (CapabilitiesUtils.isOSWindows()) {
+//						_this.currentState = 'html';
+//						_this.currentLocation = StringUtils.urlDecode(AIRHelper.resolve(_this.__data__.data.media).url);
+//						_this.attach_html_viewer();
+//					} else {
+//						AlertPopUp.surpriseNoOkay('Cannot display the selected document.','WARNING');
+//					}
+					// END!   DO NOT REMOVE THIS BLOCK OF CODE.
+
+//					var url:String = FlexGlobals.topLevelApplication.mainCanvas.webserver.url_from_nativePath(StringUtils.urlDecode(AIRHelper.resolve(_this.__data__.data.media).nativePath));
+//					trace(_this.className+'.handle_docType().1 PDF --> url='+url);
+//					HTMLUtils.load_pdf(url,_this.width,_this.height, function (uic:UIComponent):void {
+//						_this.addChild(uic);
+//					});
+
+//					_this.currentState = 'html';
+//					var url:String = FlexGlobals.topLevelApplication.mainCanvas.webserver.url_from_nativePath(StringUtils.urlDecode(AIRHelper.resolve(_this.__data__.data.media).nativePath));
+//					trace(_this.className+'.handle_docType().1 PDF --> url='+url);
+//					_this.currentLocation = url;
+//					_this.attach_html_viewer();
+
+					_this.currentState = 'html';
+					if (CapabilitiesUtils.isOSMac() || CapabilitiesUtils.isOSLinux()) {
+						//_this.currentLocation = ContentCache.cache(AIRHelper.resolve(_this.__data__.data.media).nativePath);
+						_this.currentLocation = AIRHelper.normalize_url(AIRHelper.resolve(_this.__data__.data.media).nativePath);
+						
+					} else {
+						_this.currentLocation = AIRHelper.resolve(_this.__data__.data.media).nativePath;
+					}
+					trace(_this.className+'.handle_docType().1 PDF --> _this.currentLocation='+_this.currentLocation);
+					_this.attach_html_viewer();
+					
+					// BEGIN:  DO NOT REMOVE THIS BLOCK OF CODE.
+//					if (CapabilitiesUtils.isOSMac() || CapabilitiesUtils.isOSLinux()) {
+//						_this.currentState = 'html';
+//						//_this.currentLocation = StringUtils.urlDecode(AIRHelper.resolve(_this.__data__.data.media).url);
+//						_this.currentLocation = AIRHelper.resolve(_this.__data__.data.media).nativePath;
+//						//_this.htmlContent = '<iframe src="'+AIRHelper.resolve(_this.__data__.data.media).url+'" frameborder="0" width="100%" height="700" marginwidth="0" marginheight="0" scrolling="auto"></iframe>';
+//						//_this.currentLocation = StringUtils.urlDecode(AIRHelper.resolve(_this.__data__.data.media).nativePath);
+//						_this.attach_html_viewer();
+//
+//						//_this.detach_pdf_viewer();
+////						HTMLUtils.load_pdf(_this.currentLocation,_this.width,_this.height, function (uic:UIComponent):void {
+////							_this.addChild(uic);
+////						});
+//						
+//					} else if (CapabilitiesUtils.isOSWindows()) {
+//						_this.currentState = 'html';
+//						//_this.currentLocation = StringUtils.urlDecode(AIRHelper.resolve(_this.__data__.data.media).url);
+//						//_this.currentLocation = ContentCache.cache(AIRHelper.resolve(_this.__data__.data.media).nativePath);
+//						_this.currentLocation = AIRHelper.resolve(_this.__data__.data.media).nativePath;
+//						_this.attach_html_viewer();
+////						HTMLUtils.load_pdf(_this.currentLocation,_this.width,_this.height, function (uic:UIComponent):void {
+////							_this.addChild(uic);
+////						});
+//					} else {
+//						AlertPopUp.surpriseNoOkay('Cannot display the selected document.','WARNING');
+//					}
+					// END!   DO NOT REMOVE THIS BLOCK OF CODE.
+				};
+				this.types['AudioIcon'] = function():void {
+					_this.attach_audio_Player();
+				};
+				this.types['StoraclesIcon'] = this.types['BookIcon'] = this.types['KidStudyGuideIcon'] = this.types['AFStudyGuideIcon'];
+				var anAction:Function;
+				for (var i:String in this.types) {
+					if (String(this.__data__.data.image).toLowerCase().indexOf(i.toLowerCase()) > -1) {
+						anAction = this.types[i];
+						if (anAction is Function) {
+							try {anAction()} catch (err:Error) {
+								this.alert = Alert.show('Something went wrong with your last request.  Please retry again.\n'+err.message+'\n'+err.getStackTrace(), 'ERROR',Alert.CANCEL);
+							}
+						}
+						break;
+					}
+				}
+			}
+			
+			public function set dataProvider(data:Object):void {
+				if (this.__data__ != data) {
+					this.__data__ = data;
+					try {
+						this.title = this.__data__.label;
+						this.handle_docType();
+					} catch (err:Error) {
+						AlertPopUp.surpriseNoOkay(err.message,'ERROR.'+this.className+'.dataProvider().1');
+					}
+				}
+			}
+			
+			public function get dataProvider():Object {
+				return this.__data__;
+			}
+			
+			private function switchToFullScreen():void {
+			}
+			
+			private function showVolume(val:String):String {
+				return ("Volume: "+Math.round(Number(val)*100)+"%");
+			}
+			
+			protected function _resizeHandler():void {
+				this._width = this.width;
+				this._height = this.height;
+			}
+			
+			private function _resize_videoPlayer(isSpecial:Boolean=false):void {
+				var mainCanvas:* = this.parentDocument.parentDocument.parentDocument;
+				var maxHeight:Number = this.parentApplication.height - (mainCanvas.hbox_title.height + 5) - (mainCanvas.hbox_bottom.height + 5);
+				this.videoPlayer.width = this.parentApplication.width - mainCanvas.docsList.docsList.width - 50;
+				this.videoPlayer.height = this.videoPlayer.width / 1.7;
+				this.videoPlayer.height = maxHeight - 45;
+				if (this.videoPlayer.width < 270) {
+					this.videoPlayer.width = (this.videoPlayer.width < 270) ? 270 : this.videoPlayer.width;
+					this.videoPlayer.height = this.videoPlayer.width / 1.7;
+				}
+				if (isSpecial) {
+					this.videoPlayer.height -= 150;
+				}
+				this.videoPlayer_width = this.videoPlayer.width;
+				this.videoPlayer_height = this.videoPlayer.height;
+			}
+			
+			private function resize_videoPlayer():void {
+				if ( (this.videoPlayer is VideoPlayer) && ( ( (this.videoPlayer.width.toString() == 'NaN') && (this.videoPlayer.height.toString() == 'NaN') ) || ( (this.videoPlayer.width == 0) && (this.videoPlayer.height == 0) ) ) ) {
+					this._resize_videoPlayer();
+				}
+			}
+			
+			protected function panel1_resizeHandler(event:ResizeEvent):void {
+				this._resizeHandler();
+				if (this.videoPlayer is VideoPlayer) {
+					if (!this.videoPlayer_beenResized) {
+						this.resize_videoPlayer();
+						var topY:Number = this.parentApplication.mainCanvas.button_bar.y + this.parentApplication.mainCanvas.button_bar.height;
+						this.videoPlayer_beenResized = true;
+					}
+				}
+			}
+			
+			
+
+			protected function panel1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:* = this;
+				this.parentApplication.addEventListener(ResizeEvent.RESIZE, function (event:ResizeEvent):void {
+					var pa:* = event.currentTarget;
+					if ( (!_this.isFullScreen) && (!_this.isSkippingVIdeoPlayerResize) ) {
+						if (_this.isVideoPlayer) {
+							_this._resize_videoPlayer();
+						} else if (_this.isAudioPoster) {
+							_this.audioPlayer.width = _this.parentApplication.width-300;
+							_this.audioPlayer.width = (_this.audioPlayer.width < 300) ? 300 : _this.audioPlayer.width;
+							_this.audioPlayer.height = _this.parentApplication.height-200;
+							_this.audioPlayer.height = (_this.audioPlayer.height < 300) ? 300 : _this.audioPlayer.height;
+						}
+					}
+					_this.isSkippingVIdeoPlayerResize = false;
+				});
+			}
+
+		]]>
+	</fx:Script>
+	<mx:VBox id="vbox_0" width="100%">
+		<mx:VBox id="poster" width="100%" height="70%" horizontalAlign="center" verticalAlign="top" horizontalScrollPolicy="off" verticalScrollPolicy="off" styleName="video_player_ControlBar">
+			<mx:HTML id="html0" styleName="main_html" location="{this.defaultLocation}" 
+					 width="100%" height="100%"/>
+		</mx:VBox>
+	</mx:VBox>
+</mx:Panel>

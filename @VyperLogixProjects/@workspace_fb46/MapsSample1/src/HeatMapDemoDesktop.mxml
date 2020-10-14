@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   minWidth="800" minHeight="600" 
+					   resize="windowedapplication1_resizeHandler(event)"
+					   applicationComplete="windowedapplication1_applicationCompleteHandler(event)" 
+					   xmlns:googlemaps="com.google_maps.*" xmlns:Alert="controls.Alert.*">
+	<fx:Style source="styles.css"/>
+	<fx:Script>
+		<![CDATA[
+			import application.ApplicationNamespace;
+			
+			import com.DebuggerUtils;
+			import com.ErrorTipManager;
+			import com.google.maps.Map;
+			import com.google_maps.HeatMapForGoogleMaps;
+			import com.vyperlogix.GoogleCloudOperation;
+			import com.widgets.HeatMapControlPanel;
+			
+			import controls.Alert.AlertAlternative;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			
+			import proxy.ApplicationProxy;
+			import proxy.events.ApplicationProxyReadyEvent;
+			
+			import spark.components.TextArea;
+			
+			[Bindable]
+			private var _this:HeatMapDemoDesktop;
+			
+			[Bindable]
+			private var deferred_actions:Array = [];
+			
+			[Bindable]
+			public var google_cloud_timeout:int = 15;
+
+			[Bindable]
+			private var is_using_control_panel:Boolean = Capabilities.isDebugger;
+			
+			[Bindable]
+			public var isDebugger:Boolean = Capabilities.isDebugger;
+			
+			[Bindable]
+			public static var url_google_maps:String = 'http://www.smithmicro.com';
+			
+			[Bindable]
+			public static var google_maps_api_key:String = 'ABQIAAAAmwzRmeVGHsXlchx4-mnPJhSYo8ARVewGun5VsPlPlrmHlqyhYRRbfivFBWQjFjYo6ssoQkuK_lCQVQ';
+			
+			[Bindable]
+			public var report_url:String;
+			
+			[Bindable]
+			public var app:ApplicationProxy;
+			
+			[Bindable]
+			public var appNamespace:ApplicationNamespace = new ApplicationNamespace();
+			
+			[Bindable]
+			private var aMap:HeatMapForGoogleMaps;
+			
+			public const domain_name:String = 'smsi.vyperlogix.com';
+			public const sub_domain_name:String = 'heatmapsdemo';
+			
+			[Bindable]
+			public var isScreenHD:Boolean = Capabilities.screenResolutionX > 1000;
+			
+			[Bindable]
+			public var menu_panel_height:Number = 180;
+			
+			[Bindable]
+			public static var problems:*;
+
+			public static var const_view_fullscreen:String = 'view.fullscreen';
+			public static var const_view_cloud:String = 'view.cloud';
+			public static var const_application_exit:String = 'application.exit';
+			public static var const_actions_1000:String = 'actions.1000';
+			public static var const_actions_2000:String = 'actions.2000';
+			public static var const_actions_3000:String = 'actions.3000';
+			public static var const_actions_5000:String = 'actions.5000';
+			public static var const_help_report_problem:String = 'help.report_problem';
+			public static var const_actions_getForm:String = 'actions.get.form';
+
+			[Bindable]
+			private var appMenu:Array = [
+				{
+					'label':'Charts Demo', 'name':'application', 'children':[
+						{	'label':'Chart Demo and Stress Test...', 
+							'name':HeatMapDemoDesktop.const_actions_1000,
+							'enabled':true,
+							'doFunc': null
+						},
+						{	'label':'Exit', 
+							'name':HeatMapDemoDesktop.const_application_exit,
+							'doFunc': function(event:*):void {
+								FlexGlobals.topLevelApplication.closeApplicaton();
+							}
+						},
+					]
+				},
+				{
+					'label':'Help', 'name':'help', 'children':[
+						{	'label':'Report a Problem...', 
+							'name':HeatMapDemoDesktop.const_help_report_problem,
+							'enabled':false,
+							'doFunc': function(event:*):void {
+								/*
+								if ((HeatMapDemoDesktop.problems is ReportProblems) == false) {
+								HeatMapDemoDesktop.problems = PopUpManager.createPopUp(FlexGlobals.topLevelApplication.appProxy.splashPopUp, ReportProblems, true) as ReportProblems;
+								HeatMapDemoDesktop.problems.title = 'Report Problems with this Application.';
+								HeatMapDemoDesktop.problems.x = 10;
+								HeatMapDemoDesktop.problems.y = 10;
+								HeatMapDemoDesktop.problems.width = 700;
+								HeatMapDemoDesktop.problems.height = 500;
+								HeatMapDemoDesktop.problems.showCloseButton = true;
+								HeatMapDemoDesktop.problems.addEventListener(CloseEvent.CLOSE, 
+								function (event:CloseEvent):void {
+								PopUpManager.removePopUp(HeatMapDemoDesktop.problems);
+								HeatMapDemoDesktop.problems = null;
+								}
+								);
+								HeatMapDemoDesktop.problems.btn_send.addEventListener(MouseEvent.CLICK, 
+								function (event:MouseEvent):void {
+								var toks:Array = FlexGlobals.topLevelApplication.app_title.split(' :: ');
+								var title:String = toks[0];
+								FlexGlobals.topLevelApplication.title = title+' :: Sending your Email...'
+								var url:String = FlexGlobals.topLevelApplication.domain+APIHelper.send_email_endpoint;
+								var ezREST:EzHTTPService = new EzHTTPService(false,false);
+								ezREST.post(url,{'fromName':HeatMapDemoDesktop.problems.fromName.text,'email':HeatMapDemoDesktop.problems.email.text,'msg':HeatMapDemoDesktop.problems.msg.text}, 
+								function (event:ResultEvent):void {
+								var response:*;
+								try {
+								response = (event.result is String) ? event.result : event.result.getItemAt(0);
+								
+								var errorMsg:String = response['error'];
+								HeatMapDemoDesktop.problems.errorString = (errorMsg is String) && (errorMsg.length > 0) ? errorMsg : '';
+								
+								if ( (errorMsg is String) && (errorMsg.length > 0) ) {
+								AlertPopUp.surpriseNoOkay('Your Email was not sent due to some kind of system error.  Try again later in the day.','WARNING');
+								} else {
+								AlertPopUp.surpriseNoOkay('Your Email was successfully sent and your issue will be resolved shortly','INFO');
+								}
+								PopUpManager.removePopUp(HeatMapDemoDesktop.problems);
+								HeatMapDemoDesktop.problems = null;
+								} catch (e:Error) {
+								var stackTrace:String = e.getStackTrace();
+								AlertPopUp.errorNoOkay(HeatMapDemoDesktop.problems.className+'.btn_send().ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR');
+								}
+								}, ezREST.jsonResultType);
+								}
+								);
+								HeatMapDemoDesktop.problems.btn_dismiss.addEventListener(MouseEvent.CLICK, 
+								function (event:MouseEvent):void {
+								PopUpManager.removePopUp(HeatMapDemoDesktop.problems);
+								HeatMapDemoDesktop.problems = null;
+								}
+								);
+								PopUpManager.centerPopUp(HeatMapDemoDesktop.problems);
+								} else {
+								HeatMapDemoDesktop.problems.visible = HeatMapDemoDesktop.problems.enabled = true;
+								}
+								*/
+							}
+								},
+					]
+					},
+								{
+									'label':'View', 'name':'view', 'children':[
+										{	'label':'Full Screen', 
+											'name':HeatMapDemoDesktop.const_view_fullscreen, 
+											'type':"check", 
+											'toggled':false, 
+											'toggledFunc':function ():Boolean {return (FlexGlobals.topLevelApplication.nativeWindow.stage.displayState != StageDisplayState.NORMAL) ? true : false}, 
+											'doFunc': function(event:*):void {
+												/*
+												var menu:Menu = Menu(event.menu);
+												if (event.item.toggled) {
+												FlexGlobals.topLevelApplication.appProxy.do_fullScreen();
+												} else {
+												FlexGlobals.topLevelApplication.appProxy.do_windowed();
+												}
+												menu.toolTip = FlexGlobals.topLevelApplication.nativeWindow.stage.displayState;
+												*/
+												}
+											},
+					]
+					},
+			];
+											
+			private function callback(ctrlPanel:HeatMapControlPanel,map:Map):void {
+				var ii:int = -1;
+			}
+			
+			public function get is_loggedin():Boolean {
+				var is_loggedin:Boolean = false;
+				try {
+					is_loggedin = (this.app.isLoggedIn);
+				} catch (err:Error) {}
+				return is_loggedin;
+			}
+			
+			private function add_control_panel_to_map():void {
+				var _this:HeatMapDemoDesktop = this;
+				this.aMap.control_panel = new HeatMapControlPanel();
+				this.aMap.control_panel.x = 0;
+				this.aMap.control_panel.y = 0;
+				this.aMap.control_panel.width = this.aMap.width;
+				this.aMap.control_panel.addEventListener(FlexEvent.CREATION_COMPLETE, 
+					function (event:FlexEvent):void {
+						var timer:Timer = new Timer(500);
+						timer.addEventListener(TimerEvent.TIMER, 
+							function (event:TimerEvent):void {
+								timer.stop();
+								_this.aMap.currentState = 'shrink';
+							}
+						);
+						timer.start();
+					}
+				);
+				this.aMap.stateChange_callback = function (event:FlexEvent):void {
+					if (_this.aMap.currentState == 'shrink') {
+						_this.aMap.currentState = 'shrunk';
+					}
+				};
+				this.aMap.control_panel._callback_ = this.callback;
+				this.aMap.addElementAt(this.aMap.control_panel,0);
+			}
+			
+			protected function __applicationCompleteHandler__():void {
+				var _this:HeatMapDemoDesktop = this;
+				var onCreationComplete_timer:Timer = new Timer(150);
+				var guard_timer:Timer = new Timer(1000);
+				AlertAlternative.init(this.stage);
+				GoogleCloudOperation._timeout = 30;
+				this.aMap = new HeatMapForGoogleMaps();
+				this.aMap.width = this.width;
+				this.aMap.height = this.height;
+				this.aMap.url_google_maps = url_google_maps;
+				this.aMap.google_maps_api_key = google_maps_api_key;
+				if (this.is_using_control_panel) {
+					this.aMap.addEventListener(FlexEvent.CREATION_COMPLETE, 
+						function (event:FlexEvent):void {
+							onCreationComplete_timer.addEventListener(TimerEvent.TIMER, 
+								function (event:TimerEvent):void {
+									onCreationComplete_timer.stop();
+									trace(DebuggerUtils.getFunctionName(new Error())+'.1a --> onCreationComplete_timer.stop() !!!');
+									if (guard_timer.running) {
+										guard_timer.stop();
+										trace(DebuggerUtils.getFunctionName(new Error())+'.1b --> guard_timer.stop() !!!');
+									}
+									_this.add_control_panel_to_map();
+								}
+							);
+							trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> onCreationComplete_timer.start() !!!');
+							onCreationComplete_timer.start();
+						}
+					);
+				}
+				this.addElement(this.aMap);
+				guard_timer.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						guard_timer.stop();
+						trace(DebuggerUtils.getFunctionName(new Error())+'.2a --> guard_timer.stop() !!!');
+						if (onCreationComplete_timer.running) {
+							onCreationComplete_timer.stop();
+							trace(DebuggerUtils.getFunctionName(new Error())+'.2b --> onCreationComplete_timer.stop() !!!');
+						}
+						_this.add_control_panel_to_map();
+					}
+				);
+				guard_timer.start();
+				trace(DebuggerUtils.getFunctionName(new Error())+'.2 --> guard_timer.start() !!!');
+			}
+
+			protected function windowedapplication1_applicationCompleteHandler(event:FlexEvent):void {
+				var num:Number;
+				_this = this;
+				this.deferred_actions.push(this.__applicationCompleteHandler__);
+				this.app = new ApplicationProxy();
+				this.app.addEventListener(ApplicationProxyReadyEvent.APPLICATION_PROXY_READY, 
+					function (event:ApplicationProxyReadyEvent):void {
+						_this.google_cloud_timeout = (_this.app.isDebugger) ? -1 : 15;
+						GoogleCloudOperation._timeout = _this.google_cloud_timeout;
+						trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> _this.app.isDebugger='+_this.app.isDebugger);
+						if (!_this.app.is_menu_shown) {
+							//_this.app.popUp_menuPanel();
+							_this.app.appMenu = _this.appMenu;
+						}
+						if (!_this.is_loggedin) {
+							var ii:int = -1;
+						} else {
+							var anAction:*;
+							while (_this.deferred_actions.length > 0) {
+								anAction = _this.deferred_actions.pop();
+								var func:Function;
+								var args:* = [];
+								try {
+									func = anAction.func;
+								} catch (err:Error) {
+									func = anAction;
+								}
+								try {
+									args = anAction.args;
+								} catch (err:Error) {
+									args = [];
+								}
+								if (func is Function) {
+									_this.callLater(func,args);
+								}
+							}
+						}
+					}
+				);
+				this.addElement(this.app);
+				AlertAlternative.init(this.stage);
+				this.stage.addEventListener(KeyboardEvent.KEY_DOWN, 
+					function (event:KeyboardEvent):void {
+						try {
+							if (event.keyCode == Keyboard.BACK) {
+								event.preventDefault();
+								num = _this.app._navigator.length;
+								if ( (_this.app.isDebugger) && (_this.app.txt_status is TextArea) ) {
+									_this.app.txt_status.text = 'Back Pressed (num='+num+') !\n' + _this.app.txt_status.text;
+								}
+								if (_this.app.is_menu_shown) {
+									_this.app.dismiss_menuPanel();
+								} else if (num > 1) {
+									ErrorTipManager.hideAllErrorTips();
+								} else {
+									_this.app.nativeApplication.exit();
+								}
+							} else if (event.keyCode == Keyboard.MENU) {
+								event.preventDefault();
+								if (!_this.app.is_menu_shown) {
+									_this.app.popUp_menuPanel();
+								}
+							} else if (event.keyCode == Keyboard.SEARCH) {
+								event.preventDefault();
+								try {_this.app.menuPanel.parentDocument['handle_venues_event']();} 
+								catch (err:Error) {_this.app.error('ERROR.411: '+err.toString());}
+							}
+						} catch (err:Error) {
+							trace(DebuggerUtils.getFunctionName(err)+'.ERROR --> '+err.toString()+'\n'+err.getStackTrace());
+						}
+					}
+				);
+			}
+			
+			protected function windowedapplication1_resizeHandler(event:ResizeEvent):void {
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 RESIZED !!!');
+				if (this.aMap is HeatMapForGoogleMaps) {
+					this.aMap.width = this.width;
+					this.aMap.height = this.height;
+					if (this.aMap.control_panel) {
+						this.aMap.control_panel.width = this.aMap.width;
+						trace(DebuggerUtils.getFunctionName(new Error())+'.2 RESIZED --> this.aMap.control_panel.width='+this.aMap.control_panel.width);
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+</s:WindowedApplication>

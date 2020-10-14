@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%" creationComplete="init()">
+	<mx:HBox id="backgroundContainer" width="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		<mx:Canvas id="imgBackground" width="100%" height="{componentHeight}"
+			verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		</mx:Canvas>
+	</mx:HBox>
+	<mx:HBox id="menuBarBackground" horizontalAlign="center" verticalAlign="top" horizontalGap="0" 
+		width="100%" x="0" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		<mx:HBox id="menuBar" width="{componentWidth}" height="{componentHeight}" 
+			verticalScrollPolicy="off" horizontalScrollPolicy="off" styleName="MenuBar" 
+			horizontalAlign="left" verticalAlign="top" horizontalGap="0" x="0" y="0">
+		</mx:HBox>
+	</mx:HBox>
+		<mx:Script>
+			<![CDATA[
+				import libs.utils.ErrorMessages;
+				import mx.events.ResizeEvent;
+				import mx.controls.Image;
+				import utils.displayObject.DuplicateImage;
+				import libs.vo.GlobalsVO;
+			
+				[Bindable]
+				public var componentHeight:Number;
+				
+				[Bindable]
+				public var componentWidth:Number;
+		
+				private var img:Image;
+				
+				private const P1:String = "image_categoryItemMouseOutAsset";		// Background asset
+		
+				/**
+				 * Initialize and get the background
+				 * image from GlobalsVO
+				 */
+				 		
+				public function init():void {
+					
+					if (GlobalsVO.ISLoggedOut == false) {
+						this.componentHeight = 100;
+						this.y = Number(GlobalsVO.getCSSProperty("menuBarYPos"));
+					}
+					
+					componentWidth = Number(GlobalsVO.getCSSProperty("interfaceWidth"));
+					
+					// Display background image
+					var asset:Object = DuplicateImage.validate(GlobalsVO.getGlobal(P1),this);
+					
+					
+					img = DuplicateImage.copy(asset.image,true,false);
+					
+					// If Error
+					if(asset.error != null) {
+						new ErrorMessages(img,asset.error);
+						// Otherwise
+					}
+					img.width = this.width;
+					imgBackground.addChild(img);
+					backgroundContainer.addEventListener(ResizeEvent.RESIZE,onResize);
+				}
+				
+				
+				
+				
+				public function onResize(e:ResizeEvent):void {
+					try {
+						img.width = e.currentTarget.width;
+					}catch(e:Error){}
+				}
+			]]>
+	</mx:Script>
+</mx:Canvas>

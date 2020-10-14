@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View preinitialize="preinitializeHandler()"
+		viewDeactivate="viewDeactivateHandler()"
+		viewActivate="viewActivateHandler(event)"
+		actionBarVisible.portrait="true"
+		actionBarVisible.landscape="true"
+		xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:components="com.adobe.mobiledashboard.view.components.*"
+		xmlns:enum="com.adobe.dashboard.enum.*"
+		xmlns:charts="com.adobe.dashboard.view.charts.*"
+		xmlns:mobilecomponents="com.adobe.mobiledashboard.view.components.*"
+		xmlns:components2="com.adobe.webdashboard.view.components.*">
+
+	<fx:Script>
+		<![CDATA[
+			import assets.images.bar_chart_vert_icon_minimal;
+			import assets.images.pie_chart_icon_minimal;
+
+			import com.adobe.dashboard.enum.ChartTypeEnum;
+			import com.adobe.dashboard.model.AppModel;
+			import com.adobe.dashboard.presenter.AverageRevenuePresenter;
+
+			import mx.charts.events.ChartItemEvent;
+			import mx.collections.ArrayCollection;
+			import mx.events.CloseEvent;
+
+			import spark.events.ViewNavigatorEvent;
+
+
+			[Bindable]
+			private var presenter:AverageRevenuePresenter;
+
+			[Bindable]
+			protected var selectOptionList:ArrayCollection=new ArrayCollection([{label: "My Sales"}, {label: "Company Sales"}]);
+
+			[Bindable]
+			protected var selectedOption:Object=selectOptionList.getItemAt(0);
+
+
+			//
+			// Private Methods
+			//
+
+			private function addListeners():void
+			{
+				removeListeners();
+
+				presenter.chartMainPresenter.addEventListener(Event.CHANGE, dataChangeHandler, false, 0, true);
+			}
+
+			private function removeListeners():void
+			{
+				if (presenter && presenter.chartMainPresenter && presenter.chartMainPresenter.hasEventListener(Event.CHANGE))
+				{
+					presenter.chartMainPresenter.removeEventListener(Event.CHANGE, dataChangeHandler);
+				}
+			}
+
+
+			//
+			// Event Handlers
+			//
+
+			protected function preinitializeHandler():void
+			{
+				presenter=AppModel.getInstance().averageRevenuePresenter;
+			}
+
+			protected function viewActivateHandler(event:ViewNavigatorEvent):void
+			{
+				addListeners();
+
+				// Fetch default data
+				presenter.getMyCostVsProfitChartData();
+			}
+
+			protected function viewDeactivateHandler():void
+			{
+				removeListeners();
+			}
+
+			protected function dataChangeHandler(event:Event):void
+			{
+				chartDisplay.visible=true;
+				chartDisplay.includeInLayout=true;
+
+				loadingMessageDisplay.visible=false;
+			}
+
+			protected function pieChartButton_clickHandler(event:MouseEvent):void
+			{
+				if (presenter.chartMainPresenter && presenter.chartMainPresenter.chartModel)
+				{
+					presenter.chartMainPresenter.chartModel.chartType=ChartTypeEnum.PIE_CHART;
+					presenter.isColumnChart=false;
+				}
+			}
+
+			protected function columnChartButton_clickHandler(event:MouseEvent):void
+			{
+				if (presenter.chartMainPresenter && presenter.chartMainPresenter.chartModel)
+				{
+					presenter.chartMainPresenter.chartModel.chartType=ChartTypeEnum.COLUMN_CHART;
+					presenter.isColumnChart=true;
+				}
+			}
+
+			protected function costProfitChartDisplay_itemClickHandler(event:ChartItemEvent):void
+			{
+				if ((event.hitData.item.label && event.hitData.item.label.toLowerCase() == "profit") || (Object(event.hitData.chartItem.element).hasOwnProperty("yField") && event.hitData.chartItem.element["yField"] == "value1"))
+				{
+					presenter.goDetails("profit");
+				}
+				else if ((event.hitData.item.label && event.hitData.item.label.toLowerCase() == "cost") || (Object(event.hitData.chartItem.element).hasOwnProperty("yField") && event.hitData.chartItem.element["yField"] == "value2"))
+				{
+					presenter.goDetails("cost");
+				}
+			}
+
+
+			protected function multiSelect_changeHandler(event:Event):void
+			{
+				if (!presenter)
+				{
+					return;
+				}
+
+				if (multiSelect.selectedItem.label == "My Sales")
+				{
+					presenter.getMyCostVsProfitChartData();
+				}
+				else
+				{
+					presenter.getCompanyProfitVsCostData();
+				}
+			}
+
+			protected function tourTip_closeHandler(event:CloseEvent):void
+			{
+				presenter.hideTourTip();
+			}
+		]]>
+	</fx:Script>
+
+	<!-- framework changes state on device rotation -->
+	<s:states>
+		<s:State name="portrait"/>
+		<s:State name="landscape"/>
+	</s:states>
+
+
+	<!-- header background -->
+	<s:Rect width="100%"
+			height="60"
+			includeIn="portrait">
+		<s:fill>
+			<s:SolidColor color="0x232323"/>
+		</s:fill>
+	</s:Rect>
+
+	<!-- 1px seperator -->
+	<s:Rect y="60"
+			width="100%"
+			height="1"
+			includeIn="portrait">
+		<s:fill>
+			<s:SolidColor color="0x0C0C0C"/>
+		</s:fill>
+	</s:Rect>
+
+	<!-- chart controls -->
+	<s:Group y="0"
+			 height="60"
+			 left="10"
+			 right="10"
+			 includeIn="portrait">
+
+		<components:MultiSelectComponent id="multiSelect"
+										 height="40"
+										 left="0"
+										 right="110"
+										 dataProvider="{selectOptionList}"
+										 text="{selectedOption.label}"
+										 change="multiSelect_changeHandler(event)"
+										 verticalCenter="0"/>
+
+		<s:ToggleButton id="pieChartButton"
+						width="50"
+						height="40"
+						right="50"
+						selected="{!presenter.isColumnChart}"
+						click="pieChartButton_clickHandler(event)"
+						icon="{pie_chart_icon_minimal}"
+						skinClass="skins.buttons.CustomToggleButtonSkin"
+						verticalCenter="0"/>
+
+		<s:ToggleButton id="columnChartButton"
+						width="50"
+						height="40"
+						right="0"
+						selected="{presenter.isColumnChart}"
+						click="columnChartButton_clickHandler(event)"
+						icon="{bar_chart_vert_icon_minimal}"
+						skinClass="skins.buttons.CustomToggleButtonSkin"
+						verticalCenter="0"/>
+
+	</s:Group>
+
+	<!-- chart -->
+	<charts:CostProfitChart id="chartDisplay"
+							left.landscape="0"
+							left.portrait="20"
+							right.landscape="0"
+							right.portrait="20"
+							top.landscape="0"
+							top.portrait="70"
+							bottom.landscape="0"
+							bottom.portrait="30"
+							currentState="{(presenter.isColumnChart)?'columnChart':'pieChart'}"
+							includeInLayout="false"
+							itemClick="costProfitChartDisplay_itemClickHandler(event)"
+							visible="false"
+							pieDisplayLayout.portrait="{chartDisplay.verticalLayout}"
+							pieDisplayLayout.landscape="{chartDisplay.horizontalLayout}"
+							pieChartTop="0"
+							pieChartBottom="220"
+							pieChartBottom.landscape="0"
+							chartPresenter="{presenter.chartMainPresenter}"/>
+
+	<!-- loading message -->
+	<s:VGroup id="loadingMessageDisplay"
+			  horizontalCenter="0"
+			  verticalCenter="0"
+			  horizontalAlign="center">
+		<s:BusyIndicator id="loadingIndicator"
+						 symbolColor="#ffffff"
+						 width="30"
+						 height="30"/>
+		<s:Label text="Building Chart"
+				 color="#ffffff"/>
+	</s:VGroup>
+
+	<mobilecomponents:TourTip id="tourTip"
+							  bottom="5"
+							  horizontalCenter="0"
+							  message="Click Chart Areas for Details"
+							  visible="{presenter.showTourTip}"
+							  close="tourTip_closeHandler(event)"
+							  showArrow="false"/>
+
+
+	<!-- the title content for this view -->
+	<s:titleContent>
+		<s:Label styleName="titleWhiteStyle"
+				 text="Avg Revenue per Sale"/>
+	</s:titleContent>
+
+</s:View>

@@ -1,0 +1,1740 @@
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" 
+				initialize="titlewindow1_initializeHandler(event)"
+				creationComplete="titlewindow1_creationCompleteHandler(event)" 
+				xmlns:views="views.*"> <!-- close="titlewindow1_closeHandler(event)" -->
+	<mx:states>
+		<s:State name="air_based"/>
+		<s:State name="web_based"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:NumberFormatter id="ratio_formatter" precision="2" rounding="none"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ArrayUtils;
+			import com.DebuggerUtils;
+			import com.EzHTTPService;
+			import com.GUID;
+			import com.Math2D;
+			import com.MathHelper;
+			import com.ObjectExplainer;
+			import com.ObjectUtils;
+			import com.StringUtils;
+			import com.VectorUtils;
+			import com.adobe.serialization.json.JSON;
+			
+			import controls.Alert.AlertPopUp;
+			
+			import core.SWFHelper;
+			
+			import flashx.textLayout.debug.assert;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Menu;
+			import mx.controls.menuClasses.MenuBarItem;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.components.Group;
+			import spark.events.IndexChangeEvent;
+			
+			import utils.APIHelper;
+			import utils.ImageHelper;
+			
+			import views.events.DrawStarEvent;
+			import views.sprites.PointMarker;
+			
+			import vyperlogix.shapes.DrawingHandle;
+			import vyperlogix.shapes.DrawingShapes;
+			
+			[Embed(source="assets/images/next.gif")]
+			[Bindable]
+			public var nextImageCls:Class;
+			
+			[Embed(source="assets/images/add.gif")]
+			[Bindable]
+			public var addImageCls:Class;
+			
+			[Embed(source="assets/images/save.gif")]
+			[Bindable]
+			public var saveImageCls:Class;
+			
+			private var imagePopUp:ImageMaker;
+			
+			[Bindable]
+			private var _is_production_:Boolean = false;
+			
+			[Bindable]
+			private var _is_web_based_:Boolean = false;
+			
+			[Bindable]
+			private var _is_static_demo_:Boolean = false;
+			
+			[Bindable]
+			private var _is_auto_sized_:Boolean = false;
+
+			private var _is_ignoring_drawing_:Boolean = false;
+
+			private var _stroke_color_:uint = 0x000000;
+			
+			private var verticies:Array;
+			private var leastPt:Point = new Point(2^31,2^31);
+			private var mostPt:Point = new Point(-(2^31),-(2^31));
+
+			[Bindable]
+			private var _dataSet_:Array = [];
+
+			[Bindable]
+			private var _data_:Array = [];
+			
+			private var max_small_stars:int = 16;
+			private var small_stars:Array = [];
+			
+			private var selected_star:SmallImageViewer;
+			
+			public var ezREST:EzHTTPService = new EzHTTPService(false,false);
+
+			public static var const_file_menu_name:String = 'file';
+
+			public static var const_file_save:String = 'file.save';
+			public static var const_file_make_image:String = 'file.make_image';
+
+			private var fileMenuData:Object = {
+				'label':'File', 'name':ImageCreator.const_file_menu_name, 'children':[
+					{'label':'Save', 'name':ImageCreator.const_file_save},
+					//{'label':'Make Image', 'name':ImageCreator.const_file_make_image},
+				]
+			};
+			
+			[Bindable]
+			private var _handle_:DrawingHandle;
+			
+			public function get handle():DrawingHandle {
+				return this._handle_;
+			}
+			
+			public function set handle(handle:DrawingHandle):void {
+				if ( (this._handle_ != handle) && (handle is DrawingHandle) ) {
+					this._handle_ = handle;
+				}
+			}
+			
+			public function get dataSet():Array {
+				return this._dataSet_;
+			}
+			
+			public function set dataSet(dataSet:Array):void {
+				if (this._dataSet_ != dataSet) {
+					this._dataSet_ = dataSet;
+				}
+			}
+			
+			private function get xSlider_scaled_value():Number {
+				return this.container.width*(this.xSlider.value/100);
+			}
+			
+			private function get ySlider_scaled_value():Number {
+				return this.container.width*(this.ySlider.value/100);
+			}
+			
+			private function get innerRadiusSlider_scaled_value():Number {
+				return this.container.width*(this.innerRadiusSlider.value/100);
+			}
+			
+			private function get outerRadiusSlider_scaled_value():Number {
+				return this.container.width*(this.outerRadiusSlider.value/100);
+			}
+			
+			private function get angleSlider_scaled_value():Number {
+				return 360*(this.angleSlider.value/100);
+			}
+			
+			public function get is_production():Boolean {
+				return this._is_production_;
+			}
+			
+			public function set is_production(is_production:Boolean):void {
+				if (this._is_production_ != is_production) {
+					this._is_production_ = is_production;
+				}
+			}
+			
+			public function get is_web_based():Boolean {
+				return this._is_web_based_;
+			}
+			
+			public function set is_web_based(is_web_based:Boolean):void {
+				if (this._is_web_based_ != is_web_based) {
+					this._is_web_based_ = is_web_based;
+					this.currentState = (this._is_web_based_) ? 'web_based' : 'air_based';
+				}
+			}
+			
+			public function get is_static_demo():Boolean {
+				return this._is_static_demo_;
+			}
+			
+			public function set is_static_demo(is_static_demo:Boolean):void {
+				if (this._is_static_demo_ != is_static_demo) {
+					this._is_static_demo_ = is_static_demo;
+				}
+			}
+			
+			public function get is_auto_sized():Boolean {
+				return this._is_auto_sized_;
+			}
+			
+			public function set is_auto_sized(is_auto_sized:Boolean):void {
+				if (this._is_auto_sized_ != is_auto_sized) {
+					this._is_auto_sized_ = is_auto_sized;
+				}
+			}
+
+			public function get is_ignoring_drawing():Boolean {
+				return this._is_ignoring_drawing_;
+			}
+			
+			public function set is_ignoring_drawing(is_ignoring_drawing:Boolean):void {
+				if (this._is_ignoring_drawing_ != is_ignoring_drawing) {
+					this._is_ignoring_drawing_ = is_ignoring_drawing;
+				}
+			}
+			
+			public function get stroke_color():uint {
+				return this._stroke_color_;
+			}
+			
+			public function set stroke_color(stroke_color:uint):void {
+				if (this._stroke_color_ != stroke_color) {
+					this._stroke_color_ = stroke_color;
+				}
+			}
+			
+			public function get xPos():Number {
+				return this.xSlider.value;
+			}
+			
+			public function set xPos(x:Number):void {
+				if ( (this.xSlider.value != x) && (x is Number) ) {
+					this.xSlider.value = x;
+				}
+			}
+			
+			public function get yPos():Number {
+				return this.ySlider.value;
+			}
+			
+			public function set yPos(y:Number):void {
+				if ( (this.ySlider.value != y) && (y is Number) ) {
+					this.ySlider.value = y;
+				}
+			}
+			
+			public function get outerRadius():Number {
+				return this.outerRadiusSlider.value;
+			}
+			
+			public function set outerRadius(outerRadius:Number):void {
+				if ( (this.outerRadiusSlider.value != outerRadius) && (outerRadius is Number) ) {
+					this.outerRadiusSlider.value = outerRadius;
+				}
+			}
+
+			public function get innerRadius():Number {
+				return this.innerRadiusSlider.value;
+			}
+			
+			public function set innerRadius(innerRadius:Number):void {
+				if ( (this.innerRadiusSlider.value != innerRadius) && (innerRadius is Number) ) {
+					this.innerRadiusSlider.value = innerRadius;
+				}
+			}
+			
+			public function get angle():Number {
+				return this.angleSlider.value;
+			}
+			
+			public function set angle(angle:Number):void {
+				if ( (this.angleSlider.value != angle) && (angle is Number) ) {
+					this.angleSlider.value = angle;
+				}
+			}
+			
+			public function get isAdjustable():Boolean {
+				return this.is_auto_sized;
+			}
+			
+			public function set isAdjustable(isAdjustable:Boolean):void {
+				if ( (this.is_auto_sized != isAdjustable) && (isAdjustable is Boolean) ) {
+					this.is_auto_sized = isAdjustable;
+				}
+			}
+			
+			public function get innerOuterRatio():Number {
+				return this.innerOuterRatioSlider.value;
+			}
+			
+			public function set innerOuterRatio(innerOuterRatio:Number):void {
+				if ( (this.innerOuterRatioSlider.value != innerOuterRatio) && (innerOuterRatio is Number) ) {
+					this.innerOuterRatioSlider.value = innerOuterRatio;
+				}
+			}
+			
+			public function draw_star():void {
+				var x:Number = this.xSlider_scaled_value;
+				var y:Number = this.ySlider_scaled_value;
+				var innerRadius:Number = this.innerRadiusSlider_scaled_value;
+				var outerRadius:Number = this.outerRadiusSlider_scaled_value;
+				var angle:Number = this.angleSlider_scaled_value;
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> x='+x+', y='+y+', innerRadius='+innerRadius+', outerRadius='+outerRadius+', angle='+angle+', this.container.width='+this.container.width);
+				this.container.graphics.clear();
+				this.container.graphics.lineStyle( 2, this.stroke_color);
+
+				if (0) {
+					var fillType:String = GradientType.RADIAL;
+					var colors:Array = [0xFF0000, 0x0000FF];
+					var alphas:Array = [100, 100];
+					var ratios:Array = [0, 255];
+					var matr:Matrix = new Matrix();
+					matr.createGradientBox(200, 100, 0, -50, 100);
+					var spreadMethod:String = SpreadMethod.REFLECT; //REPEATE, PAD, OR REFLECT
+					
+					this.container.graphics.beginGradientFill(fillType, colors, alphas, ratios, matr, spreadMethod);
+				}
+				
+				var _this:ImageCreator = this;
+				this.handle = new DrawingHandle();
+				this.handle.callback = function (h:DrawingHandle,pt:*):void {
+					if (pt != null) {
+						//trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> pt='+pt.toString());
+					} else {
+						//trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 --> Least='+h.leastPt.toString());
+						//trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.3 --> Most='+h.mostPt.toString());
+						//trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.4 --> pt='+pt);
+					}
+				}
+				DrawingShapes.drawStar( this.handle, this.container.graphics, x, y, 5, innerRadius, outerRadius, angle);
+
+				if (0) {
+					this.container.graphics.endFill();
+				}
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> dispatchEvent(DrawStarEvent.TYPE_DRAW_STAR) !');
+				this.container.dispatchEvent(new DrawStarEvent(DrawStarEvent.TYPE_DRAW_STAR));
+			}
+
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:ImageCreator = this;
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				this.handle = new DrawingHandle();
+				this.handle.callback = function (pt:*):void {
+					if (pt is Point) {
+						//trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+' --> pt='+pt.toString());
+					} else {
+						_this.verticies = this.handle.verticies;
+						_this.leastPt = new Point(2^31,2^31);
+						_this.mostPt = new Point(-(2^31),-(2^31));
+						var i:String;
+						var aPt:Point;
+						for (i in _this.verticies) {
+							aPt = _this.verticies[i];
+							if (aPt.x < _this.leastPt.x) {
+								_this.leastPt.x = aPt.x;
+							}
+							if (aPt.y < _this.leastPt.y) {
+								_this.leastPt.y = aPt.y;
+							}
+							if (aPt.x > _this.mostPt.x) {
+								_this.mostPt.x = aPt.x;
+							}
+							if (aPt.y > _this.mostPt.y) {
+								_this.mostPt.y = aPt.y;
+							}
+						}
+						//trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+' --> pts='+_this.verticies.toString());
+						//trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+' --> Least='+_this.leastPt.toString());
+						//trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+' --> Most='+_this.mostPt.toString());
+					}
+				};
+				this.handle_get_data();
+			}
+
+			private function change_innerOuterRatioSlider(event:*):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				if (this.selected_star is SmallImageViewer) {
+					
+				} else {
+					try {
+						FlexGlobals.topLevelApplication.appProxy.mySO.data.__innerOuterRatio_value = this.innerOuterRatioSlider.value;
+						FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+					} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+
+					this.txt_innerOuterRatio.text = this.ratio_formatter.format(this.innerOuterRatioSlider.value);
+					this.update_sliders_based_on_ratio();
+					if (!this.is_web_based) {
+						this.draw_star();
+					}
+				}
+			}
+			
+			private function change_innerRadiusSlider(event:*):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				if (this.selected_star is SmallImageViewer) {
+					this.selected_star.innerRadius = this.innerRadiusSlider.value;
+					this.selected_star.draw_star();
+				} else {
+					try {
+						FlexGlobals.topLevelApplication.appProxy.mySO.data.__innerRadiusSlider_value = this.innerRadiusSlider.value;
+						FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+					} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+
+					this.txt_innerRadius.text = this.ratio_formatter.format(this.innerRadiusSlider.value);
+					//this.update_innerOuterRatio_value();
+					if (!this.is_web_based) {
+						this.draw_star();
+					}
+				}
+			}
+			
+			private function change_outerRadiusSlider(event:*):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				if (this.selected_star is SmallImageViewer) {
+					this.selected_star.outerRadius = this.outerRadiusSlider.value;
+					this.selected_star.draw_star();
+				} else {
+					try {
+						FlexGlobals.topLevelApplication.appProxy.mySO.data.__outerRadiusSlider_value = this.outerRadiusSlider.value;
+						FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+					} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+
+					//this.update_innerOuterRatio_value();
+					this.update_sliders_based_on_ratio();
+					if (!this.is_web_based) {
+						this.draw_star();
+					}
+				}
+			}
+
+			private function change_angleSlider(event:*):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				if (this.selected_star is SmallImageViewer) {
+					this.selected_star.angle = this.angleSlider.value;
+					this.selected_star.draw_star();
+				} else {
+					try {
+						FlexGlobals.topLevelApplication.appProxy.mySO.data.__angleSlider_value = this.angleSlider.value;
+						FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+					} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+
+					if (!this.is_web_based) {
+						this.draw_star();
+					}
+				}
+			}
+			
+			protected function xSlider_creationCompleteHandler(event:FlexEvent):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				try {
+					this.xSlider.value = FlexGlobals.topLevelApplication.appProxy.mySO.data.__xSlider_value;
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+
+				this.txt_xCoord.text = this.xSlider.value.toString();
+				if (!this.is_web_based) {
+					this.draw_star();
+				}
+			}
+
+
+			protected function ySlider_creationCompleteHandler(event:FlexEvent):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				try {
+					this.ySlider.value = FlexGlobals.topLevelApplication.appProxy.mySO.data.__xSlider_value;
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+
+				this.txt_yCoord.text = this.ySlider.value.toString();
+				if (!this.is_web_based) {
+					this.draw_star();
+				}
+			}
+
+			protected function innerRadiusSlider_creationCompleteHandler(event:FlexEvent):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				var v:*;
+				try {
+					v = FlexGlobals.topLevelApplication.appProxy.mySO.data.__innerRadiusSlider_value;
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+				v = ((v == null) ? 25 : v);
+				this.innerRadiusSlider.value = Number(v);
+				if (!this.is_web_based) {
+					this.draw_star();
+				}
+			}
+			
+			protected function outerRadiusSlider_creationCompleteHandler(event:FlexEvent):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				var v:*;
+				try {
+					v = FlexGlobals.topLevelApplication.appProxy.mySO.data.__outerRadiusSlider_value;
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+				v = ((v == null) ? 25 : v);
+				this.outerRadiusSlider.value = Number(v);
+				if (!this.is_web_based) {
+					this.draw_star();
+				}
+			}
+
+			protected function angleSlider_creationCompleteHandler(event:FlexEvent):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				var v:*;
+				try {
+					v = FlexGlobals.topLevelApplication.appProxy.mySO.data.__angleSlider_value;
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+				v = ((v == null) ? 0 : v);
+				this.angleSlider.value = Number(v);
+				if (!this.is_web_based) {
+					this.draw_star();
+				}
+			}
+			
+			protected function txt_xCoord_creationCompleteHandler(event:FlexEvent):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				try {
+					this.txt_xCoord.text = FlexGlobals.topLevelApplication.appProxy.mySO.data.__xSlider_value;
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+			}
+			
+			protected function txt_innerRadius_creationCompleteHandler(event:FlexEvent):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				try {
+					this.txt_innerRadius.text = FlexGlobals.topLevelApplication.appProxy.mySO.data.__innerRadiusSlider_value;
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+			}
+			
+			protected function txt_innerOuterRatio_creationCompleteHandler(event:FlexEvent):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				try {
+					this.txt_innerOuterRatio.text = FlexGlobals.topLevelApplication.appProxy.mySO.data.__innerOuterRatio_value;
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+			}
+			
+			protected function innerOuterRatioSlider_creationCompleteHandler(event:FlexEvent):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				try {
+					this.innerOuterRatioSlider.value = FlexGlobals.topLevelApplication.appProxy.mySO.data.__innerOuterRatio_value;
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+			}
+			
+			protected function txt_outerRadius_creationCompleteHandler(event:FlexEvent):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				try {
+					this.txt_outerRadius.text = FlexGlobals.topLevelApplication.appProxy.mySO.data.__outerRadiusSlider_value;
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+			}
+			
+			protected function txt_angleSlider_creationCompleteHandler(event:FlexEvent):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				try {
+					this.txt_angleSlider.text = FlexGlobals.topLevelApplication.appProxy.mySO.data.__angleSlider_value;
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+			}
+
+			protected function txt_yCoord_creationCompleteHandler(event:FlexEvent):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				try {
+					this.txt_yCoord.text = FlexGlobals.topLevelApplication.appProxy.mySO.data.__ySlider_value;
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+			}
+
+			// ==========================================================================================================
+			private function get is_out_of_bounds():Boolean {
+				var b1:Boolean = (this.leastPt.x < 0);
+				var b2:Boolean = (this.leastPt.y < 0);
+				var b3:Boolean = (this.mostPt.x > this.container.width);
+				var b4:Boolean = (this.mostPt.y > this.container.height);
+				var b:Boolean = ( (b1) || (b2) || (b3) || (b4) );
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> this.leastPt='+this.leastPt.toString());
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 --> b1='+b1);
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.3 --> b2='+b2);
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.4 --> b3='+b3);
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.5 --> b4='+b4);
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.6 --> b='+b);
+				return b;
+			}
+			
+			protected function txt_xCoord_changeHandler(event:Event):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				var prev_xSlider_value:Number = this.xSlider.value = Number(this.txt_xCoord.text);
+				try {
+					prev_xSlider_value = FlexGlobals.topLevelApplication.appProxy.mySO.data.__xSlider_value;
+					FlexGlobals.topLevelApplication.appProxy.mySO.data.__xSlider_value = this.xSlider.value;
+					FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+				if (!this.is_web_based) {
+					this.draw_star();
+				}
+				while (this.is_out_of_bounds) {
+					try {
+						FlexGlobals.topLevelApplication.appProxy.mySO.data.__xSlider_value = prev_xSlider_value; 
+						FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+					} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+					this.xSlider.value = prev_xSlider_value;
+					this.txt_xCoord.text = this.ratio_formatter.format(prev_xSlider_value);
+					if (!this.is_web_based) {
+						this.draw_star();
+					}
+					if (this.is_out_of_bounds) {
+						prev_xSlider_value += 1;
+					}
+				}
+			}
+			
+			private function change_xSlider(event:*):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				if (this.selected_star is SmallImageViewer) {
+					this.selected_star.xPos = this.xSlider.value;
+					this.selected_star.draw_star();
+				} else {
+					var prev_xSlider_value:Number = this.xSlider.value;
+					try {
+						prev_xSlider_value = FlexGlobals.topLevelApplication.appProxy.mySO.data.__xSlider_value;
+						FlexGlobals.topLevelApplication.appProxy.mySO.data.__xSlider_value = this.xSlider.value;
+						FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+					} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+					this.txt_xCoord.text = this.xSlider.value.toString();
+					if (!this.is_web_based) {
+						this.draw_star();
+					}
+					while (this.is_out_of_bounds) {
+						try {
+							FlexGlobals.topLevelApplication.appProxy.mySO.data.__xSlider_value = prev_xSlider_value; 
+							FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+						} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+						this.xSlider.value = prev_xSlider_value;
+						this.txt_xCoord.text = this.ratio_formatter.format(prev_xSlider_value);
+						if (!this.is_web_based) {
+							this.draw_star();
+						}
+						if (this.is_out_of_bounds) {
+							prev_xSlider_value += 1;
+						}
+					}
+				}
+			}
+			
+			protected function txt_yCoord_changeHandler(event:Event):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				var prev_ySlider_value:Number = this.ySlider.value;
+				try {
+					prev_ySlider_value = FlexGlobals.topLevelApplication.appProxy.mySO.data.__ySlider_value;
+					FlexGlobals.topLevelApplication.appProxy.mySO.data.__ySlider_value = this.ySlider.value = Number(this.txt_yCoord.text);
+					FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+				if (!this.is_web_based) {
+					this.draw_star();
+				}
+				while (this.is_out_of_bounds) {
+					try {
+						FlexGlobals.topLevelApplication.appProxy.mySO.data.__ySlider_value = prev_ySlider_value; 
+						FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+					} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+					this.ySlider.value = prev_ySlider_value;
+					this.txt_yCoord.text = this.ratio_formatter.format(prev_ySlider_value);
+					if (!this.is_web_based) {
+						this.draw_star();
+					}
+					if (this.is_out_of_bounds) {
+						prev_ySlider_value += 1;
+					}
+				}
+			}
+			
+			private function change_ySlider(event:*):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				if (this.selected_star is SmallImageViewer) {
+					this.selected_star.yPos = this.ySlider.value;
+					this.selected_star.draw_star();
+				} else {
+					var prev_ySlider_value:Number = this.ySlider.value;
+					try {
+						prev_ySlider_value = FlexGlobals.topLevelApplication.appProxy.mySO.data.__ySlider_value;
+						FlexGlobals.topLevelApplication.appProxy.mySO.data.__xSlider_value = this.ySlider.value;
+						FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+					} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+					this.txt_yCoord.text = this.ySlider.value.toString();
+					if (!this.is_web_based) {
+						this.draw_star();
+					}
+					while (this.is_out_of_bounds) {
+						try {
+							FlexGlobals.topLevelApplication.appProxy.mySO.data.__ySlider_value = prev_ySlider_value; 
+							FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+						} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+						this.ySlider.value = prev_ySlider_value;
+						this.txt_yCoord.text = this.ratio_formatter.format(prev_ySlider_value);
+						if (!this.is_web_based) {
+							this.draw_star();
+						}
+						if (this.is_out_of_bounds) {
+							prev_ySlider_value += 1;
+						}
+					}
+				}
+			}
+
+			// ==========================================================================================================
+			
+			private function update_innerOuterRatio_value():void {
+				var value:Number = Number(this.txt_innerRadius.text) / Number(this.txt_outerRadius.text);
+				this.txt_innerOuterRatio.text = this.ratio_formatter.format(value);
+				this.innerOuterRatioSlider.value = value;
+			}
+			
+			protected function txt_innerRadius_changeHandler(event:Event):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				try {
+					FlexGlobals.topLevelApplication.appProxy.mySO.data.__innerRadiusSlider_value = this.innerRadiusSlider.value = Number(this.txt_innerRadius.text);
+					FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+				this.update_sliders_based_on_ratio();
+				if (!this.is_web_based) {
+					this.draw_star();
+				}
+			}
+			
+			private function update_sliders_based_on_ratio():void {
+				var value:Number = this.innerOuterRatioSlider.value;
+				try {
+					value = FlexGlobals.topLevelApplication.appProxy.mySO.data.__innerOuterRatio_value;
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+				var outer:Number = this.outerRadiusSlider.value;
+				var inner:Number = outer*value;
+				this.innerRadiusSlider.value = inner;
+				try {
+					FlexGlobals.topLevelApplication.appProxy.mySO.data.__innerRadiusSlider_value = this.innerRadiusSlider.value;
+					FlexGlobals.topLevelApplication.appProxy.mySO.data.__outerRadiusSlider_value = this.outerRadiusSlider.value;
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+				this.txt_innerRadius.text = this.ratio_formatter.format(this.innerRadiusSlider.value);
+				this.txt_outerRadius.text = this.ratio_formatter.format(this.outerRadiusSlider.value);
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> value='+value+', inner='+inner+', outer='+outer);
+			}
+			
+			protected function txt_innerOuterRatio_changeHandler(event:Event):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				var value:Number = Number(this.txt_innerOuterRatio.text);
+				try {
+					FlexGlobals.topLevelApplication.appProxy.mySO.data.__innerOuterRatio_value = value;
+					FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+				this.innerOuterRatioSlider.value = value;
+				this.update_sliders_based_on_ratio();
+				if (!this.is_web_based) {
+					this.draw_star();
+				}
+			}
+			
+			protected function txt_outerRadius_changeHandler(event:Event):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				try {
+					FlexGlobals.topLevelApplication.appProxy.mySO.data.__outerRadiusSlider_value = this.outerRadiusSlider.value = Number(this.txt_outerRadius.text);
+					FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+				//this.update_innerOuterRatio_value();
+				this.update_sliders_based_on_ratio();
+				if (!this.is_web_based) {
+					this.draw_star();
+				}
+			}
+			
+			protected function txt_angleSlider_changeHandler(event:Event):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				try {
+					FlexGlobals.topLevelApplication.appProxy.mySO.data.__angleSlider_value = this.angleSlider.value = Number(this.txt_angleSlider.text);
+					FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+				} catch (err:Error) {trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())}
+				if (!this.is_web_based) {
+					this.draw_star();
+				}
+			}
+			
+			private function get stars_data():Array {
+				var i:String;
+				var ar:Array = [];
+				var aStar:SmallImageViewer;
+				for (i in this.small_stars) {
+					aStar = this.small_stars[i];
+					ar.push(aStar.initial_star);
+				}
+				return ar;
+			}
+			
+			protected function handle_file_save():void {
+				var _this:ImageCreator = this;
+				var url:String = FlexGlobals.topLevelApplication.domain+APIHelper.save_data_endpoint;
+				var x:Number = this.xSlider.value;
+				var y:Number = this.ySlider.value;
+				var innerRadius:Number = this.innerRadiusSlider.value;
+				var outerRadius:Number = this.outerRadiusSlider.value;
+				var angle:Number = this.angleSlider.value;
+				var all_stars:ArrayCollection = new ArrayCollection();
+				all_stars.addItem({'x':x,'y':y,'n':'star0','iR':innerRadius,'oR':outerRadius,'a':angle});
+				all_stars.addAll(new ArrayCollection(this.stars_data));
+				_this.ezREST.post(url,{'stars':all_stars.source}, 
+					function (event:ResultEvent):void {
+						var response:*;
+						try {
+							response = (event.result is String) ? event.result : event.result.getItemAt(0);
+							
+							try {
+								var errorMsg:String = (ObjectUtils.has_key(response,'error')) ? response['error'] : '';
+								if ( (errorMsg is String) && (errorMsg.length > 0) ) {
+									AlertPopUp.errorNoOkay(errorMsg,'WARNING ('+url+') #1');
+								} else {
+									AlertPopUp.surpriseNoOkay('The data has been saved.','INFO');
+								}
+							} catch (err:Error) {AlertPopUp.errorNoOkay(err.toString(),'WARNING (File Save) #2');}
+							
+						} catch (e:Error) {
+							var stackTrace:String = e.getStackTrace();
+							AlertPopUp.errorNoOkay(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR');
+						}
+					}, ezREST.jsonResultType);
+			}
+			
+			private function add_star(aStar:SmallImageViewer):void {
+				var _this:ImageCreator = this;
+				try {
+					this.small_stars.push(aStar);
+					aStar.num = this.small_stars.length;
+					aStar.addEventListener(FlexEvent.CREATION_COMPLETE, 
+						function (event:FlexEvent):void {
+							var i:String;
+							var star:SmallImageViewer;
+							var children:Array = _this.stars.getChildren();
+							var dY:Number = _this.stars.height / children.length;
+							var dY2:Number = dY * 2;
+							var YY:Number = 0;
+							//trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.FlexEvent.CREATION_COMPLETE --> dY='+dY+', _this.stars.height='+_this.stars.height+', children.length='+children.length);
+							for (i in children) {
+								var ii:Number = Number(i);
+								star = children[ii];
+								star.y = (ii == 0) ? 0 : YY;
+								star.height = dY2;
+								YY += star.height;
+							}
+						}
+					);
+					this.stars.addChild(aStar);
+				} catch (err:Error) {
+					trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> error='+err.toString());
+				}
+			}
+			
+			private function handle_dataSet(anObj:*):void {
+				var _this:ImageCreator = this;
+				var ar:Array;
+				var aData:Object;
+				for (var j:String in anObj) {
+					ar = anObj[j];
+					for (var k:String in ar) {
+						aData = ar[k];
+						trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> ('+k+') aData.n='+aData.n);
+						if (aData.n == 'star0') {
+							_this.container.graphics.clear();
+							var minima:Number = Math.min(_this.container.width,_this.container.height);
+							var radius:Number = MathHelper.radius_of_rectangle(minima,minima);
+							if (aData.oR > radius) {
+								aData.ioR = aData.iR / aData.oR;
+								aData.oR = radius;
+								aData.iR = aData.ioR * aData.oR;
+								aData.y -= radius * 0.85;
+							}
+							_this.xSlider.value = aData.x;
+							_this.txt_xCoord.text = _this.xSlider.value.toString();
+							_this.ySlider.value = aData.y;
+							_this.txt_yCoord.text = _this.ySlider.value.toString();
+							_this.innerRadiusSlider.value = aData.iR;
+							_this.txt_innerRadius.text = _this.innerRadiusSlider.value.toString();
+							_this.outerRadiusSlider.value = aData.oR;
+							_this.txt_outerRadius.text = _this.outerRadiusSlider.value.toString();
+							_this.angleSlider.value = aData.a;
+							_this.txt_angleSlider.text = _this.angleSlider.value.toString();
+							_this.update_innerOuterRatio_value();
+							trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 --> ('+k+') draw_star !');
+							_this.draw_star();
+							var verticies:Array = _this.handle.verticies;
+							var leastPt:Point = _this.handle.leastPt;
+							trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.3 --> ('+k+') leastPt='+leastPt.toString());
+						} else {
+							_this._data_.push(aData);
+							trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.4 --> ('+k+') Small Star !');
+							try {
+								var aStar:SmallImageViewer = new SmallImageViewer();
+								aStar.x = 0;
+								var y:Number = 0;
+								aStar.y = y;
+								aStar.width = _this.stars.width - 16;
+								aStar.isManual = true;
+								
+								aStar.xPos = aData.x;
+								aStar.yPos = aData.y;
+								aStar.innerRadius = aData.iR;
+								aStar.outerRadius = aData.oR;
+								aStar.angle = aData.a;
+								aStar.points = aData.pts;
+								aStar.innerOuterRatio = aData.iOR;
+								trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.5 --> ('+k+') add_star !');
+								_this.add_star(aStar);
+							} catch (err:Error) {
+								trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.6.Error --> ('+k+') error='+err.toString());
+							}
+						}
+						if (_this.is_static_demo) {
+							_this.handle_addGUID();
+						}
+					}
+				}
+				_this.btn_addGUID.enabled = _this.hasAllDataBeenLoaded;
+				_this.btn_addStar.enabled = _this.canDataBeLoaded;
+			}
+			
+			protected function handle_get_data():void {
+				var _this:ImageCreator = this;
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 (this._dataSet_ is Array)='+(this._dataSet_ is Array));
+				if ( (this._dataSet_ is Array) && (this._dataSet_.length > 0) ) {
+					this.handle_dataSet(this._dataSet_);
+				} else {
+					try {
+						var url:String = FlexGlobals.topLevelApplication.domain+APIHelper.get_data_endpoint;
+						_this.ezREST.post(url,{}, 
+							function (event:ResultEvent):void {
+								var response:*;
+								try {
+									response = (event.result is String) ? event.result : event.result.getItemAt(0);
+									
+									var anObj:Object;
+									try {
+										for (var i:String in response) {
+											anObj = response[i];
+											if (i == 'star0') {
+												ArrayUtils.addAllInto(_this._dataSet_,new Array(anObj[0]));
+												_this.btn_saveStarData.enabled = _this.canDataBeSaved;
+											}
+											_this.handle_dataSet(anObj);
+										}
+									} catch (err:Error) {trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'::handle_get_data()..ResultEvent.Error.1 '+err.toString());}
+									
+									try {
+										var errorMsg:String = (ObjectUtils.has_key(response,'error')) ? response['error'] : '';
+										if ( (errorMsg is String) && (errorMsg.length > 0) ) {
+											AlertPopUp.errorNoOkay(url+', "'+errorMsg+'"','WARNING ('+url+')');
+										}
+									} catch (err:Error) {trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'::handle_get_data().ResultEvent.Error.2 '+err.toString());}
+									
+								} catch (e:Error) {
+									var stackTrace:String = e.getStackTrace();
+									AlertPopUp.errorNoOkay(_this.className+'.handle_get_data().ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR');
+								}
+							}, ezREST.jsonResultType);
+					} catch (err:Error) {
+						trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> error='+err.toString());
+					}
+				}
+			}
+			
+			protected function titlewindow1_closeHandler(event:CloseEvent):void {
+				//this.handle_file_save();
+			}
+
+			private function refresh_file_menu_items():void {
+				var m:Array = this.menuBar.menuBarItems;
+				var mi:MenuBarItem;
+				var children:Array;
+				var aChild:Object;
+				for (var i:String in m) {
+					mi = m[i];
+					if (mi.data.name == ImageCreator.const_file_menu_name) {
+						children = mi.data.children;
+						for (var ii:String in children) {
+							aChild = children[ii];
+							if (aChild.name == ImageCreator.const_file_make_image) {
+								aChild.enabled = (this.small_stars.length == this.max_small_stars);
+							}
+						}
+					}
+				}
+			}
+			
+			private function onCreationComplete_menuBar(event:FlexEvent):void {
+				var mb:MenuBar = MenuBar(event.currentTarget);
+				var ac:ArrayCollection;
+				if ((mb.dataProvider is ArrayCollection) == false) {
+					mb.dataProvider = new ArrayCollection();
+				}
+				ac = ArrayCollection(mb.dataProvider);
+				var children:Array;
+				var aChild:Object;
+				var i:String;
+				children = this.fileMenuData.children;
+				for (i in children) {
+					aChild = children[i];
+					if (aChild.name == ImageCreator.const_file_make_image) {
+						aChild.enabled = (this.small_stars.length == this.max_small_stars);
+					} else {
+						try {
+							aChild.enabled = FlexGlobals.topLevelApplication.appProxy.isLoggedIn;
+						} catch (err:Error) {
+							aChild.enabled = false;
+							trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 '+err.toString())
+						}
+					}
+				}
+				ac.addItem(this.fileMenuData);
+			}
+			
+			private function onItemClick_menuBar(event:MenuEvent):void {
+				var _this:ImageCreator = this;
+				var menu:Menu = Menu(event.menu);
+				if (event.item.name == ImageCreator.const_file_save) {
+					this.handle_file_save();
+				} else if (event.item.name == ImageCreator.const_file_make_image) {
+					this.imagePopUp = PopUpManager.createPopUp(this, ImageMaker, true) as ImageMaker;
+					this.imagePopUp.x = 10;
+					this.imagePopUp.y = 10;
+					this.imagePopUp.title = 'Image Maker Prototype';
+					this.imagePopUp.showCloseButton = true;
+					this.imagePopUp.width = this.width - 30;
+					this.imagePopUp.height = this.height - 50;
+					this.imagePopUp.addEventListener(CloseEvent.CLOSE, 
+						function (event:CloseEvent):void {
+							PopUpManager.removePopUp(_this.imagePopUp);
+						}
+					);
+				} else {
+					AlertPopUp.infoNoOkay(event.toString(), this.className+'.onItemClick_menuBar().1 --> item='+event.item.name);
+				}
+			}
+			
+			private function unSelect_all_small_stars():void {
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.BEGIN !');
+				var i:String;
+				var aStar:SmallImageViewer;
+				for (i in this.small_stars) {
+					aStar = this.small_stars[i];
+					trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> #'+i+' aStar.currentState='+aStar.currentState);
+					aStar.current_state = '';
+				}
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.END !');
+			}
+
+			private function draw_a_star_at(parent:*,pt:Point,template:Object):void {
+				try {
+					template.x = pt.x;
+					template.y = pt.y;
+					this._draw_star_(parent.graphics,template);
+				} catch (err:Error) {
+					trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR.1 err='+err.toString());
+				}
+			}
+			
+			private function add_a_star():void {
+				var _this:ImageCreator = this;
+				if (this.small_stars.length < this.max_small_stars) {
+					var small_1:SmallImageViewer = new SmallImageViewer();
+					small_1.x = 0;
+					var y:Number = 0;
+					if (this.small_stars.length > 0) {
+						var i:String;
+						var aStar:SmallImageViewer;
+						for (i in this.small_stars) {
+							aStar = this.small_stars[i];
+							y += aStar.height;
+						}
+					}
+					small_1.y = y;
+					small_1.addEventListener(MouseEvent.CLICK, 
+						function (event:MouseEvent):void {
+							_this.unSelect_all_small_stars();
+							var star:SmallImageViewer = event.currentTarget as SmallImageViewer;
+							star.current_state = 'MOUSE_CLICK';
+							_this.selected_star = star;
+							_this.xSlider.value = star.xPos;
+							_this.ySlider.value = star.yPos;
+							_this.innerRadiusSlider.value = star.innerRadius;
+							_this.outerRadiusSlider.value = star.outerRadius;
+							_this.angleSlider.value = star.angle;
+						}
+					);
+					small_1.addEventListener(MouseEvent.MOUSE_OVER, 
+						function (event:MouseEvent):void {
+							var star:SmallImageViewer = event.currentTarget as SmallImageViewer;
+							star.current_state = 'MOUSE_OVER';
+						}
+					);
+					small_1.addEventListener(MouseEvent.MOUSE_OUT, 
+						function (event:MouseEvent):void {
+							var star:SmallImageViewer = event.currentTarget as SmallImageViewer;
+							star.current_state = 'MOUSE_OUT';
+						}
+					);
+					small_1.addEventListener(FlexEvent.CREATION_COMPLETE, 
+						function (event:FlexEvent):void {
+							if (_this.small_stars.length < _this.max_small_stars) {
+								_this.add_a_star();
+							} else {
+								// auto-save...
+								_this.refresh_file_menu_items();
+								// Compute and populate the line segments UI 
+							}
+						}
+					);
+					small_1.width = this.stars.width - 16;
+					this.small_stars.push(small_1);
+					small_1.num = this.small_stars.length;
+					//small_1.title = 'Star #'+small_1.num.toString();
+					this.stars.addChild(small_1);
+				} else {
+					trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 Cannot make any more small stars !');
+				}
+			}
+			
+			protected function btn_addStar_clickHandler(event:MouseEvent):void {
+				this.btn_addStar.enabled = false;
+				this.add_a_star();
+			}
+
+			protected function btn_saveStarData_clickHandler(event:MouseEvent):void {
+				var _this:ImageCreator = this;
+				SWFHelper.saveData_for_browsed_file("Save your Data (Locally)...",JSON.encode(_this._dataSet_),
+					function ():void {
+						_this.btn_saveStarData.enabled = _this.canDataBeSaved;
+					},
+					function (err:Error):void {
+						AlertPopUp.surpriseNoOkay('Cannot save your data because\n'+err.toString(),'WARNING');
+					}
+				);
+				this.btn_saveStarData.enabled = false;
+			}
+
+			protected function container_creationCompleteHandler(event:FlexEvent):void {
+				var _this:ImageCreator = this;
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 this.container.x='+this.container.x+', this.container.y='+this.container.y);
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.3 this.container.width='+this.container.width+', this.container.height='+this.container.height);
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.4 this.container.percentWidth='+this.container.percentWidth+', this.container.percentHeight='+this.container.percentHeight);
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.addEventListener.DrawStarEvent.TYPE_DRAW_STAR.1 !');
+				this.container.addEventListener(DrawStarEvent.TYPE_DRAW_STAR, 
+					function (event:DrawStarEvent):void {
+						trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.DrawStarEvent.TYPE_DRAW_STAR.1 event='+event.toString());
+						trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.DrawStarEvent.TYPE_DRAW_STAR.2 this.handle.verticies.length='+_this.handle.verticies.length);
+						_this.lineSegments.dataProvider = new ArrayCollection(_this.handle.lineSegments);
+						
+						trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.DrawStarEvent.TYPE_DRAW_STAR.3 --> _this.is_auto_sized='+_this.is_auto_sized);
+						if (_this.is_auto_sized) {
+							var is_to_be_sized:Boolean;
+							is_to_be_sized = ImageHelper.are_all_expected_points_touching_borders(_this,_this.handle);
+							trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.DrawStarEvent.TYPE_DRAW_STAR.3a --> is_to_be_sized='+is_to_be_sized);
+							if (is_to_be_sized) {
+								ImageHelper.adjust_image(_this,_this.handle);
+							}
+						}
+					}
+				);
+				if (this.container.height == 0) {
+					this.container.height = this.height;
+				}
+				var overlay:Canvas = new Canvas();
+				//overlay.id = 'overlay';
+				overlay.name = 'overlay';
+				overlay.x = 0;
+				overlay.y = 0;
+				overlay.percentWidth = 100.0;
+				overlay.percentHeight = 100.0;
+				overlay.setStyle('backgroundColor',0x00ff00);
+				overlay.setStyle('backgroundAlpha',0.25);
+				this.container.addChild(overlay);
+			}
+
+			protected function lineSegments_creationCompleteHandler(event:FlexEvent):void {
+				if (this.handle is DrawingHandle) {
+					trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> this.handle.verticies.length='+this.handle.verticies.length);
+					var aList:DropDownList = DropDownList(event.currentTarget);
+					aList.dataProvider = new ArrayCollection(this.handle.lineSegments);
+				}
+			}
+
+			protected function lineSegments_changeHandler(event:IndexChangeEvent):void {
+				var aList:DropDownList = DropDownList(event.currentTarget);
+				var data:Object = aList.selectedItem;
+				var ex:ObjectExplainer = new ObjectExplainer(data);
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> points='+ex.explainThisWay());
+				var pts:Object = data['points'];
+				if (pts != null) {
+					var from:Point = pts['from'];
+					var to:Point = pts['to'];
+					if ( (from is Point) && (to is Point) ) {
+						var overlay:Canvas = this.container.getChildByName('overlay') as Canvas;
+						if (overlay is Canvas) {
+							overlay.removeAllChildren();
+							
+							var sp1:PointMarker = new PointMarker();
+							sp1.x = from.x;
+							sp1.y = from.y;
+							sp1.radius = 10;
+							overlay.addChild(sp1);
+							
+							overlay.graphics.clear();
+							overlay.graphics.lineStyle(5, 0x0000ff);
+							overlay.graphics.moveTo( from.x, from.y);
+							overlay.graphics.lineTo( to.x, to.y);
+						}
+					}
+				}
+			}
+
+			public function _draw_star_(graphics:Graphics,star:Object):void {
+				var handle:DrawingHandle = new DrawingHandle();
+				handle.callback = function (h:DrawingHandle,pt:*):void {};
+				if (graphics is Graphics) {
+					graphics.lineStyle(1, 0x000000);
+					DrawingShapes.drawStar( handle,graphics, star.x, star.y, star.pts, star.iR, star.oR, star.a);
+				}
+			}
+			
+			private function place_logos_for_segments(segments:int,stars_per_segment:int,segments_vector:Array,stars:Array):void {
+				trace('\n\n');
+				var _this:ImageCreator = this;
+				var i:int;
+				var j:int;
+				var n:int;
+				var aDashPt1:Point;
+				var aDashPt2:Point;
+				var aVector2:Array;
+				var isRunning:Boolean = true;
+				if (segments_vector is Array) {
+					var aVector:Array;
+					var slope1:Number;
+					var slope2:Number;
+					var overlay:Canvas = this.container.getChildByName('overlay') as Canvas;
+					if (overlay is Canvas) {
+						overlay.removeAllChildren();
+					}
+					var aVectorZ:Array = [];
+					var aVect:Object;
+					for (i = 0; i < segments_vector.length; i++) {
+						aVector = segments_vector[i];
+						var vertex:Point;
+						var vector_points_that_are_equal:String = '';
+						var pt1:Point;
+						var pt2:Point;
+						if (Point(aVector[0].points.from).equals(aVector[aVector.length-1].points.from)) {
+							vector_points_that_are_equal = 'FF';
+							vertex = Point(aVector[0].points.from);
+							pt1 = Point(aVector[0].points.to);
+							pt2 = Point(aVector[aVector.length-1].points.to);
+						} else if (Point(aVector[0].points.from).equals(aVector[aVector.length-1].points.to)) {
+							vector_points_that_are_equal = 'FT';
+							vertex = Point(aVector[0].points.from);
+							pt1 = Point(aVector[0].points.to);
+							pt2 = Point(aVector[aVector.length-1].points.from);
+						} else if (Point(aVector[0].points.to).equals(aVector[aVector.length-1].points.from)) {
+							vector_points_that_are_equal = 'TF';
+							vertex = Point(aVector[0].points.to);
+							pt1 = Point(aVector[0].points.from);
+							pt2 = Point(aVector[aVector.length-1].points.to);
+						} else  if (Point(aVector[0].points.to).equals(aVector[aVector.length-1].points.to)) {
+							vector_points_that_are_equal = 'TT';
+							vertex = Point(aVector[0].points.to);
+							pt1 = Point(aVector[0].points.from);
+							pt2 = Point(aVector[aVector.length-1].points.from);
+						}
+						if (vector_points_that_are_equal.length == 0) {
+							AlertPopUp.surpriseConfirm('Programming Error - Cannot determine where to place the symbols.','WARNING',
+								function (event:CloseEvent):void {
+									return;
+								}
+							);
+							continue;
+						}
+						if (overlay is Canvas) {
+							var sp1:PointMarker = new PointMarker();
+							sp1.x = vertex.x;
+							sp1.y = vertex.y;
+							sp1.radius = 10;
+							sp1.color = 0x0000ff;
+
+							if (!this.is_production) {
+								overlay.addChild(sp1);
+								
+								trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'().1 --> (outer) sp1='+sp1.point.toString());
+							}
+							
+							aVect = {'outer':sp1.point};
+							
+							var sp3:PointMarker = new PointMarker();
+							sp3.x = pt1.x;
+							sp3.y = pt1.y;
+							sp3.radius = 10;
+							sp3.color = 0x00ff00;
+
+							if (!this.is_production) {
+								overlay.addChild(sp3);
+							}
+
+							var sp4:PointMarker = new PointMarker();
+							sp4.x = pt2.x;
+							sp4.y = pt2.y;
+							sp4.radius = 10;
+							sp4.color = 0x00ff00;
+							if (!this.is_production) {
+								overlay.addChild(sp4);
+							}
+							
+							var p:Array = Math2D.FindMidPoint([pt1.x,pt1.y],[pt2.x,pt2.y]);
+
+							var spMid:PointMarker = new PointMarker();
+							spMid.x = p[0];
+							spMid.y = p[p.length-1];
+							spMid.radius = 10;
+							spMid.color = 0xff0000;
+
+							if (!this.is_production) {
+								overlay.addChild(spMid);
+								
+								trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'().2 --> (inner-midPoint) spMid='+spMid.point.toString());
+							}
+
+							aVect['inner'] = spMid.point;
+							aVectorZ.push(aVect);
+
+							var slope:Number = VectorUtils.calculateSlope(aVect.outer,aVect.inner);
+							trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'().3 --> slope='+slope+'\n\n');
+							
+							var y_intercept:Number = VectorUtils.solve_for_y_intercept(aVect.inner,slope);
+
+//							DebuggerUtils.isDebugging {
+//								var _b1:Number = VectorUtils.solve_for_y_intercept(aVect['outer'],slope);
+//								var _b2:Number = y_intercept;
+//								var _bDiff:Number = Math.max(_b1,_b2) - Math.min(_b1,_b2);
+//								DebuggerUtils.assert(_bDiff < 0.0001, 'Oops, something is wrong with your logic in '+DebuggerUtils.getFunctionName(new Error()));
+//							}
+
+							var diffY:Number = Math.max(aVect.outer.y,aVect.inner.y) - Math.min(aVect.outer.y,aVect.inner.y);
+							var diffX:Number = Math.max(aVect.outer.x,aVect.inner.x) - Math.min(aVect.outer.x,aVect.inner.x);
+							var is_above_outer:Boolean = (aVect.outer.y < y_intercept);
+							
+							var segPts:Array = [];
+
+							var aHandle:DrawingHandle = new DrawingHandle();
+							aVect.dashCount = 0;
+							aVect.dashPts = [];
+							aVect.dashPt = null;
+							aVect.spacePt = null;
+							aHandle.callback = function (h:DrawingHandle,pt:*):void {
+								if (pt != null) {
+									if (aVect.dashPt == null) {
+										aVect.dashPt = pt;
+										trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1a --> aVect.dashPt='+aVect.dashPt.toString());
+									} else if (aVect.spacePt == null) {
+										aVect.spacePt = pt;
+										trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1b --> aVect.spacePt='+aVect.spacePt.toString());
+									} else {
+										aVect.dashCount += 1;
+										aVect.dashPts.push(pt);
+										trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> (#'+aVect.dashCount+') pt='+pt.toString());
+									}
+								} else {
+									trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 --> Least='+h.leastPt.toString());
+									trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.3 --> Most='+h.mostPt.toString());
+									trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.4 --> pt='+pt);
+									trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.5 --> dashCount='+aVect.dashCount);
+								}
+							};
+							overlay.graphics.lineStyle( 3, (!this.is_production) ? 0xff0000 : 0xffffff );
+							var dst:Number = Math2D.FindDistance(aVect.outer,aVect.inner);
+							var space_between_dashes:Number = 5;
+							trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1a --> dst='+dst+', stars_per_segment='+stars_per_segment+', space_between_dashes='+space_between_dashes.toString());
+							DrawingShapes.drawDash(aHandle, overlay.graphics, aVect.outer.x, aVect.outer.y, aVect.inner.x, aVect.inner.y, 1, space_between_dashes);
+							
+							var distBetweenDashes:Number;
+							var distTotal:Number = 0;
+							for (n = 1; n < aVect.dashPts.length-2; n++) { // skip the first and the last - consider only those in-between...
+								aDashPt1 = aVect.dashPts[n];
+								aDashPt2 = aVect.dashPts[n+1];
+								distBetweenDashes = Math2D.FindDistance(aDashPt1,aDashPt2);
+								trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 --> aDashPt1='+aDashPt1.toString()+', aDashPt2='+aDashPt2.toString()+', distBetweenDashes='+distBetweenDashes);
+								distTotal += distBetweenDashes;
+							}
+							trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.3 --> distTotal='+distTotal);
+							
+							aVector.push(aVect);
+						}
+					}
+					var aDashPt:Point;
+					var spMarker:PointMarker;
+					isRunning = true;
+					do {
+						aVector = segments_vector[0];
+						aVect = aVector[2];
+						aDashPt = aVect.dashPts[aVect.dashPts.length-1];
+						var aVect2:Object;
+						for (i = 1; i < segments_vector.length-1; i++) {
+							aVector2 = segments_vector[i];
+							aVect2 = aVector2[2];
+							aDashPt2 = aVect2.dashPts[aVect2.dashPts.length-1];
+							distBetweenDashes = Math2D.FindDistance(aDashPt,aDashPt2);
+							if (distBetweenDashes < 10) {
+								isRunning = false;
+								break;
+							}
+						}
+						if ((isRunning)) {
+							for (i = 0; i < segments_vector.length; i++) {
+								aVector = segments_vector[i];
+								aVect = aVector[2];
+								aDashPt = aVect.dashPts[aVect.dashPts.length-1];
+								spMarker = new PointMarker();
+								spMarker.x = aDashPt.x+aVect.dashPt.x+aVect.spacePt.x;
+								spMarker.y = aDashPt.y+aVect.dashPt.y+aVect.spacePt.y;
+								spMarker.radius = 3;
+								spMarker.color = 0x000000;
+								if (!this.is_production) {
+									overlay.addChild(spMarker);
+								}
+								aVect.dashPts.push(spMarker.point);
+							}
+						}
+					} while (isRunning);
+					
+					var minimum_dist_from_outer:Number = 30;
+					var minimum_dist_from_nearest:Number = 30;
+
+					if (segments == segments_vector.length) {
+						var aStar:Object;
+						var segments_tracker:Object = {};
+						var used_stars:Object = {};
+						var used_dashPts:Object = {};
+						var dashPt_to_Star_Map:Object = {};
+						var star_to_dashPt_Map:Object = {};
+						var distFromOuter:Number;
+						var distFromUsedDashPt:Number;
+						var aUsedDashPt:Point;
+						isRunning = true;
+						do {
+							if (stars.length > 0) {
+								aStar = stars.shift();
+								for (i = 0; ( (isRunning) && (i < segments_vector.length) ); i++) {
+									segments_tracker['count_for_segment'] = (segments_tracker['count_for_segment'] == null) ? 0 : segments_tracker['count_for_segment'];
+									aVector = segments_vector[i];
+									aVect = aVector[2];
+									do {
+										for (aVect.nextPt = 0; aVect.nextPt < aVect.dashPts.length; aVect.nextPt++) {
+											aDashPt = aVect.dashPts[aVect.nextPt];
+											if (used_stars[i] == null) {
+												distFromOuter = Math.abs(Math2D.FindDistance(aVect.outer,aDashPt));
+												trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.3 --> distFromOuter='+distFromOuter+', aVect.outer='+aVect.outer.toString()+', aDashPt='+aDashPt.toString());
+												if (distFromOuter >= minimum_dist_from_outer) {
+													if (used_stars[i] == null) {
+														used_stars[i] = [];
+													}
+													used_stars[i].push(aStar);
+													if (used_dashPts[i] == null) {
+														used_dashPts[i] = [];
+													}
+													used_dashPts[i].push(aDashPt);
+													if (dashPt_to_Star_Map[i] == null) {
+														dashPt_to_Star_Map[i] = {};
+													}
+													dashPt_to_Star_Map[i][aDashPt] = aStar;
+													if (star_to_dashPt_Map[i] == null) {
+														star_to_dashPt_Map[i] = {};
+													}
+													star_to_dashPt_Map[i][aStar] = aDashPt;
+													
+													this.draw_a_star_at(overlay,aDashPt,aStar);
+													trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.4 --> Drawing aStar='+DebuggerUtils.explainThis(aStar)+', aDashPt='+aDashPt.toString());
+
+													if (stars.length > 0) {
+														aStar = stars.shift();
+													} else {
+														isRunning = false;
+														break;
+													}
+												}
+											} else {
+												var isUsable:Boolean = true;
+												for (var c:int = 0; c < used_dashPts[i].length; c++) {
+													aUsedDashPt = used_dashPts[i][c];
+													distFromUsedDashPt = Math.abs(Math2D.FindDistance(aUsedDashPt,aDashPt));
+													trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.5 --> distFromUsedDashPt='+distFromUsedDashPt+', aUsedDashPt='+aUsedDashPt.toString()+', aDashPt='+aDashPt.toString());
+													if (distFromUsedDashPt <= minimum_dist_from_nearest) {
+														isUsable = false;
+														break;
+													}
+												}
+												if (isUsable) {
+													if (used_stars[i] == null) {
+														used_stars[i] = [];
+													}
+													used_stars[i].push(aStar);
+													if (used_dashPts[i] == null) {
+														used_dashPts[i] = [];
+													}
+													used_dashPts[i].push(aDashPt);
+													if (dashPt_to_Star_Map[i] == null) {
+														dashPt_to_Star_Map[i] = {};
+													}
+													dashPt_to_Star_Map[i][aDashPt] = aStar;
+													if (star_to_dashPt_Map[i] == null) {
+														star_to_dashPt_Map[i] = {};
+													}
+													star_to_dashPt_Map[i][aStar] = aDashPt;
+													
+													this.draw_a_star_at(overlay,aDashPt,aStar);
+													trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.6 --> Drawing aStar='+DebuggerUtils.explainThis(aStar)+', aDashPt='+aDashPt.toString());
+
+													if (stars.length > 0) {
+														aStar = stars.shift();
+													} else {
+														isRunning = false;
+														break;
+													}
+												}
+											}
+										}
+										segments_tracker.count_for_segment += 1;
+									} while(segments_tracker.count_for_segment < stars_per_segment);
+									var ii:int = -1;
+									//break;
+								}
+							}
+						} while ( (isRunning) && (stars.length > 0) );
+					} else {
+						AlertPopUp.surpriseNoOkay('Cannot place symbols on the field due to some kind of programming snafu...','WARNING');
+					}
+					
+					// (+++) Begin placing stars on the field using the numerous dashPts, choose points that are far enfrom each star that is placed.
+					// Choose points for stars from top to bottom.
+				}
+			}
+			
+			private function make_logos(_guid:String):void {
+				var s:Array = [];
+				var ch:String;
+				var id:int;
+				var id2:int;
+				var value:int;
+				var numbers:String = '0123456789';
+				var alphas:String = 'ABCDEF';
+				var guid:String = StringUtils.asHexDigits(_guid);
+				var aStar:Object;
+				var ex:ObjectExplainer;
+				var segments:int = 5; // 5 arms and center makes 6 segments.
+				var stars_per_segment:int = guid.length / segments;
+				var segments_vector:Array = this.handle.segments_for_schema;
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'().1 --> guid='+guid);
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'().2 --> stars_per_segment='+stars_per_segment+', segments='+segments);
+				for (var i:int = 0; i < guid.length; i++) {
+					ch = guid.substr(i,1);
+					value = 0;
+					id = numbers.indexOf(ch);
+					if (id > -1) {
+						value = id;
+					} else {
+						id2 = alphas.indexOf(ch);
+						if (id2 > -1) {
+							value = 10 + id2;
+						}
+					}
+					aStar = this._data_[value];
+					ex = new ObjectExplainer(aStar);
+					trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'().3 --> value='+value+', aStar='+ex.explainThisWay());
+					s.push(aStar);
+				}
+				this.place_logos_for_segments(segments,stars_per_segment,segments_vector,s);
+			}
+
+			public function handle_addGUID():void {
+				var overlay:Canvas = this.container.getChildByName('overlay') as Canvas;
+				if (overlay is Canvas) {
+					overlay.removeAllChildren();
+					
+					overlay.graphics.clear();
+				}
+				var guid:String = GUID.create();
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> guid='+guid);
+				this.make_logos(guid);
+			}
+			
+			protected function btn_addGUID_clickHandler(event:MouseEvent):void {
+				this.handle_addGUID();
+			}
+
+			private function get hasAllDataBeenLoaded():Boolean {
+				var isAllDataBeenLoaded:Boolean = (this._data_.length == 16);
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> isAllDataBeenLoaded='+isAllDataBeenLoaded);
+				return isAllDataBeenLoaded;
+			}
+
+			private function get canDataBeLoaded():Boolean {
+				var isDataBeLoaded:Boolean = (this._data_.length == 0);
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> isDataBeLoaded='+isDataBeLoaded);
+				return isDataBeLoaded;
+			}
+			
+			private function get canDataBeSaved():Boolean {
+				var isDataCanBeSaved:Boolean = (this._dataSet_.length > 0);
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> isDataCanBeSaved='+isDataCanBeSaved);
+				return isDataCanBeSaved;
+			}
+
+			protected function cb_production_clickHandler(event:MouseEvent):void {
+				this._is_production_ = CheckBox(event.currentTarget).selected;
+				this.handle_addGUID();
+			}
+
+
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void {
+				this._is_web_based_ = (this._is_web_based_) ? this._is_web_based_ : SWFHelper.is_web_based;
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> this._is_web_based_='+this._is_web_based_);
+				this.currentState = (this.is_web_based) ? 'web_based' : 'air_based';
+			}
+
+		]]>
+	</fx:Script>
+	<mx:VBox x="0" y="0" width="100%" height="100%" verticalAlign="top">
+		<mx:MenuBar id="menuBar" width="100%" visible.web_based="false" visible.air_based="true" includeInLayout.web_based="false" includeInLayout.air_based="true" itemClick="onItemClick_menuBar(event)" creationComplete="onCreationComplete_menuBar(event)"/>
+		<mx:VBox width="100%" visible.web_based="false" visible.air_based="true" includeInLayout.web_based="false" includeInLayout.air_based="true">
+			<mx:HBox width="100%">
+				<mx:Spacer width="5"/>
+				<mx:Label text="X:" paddingTop="5"/>
+				<mx:TextInput id="txt_xCoord" width="30" paddingTop="5" change="txt_xCoord_changeHandler(event)" creationComplete="txt_xCoord_creationCompleteHandler(event)"/>
+				<mx:Label text="(0-100)" paddingTop="5"/>
+				<mx:HSlider id="xSlider" width="100%"
+							minimum="0" maximum="100" value="50"
+							dataTipPlacement="top" 
+							tickColor="black" toolTip="{this.xSlider_scaled_value}"
+							snapInterval="1" tickInterval="5"
+							labels="[0%,100%]" 
+							allowTrackClick="true" 
+							liveDragging="true"
+							change="change_xSlider(event)" creationComplete="xSlider_creationCompleteHandler(event)"/>
+			</mx:HBox>
+			<mx:HBox>
+				<mx:Spacer width="5"/>
+				<mx:Label text="Segments:" paddingTop="5"/>
+				<s:DropDownList id="lineSegments" change="lineSegments_changeHandler(event)" creationComplete="lineSegments_creationCompleteHandler(event)"/>
+				<mx:Spacer width="{this.width/5}"/>
+				<s:CheckBox id="cb_production" selected="{this._is_production_}" label="Production" click="cb_production_clickHandler(event)"/>
+				<mx:Button id="btn_addGUID" icon="{this.addImageCls}" height="32" enabled="{this.hasAllDataBeenLoaded}" click="btn_addGUID_clickHandler(event)"/>
+				<mx:Spacer width="{this.width/5}"/>
+				<mx:VBox height="100%">
+					<mx:Button id="btn_addStar" icon="{this.nextImageCls}" height="32" enabled="{this.canDataBeLoaded}" click="btn_addStar_clickHandler(event)"/>
+				</mx:VBox>
+				<mx:Spacer width="50"/>
+				<mx:VBox height="100%">
+					<mx:Button id="btn_saveStarData" icon="{this.saveImageCls}" width="30" height="32" enabled="{this.canDataBeSaved}" click="btn_saveStarData_clickHandler(event)"/>
+				</mx:VBox>
+			</mx:HBox>
+		</mx:VBox>
+		<mx:HBox width="100%" height="100%">
+			<mx:Canvas width="100" height="100%" visible.web_based="false" visible.air_based="true" includeInLayout.web_based="false" includeInLayout.air_based="true">
+				<mx:VBox width="100%" height="100%" horizontalAlign="left">
+					<mx:HRule width="100%" strokeColor="#0000ff" strokeWidth="2" shadowColor="#0000ff"/>
+					<mx:HBox>
+						<mx:Spacer width="5"/>
+						<mx:Label text="Y:"/>
+						<mx:TextInput id="txt_yCoord" width="30" paddingTop="5" change="txt_yCoord_changeHandler(event)" creationComplete="txt_yCoord_creationCompleteHandler(event)"/>
+					</mx:HBox>
+					<mx:VSlider id="ySlider" height="100%"
+								minimum="0" maximum="100" value="50"
+								dataTipPlacement="top" 
+								tickColor="black" toolTip="{this.ySlider_scaled_value}"
+								snapInterval="1" tickInterval="5"
+								labels="[0%,100%]" 
+								allowTrackClick="true" 
+								liveDragging="true"
+								change="change_ySlider(event)" creationComplete="ySlider_creationCompleteHandler(event)"/>
+				</mx:VBox>
+			</mx:Canvas>
+			<mx:Canvas id="container" width="100%" height="100%" borderColor="#000000" borderStyle="outset" borderAlpha="0.5" backgroundColor="#ffffff" backgroundAlpha="0.25" creationComplete="container_creationCompleteHandler(event)"/>
+			<mx:Canvas id="stars" width="20%" height="100%" visible.web_based="false" visible.air_based="true" includeInLayout.web_based="false" includeInLayout.air_based="true" backgroundColor="#ffffff" backgroundAlpha="0.25">
+			</mx:Canvas>
+			<mx:Canvas width="10%" height="100%" minWidth="250" visible.web_based="false" visible.air_based="true" includeInLayout.web_based="false" includeInLayout.air_based="true" backgroundColor="#0000ff" backgroundAlpha="0.15">
+				<mx:VBox width="100%" height="100%">
+					<mx:VBox width="100%" height="100%" horizontalAlign="left">
+						<mx:HBox>
+							<mx:Label text="Inner/Outer Ratio:"/>
+							<mx:TextInput id="txt_innerOuterRatio" width="60" paddingTop="5" change="txt_innerOuterRatio_changeHandler(event)" creationComplete="txt_innerOuterRatio_creationCompleteHandler(event)"/>
+						</mx:HBox>
+						<mx:HBox width="100%" horizontalAlign="center">
+							<mx:HSlider id="innerOuterRatioSlider" width="90%"
+										minimum="0" maximum="1" value="0.5"
+										dataTipPlacement="top" 
+										tickColor="black" toolTip="{this.txt_innerOuterRatio.text}"
+										snapInterval="0.05" tickInterval="0.05"
+										labels="[0.0,1.0]" 
+										allowTrackClick="true" 
+										liveDragging="true"
+										change="change_innerOuterRatioSlider(event)" creationComplete="innerOuterRatioSlider_creationCompleteHandler(event)"/>
+						</mx:HBox>
+						<mx:HRule width="100%" strokeColor="#0000ff" strokeWidth="2" shadowColor="#0000ff"/>
+						<mx:HBox width="100%" height="100%" enabled="true">
+							<mx:VBox>
+								<mx:HBox>
+									<mx:Label text="Inner Radius:"/>
+									<mx:TextInput id="txt_innerRadius" enabled="false" width="60" paddingTop="5" change="txt_innerRadius_changeHandler(event)" creationComplete="txt_innerRadius_creationCompleteHandler(event)"/>
+								</mx:HBox>
+								<mx:VSlider id="innerRadiusSlider" height="50%" enabled="false"
+											minimum="0" maximum="100" value="50"
+											dataTipPlacement="top" 
+											tickColor="black" toolTip="{this.txt_innerRadius.text}"
+											snapInterval="1" tickInterval="5"
+											labels="[0%,100%]" 
+											allowTrackClick="true" 
+											liveDragging="true"
+											change="change_innerRadiusSlider(event)" creationComplete="innerRadiusSlider_creationCompleteHandler(event)"/>
+								<mx:HRule width="100%" strokeColor="#0000ff" strokeWidth="2" shadowColor="#0000ff"/>
+								<mx:HBox>
+									<mx:Label text="Outer Radius:"/>
+									<mx:TextInput id="txt_outerRadius" width="60" paddingTop="5" change="txt_outerRadius_changeHandler(event)" creationComplete="txt_outerRadius_creationCompleteHandler(event)"/>
+								</mx:HBox>
+								<mx:VSlider id="outerRadiusSlider" height="50%"
+											minimum="0" maximum="100" value="50"
+											dataTipPlacement="top" 
+											tickColor="black" toolTip="{this.outerRadiusSlider_scaled_value}"
+											snapInterval="1" tickInterval="5"
+											labels="[0%,100%]" 
+											allowTrackClick="true" 
+											liveDragging="true"
+											change="change_outerRadiusSlider(event)" creationComplete="outerRadiusSlider_creationCompleteHandler(event)"/>
+							</mx:VBox>
+						</mx:HBox>
+					</mx:VBox>
+					<mx:HRule width="100%" strokeColor="#0000ff" strokeWidth="2" shadowColor="#0000ff"/>
+					<mx:VBox width="100%" height="100%" horizontalAlign="left">
+						<mx:HBox>
+							<mx:Label text="Angle:"/>
+							<mx:TextInput id="txt_angleSlider" width="30" paddingTop="5" change="txt_angleSlider_changeHandler(event)" creationComplete="txt_angleSlider_creationCompleteHandler(event)"/>
+						</mx:HBox>
+						<mx:VSlider id="angleSlider" height="50%"
+									minimum="0" maximum="100" value="10"
+									dataTipPlacement="top" 
+									tickColor="black" toolTip="{this.angleSlider_scaled_value}"
+									snapInterval="1" tickInterval="5"
+									labels="[0%,100%]" 
+									allowTrackClick="true" 
+									liveDragging="true"
+									change="change_angleSlider(event)" creationComplete="angleSlider_creationCompleteHandler(event)"/>
+					</mx:VBox>
+					<mx:HRule width="100%" strokeColor="#0000ff" strokeWidth="2" shadowColor="#0000ff"/>
+				</mx:VBox>
+			</mx:Canvas>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Canvas>

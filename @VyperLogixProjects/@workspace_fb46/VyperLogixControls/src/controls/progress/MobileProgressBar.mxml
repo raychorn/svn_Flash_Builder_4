@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%" 
+		  creationComplete="hgroup1_creationCompleteHandler(event)" 
+		  resize="hgroup1_resizeHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			
+			[Bindable]
+			public var value:Number = 0;
+
+			[Bindable]
+			public var max:Number = 0;
+			
+			[Bindable]
+			public var infoStyleName:String;
+			
+			public function get info():String {
+				return this.message.text;
+			}
+			
+			public function set info(message:String):void {
+				if (this.message.text != message) {
+					this.message.text = message;
+					
+				}
+			}
+			
+			protected function paint_progress_bar():void {
+				var xBegin:Number = 10;
+				var pCent:Number = this.value/this.max;
+				var w:Number = (this.max > 0) ? this.width*pCent : xBegin;
+				var gr:Graphics = this.graphics;
+				trace(this.className+'.paint_progress_bar().1 --> pCent='+pCent);
+				try {
+					gr.clear();
+					var wOffset:Number = w-xBegin-10;
+					trace(this.className+'.paint_progress_bar().2 --> wOffset='+wOffset);
+					if ( (this.max > 0) && (wOffset > 0) ) {
+						gr.beginFill(0x00ff00, 1.0);
+						gr.drawRect(xBegin,0,wOffset,this.height);
+						gr.endFill();
+					}
+					gr.lineStyle(1,0x000000,1.0);
+					gr.moveTo(xBegin,0);
+					gr.lineTo(this.width-xBegin,0);
+					gr.moveTo(this.width-xBegin,0);
+					gr.lineTo(this.width-xBegin,this.height);
+					gr.moveTo(this.width-xBegin,this.height);
+					gr.lineTo(xBegin,this.height);
+					gr.moveTo(xBegin,this.height);
+					gr.lineTo(xBegin,0);
+				} catch (err:Error) {
+					trace(this.className+'.paint_progress_bar().ERR.1 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+			}
+			
+			protected function hgroup1_creationCompleteHandler(event:FlexEvent):void {
+			}
+			
+			protected function hgroup1_resizeHandler(event:ResizeEvent):void {
+				this.paint_progress_bar();
+			}
+			
+		]]>
+	</fx:Script>
+	<s:HGroup id="hgroup1" width="100%" paddingTop="10" paddingLeft="0">  <!-- {(this.width/4)-(this.message.width*4)}  -->
+		<s:HGroup width="100%" horizontalAlign="center" paddingLeft="0">
+			<s:Label id="message" styleName="{this.infoStyleName}"/>
+		</s:HGroup>
+	</s:HGroup>
+</s:HGroup>

@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" styleName="PopUpBackground" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  horizontalAlign="left" 
+		  width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="changeTimerDays", type="controls.timers.events.ChangeTimerAspectEvent")]
+		[Event(name="changeTimerHours", type="controls.timers.events.ChangeTimerAspectEvent")]
+		[Event(name="changeTimerMinutes", type="controls.timers.events.ChangeTimerAspectEvent")]
+		[Event(name="changeTimerSeconds", type="controls.timers.events.ChangeTimerAspectEvent")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import com.ArrayUtils;
+			
+			import controls.timers.events.ChangeTimerAspectEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+
+			[Bindable]
+			private var __value__:String;
+			
+			public function get value():String {
+				return this.__value__;
+			}
+			
+			public function set value(value:String):void {
+				if (this.__value__ != value) {
+					this.__value__ = value;
+					var toks:Array = value.split(':');
+					ArrayUtils.iterate(toks,
+						function (item:String, i:int, source:Array):void {
+							source[i] = int(item);
+						}
+					);
+					if (toks.length == 4) {
+						this.days.value = toks[0];
+						this.hours.value = toks[1];
+						this.minutes.value = toks[2];
+						this.seconds.value = toks[3];
+					} else if (toks.length == 3) {
+						this.hours.value = toks[0];
+						this.minutes.value = toks[1];
+						this.seconds.value = toks[2];
+					} else if (toks.length == 2) {
+						this.minutes.value = toks[0];
+						this.seconds.value = toks[1];
+					} else if (toks.length == 1) {
+						this.seconds.value = toks[0];
+					}
+				}
+			}
+			
+			protected function days_changeHandler(event:Event):void {
+				var target:HSlider = event.currentTarget as HSlider;
+				this.dispatchEvent(new ChangeTimerAspectEvent(ChangeTimerAspectEvent.TYPE_CHANGE_TIMER_DAYS, target.value));
+			}
+			
+			protected function hours_changeHandler(event:Event):void {
+				var target:HSlider = event.currentTarget as HSlider;
+				this.dispatchEvent(new ChangeTimerAspectEvent(ChangeTimerAspectEvent.TYPE_CHANGE_TIMER_HOURS, target.value));
+			}
+			
+			protected function minutes_changeHandler(event:Event):void {
+				var target:HSlider = event.currentTarget as HSlider;
+				this.dispatchEvent(new ChangeTimerAspectEvent(ChangeTimerAspectEvent.TYPE_CHANGE_TIMER_MINUTES, target.value));
+			}
+			
+			protected function seconds_changeHandler(event:Event):void {
+				var target:HSlider = event.currentTarget as HSlider;
+				this.dispatchEvent(new ChangeTimerAspectEvent(ChangeTimerAspectEvent.TYPE_CHANGE_TIMER_SECONDS, target.value));
+			}
+			
+		]]>
+	</fx:Script>
+	<s:HGroup horizontalAlign="left">
+		<s:HGroup paddingTop="10">
+			<s:Label text="Days:"/>
+		</s:HGroup>
+		<s:HGroup paddingLeft="20">
+			<s:HSlider id="days" width="100%" change="days_changeHandler(event)" dataTipPrecision="0"
+					   liveDragging="true" maximum="30" minimum="0" showDataTip="true"
+					   skinClass="controls.skins.CustomMobileHSliderSkin"/>
+		</s:HGroup>
+	</s:HGroup>
+	
+	<s:HGroup horizontalAlign="left">
+		<s:HGroup paddingTop="10">
+			<s:Label text="Hours:"/>
+		</s:HGroup>
+		<s:HGroup paddingLeft="15">
+			<s:HSlider id="hours" width="100%" change="hours_changeHandler(event)"
+					   dataTipPrecision="0" liveDragging="true" maximum="23" minimum="0"
+					   showDataTip="true" skinClass="controls.skins.CustomMobileHSliderSkin"/>
+		</s:HGroup>
+	</s:HGroup>
+	
+	<s:HGroup horizontalAlign="left">
+		<s:HGroup paddingTop="10">
+			<s:Label text="Minutes:"/>
+		</s:HGroup>
+		<s:HGroup paddingLeft="5">
+			<s:HSlider id="minutes" width="100%" change="minutes_changeHandler(event)"
+					   dataTipPrecision="0" liveDragging="true" maximum="59" minimum="0"
+					   showDataTip="true" skinClass="controls.skins.CustomMobileHSliderSkin"/>
+		</s:HGroup>
+	</s:HGroup>
+	
+	<s:HGroup horizontalAlign="left">
+		<s:HGroup paddingTop="10">
+			<s:Label text="Seconds:"/>
+		</s:HGroup>
+		<s:HGroup paddingLeft="0">
+			<s:HSlider id="seconds" width="100%" change="seconds_changeHandler(event)"
+					   dataTipPrecision="0" liveDragging="true" maximum="59" minimum="0"
+					   showDataTip="true" skinClass="controls.skins.CustomMobileHSliderSkin"/>
+		</s:HGroup>
+	</s:HGroup>
+
+	<s:HGroup horizontalAlign="center" paddingBottom="10">
+		<s:Button id="btnClose" label="(Done)" styleName="MediumBoldText"/>
+	</s:HGroup>
+	
+</s:VGroup>

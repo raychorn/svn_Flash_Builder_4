@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				layout="absolute" width="100%" height="100%" showCloseButton="true" 
+				xmlns:renderers="controls.renderers.*" creationComplete="titlewindow1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ArrayUtils;
+			import com.Generator;
+			import com.ObjectUtils;
+			import com.StringUtils;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.editor.TextEditor;
+			import controls.launcher.NativeFileLauncher;
+			import controls.renderers.CustomTreeItemRenderer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.events.ResizeEvent;
+			import mx.managers.PopUpManager;
+			
+			import utils.FileHelper;
+			
+			import views.models.NodeHierarchy;
+			
+			import vyperlogix.FileIO.FileUpload;
+			import vyperlogix.FileIO.winProgress;
+			
+			[Bindable]
+			private var _dataProvider:ArrayCollection;
+			
+			public static var _fileList:Array = [];
+			
+			public static var _types:Array = [];
+			
+			private var _node_expansion_stack:Array = [];
+			
+			private var _nodeHierarchy:NodeHierarchy = new NodeHierarchy();
+			
+			private var _launcherPopUp:NativeFileLauncher;
+
+			private var _editorPopUp:TextEditor;
+			
+			[Bindable]
+			public static var _latest_file_date:Date;
+			
+			public static var uploader:FileUpload;
+			public static var _this:PolymorphicViewer;
+			
+			public function get file_type():* {
+				return PolymorphicViewer._types;
+			}
+			
+			public function set file_type(file_type:*):void {
+				if (PolymorphicViewer._types.indexOf(file_type) == -1) {
+					PolymorphicViewer._types.push(file_type.replace('*','').replace('?',''));
+				}
+			}
+			
+			public function get dataProvider():ArrayCollection {
+				return this._dataProvider;
+			}
+
+			public function get fpath_to_scan():String {
+				return FlexGlobals.topLevelApplication.appProxy.mySO.data.__fpath_to_scan;
+			}
+			
+			public function set fpath_to_scan(fpath_to_scan:String):void {
+				FlexGlobals.topLevelApplication.appProxy.mySO.data.__fpath_to_scan = fpath_to_scan;
+				FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+			}
+			
+			public function get latest_file_date():Date {
+				return FlexGlobals.topLevelApplication.appProxy.mySO.data.__latest_file_date;
+			}
+			
+			public function set latest_file_date(latest_file_date:Date):void {
+				FlexGlobals.topLevelApplication.appProxy.mySO.data.__latest_file_date = latest_file_date;
+				FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+			}
+			
+			public function get fileList():Array {
+				return FlexGlobals.topLevelApplication.appProxy.mySO.data.__fileList;
+			}
+			
+			public function set fileList(fileList:Array):void {
+				FlexGlobals.topLevelApplication.appProxy.mySO.data.__fileList = fileList;
+				FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+			}
+			
+			private static function updateWinProgress(x:Number,y:Number):void {
+				var numPerc:Number = Math.round((x / y) * 100);
+				if (PolymorphicViewer.uploader is FileUpload) {
+					with (PolymorphicViewer.uploader.progress.progBar) {
+						setProgress(numPerc, 100);
+						label = numPerc + "%";
+						validateNow();
+					}
+				}
+			}
+
+			public static function getFilesRecursive(folderName:*,bucket:Object=null):void {
+				var okay:Boolean;
+				var is_verification_scan:Boolean = (bucket != null);
+				var currentFolder:File = ((folderName is String) ? new File(folderName) : ((folderName is File) ? folderName : null));
+				if ( (currentFolder) && (currentFolder.isDirectory) ) {
+					var aFile:File;
+					var files:Array = currentFolder.getDirectoryListing();
+					for (var f:int = 0; f < files.length; f++) {
+						aFile = files[f];
+						if (PolymorphicViewer.uploader is FileUpload) {
+							PolymorphicViewer.uploader.progress.txtFile.text = aFile.nativePath;
+							PolymorphicViewer.updateWinProgress(f,files.length);
+						}
+						if (aFile.isDirectory) {
+							if ( (aFile.name != ".") && (aFile.name != "..") ) {
+								if (PolymorphicViewer._this is PolymorphicViewer) {
+									PolymorphicViewer._this.callLater(PolymorphicViewer._this.getFilesRecursive,[aFile,bucket]);
+								} else {
+									PolymorphicViewer.getFilesRecursive(aFile,bucket);
+								}
+							}
+						} else {
+							okay = true;
+							if (PolymorphicViewer._types.length > 0) {
+								okay = false;
+								var aType:String;
+								for (var t:String in PolymorphicViewer._types) {
+									aType = PolymorphicViewer._types[t];
+									if (aFile.nativePath.substr(aFile.nativePath.length-aType.length,aType.length) == aType) {
+										okay = true;
+										break;
+									}
+								}
+							}
+							if (okay) {
+								if (!is_verification_scan) {
+									if (PolymorphicViewer._latest_file_date is Date) {
+										if (aFile.modificationDate > PolymorphicViewer._latest_file_date) {
+											PolymorphicViewer._latest_file_date = aFile.modificationDate;
+										}
+									} else {
+										PolymorphicViewer._latest_file_date = aFile.modificationDate;
+									}
+									PolymorphicViewer._fileList.push(aFile);
+								} else {
+									if (bucket._latest_file_date is Date) {
+										if (aFile.modificationDate > bucket._latest_file_date) {
+											bucket._latest_file_date = aFile.modificationDate;
+										}
+									} else {
+										bucket._latest_file_date = aFile.modificationDate;
+									}
+									bucket._fileList.push(aFile);
+								}
+							}
+						}
+					}            
+				}
+			}
+
+			private function getFilesRecursive(folderName:*,bucket:*=null):void {
+				return PolymorphicViewer.getFilesRecursive(folderName,bucket);
+			}
+			
+			private function popUp_progressBar(title:String):void {
+				if (PolymorphicViewer.uploader is FileUpload) {
+					with (PolymorphicViewer.uploader.progress) {
+						title = title;
+						txtFile.text = '';
+						progBar.label = "0%";
+					}
+				}
+			}
+
+			private function handle_poly_data():void {
+				if ( (PolymorphicViewer._fileList is Array) && (PolymorphicViewer._fileList.length > 0) ) {
+					var anItem:Object = {};
+					var aFile:File;
+					var contents:String;
+					var _pattern:String;
+					var _child:String;
+					var _parent:String;
+					var _f:*;
+					var i:String;
+					for (i in PolymorphicViewer._fileList) {
+						aFile = (PolymorphicViewer._fileList[i] is File) ? PolymorphicViewer._fileList[i] : new File(PolymorphicViewer._fileList[i].nativePath);
+						contents = FileHelper.readFile(aFile);
+						var aRegExp:RegExp = /POLYMORPHIC_INHERIT\((.*),(.*)\);/mg;
+						var matches:Object = aRegExp.exec(contents);
+						while (matches) {
+							try {
+								_pattern = ((matches.length > 0) ? StringUtils.trim(matches[0]) : 'MISSING');
+								_child = ((matches.length > 1) ? StringUtils.trim(matches[1]) : 'MISSING');
+								_parent = ((matches.length > 2) ? StringUtils.trim(matches[2]) : 'MISSING');
+								anItem = {
+									'item_num':this._dataProvider.length+1,
+										'pattern':_pattern,
+										'child':_child,
+										'parent':_parent,
+										'file':aFile,
+										'tooltip':aFile.nativePath
+								};
+								this._dataProvider.addItem(anItem);
+								this._nodeHierarchy.add_node(_parent,_child,anItem);
+							} catch (err:Error) {}
+							matches = aRegExp.exec(contents);
+						}
+					}
+					this._nodeHierarchy.sort_hierarchy_by_level();
+					this.tree2.dataProvider = this._nodeHierarchy.hierarchy;
+					if (this.data_grid) {
+						this.data_grid.dataProvider = this._dataProvider;
+					}
+				}
+			}
+			
+			private function do_file_scan_using(fileName:String):void {
+				this.getFilesRecursive(fileName);
+				if (PolymorphicViewer._latest_file_date is Date) {
+					this.fpath_to_scan = fileName;
+					trace(this.className+'.set dataProvider.1 --> this.fpath_to_scan='+this.fpath_to_scan);
+					this.latest_file_date = PolymorphicViewer._latest_file_date;
+					trace(this.className+'.set dataProvider.2 --> this.latest_file_date='+this.latest_file_date.toString());
+					this.fileList = PolymorphicViewer._fileList;
+					trace(this.className+'.set dataProvider.3 --> this.fileList.length='+this.fileList.length);
+					this.callLater(handle_poly_data,[]);
+				}
+			}
+
+			public function set dataProvider(dataProvider:ArrayCollection):void {
+				var _this:PolymorphicViewer = this;
+				PolymorphicViewer._fileList = [];
+				if ( (dataProvider) && (dataProvider != this._dataProvider) ) {
+					var i:String;
+					this._dataProvider = new ArrayCollection();
+					if (dataProvider is ArrayCollection) {
+						for (i in dataProvider.source) {
+							this.latest_file_date = null;
+							this.fileList = [];
+							this.popUp_progressBar('Scanning :: '+dataProvider.source[i]);
+							this.callLater(do_file_scan_using,[dataProvider.source[i]]);
+						}
+					}
+				} else if (dataProvider == null) {
+					PolymorphicViewer._fileList = this.fileList; // data comes from the shared object cache...
+				}
+			}
+
+			protected function tree1_creationCompleteHandler(event:FlexEvent):void {
+				//var dp:* = this.tree1.dataProvider;
+			}
+
+			private function expand_items(items:Array):void {
+				try {
+					// close the previous then open the new node - track the previous is a stack...
+					//this.tree2.selectedItem = items[0];
+					//this.tree2.expandChildrenOf(this.tree2.selectedItem,true);
+					var prev_item:Object;
+					if (this._node_expansion_stack.length > 0) {
+						prev_item = this._node_expansion_stack.pop();
+						this.tree2.expandChildrenOf(prev_item,false);
+					}
+					this.tree2.selectedItem = items[1];
+					this._node_expansion_stack.push(this.tree2.selectedItem);
+					this.tree2.expandChildrenOf(this.tree2.selectedItem,true);
+				} catch (err:Error) {trace(this.className+'.expand_items().ERROR '+err.toString());}
+			}
+			
+			private function do_search_hierarch_for_term():void {
+				var search_term:String = this.search_text.text;
+				trace(this.className+'.do_search_hierarch_for_term().1 --> search_term='+search_term);
+				var item:Object = this._nodeHierarchy.search_hierarchy_for(search_term);
+				trace(this.className+'.do_search_hierarch_for_term().2 --> item='+item);
+				if (item) {
+					this.tree2.callLater(this.expand_items, [[this.tree2.dataProvider,item]]);
+				} else {
+					AlertPopUp.surpriseNoOkay('Cannot locate the item using the search term of "'+search_term+'".','WARNING');
+				}
+			}
+			
+			protected function btn_search_clickHandler(event:MouseEvent):void {
+				this.do_search_hierarch_for_term();
+			}
+
+			protected function search_text_keyDownHandler(event:KeyboardEvent):void {
+				trace(this.className+'.search_text_keyDownHandler().1 --> event.keyCode='+event.keyCode);
+				if (event.keyCode == 13) {
+					this.do_search_hierarch_for_term();
+				}
+			}
+
+
+			protected function tree2_changeHandler(event:ListEvent):void {
+				var t:Tree = Tree(event.currentTarget);
+				trace(this.className+'.tree2_changeHandler().1 --> event.rowIndex='+event.rowIndex);
+			}
+
+
+			protected function data_grid_creationCompleteHandler(event:FlexEvent):void {
+				this.data_grid.dataProvider = this._dataProvider;
+			}
+
+
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void {
+			}
+
+
+			private function popUp_file_editor_for(fileName:String):void {
+				var _this:PolymorphicViewer = this;
+				this._launcherPopUp = PopUpManager.createPopUp(this, NativeFileLauncher, true) as NativeFileLauncher;
+				this._launcherPopUp.width = 700;
+				this._launcherPopUp.height = 170;
+				this._launcherPopUp.title = fileName;
+				this._launcherPopUp.dataProvider = fileName;
+				this._launcherPopUp.showCloseButton = true;
+				this._launcherPopUp.addEventListener(CloseEvent.CLOSE, 
+					function (event:CloseEvent):void {
+						PopUpManager.removePopUp(_this._launcherPopUp);
+						_this._launcherPopUp = null;
+					}
+				);
+				trace(this.className+'.popUp_file_editor_for().1 --> fileName='+fileName);
+				PopUpManager.centerPopUp(this._launcherPopUp);
+			}
+			
+			private function popUp_file_editor_using(fileName:String):void {
+				var _this:PolymorphicViewer = this;
+				this._editorPopUp = PopUpManager.createPopUp(this, TextEditor, true) as TextEditor;
+				function handle_close(event:CloseEvent):void {
+					PopUpManager.removePopUp(_this._editorPopUp);
+					_this._editorPopUp = null;
+					FlexGlobals.topLevelApplication.removeEventListener(ResizeEvent.RESIZE, handle_resize);
+				}
+				function handle_resize(event:ResizeEvent):void {
+					_this._editorPopUp.width = FlexGlobals.topLevelApplication.nativeWindow.width - 50;
+					_this._editorPopUp.height = FlexGlobals.topLevelApplication.nativeWindow.height - 60;
+				}
+				var aFile:File;
+				var contents:String;
+				aFile = new File(fileName);
+				contents = FileHelper.readFile(aFile);
+				this._editorPopUp.width = FlexGlobals.topLevelApplication.nativeWindow.width - 50;
+				this._editorPopUp.height = FlexGlobals.topLevelApplication.nativeWindow.height - 50;
+				this._editorPopUp.title = fileName;
+				this._editorPopUp.fileName = fileName;
+				this._editorPopUp.dataProvider = contents;
+				this._editorPopUp.showCloseButton = true;
+				this._editorPopUp.addEventListener(CloseEvent.CLOSE, handle_close);
+				FlexGlobals.topLevelApplication.addEventListener(ResizeEvent.RESIZE, handle_resize);
+				trace(this.className+'.popUp_file_editor_using().1 --> fileName='+fileName);
+				PopUpManager.centerPopUp(this._editorPopUp);
+			}
+			
+			protected function tree2_itemClickHandler(event:ListEvent):void {
+				trace(this.className+'.tree2_itemClickHandler().1 --> event='+event.toString());
+				try {
+					var aTree:Tree = event.currentTarget as Tree;
+					var rend:CustomTreeItemRenderer = event.itemRenderer as CustomTreeItemRenderer;
+					var data:Object = rend.data;
+					var fpath:String = data.item.file.nativePath;
+					if (NativeProcess.isSupported) {
+						this.popUp_file_editor_for(fpath);
+					} else {
+						this.popUp_file_editor_using(fpath);
+					}
+				} catch (err:Error) {trace(this.className+'.tree2_itemClickHandler().ERROR --> err='+err.toString()+', Stack='+err.getStackTrace());}
+			}
+
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox width="100%" height="100%">
+			<mx:Accordion id="accordion" width="100%" height="100%">
+				<s:NavigatorContent label="Class Hierarchy Tree" width="100%" height="100%">
+					<mx:VBox width="100%" height="100%">
+						<mx:Spacer height="5"/>
+						<mx:HBox width="100%">
+							<mx:Spacer width="5"/>
+							<mx:Label text="Search:"/>
+							<mx:Spacer width="5"/>
+							<mx:TextInput id="search_text" width="20%" minWidth="300" keyDown="search_text_keyDownHandler(event)"/>
+							<mx:Spacer width="5"/>
+							<s:Button id="btn_search" label="Do Search" click="btn_search_clickHandler(event)"/>
+							<mx:Spacer width="5"/>
+							<mx:HBox paddingTop="5">
+								<s:Label text="Latest Date: {PolymorphicViewer._latest_file_date.toDateString()}"/>
+							</mx:HBox>
+						</mx:HBox>
+						<mx:Tree id="tree2" labelField="label" showDataTips="true" dataTipField="tooltip" showRoot="true" width="100%" height="100%" itemRenderer="controls.renderers.CustomTreeItemRenderer" change="tree2_changeHandler(event)" itemClick="tree2_itemClickHandler(event)"/>
+					</mx:VBox>
+				</s:NavigatorContent>
+				<s:NavigatorContent label="Class Hierarchy Grid" width="100%" height="100%">
+					<mx:DataGrid id="data_grid" width="100%" height="100%" creationComplete="data_grid_creationCompleteHandler(event)">
+						<mx:columns>
+							<mx:DataGridColumn headerText="Item #" dataField="item_num" width="100">
+								<mx:itemRenderer>
+									<fx:Component>
+										<mx:HBox horizontalAlign="center">
+											<mx:Label text="{data.item_num}"/>
+										</mx:HBox>
+									</fx:Component>
+								</mx:itemRenderer>
+							</mx:DataGridColumn>
+							<mx:DataGridColumn headerText="Pattern" dataField="pattern" width="400" minWidth="400">
+								<mx:itemRenderer>
+									<fx:Component>
+										<mx:HBox horizontalAlign="left">
+											<mx:Label text="{data.pattern}"/>
+										</mx:HBox>
+									</fx:Component>
+								</mx:itemRenderer>
+							</mx:DataGridColumn>
+							<mx:DataGridColumn headerText="Child" dataField="child" width="200">
+								<mx:itemRenderer>
+									<fx:Component>
+										<mx:HBox horizontalAlign="left">
+											<mx:Label text="{data.child}"/>
+										</mx:HBox>
+									</fx:Component>
+								</mx:itemRenderer>
+							</mx:DataGridColumn>
+							<mx:DataGridColumn headerText="Parent" dataField="parent" width="200">
+								<mx:itemRenderer>
+									<fx:Component>
+										<mx:HBox horizontalAlign="left">
+											<mx:Label text="{data.parent}"/>
+										</mx:HBox>
+									</fx:Component>
+								</mx:itemRenderer>
+							</mx:DataGridColumn>
+							<mx:DataGridColumn headerText="Parent" dataField="parent" width="200">
+								<mx:itemRenderer>
+									<fx:Component>
+										<mx:HBox horizontalAlign="left">
+											<mx:Label text="{data.parent}"/>
+										</mx:HBox>
+									</fx:Component>
+								</mx:itemRenderer>
+							</mx:DataGridColumn>
+							<mx:DataGridColumn headerText="Info" dataField="tooltip" width="800" minWidth="400">
+								<mx:itemRenderer>
+									<fx:Component>
+										<mx:HBox horizontalAlign="left">
+											<mx:Label text="{data.tooltip}" width="800" minWidth="400"/>
+										</mx:HBox>
+									</fx:Component>
+								</mx:itemRenderer>
+							</mx:DataGridColumn>
+						</mx:columns>
+					</mx:DataGrid>
+				</s:NavigatorContent>
+				<!--
+				<s:NavigatorContent label="Sample Tree" width="100%" height="100%" visible="false" includeInLayout="false">
+				<mx:Tree id="tree1" labelField="@label" showRoot="true" width="100%" height="100%" creationComplete="tree1_creationCompleteHandler(event)">
+				<mx:XMLListCollection id="MailBox">
+				<fx:XMLList xmlns="">
+				<folder label="Mail">
+				<folder label="INBOX"/>
+				<folder label="Personal Folder">
+				<Pfolder label="Business" />
+				<Pfolder label="Demo" /> 
+				<Pfolder label="Personal" isBranch="true" /> 
+				<Pfolder label="Saved Mail" /> 
+				</folder>
+				<folder label="Sent" />
+				<folder label="Trash" />
+				</folder>
+				</fx:XMLList>
+				</mx:XMLListCollection>
+				</mx:Tree>
+				</s:NavigatorContent>
+				-->
+			</mx:Accordion>
+		</mx:HBox>
+	</mx:VBox>
+</mx:TitleWindow>

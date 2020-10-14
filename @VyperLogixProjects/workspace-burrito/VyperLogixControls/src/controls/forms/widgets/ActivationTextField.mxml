@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:StringValidator 
+							id="ActivationKeyValidator" 
+							source="{this.txt_activationCode}" 
+							property="text" 
+							tooShortError="{this._activationKeyTooShortErrorMessage}" 
+							tooLongError="{this._activationKeyTooLongErrorMessage}" 
+							minLength="{this._activationKeyMinLength}" 
+							maxLength="{this._activationKeyMaxLength}" 
+							requiredFieldError="{this._activationKeyRequiredFieldError}" 
+							required="true"
+							trigger="{this.btn_target}" triggerEvent="click" 
+		/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ErrorTipManager;
+			import mx.events.ValidationResultEvent;
+			import spark.components.Button;
+			
+			[Bindable]
+			public var hbox_lbl_activationCode_container_width:Number;
+			
+			[Bindable]
+			public var is_validated:Boolean = false;;
+			
+			[Bindable]
+			public var btn_target:Button;
+			
+			[Bindable]
+			public var ignore_focus:Boolean = false;
+			
+			[Bindable]
+			private var _activationKeyTooShortErrorMessage:String = "The activation key is shorter than the minimum allowed length.";
+			
+			[Bindable]
+			private var _activationKeyTooLongErrorMessage:String = "The activation key is longer than the maximum allowed length.";
+			
+			[Bindable]
+			private var _activationKeyRequiredFieldError:String = "This is a Required Field that cannot be left blank or have the wrong number of characters.";
+			
+			[Bindable]
+			private var _activationKeyMinLength:int = 4;
+			
+			[Bindable]
+			private var _activationKeyMaxLength:int = 128;
+			
+			[Bindable]
+			public var lbl_prompt_styleName:String;
+			
+			[Bindable]
+			public var lbl_prompt_text:String;
+			
+			[Bindable]
+			public var txt_activationCode_styleName:String;
+			
+			[Bindable]
+			public var siblings:Array = [];
+			
+			public function get text():String {
+				return this.txt_activationCode.text;
+			}
+			
+			public function set text(text:String):void {
+				if (this.txt_activationCode.text != text) {
+					this.txt_activationCode.text = text;
+				}
+			}
+			
+			private function onCreationCompleteActivationKey():void {
+				if (!this.ignore_focus) {
+					this.txt_activationCode.setFocus();
+				}
+				ErrorTipManager.hideErrorTip(this.txt_activationCode,true);
+			}
+
+			private function validateActivationKey():void {
+				var vResult:ValidationResultEvent = this.ActivationKeyValidator.validate();
+				var btn:Button = this.btn_target;
+				if (vResult.type==ValidationResultEvent.INVALID) {
+					this.is_validated = false;
+					if (btn is Button) {
+						ErrorTipManager.refresh_button_target_state(this.txt_activationCode);
+					}
+					return;
+				} else {
+					this.is_validated = true;
+					if (btn is Button) {
+						ErrorTipManager.refresh_button_target_state(this.txt_activationCode);
+					}
+				}
+			}
+			
+			protected function txt_activationCode_keyUpHandler(event:KeyboardEvent):void {
+				this.validateActivationKey();
+			}
+
+			private function onFocusOutActivationKey(event:FocusEvent):void {
+				if (!(event.relatedObject is Button)) {
+					this.validateActivationKey();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:HGroup width="100%">
+		<s:HGroup id="hbox_lbl_activationCode_container" width="{this.hbox_lbl_activationCode_container_width}">
+			<s:Label id="lbl_activationCode" text="{this.lbl_prompt_text}" styleName="{this.lbl_prompt_styleName}"/>
+		</s:HGroup>
+		<s:TextInput  
+			id="txt_activationCode" 
+			width="100%" styleName="{this.txt_activationCode_styleName}"
+			creationComplete="onCreationCompleteActivationKey()" 
+			keyUp="txt_activationCode_keyUpHandler(event)"
+			focusOut="onFocusOutActivationKey(event)" 
+			maxChars="{this._activationKeyMaxLength}"/>
+	</s:HGroup>
+</s:Group>

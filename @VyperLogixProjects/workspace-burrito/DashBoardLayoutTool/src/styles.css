@@ -1,0 +1,16 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+
+.Canvas1
+{
+	chromeColor: #ffffff;
+	backgroundColor: #03F4FD;
+}
+
+.Canvas2
+{
+	chromeColor: #ffffff;
+	backgroundColor: #2bfe01;
+}

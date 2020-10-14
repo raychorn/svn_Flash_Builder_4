@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<view:FlexpadView xmlns:fx="http://ns.adobe.com/mxml/2009"
+    xmlns:s="library://ns.adobe.com/flex/spark"
+    xmlns:mx="library://ns.adobe.com/flex/mx"
+    xmlns:flexpad="http://code.google.com/p/flexpad/"
+    xmlns:view="com.flexpad.view.*"
+    xmlns:icon="com.flexpad.icon.*">
+
+    <view:layout>
+        <s:HorizontalLayout gap="10"/>
+    </view:layout>
+
+    <s:VGroup gap="10">
+        <flexpad:ButtonGrey label="Edit"/>
+        <flexpad:ButtonBlack label="Edit"/>
+        <flexpad:ButtonBlue label="Edit"/>
+        <flexpad:ButtonGreyBlue label="Edit"/>
+        <flexpad:ButtonRed label="Edit"/>
+    </s:VGroup>
+
+    <s:VGroup gap="10">
+        <flexpad:BackButtonGrey label="Back"/>
+        <flexpad:BackButtonBlack label="Back"/>
+    </s:VGroup>
+
+    <s:VGroup gap="10">
+        <flexpad:Switch selected="true"/>
+        <flexpad:CheckBox label="Checkbox"/>
+    </s:VGroup>
+
+    <s:VGroup gap="10">
+        <flexpad:RadioButton 
+            label="Radio button 1"
+            selected="true"
+            groupName="test"/>
+        <flexpad:RadioButton 
+            label="Radio button 2"
+            groupName="test"/>
+    </s:VGroup>
+    <s:Spacer width="20"/>
+    <s:VGroup>
+        <icon:CheckEmptyIcon buttonMode="true"/>
+        <icon:CheckFilledIcon buttonMode="true"/>
+        <flexpad:ArrowButton/>
+        <flexpad:AddBlueButton/>
+        <flexpad:AddGreenButton/>
+        <flexpad:RemoveButton/>
+    </s:VGroup>
+
+</view:FlexpadView>

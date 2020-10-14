@@ -1,0 +1,47 @@
+/* CSS file for iPad */
+Button
+{
+	fontSize: 14;
+}
+
+Label
+{
+	fontSize: 18;
+}
+
+TextArea
+{
+	fontSize: 16;
+}
+
+TextInput
+{
+	fontSize: 16;
+}
+
+.lstStyle
+{
+	selectionColor: blue;
+	fontWeight: bold;
+}
+
+.comments
+{
+	color: blue;
+	fontSize:14;
+	fontWeight: bold;
+	fontStyle: italic;
+}
+
+/*
+.MainButton
+{
+	upSkin: Embed("button_up.png", scaleGridTop="15", scaleGridBottom="29", scaleGridLeft="15", scaleGridRight="164");
+	downSkin: Embed("button_down.png", scaleGridTop="15", scaleGridBottom="29", scaleGridLeft="15", scaleGridRight="164");
+	color: blue;
+	paddingTop: 0;
+	paddingBottom: 2;
+	paddingLeft: 0;
+	paddingRight: 0;
+} 
+*/

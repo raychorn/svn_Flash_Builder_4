@@ -1,0 +1,518 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ViewNavigatorApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							xmlns:s="library://ns.adobe.com/flex/spark" 
+							frameRate="24" firstView="views.HomeView"
+							splashScreenImage="@Embed('Splash-480x800.png')" 
+							splashScreenScaleMode="letterbox" 
+							splashScreenMinimumDisplayTime="100" 
+							backgroundColor="#ffffff" 
+							applicationDPI="160"
+							applicationComplete="mobileapplication1_applicationCompleteHandler(event)" 
+							xmlns:mx="library://ns.adobe.com/flex/mx" 
+							xmlns:free4u="free4u.*"
+							>
+	<fx:Style source="styles.css"/>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:Bounce id="bounce_effect"/>
+		<s:Move id="default_moveEffect" easer="{this.bounce_effect}"/>
+		
+		<mx:Sequence id="openingEffect">
+			<s:Pause duration="150"/>
+			<s:Resize id="expand" widthTo="500" duration="150"/>
+			<s:Pause duration="150"/>
+			<s:Resize id="expand2" heightTo="450" duration="150"/>
+		</mx:Sequence>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import application.ApplicationNamespace;
+			
+			import com.DebuggerUtils;
+			import com.ErrorTipManager;
+			import com.ObjectExplainer;
+			import com.ObjectUtils;
+			import com.geolocation.GeolocationUtils;
+			import com.geolocation.events.GeolocationDataChangedEvent;
+			import com.hurlant.crypto.prng.ARC4;
+			import com.notifications.Notification;
+			import com.notifications.events.NotificationClosedEvent;
+			import com.vyperlogix.AdHocOperation;
+			import com.vyperlogix.AdHocService;
+			import com.vyperlogix.AdMobOperation;
+			import com.vyperlogix.AdMobService;
+			import com.vyperlogix.GoogleCloudOperation;
+			import com.vyperlogix.GoogleCloudService;
+			
+			import controls.Alert.AlertAlternative;
+			import controls.ToolTips.HTMLToolTip;
+			import controls.WebViewComponent;
+			
+			import core.SWFHelper;
+			
+			import free4u.ApplicationProxy;
+			import free4u.events.ApplicationProxyReadyEvent;
+			
+			import mx.core.FlexGlobals;
+			import mx.core.IFlexDisplayObject;
+			import mx.effects.easing.*;
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;
+			import mx.managers.PopUpManager;
+			import mx.managers.ToolTipManager;
+			
+			import spark.components.Button;
+			import spark.components.Panel;
+			import spark.components.TextArea;
+			
+			import utils.AIRHelper;
+			
+			import views.AdMobView;
+			import views.AlertView;
+			import views.ChangeLogView;
+			import views.CreditsView;
+			import views.FeedbackView;
+			import views.HomeView;
+			import views.InfoView;
+			import views.Preloader;
+			
+			[Bindable]
+			public var app:ApplicationProxy;
+			
+			[Bindable]
+			private var _this:FreeStarbucks;
+			
+			private var deferred_actions:Array = [];
+			
+			public var btn_search:Button;
+			
+			private var is_alert_shown:Boolean = false;
+			
+			public var sponsor_site:String = 'http://www.vyperlogix.com';
+			
+			private const so_name_prefix:String = '/local/vyperlogix/';
+			
+			public const domain_name:String = 'free-4u';
+			public const sub_domain_name:String = 'starbucks';
+			
+			public var feedback_email_address:String = domain_name+'.'+sub_domain_name+'.feedback@vyperlogix.com';
+			
+			[Bindable] 
+			[Embed(source = 'GPS-Icon_64x64.png')]
+			public var notificationIcon:Class;
+			
+			[Bindable] 
+			[Embed(source = 'worldmap-v3-flash8a.swf')]
+			public var vyperlogixLogoIcon:Class;
+			
+			public var google_cloud_timeout:int = 15;
+			
+			[Bindable]
+			public var is_version_valid:Boolean = false;
+			
+			[Bindable]
+			public var view_debugger_hash:Object = {};
+			
+			[Bindable]
+			public var has_geo_data_changed:Boolean = false;
+			
+			[Bindable]
+			public var geo_location_result:Object;
+			
+			[Bindable]
+			private var symbol_reminder_text:String = '<font family="Verdana" size="+3">You must Check-In to WIN !</font>';
+			
+			[Bindable]
+			private var symbol_reminder_not_registered_text:String = '<font family="Verdana" size="+3">You must Register to WIN !</font>';
+			
+			[Bindable]
+			public var admob_publisher_id:String = 'a14da7cdc250a43';
+			
+			[Bindable]
+			public var admob_siteID:String = 'http://www.near-by.info';
+			
+			[Bindable]
+			public var admob_url:String = admob_siteID+'/freestarbucks2.php?verbose=&json=1&pubid='+admob_publisher_id;
+			//			public var admob_url:String = admob_siteID+'/freestarbucks.php';
+			//			public var admob_url:String = admob_siteID+'/freestarbucks.html';
+			
+			[Bindable]
+			public var smaato_url:String = admob_siteID+'/smaato-ads.php'; // http://near-by.info/php/smaato/free-starbucks-smaato.php
+			
+			private var admob_display_interval_msec:Number = 10000;
+			private var admob_display_schedule_msec:Number = admob_display_interval_msec+10000;
+			
+			[Bindable]
+			public var appNamespace:ApplicationNamespace = new ApplicationNamespace();;
+			
+			[Bindable]
+			public var menu_panel_height:Number = 180;
+			
+			[Bindable]
+			[Embed(source="main.png")]
+			public var mainIconClass:Class;
+			
+			public var notification:Notification;
+			
+			private var busy_indicator:Preloader;
+			
+			[Bindable]
+			public var changeLog_info:String = 'Version 1.0.1 (HD Release) - May 2011\nSupport for HD wide screen for Tablets.\n\nVersion 1.0.0 (Initial Release) - May 2011\n\nThis App is now open for business however we do need our users to report any problems they may encounter along the way.\n\n';
+			
+			[Bindable]
+			public var credits_info:String = '{{ app_name }} v.{{ version }} (c). 2011, Vyper Logix Corp.,\nWritten and Produced by Ray C Horn for Vyper Logix Corp.';
+			
+			[Bindable]
+			private var info_info:String = 'FreeStarbucks v.{{ version }} (c). 2011, Vyper Logix Corp., allows you to Check-In to Win your FREE Starbucks fix online !\n\nThis is hows it works. Register then Activate your registration then Check-In once per drawing using this App. One (1) Winner will be chosen at random from all those who Checked-In each drawing on Sunday at 12:00am PT (GMT-8). Winners will be notified via email.  Prizes will be determined for each drawing however the minimum guaranteed prize is one (1) Starbucks Card loaded with a balance of $5.00 to $25.00, sponsors are gratefully accepted.\n\nWinners will have the option of going to a local Starbucks to get the Starbucks Card they want loaded with their winnings OR paying the shipping fee to have a loaded Starbucks Card sent to them with their winnings.\n\nThe winnings for each drawing is provided by Sponsors and others who wish to support the idea of generosity and how being generous is a good thing.\n\nVyper Logix Corp Employees and direct family members of same are not elligible to win.\n\nPrivacy Policy:\n\nYour privacy is of the utmost importance.  Nothing is more important that the privacy of your information.  Your Information may be used for marketing purposes and will always be protected by SSL Encryption.\n\nRules:\n\nYou can enter for FREE with no cost and no obligation whatsoever.  You can enter only once per drawing.  Check back for updates as to when the next drawing will be help.  Winners are drawn entirely at random from the total population of those who have performed a Check-In for that drawing.  Winners will be notified via email.  The one (1) Starbucks Card for each Winner will be mailed via Registered Snail Mail.  Winners are not eligible for another drawing until all potential Winners have won at least once.  Frquency of drawings and prize amounts will be displayed via this App so check-back often.  Individuals and Corporations are encouraged to Sponsor prizes to increase the frequency of drawings as well as the value of the prizes.  Vyper Logix employees and their immediate family members as well as Sponsors and their immediate family members are not eligible to win.  Potential winners must check-in for each drawing using the latest App Version that is available for that drawing.  You can view your status for the current drawing via this App in addition to whether or not a valid Check-In has been accomplished for the current version and current drawing.  Check your local laws to determine if you can participate for any specific drawing.  Vyper Logix Corp shall not be help liable for any specific person(s) who may win from those jurisdictions where such a drawing was not legal or otherwise prohibited.\n\nThat\'s all folks...';
+			
+			public function deferred_action(func:Function,args:Array):void {
+				this.deferred_actions.push({func:func,args:args});
+			}
+			
+			public function set_navigator_using(navigator:*):void {
+				if (this.app is ApplicationProxy) {
+					this.app._navigator = navigator;
+				} else {
+					this.deferred_action(this.set_navigator_using,[navigator]);
+				}
+			}
+			
+			public function initialize_credits_info():String {
+				return this.credits_info.replace('{{ version }}',this.appNamespace.versionNumber).replace('{{ app_name }}',this.appNamespace.app_name);
+			}
+			
+			public function handleSwipe(event:TransformGestureEvent):void {
+				if (event.offsetX == 1) {
+					// swipe right
+					this.app.show(DebuggerUtils.getFunctionName(new Error())+'.SWIPE_RIGHT --> currentTarget='+event.currentTarget);
+				} else if (event.offsetX == -1 ) {
+					// swipe left
+					this.app.show(DebuggerUtils.getFunctionName(new Error())+'.SWIPE_LEFT --> currentTarget='+event.currentTarget);
+				}
+				if (event.offsetY == 1 ) {
+					// swipe down
+					this.app.show(DebuggerUtils.getFunctionName(new Error())+'.SWIPE_DOWN --> currentTarget='+event.currentTarget);
+				} else if (event.offsetY == -1 ) {
+					// swipe up
+					this.app.show(DebuggerUtils.getFunctionName(new Error())+'.SWIPE_UP --> currentTarget='+event.currentTarget);
+				}
+			}
+			
+			private function show_busy_indicator():void {
+				if (!this.busy_indicator) {
+					this.busy_indicator = PopUpManager.createPopUp(this,Preloader,true) as Preloader;
+					this.openingEffect.target = busy_indicator;
+					this.openingEffect.duration = 500;
+					this.openingEffect.end();
+					PopUpManager.centerPopUp(busy_indicator);
+					this.openingEffect.play();
+				}
+			}
+			
+			private function remove_busy_indicator():void {
+				if (this.busy_indicator is Preloader) {
+					PopUpManager.removePopUp(this.busy_indicator);
+					this.busy_indicator = null;
+				}
+			}
+			
+			public function get is_checkedin():Boolean {
+				var is_checkedin:Boolean = false;
+				try {
+					is_checkedin = ( (this.app.user_data != null) && (this.app.user_data.user != null) && (this.app.user_data.user.starbucks != null) && (this.app.user_data.user.starbucks.is_checkedin) );
+				} catch (err:Error) {}
+				return is_checkedin;
+			}
+			
+			public function determine_view_debugger_for(aView:*,aTxt:TextArea):void {
+				if (this.view_debugger_hash[aView] is TextArea) {
+				} else {
+					this.view_debugger_hash[aView] = aTxt;
+				}
+				if ( (this.app is ApplicationProxy) && (this.app.txt_status) ) {
+					this.app.txt_status = aTxt;
+				}
+				aTxt.visible = aTxt.includeInLayout = false;
+			}
+			
+			public function get full_user_name():String {
+				var full_user_name:String = '';
+				try {full_user_name = this.app.user_data.user.firstname + ' ' + this.app.user_data.user.lastname;} catch (err:Error) {}
+				return full_user_name;
+			}
+			
+			public function get user_city():String {
+				var user_city:String = '';
+				try {user_city = this.app.user_data.user.homecity;} catch (err:Error) {}
+				return user_city;
+			}
+			
+			public function get user_photo_url():String {
+				var user_photo_url:String = '';
+				try {user_photo_url = this.app.user_data.user.photo;} catch (err:Error) {}
+				return user_photo_url;
+			}
+			
+			public function setBusyCursor(aParent:*):void {
+				CursorManager.setBusyCursor();
+				this.show_busy_indicator();
+				if (aParent) {
+					aParent.enabled = false;
+				} else {
+					var ii:int = -1;
+				}
+			}
+			
+			public function removeBusyCursor(aParent:*):void {
+				CursorManager.removeBusyCursor();
+				this.remove_busy_indicator();
+				if (aParent) {
+					aParent.enabled = true;
+				} else {
+					var ii:int = -1;
+				}
+			}
+			
+			public function _show_notification(args:Array):void {
+				this.notification = Notification.show( args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+				this.notification.notificationTitleLabel.styleName = 'NotificationTitle';
+				this.notification.width = this.width - 10;
+				this.notification.x = 5;
+				this.notification.y = this.height - this.notification.height - ((this.app.is_menu_shown) ? this.menu_panel_height : 0);
+				if (args[0] is String) {
+					this.notification.text = args[0];
+				}
+				this.notification.addEventListener(NotificationClosedEvent.TYPE_NOTIFICATION_CLOSED, 
+					function (event:NotificationClosedEvent):void {
+						_this.notification = null;
+					}
+				);
+			}
+			
+			public function show_notification(text:*='',title:String='',duration:Number=2500,position:String=null,iconClass:Class=null,stackable:Boolean=true,notificationParent:Sprite=null,filtersArray:Array=null):void {
+				this.notification = Notification.show(text,title,duration,position,iconClass,stackable,notificationParent,filtersArray);
+				this.notification.notificationTitleLabel.styleName = 'NotificationTitle';
+				this.notification.width = this.width - 10;
+				this.notification.x = 5;
+				this.notification.y = this.height - this.notification.height - ((this.app.is_menu_shown) ? this.menu_panel_height : 0);
+				if (text is String) {
+					this.notification.text = text;
+				}
+				this.notification.addEventListener(NotificationClosedEvent.TYPE_NOTIFICATION_CLOSED, 
+					function (event:NotificationClosedEvent):void {
+						_this.notification = null;
+					}
+				);
+			}
+			
+			private function __show_notification(content:AdMobView):void {
+				this.show_notification(content,'Click to Give Free Starbucks Cards to others...',this.admob_display_interval_msec,null,this.notificationIcon,true,this,null);
+			}
+			
+			private function handle_click_or_touchTap(event:*):void {
+				var view:AdMobView = event.currentTarget as AdMobView;
+				if (view is AdMobView) {
+					view.removeEventListener(MouseEvent.CLICK, this.handle_click_or_touchTap);
+					view.removeEventListener(TouchEvent.TOUCH_TAP, this.handle_click_or_touchTap);
+					var href:String = view.advert_href;
+					AIRHelper.navigate_to_url(href,'_blank');
+					//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 href='+href);
+				}
+			}
+			
+			public function make_admob_component(data:Object):AdMobView {
+				var admob:AdMobView = new AdMobView();
+				admob.dataProvider = data;
+				admob.width = this.width - 50;
+				//admob.height = 50;
+				admob.percentHeight = 100.0;
+				admob.use_advertising_agency = false;
+				admob.addEventListener(FlexEvent.CREATION_COMPLETE, 
+					function (event:FlexEvent):void {
+						var view:AdMobView = AdMobView(event.currentTarget);
+						view.addEventListener(MouseEvent.CLICK, _this.handle_click_or_touchTap);
+						view.addEventListener(TouchEvent.TOUCH_TAP, _this.handle_click_or_touchTap);
+					}
+				);
+				return admob;
+			}
+			
+			public function schedule_admob_notification(parent:*):void {
+				var timer:Timer = new Timer(this.admob_display_schedule_msec);
+				timer.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						timer.stop();
+						//trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 (schedule_admob_notification.stop) !');
+						_this.show_smaato_advert(parent);
+					}
+				);
+				timer.start();
+			}
+			
+			public function __show_admob_advert(parent:*):void {
+				var svc:AdHocService = new AdHocService();
+				var op:AdHocOperation = svc.custom(this.admob_url);
+				op.addEventListener(Event.COMPLETE,
+					function (event:Event):void {
+						//						var content:String = event.target.data;
+						var view:AdMobView = _this.make_admob_component(event.target.data);
+						//						_this.__show_notification(view);
+						//						trace(_this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 (show_admob_advert) !');
+						//						_this.schedule_admob_notification(parent);
+					}
+				);
+				op.addEventListener(ErrorEvent.ERROR,
+					function (event:ErrorEvent):void {
+						var msg:String = 'ERROR: ' + event.toString();
+						if (_this.app.txt_status) {
+							_this.app.txt_status.text = msg + '\n' + _this.app.txt_status.text;
+						}
+						//trace(msg);
+					}
+				);
+				op.execute();
+				//trace(op.url);
+				if (this.app.txt_status) {
+					this.app.txt_status.text = 'INFO: ' + 'REQUEST SENT !\n' + this.app.txt_status.text;
+				}
+			}
+			
+			public function show_smaato_advert(parent:*):void {
+				var svc:GoogleCloudService = new GoogleCloudService();
+				var op:GoogleCloudOperation = svc.get_smaato();
+				op.addEventListener(Event.COMPLETE,
+					function (event:Event):void {
+						var view:AdMobView = _this.make_admob_component(event.target.data);
+						_this.__show_notification(view);
+						_this.schedule_admob_notification(parent);
+					}
+				);
+				op.addEventListener(ErrorEvent.ERROR,
+					function (event:ErrorEvent):void {
+						var msg:String = 'ERROR: ' + event.toString();
+						if (_this.app.txt_status) {
+							_this.app.txt_status.text = msg + '\n' + _this.app.txt_status.text;
+						}
+					}
+				);
+				op.execute();
+				if (this.app.txt_status) {
+					this.app.txt_status.text = 'INFO: ' + 'REQUEST SENT !\n' + this.app.txt_status.text;
+				}
+			}
+			
+			public function handle_get_gps_location_updates():void {
+				try {
+					var callback:Function = function (result:*):void {
+						if (result is Error) {
+						} else if (result) {
+							_this.has_geo_data_changed = ObjectUtils.is_equal(_this.geo_location_result,result) == false;
+							_this.geo_location_result = ObjectUtils.cloneIfNecessary(result);
+							if (has_geo_data_changed) {
+								this.dispatchEvent(new GeolocationDataChangedEvent(GeolocationDataChangedEvent.TYPE_GEOLOCATION_DATA_CHANGED,_this.geo_location_result));
+								//this.error('INFO: '+DebuggerUtils.explainThis(_this.geo_location_result,'\n'));
+							}
+						}
+					};
+					var result:* = GeolocationUtils.GeolocationTest(callback);
+				} catch (err:Error) {
+					this.error('ERROR: '+err.toString());
+				}
+			}
+			
+			// =======================================================================================================
+			
+			public function get is_loggedin():Boolean {
+				var is_loggedin:Boolean = false;
+				try {
+					is_loggedin = ( (this.app.user_data != null) && (this.app.user_data.isLoggedIn) );
+				} catch (err:Error) {}
+				return is_loggedin;
+			}
+			
+			private function handle_author_event():void {
+				if (this.app.is_menu_shown) {
+					this.app.dismiss_menuPanel();
+					this.navigator.pushView(CreditsView,{});
+				}
+			}
+			
+			private function handle_changelog_event():void {
+				if (this.app.is_menu_shown) {
+					this.app.dismiss_menuPanel();
+					this.navigator.pushView(ChangeLogView,{});
+				}
+			}
+			
+			private function handle_info_event():void {
+				if (this.app.is_menu_shown) {
+					this.app.dismiss_menuPanel();
+					this.navigator.pushView(InfoView,{});
+				}
+			}
+			
+			private function handle_feedback_event():void {
+				if (this.app.is_menu_shown) {
+					this.app.dismiss_menuPanel();
+					this.navigator.pushView(FeedbackView,{});
+				}
+			}
+			
+			protected function mobileapplication1_applicationCompleteHandler(event:FlexEvent):void {
+				var num:Number;
+				_this = this;
+				this.app = new ApplicationProxy();
+				this.app.addEventListener(ApplicationProxyReadyEvent.APPLICATION_PROXY_READY, 
+					function (event:ApplicationProxyReadyEvent):void {
+						_this.google_cloud_timeout = (_this.app.isDebugger) ? -1 : 15;
+						GoogleCloudOperation._timeout = _this.google_cloud_timeout;
+						trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> _this.app.isDebugger='+_this.app.isDebugger);
+						_this.admob_display_schedule_msec = _this.admob_display_interval_msec+((_this.app.isDebugger) ? 5000 : 15000);
+						_this.show_smaato_advert(_this);
+						var anAction:Object;
+						while (_this.deferred_actions.length > 0) {
+							anAction = _this.deferred_actions.pop();
+							if (anAction.func is Function) {
+								_this.callLater(anAction.func,anAction.args);
+							}
+						}
+					}
+				);
+				this.addElement(this.app);
+				AlertAlternative.init(this.stage);
+				this.stage.addEventListener(KeyboardEvent.KEY_DOWN, 
+					function (event:KeyboardEvent):void {
+						try {
+							if (event.keyCode == Keyboard.BACK) {
+								event.preventDefault();
+								num = _this.app._navigator.length;
+								if ( (_this.app.isDebugger) && (_this.app.txt_status is TextArea) ) {
+									_this.app.txt_status.text = 'Back Pressed (num='+num+') !\n' + _this.app.txt_status.text;
+								}
+								if (_this.app.is_menu_shown) {
+									_this.app.dismiss_menuPanel();
+								} else if (num > 1) {
+									ErrorTipManager.hideAllErrorTips();
+								} else {
+									_this.app.nativeApplication.exit();
+								}
+							} else if (event.keyCode == Keyboard.MENU) {
+								event.preventDefault();
+								if (!_this.app.is_menu_shown) {
+									_this.app.popUp_menuPanel();
+								}
+							} else if (event.keyCode == Keyboard.SEARCH) {
+								event.preventDefault();
+								try {_this.app.menuPanel.parentDocument['handle_venues_event']();} 
+								catch (err:Error) {_this.app.error('ERROR.411: '+err.toString());}
+							}
+						} catch (err:Error) {
+							trace(DebuggerUtils.getFunctionName(err)+'.ERROR --> '+err.toString()+'\n'+err.getStackTrace());
+						}
+					}
+				);
+			}
+			// =======================================================================================================
+		]]>
+	</fx:Script>
+</s:ViewNavigatorApplication>

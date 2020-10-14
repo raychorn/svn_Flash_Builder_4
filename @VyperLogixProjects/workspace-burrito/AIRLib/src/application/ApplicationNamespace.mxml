@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import flash.desktop.NativeApplication;
+			
+			public var appDescriptor:XML = NativeApplication.nativeApplication.applicationDescriptor;
+			public var nsDeclaration:Namespace = appDescriptor.namespace();
+			
+			public var build_number:String = appDescriptor.nsDeclaration::version[0];
+			
+			public var app_title:String = appDescriptor.nsDeclaration::name[0];
+			public var app_id:String = appDescriptor.nsDeclaration::id[0];
+			public var app_name:String = appDescriptor.nsDeclaration::filename[0];
+			
+			public var _copyrightMessage:String = appDescriptor.nsDeclaration::copyright[0];
+			public var _creditsMessage:String = appDescriptor.nsDeclaration::description[0];
+
+			public var versionNumber:String = appDescriptor.nsDeclaration::versionNumber[0];
+		]]>
+	</fx:Script>
+</s:Group>

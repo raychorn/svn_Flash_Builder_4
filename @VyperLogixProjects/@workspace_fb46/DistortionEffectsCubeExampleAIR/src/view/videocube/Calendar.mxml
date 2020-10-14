@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<view:CubeSide xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:view="view.cube.*"
+    title="Calendar">
+
+    <view:sideContent>
+
+        <mx:DateChooser 
+            width="243" height="147"/>
+
+    </view:sideContent>
+
+</view:CubeSide>

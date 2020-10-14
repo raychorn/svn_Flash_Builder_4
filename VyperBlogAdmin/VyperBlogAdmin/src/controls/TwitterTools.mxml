@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" 
+		   verticalScrollPolicy="off" horizontalScrollPolicy="off" xmlns:validators="validators.*" 
+		   initialize="canvas1_initializeHandler(event)">
+	<fx:Declarations>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import controls.Alert.AlertPopUp;
+			import vyperlogix.utils.StringUtils;
+			
+			private const left_side_text:String = ''+
+				"<p>Slick, huh ?!?</p>";
+			
+			protected function canvas1_initializeHandler(event:FlexEvent):void {
+			}
+		]]>
+	</fx:Script>
+	<mx:Panel width="100%" height="100%" title="Add external RSS Feed(s) to your SiteMap.XML file">
+		<mx:VBox width="100%" height="100%" paddingTop="10">
+			<mx:HBox width="100%" height="100%">
+				<mx:HBox id="hbox_inner_left" width="70%">
+					<mx:Text id="text_left_side" htmlText="{this.left_side_text}" width="{this.hbox_inner_left.width}"/>
+				</mx:HBox>
+				<mx:HBox id="hbox_right_0" width="100%">
+					<mx:VBox width="100%" height="100%">
+						<mx:HBox id="hbox_twitter_title">
+							<mx:Label id="label_twitter_accounts" htmlText="Twitter Accounts:"/>
+						</mx:HBox>
+						<mx:HBox id="hbox_twitter_control">
+							<mx:Label id="label_twitter_username" htmlText="Twitter Username:"/>
+							<mx:TextInput id="twitter_account_username" width="100%"/>  <!--  creationComplete="onCreationCompleteRssFeed()"  change="onChangeRssFeed()" focusIn="onFocusInRssFeed()" focusOut="onFocusOutRssFeed()" -->
+							<mx:Label id="label_twitter_password" htmlText="Twitter Password:"/>
+							<mx:TextInput id="twitter_account_password" width="100%"/>  <!--  creationComplete="onCreationCompleteRssFeed()"  change="onChangeRssFeed()" focusIn="onFocusInRssFeed()" focusOut="onFocusOutRssFeed()" -->
+							<mx:Button id="btn_add_twitter_account" icon="{this.parentApplication.addIconCls}" width="30"/>  <!--  click="handle_btn_add_rss_feed_click(event)" creationComplete="btn_add_rss_feed_creationCompleteHandler(event)" -->
+						</mx:HBox>
+						<mx:HBox width="{this.hbox_twitter_control.width}">
+							<s:List id="rss_twitter_list" width="100%" labelField="text"/>  <!--  change="rss_feeds_list_changeHandler(event)" -->
+							<mx:Button id="btn_delete_twitter_account" icon="{this.parentApplication.deleteIconCls}" width="{this.btn_add_twitter_account.width}"/>  <!--  click="handle_btn_delete_rss_feed_click(event)" -->
+						</mx:HBox>
+					</mx:VBox>
+				</mx:HBox>
+			</mx:HBox>
+		</mx:VBox>
+	</mx:Panel>
+</mx:Canvas>

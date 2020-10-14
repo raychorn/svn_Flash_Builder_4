@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Graphic version="2.0" viewHeight="40" viewWidth="40" ai:appVersion="15.0.2.399" ATE:version="1.0.0" flm:version="1.0.0" d:using="" xmlns="http://ns.adobe.com/fxg/2008" xmlns:ATE="http://ns.adobe.com/ate/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:flm="http://ns.adobe.com/flame/2008">
+  <Library/>
+  <Group ai:seqID="1" d:layerType="page" d:pageHeight="40" d:pageWidth="40" d:type="layer" d:userLabel="Artboard 1">
+    <Group ai:seqID="2" d:type="layer" d:userLabel="Layer 1">
+      <Path winding="nonZero" ai:seqID="3" data="M0 15 25 15 25 12 0 12 0 15ZM0 21 25 21 25 18 0 18 0 21ZM0 9 25 9 25 6 0 6 0 9ZM0 39 25 39 25 36 0 36 0 39ZM0 27 25 27 25 24 0 24 0 27ZM0 33 25 33 25 30 0 30 0 33ZM28 0 28 3 40 3 40 0 28 0ZM28 15 40 15 40 12 28 12 28 15ZM28 27 40 27 40 24 28 24
+ 28 27ZM28 39 40 39 40 36 28 36 28 39ZM0 3 25 3 25 0 0 0 0 3Z">
+        <fill>
+          <LinearGradient x="20.0005" y="38.334" scaleX="37.4281" rotation="270">
+            <GradientEntry ratio="0" color="#EE9922"/>
+            <GradientEntry ratio="1" color="#FFC066"/>
+          </LinearGradient>
+        </fill>
+      </Path>
+    </Group>
+  </Group>
+  <Private/>
+</Graphic>

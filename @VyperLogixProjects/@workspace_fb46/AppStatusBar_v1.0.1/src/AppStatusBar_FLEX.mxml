@@ -1,0 +1,224 @@
+﻿<?xml version="1.0"?>
+<!--
+	For AIR applications
+	<mx:WindowedApplication showStatusBar="true" statusBarFactory="{new ClassFactory(AppStatusBar)}">
+-->
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:com="com.*" creationComplete="complete();" layout="absolute">
+	
+	<mx:Style source="style/app-FLEX.css"/>
+			
+	<mx:Script>
+		<![CDATA[
+
+		import com.LogComboBox;
+		import flash.events.Event;
+		import mx.containers.HBox;
+		import mx.controls.Button;
+		import mx.controls.Alert;
+		/* For AIR apps only
+		* import mx.core.ClassFactory;
+		* import mx.core.Application;
+		*/
+		/* For Flex apps only
+		import flash.events.Event;
+		*/
+		
+		import com.AppStatusBar;
+		import com.enums.LogType;
+		
+		// icon used for open/close buttons
+		[Embed( "/assets/arrow_up.png" )]	private var openIcon:Class
+		[Embed( "/assets/arrow_down.png" )] private var closeIcon:Class;
+		
+		private var myStatusBar:AppStatusBar;
+		private var logCombo:LogComboBox;
+		private var defaultRatios:Array = [40, 60];
+		
+		private function complete() :void
+		{
+			/*==================================
+			 * Add the AppStatusBar
+			/*==================================*/
+			// For AIR apps : just define a 'shortcut' variable
+			//myStatusBar = Application.application.statusBar;
+			
+			// For the Flex : add it to the stage
+			// Add an EventListener on Resize to keep the statusBar always 100%
+			myStatusBar = new AppStatusBar();
+			this.addEventListener( Event.RESIZE, function(e:Event):void
+				{
+					myStatusBar.width = this.width;
+				});
+			myStatusBar.setStyle( 'bottom', 0 );
+			addChild( myStatusBar );
+			myStatusBar.x = 0;
+			
+			
+			/*==================================
+			 * Set the status
+			/*==================================*/
+			// For AIR
+			//status = 'Welcome to the AppStatusBar Demo !';
+			// For Flex
+			myStatusBar.status = 'Welcome to the AppStatusBar Demo !';
+			
+			
+			// Style the bar
+			myStatusBar.styleName = "statusBar";
+
+			myStatusBar.mainBar.styleName = 'mainBar';
+			myStatusBar.buttonBar.styleName = 'buttonBar';
+			myStatusBar.openButtonIcon = openIcon;
+			myStatusBar.closeButtonIcon = closeIcon;
+			
+			// Add the LogComboBox
+			logCombo = new LogComboBox();
+			myStatusBar.mainBar.addChildAt( logCombo, 1 );
+			myStatusBar.widthPercents = defaultRatios;
+		}
+		
+		private function changeStatus() :void
+		{
+			// For AIR
+			// status = mystatus.text;
+			
+			// For Flex
+			myStatusBar.status = mystatus.text;
+		}
+		
+		private function logTheText( s:Object ) :void
+		{	
+			logCombo.logThis( s, String( rbgLogTypes.selectedValue ));
+		}
+		
+		private function changeTimeStamp( evt:Event ) :void
+		{
+			logCombo.timeStampFormat = evt.target.selectedItem.data;
+		}
+		
+		private function setShowLastLog() :void
+		{
+			logCombo.showLastLog = cbshowLastLog.selected;
+		}
+		
+		private function showBar() :void
+		{
+			myStatusBar.shown = cbShowBar.selected;
+		}
+		
+		private function showStatus() :void
+		{
+			myStatusBar.showStatusField = cbShowStatus.selected;
+			myStatusBar.widthPercents = defaultRatios;
+		}
+		
+		private function showLogs() :void
+		{
+			if (cbShowLogs.selected)
+			{
+				myStatusBar.widthPercents = defaultRatios;
+
+				var n:Number = myStatusBar.mainBar.numChildren;
+				( n <= 1 ) ? myStatusBar.mainBar.addChild( logCombo ) : myStatusBar.mainBar.addChildAt( logCombo, n - 1 );
+			}
+			else
+			{
+				 myStatusBar.mainBar.removeChild( logCombo );
+			}
+		}
+		
+		private function addButton() :void
+		{
+			var btn:Button = new Button();
+			btn.label = "I'm a new Button";
+			btn.addEventListener( 'click', function():void
+				{
+					Alert.show( "You clicked me !", "new Button");
+				});
+			
+			// Applicable if there is 2 components before the button is added
+			myStatusBar.widthPercents = [40, 20, 40];
+			
+			(myStatusBar.mainBar.numChildren > 0 ) ? myStatusBar.mainBar.addChildAt( btn, 1 ) : myStatusBar.mainBar.addChild( btn );
+			
+			addBtnBtn.enabled = false;
+		}
+		
+			
+		]]>
+	</mx:Script>
+	
+	<mx:VBox horizontalAlign="center" y="15" left="5" right="5">
+	<mx:Panel id="pStatusBar" title="AppStatusBar methods and properties" titleStyleName="titlePanel">
+		<mx:Form>
+					
+			<mx:FormItem label="Change status">
+				<mx:HBox>
+					<mx:TextInput id="mystatus"/>
+					<mx:Button label="Change !" click="changeStatus();"/>
+				</mx:HBox>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Show the status bar">
+				<mx:CheckBox id="cbShowBar" change="showBar();" selected="true" />
+			</mx:FormItem>
+			
+			<mx:FormItem label="Show the status field">
+				<mx:CheckBox id="cbShowStatus" change="showStatus();" selected="true"/>
+			</mx:FormItem>		
+			
+			<mx:FormItem label="Show the logs">
+				<mx:CheckBox id="cbShowLogs" change="showLogs();" selected="true"/>
+			</mx:FormItem>
+						
+			<mx:FormItem label="Add a button in the StatusBar">
+				<mx:Button id="addBtnBtn" label="add" click="addButton();" />
+			</mx:FormItem>
+			
+		</mx:Form>
+	</mx:Panel>
+	
+	<mx:Panel id="pLogCombo" title="LogComboBox settings and actions" titleStyleName="titlePanel" visible="{cbShowLogs.selected}" hideEffect="WipeUp">
+		<mx:Form>
+			
+			<mx:FormItem label="Log an item">
+				<mx:VBox>
+					<mx:HBox>
+						<mx:RadioButtonGroup id="rbgLogTypes" selectedValue="{LogType.TEXT.text}" />
+						<mx:RadioButton id="rbText" label="Text" value="{LogType.TEXT.text}" group="{rbgLogTypes}"/>
+						<mx:RadioButton id="rbObj" label="Object" value="{LogType.OBJECT.text}" group="{rbgLogTypes}"/>
+						<mx:RadioButton id="rbData" label="Data" value="{LogType.DATA.text}" group="{rbgLogTypes}"/>
+						<mx:RadioButton id="rbEvent" label="Event" value="{LogType.EVENT.text}" group="{rbgLogTypes}"/>
+					</mx:HBox>
+					<mx:HBox>
+						<mx:TextInput id="mylog" maxWidth="150" />
+						<mx:Button label="log !" click="logTheText( mylog.text );"/>
+					</mx:HBox>
+				</mx:VBox>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Change the TimeStamp">
+				<mx:VBox>
+					<mx:ComboBox id="timeStampCombo" change="changeTimeStamp(event);" rowCount="6">
+						<mx:dataProvider>
+							<mx:Object label="NONE" data="NONE" />
+							<mx:Object label="FULL" data="FULL" />
+							<mx:Object label="SEMI FULL" data="SEMIFULL" />
+							<mx:Object label="DATE as DDMMYYYY" data="DDMMYYYY" />
+							<mx:Object label="DATE as MMDDYYYY" data="MMDDYYYY" />
+							<mx:Object label="TIME" data="TIME" />
+						</mx:dataProvider>
+					</mx:ComboBox>
+					<mx:CheckBox id="cbshowLastLog" selected="true" label="Show last log" labelPlacement="left" change="setShowLastLog();" />
+				</mx:VBox>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Clear logs">
+				<mx:Button label="Clear !" click="logCombo.clear();"/>
+			</mx:FormItem>
+			
+		</mx:Form>
+	</mx:Panel>
+	</mx:VBox>
+	
+</mx:Application>

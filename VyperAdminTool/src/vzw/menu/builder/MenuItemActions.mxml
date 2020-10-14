@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="100%" height="100%" 
+	creationComplete="onCreationComplete()">
+	<mx:Style>
+		.AdminPopupButton {
+			paddingLeft: 0;
+			paddingRight: 10;
+			paddingTop: 0;
+			paddingBottom: 0;
+			color: #0000ff;
+		}
+	</mx:Style>
+	<mx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			import vzw.controls.Alert.AlertPopUp;
+			import vzw.controls.SmartPopUpMenuButton;
+			import vzw.utils.Images;
+			import vzw.utils.ObjectUtils;
+			import vzw.utils.StringUtils;
+
+            public var parentSelector:String; // this is the getter by which the parent is known...
+
+            public var isMirror:Boolean = false;
+
+            public var items:Array = [];
+
+            public var tooltip:String = '';
+
+            public var menuLevel:int = 1; // default is always 1 because Categories are at level 1 and this variable is not touched by category registration.
+
+            public var _ignoreMenuEvents:Function;
+
+			public var popup:SmartPopUpMenuButton;
+
+            public function ignoreMenuEvents():void {
+            	if (this._ignoreMenuEvents is Function) {
+            		try {this._ignoreMenuEvents()} 
+            			catch (err:Error) {
+            				trace(this.className+'.ignoreMenuEvents().ERROR.1 '+err.toString()+'\n'+err.getStackTrace());
+            			}
+            	}
+            }
+
+			public function connect_to_menuController(mcr:*):void {
+	   			this.addEventListener(MouseEvent.MOUSE_OVER,function (event:MouseEvent):void {mcr.currentMenuItem});
+	   			this.addEventListener(MouseEvent.MOUSE_OUT,function (event:MouseEvent):void {mcr.currentMenuItem});
+			}
+
+			private function onCreationComplete():void {
+				this.popup = new SmartPopUpMenuButton();
+				popup.x = 0;
+				popup.y = 0;
+				popup.styleName = 'AdminPopupButton';
+				popup.setStyle('popUpIcon',Images.adminPopupEditIcon);
+				popup.id = popup.name = 'popup';
+				popup.width = 12;
+				//popup.mouseChildren = false;
+				popup.buttonMode = true;
+				popup.useHandCursor = true;
+				popup.addEventListener(MouseEvent.MOUSE_UP,function (event:*):void {ignoreMenuEvents();}); // trace('### ignoreMenuEvents() !  event='+event);
+				this.addChild(popup);
+			}
+		]]>
+	</mx:Script>
+</mx:Canvas>

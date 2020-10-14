@@ -1,0 +1,44 @@
+/* CSS file for Android 480x800 */
+Button
+{
+	fontSize: 16;
+}
+
+Label
+{
+	fontSize: 17;
+}
+
+TextArea
+{
+	fontSize: 16;
+}
+
+TextInput
+{
+	fontSize: 16;
+}
+
+.lstStyle
+{
+	selectionColor: dark-gray;
+	fontWeight: bold;
+}
+
+TextInput
+{
+	fontSize: 16;
+}
+
+TextArea
+{
+	fontSize: 16;
+}
+
+.comments
+{
+	color: white;
+	fontSize:14;
+	fontWeight: bold;
+	fontStyle: italic;
+}

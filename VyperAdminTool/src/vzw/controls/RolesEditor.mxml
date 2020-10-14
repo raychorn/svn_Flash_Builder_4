@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="100%"
+	xmlns:controls="vzw.controls.*" currentState="no-services">
+	<mx:states>
+		<mx:State name="no-services">
+			<mx:RemoveChild target="{hbox_services}"/>
+		</mx:State>
+	</mx:states>
+	<mx:Script>
+		<![CDATA[
+			import vzw.utils.ArrayUtils;
+			import vzw.utils.ObjectExplainer;
+			import vzw.utils.StringUtils;
+			import vzw.menu.builder.MenuController;
+			import mx.collections.ArrayCollection;
+
+			[Bindable]
+			private var _dataProvider:Object = {};
+
+			[Bindable]
+			private var _combo_domain_dataProvider:ArrayCollection = new ArrayCollection();
+
+			[Bindable]
+			private var _onChangeCallback_combo_domain:Function = MenuController.dummy;
+
+			[Bindable]
+			private var _validate_valueCallback:Function = MenuController.dummy;
+
+			[Bindable]
+			private var _onChangeCallback_url_edit:Function = MenuController.dummy;
+
+			[Bindable]
+			private var _relax_validations:Boolean = true;
+
+			[Bindable]
+			public var categoryPosition:int;
+
+			[Bindable]
+			public var itemPosition:int;
+
+			public function set dataProvider(dataProvider:Object):void {
+				if (this._dataProvider != dataProvider) {
+					this._dataProvider = dataProvider;
+					//trace(this.className+'.dataProvider() setter --> \n'+(new ObjectExplainer(dataProvider)).explainThisWay('\n'));
+					this.onCreationComplete_cb_AccountHolder();
+					this.onCreationComplete_urlEditor_AccountHolder();
+					this.onCreationComplete_cb_TV();
+					this.onCreationComplete_cb_HomePhone();
+					this.onCreationComplete_cb_Internet();
+					this.onCreationComplete_cb_MobileSecure();
+					this.onCreationComplete_urlEditor_MobileSecure();
+					this.onCreationComplete_cb_Prepay();
+					this.onCreationComplete_urlEditor_Prepay();
+				}
+			}
+			
+			public function get dataProvider():Object {
+				return (this._dataProvider) ? this._dataProvider : {};
+			}
+
+			public function set combo_domain_dataProvider(dataProvider:ArrayCollection):void {
+				if (this._combo_domain_dataProvider != dataProvider) {
+					//trace(this.className+'.combo_domain_dataProvider() !');
+					this._combo_domain_dataProvider = dataProvider;
+					this.onCreationComplete_urlEditor_AccountHolder();
+					this.onCreationComplete_urlEditor_MobileSecure();
+					this.onCreationComplete_urlEditor_Prepay();
+				}
+			}
+			
+			public function get combo_domain_dataProvider():ArrayCollection {
+				return (this._combo_domain_dataProvider) ? this._combo_domain_dataProvider : (new ArrayCollection());
+			}
+			
+			public function set onChangeCallback_combo_domain(onChangeCallback_combo_domain:Function):void {
+				if (this._onChangeCallback_combo_domain != onChangeCallback_combo_domain) {
+					this._onChangeCallback_combo_domain = onChangeCallback_combo_domain;
+				}
+			}
+
+			public function get onChangeCallback_combo_domain():Function {
+				return (this._onChangeCallback_combo_domain is Function) ? this._onChangeCallback_combo_domain : MenuController.dummy;
+			}
+			
+			public function set onValidate_valueCallback(onValidate_valueCallback:Function):void {
+				var isDummyFunction:Boolean = MenuController.isDummyFunction(onValidate_valueCallback);
+				//trace(this.className+'.onValidate_valueCallback().1 ### --> isDummyFunction='+isDummyFunction);
+				if (this._validate_valueCallback != onValidate_valueCallback) {
+					isDummyFunction = MenuController.isDummyFunction(onValidate_valueCallback);
+					//trace(this.className+'.onValidate_valueCallback().2 ### --> isDummyFunction='+isDummyFunction);
+					this._validate_valueCallback = onValidate_valueCallback;
+				}
+				//trace(this.className+'.onValidate_valueCallback().3 ### --> this.urlEditor_AccountHolder='+this.urlEditor_AccountHolder);
+				isDummyFunction = MenuController.isDummyFunction(this.urlEditor_AccountHolder.onValidate_valueCallback);
+				if (!isDummyFunction) {
+					this.urlEditor_AccountHolder.revalidate();
+				}
+				//trace(this.className+'.onValidate_valueCallback().3 ### --> this.urlEditor_AccountHolder (isDummyFunction)='+isDummyFunction);
+				//trace(this.className+'.onValidate_valueCallback().3 ### --> this.urlEditor_MobileSecure='+this.urlEditor_MobileSecure);
+				isDummyFunction = MenuController.isDummyFunction(this.urlEditor_MobileSecure.onValidate_valueCallback);
+				if (!isDummyFunction) {
+					this.urlEditor_MobileSecure.revalidate();
+				}
+				//trace(this.className+'.onValidate_valueCallback().3 ### --> this.urlEditor_MobileSecure (isDummyFunction)='+isDummyFunction);
+				//trace(this.className+'.onValidate_valueCallback().3 ### --> this.urlEditor_Prepay='+this.urlEditor_Prepay);
+				isDummyFunction = MenuController.isDummyFunction(this.urlEditor_Prepay.onValidate_valueCallback);
+				if (!isDummyFunction) {
+					this.urlEditor_Prepay.revalidate();
+				}
+				//trace(this.className+'.onValidate_valueCallback().3 ### --> this.urlEditor_Prepay (isDummyFunction)='+isDummyFunction);
+			}
+			
+			public function get onValidate_valueCallback():Function {
+				return (this._validate_valueCallback is Function) ? this._validate_valueCallback : MenuController.dummy;
+			}
+			
+			public function set onChangeCallback_url_edit(onChangeCallback_url_edit:Function):void {
+				if (this._onChangeCallback_url_edit != onChangeCallback_url_edit) {
+					var isDummyFunction:Boolean = MenuController.isDummyFunction(this._onChangeCallback_url_edit);
+					//trace(this.className+'.onChangeCallback_url_edit().1 ### --> isDummyFunction='+isDummyFunction);
+					this._onChangeCallback_url_edit = onChangeCallback_url_edit;
+				}
+			}
+			
+			public function get onChangeCallback_url_edit():Function {
+				return (this._onChangeCallback_url_edit is Function) ? this._onChangeCallback_url_edit : MenuController.dummy;
+			}
+			
+			public function set relax_validations(relax_validations:Boolean):void {
+				if (this._relax_validations != relax_validations) {
+					this._relax_validations = relax_validations;
+				}
+			}
+			
+			public function get relax_validations():Boolean {
+				return (this._relax_validations is Boolean) ? this._relax_validations : false;
+			}
+			
+			public function get asObject():Object {
+				var sources:Array = [
+										this.cb_AccountHolder,
+										this.urlEditor_AccountHolder,
+										this.cb_TV,
+										this.cb_HomePhone,
+										this.cb_Internet,
+										this.cb_MobileSecure,
+										this.urlEditor_MobileSecure,
+										this.cb_Prepay,
+										this.urlEditor_Prepay
+									];
+				if (this.currentState == 'no-services') {
+					ArrayUtils.removeThisItemFrom(this.cb_TV,sources);
+					ArrayUtils.removeThisItemFrom(this.cb_HomePhone,sources);
+					ArrayUtils.removeThisItemFrom(this.cb_Internet,sources);
+				}
+				var obj:Object = {};
+				var aSource:*;
+				for (var i:String in sources) {
+					aSource = sources[i];
+					if (aSource.enabled) {
+						obj[aSource.id] = (aSource is CheckBox) ? aSource.selected : aSource.asObject;
+					}
+				}
+				return obj;
+			}
+			
+			private function dataProvider_for(name:String):* {
+				var value:* = (this._dataProvider != null) ? this._dataProvider[name] : null;
+//				if ( (value is Boolean) || (value is String) ) {
+//					trace(this.className+'.dataProvider_for('+name+') --> '+value+'\n');
+//				} else {
+//					if (value != null) {trace(this.className+'.dataProvider_for('+name+') --> '+(new ObjectExplainer(value)).explainThisWay()+'\n');}
+//				}
+				return value;
+			}
+			
+			private function onCreationComplete_cb_AccountHolder():void {
+				this.cb_AccountHolder.selected = StringUtils.toBoolean(this.dataProvider_for('cb_AccountHolder'));
+			}
+
+			private function onCreationComplete_urlEditor_AccountHolder():void {
+				var value:* = this.dataProvider_for('urlEditor_AccountHolder');
+//				if (value != null) {trace(this.className+'.onCreationComplete_urlEditor_AccountHolder().1 --> '+(new ObjectExplainer(value)).explainThisWay()+'\n');}
+				this.urlEditor_AccountHolder.dataProvider = value;
+				value = this._combo_domain_dataProvider;
+//				if (value != null) {trace(this.className+'.onCreationComplete_urlEditor_AccountHolder().2 --> '+(new ObjectExplainer(value)).explainThisWay()+'\n');}
+				this.urlEditor_AccountHolder.combo_domain_dataProvider = value;
+			}
+			
+			private function onCreationComplete_cb_TV():void {
+				this.cb_TV.selected = StringUtils.toBoolean(this.dataProvider_for('cb_TV'));
+			}
+			
+			private function onCreationComplete_cb_HomePhone():void {
+				this.cb_HomePhone.selected = StringUtils.toBoolean(this.dataProvider_for('cb_HomePhone'));
+			}
+			
+			private function onCreationComplete_cb_Internet():void {
+				this.cb_Internet.selected = StringUtils.toBoolean(this.dataProvider_for('cb_Internet'));
+			}
+			
+			private function onCreationComplete_cb_MobileSecure():void {
+				this.cb_MobileSecure.selected = StringUtils.toBoolean(this.dataProvider_for('cb_MobileSecure'));
+			}
+			
+			private function onCreationComplete_urlEditor_MobileSecure():void {
+				this.urlEditor_MobileSecure.dataProvider = this.dataProvider_for('urlEditor_MobileSecure');
+				this.urlEditor_MobileSecure.combo_domain_dataProvider = this._combo_domain_dataProvider;
+			}
+			
+			private function onCreationComplete_cb_Prepay():void {
+				this.cb_Prepay.selected = StringUtils.toBoolean(this.dataProvider_for('cb_Prepay'));
+			}
+			
+			private function onCreationComplete_urlEditor_Prepay():void {
+				this.urlEditor_Prepay.dataProvider = this.dataProvider_for('urlEditor_Prepay');
+				this.urlEditor_Prepay.combo_domain_dataProvider = this._combo_domain_dataProvider;
+			}
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%">
+		<mx:HBox width="100%" styleName="RoleWidgetBorder">
+			<mx:CheckBox id="cb_AccountHolder" label="Account Holder" width="120" styleName="SmartPanelLabelText" creationComplete="onCreationComplete_cb_AccountHolder()"/>
+			<mx:VBox width="100%">
+				<controls:URLEditor id="urlEditor_AccountHolder" width="100%" enabled="{this.cb_AccountHolder.selected}" currentState="services" onChangeCallback_combo_domain="{this._onChangeCallback_combo_domain}" onValidate_valueCallback="{this._validate_valueCallback}" onChangeCallback_url_edit="{this._onChangeCallback_url_edit}" relax_validations="{this._relax_validations}" creationComplete="onCreationComplete_urlEditor_AccountHolder()"/>
+				<mx:HBox id="hbox_services">
+					<mx:CheckBox id="cb_TV" label="TV" styleName="SmartPanelLabelText" creationComplete="onCreationComplete_cb_TV()"/>
+					<mx:CheckBox id="cb_HomePhone" label="Home Phone" styleName="SmartPanelLabelText" creationComplete="onCreationComplete_cb_HomePhone()"/>
+					<mx:CheckBox id="cb_Internet" label="Internet" styleName="SmartPanelLabelText" creationComplete="onCreationComplete_cb_Internet()"/>
+				</mx:HBox>
+			</mx:VBox>
+		</mx:HBox>
+		<mx:HBox width="100%" styleName="RoleWidgetBorder">
+			<mx:CheckBox id="cb_MobileSecure" label="Mobile Secure" width="{this.cb_AccountHolder.width}" styleName="SmartPanelLabelText" creationComplete="onCreationComplete_cb_MobileSecure()"/>
+			<controls:URLEditor id="urlEditor_MobileSecure" width="100%" enabled="{this.cb_MobileSecure.selected}" onValidate_valueCallback="{this._validate_valueCallback}" onChangeCallback_url_edit="{this._onChangeCallback_url_edit}" relax_validations="{this._relax_validations}" creationComplete="onCreationComplete_urlEditor_MobileSecure()"/>
+		</mx:HBox>
+		<mx:HBox width="100%" styleName="RoleWidgetBorder">
+			<mx:CheckBox id="cb_Prepay" label="Prepay" width="{this.cb_AccountHolder.width}" styleName="SmartPanelLabelText" creationComplete="onCreationComplete_cb_Prepay()"/>
+			<controls:URLEditor id="urlEditor_Prepay" width="100%" enabled="{this.cb_Prepay.selected}" onValidate_valueCallback="{this._validate_valueCallback}" onChangeCallback_url_edit="{this._onChangeCallback_url_edit}" relax_validations="{this._relax_validations}" creationComplete="onCreationComplete_urlEditor_Prepay()"/>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Canvas>

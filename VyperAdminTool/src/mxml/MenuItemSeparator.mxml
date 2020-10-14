@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml"
+	width="100%" height="{barHeight}" 
+	mouseOver="onMouseOver(event)" 
+	creationComplete="init()">
+	<mx:Spacer width="{paddingLeft}"></mx:Spacer>
+	<mx:Canvas id="img" width="{barWidth}" height="{barHeight}"/>
+	<mx:Script>
+		<![CDATA[
+			import libs.utils.ErrorMessages;
+			import mx.controls.Image;
+			import utils.displayObject.DuplicateImage;
+			import libs.vo.GlobalsVO;
+			
+			private var _mcr:*;
+
+			[Bindable]
+			public var barWidth:Number;
+			
+			[Bindable]
+			public var barHeight:Number;
+			
+			[Bindable]
+			public var paddingLeft:Number;
+						
+			[Bindable]
+			public var imageAsset:String;
+			
+			[Bindable]
+			public var scaleContent:Boolean;
+			
+			[Bindable]
+			public var maintainAspectRatio:Boolean;
+			
+			public var currentData:Object;
+
+			public var menuItems:Array;
+			public var menuToolTip:String;
+
+			private const ERROR_HEIGHT:Number = 20;
+			
+			private const MCR:String = "MenuController";
+
+			public function init():void {
+	   			this._mcr = GlobalsVO.getGlobal(MCR);
+
+				if (GlobalsVO.ISLoggedOut == false) {
+					this.verticalScrollPolicy = "off";
+					this.horizontalScrollPolicy = "off";
+				}
+
+				barWidth = Number(GlobalsVO.getCSSProperty("menuItemSeparatorWidth"));
+				barHeight = Number(GlobalsVO.getCSSProperty("menuItemSeparatorHeight"));
+				paddingLeft = Number(GlobalsVO.getCSSProperty("menuItemSeparatorPadLeft"));
+				scaleContent = Boolean(GlobalsVO.getCSSProperty("menuItemItemScaleContent"));
+				maintainAspectRatio = Boolean(GlobalsVO.getCSSProperty("menuItemItemMaintainAspectRatio"));
+				
+				var asset:Object = DuplicateImage.validate(GlobalsVO.getGlobal("image_menuItemSeparatorAsset"),this);
+				var img:Image = DuplicateImage.copy(asset.image,scaleContent,maintainAspectRatio);
+				
+				// If Error
+				if(asset.error != null) {
+					new ErrorMessages(img,asset.error);
+					barHeight = ERROR_HEIGHT;
+				}
+				this.img.addChild(img);
+			}
+
+			public function onMouseOver(e:Event=null):void {
+      			if ( (this._mcr) && (this._mcr.onMouseOverMenuItemSeparator_callback) ) {
+      				this._mcr.onMouseOverMenuItemSeparator_callback(e, this);
+      			}
+			}
+		]]>
+	</mx:Script>
+</mx:HBox>

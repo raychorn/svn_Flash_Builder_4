@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		title="Register to Win" 
+		xmlns:mx="library://ns.adobe.com/flex/mx" 
+		xmlns:widgets="controls.forms.widgets.*" 
+		creationComplete="view1_creationCompleteHandler(event)" 
+		contentBackgroundColor="#ffffff">
+	<s:states>
+		<s:State name="register"/>
+		<s:State name="chgpassword"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style source="styles.css"/>
+	<fx:Script>
+		<![CDATA[
+			import com.ErrorTipManager;
+			import com.vyperlogix.GoogleCloudOperation;
+			import com.vyperlogix.GoogleCloudService;
+			
+			import controls.Alert.AlertAlternative;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import spark.components.TextInput;
+			
+			[Bindable]
+			private var __username:String;
+			
+			[Bindable]
+			private var __password:String;
+			
+			[Bindable]
+			private var _info:String = 'Now you can Register to get your Activation Code via EMail.\n\nAfter you have Registered you will be sent an Activation Code via EMail.\n\nAfter you receive your Activation Code, return here to paste your Activation Code to complete your Registration and then Check-in to get into the next drawing.';
+			
+			[Inspectable]
+			public function get is_currentState_register():Boolean {
+				return (this.currentState == 'register');
+			}
+			
+			private function set_focus(txt:TextInput):void {
+				if (txt is TextInput) {
+					try {
+						this.focusManager.setFocus(txt);
+					} catch (err:Error) {
+						this.callLater(this.set_focus,[txt]);
+					}
+				} else {
+					FlexGlobals.topLevelApplication.app.error('WARNING: Cannot set focus...');
+				}
+			}
+			
+			protected function username_creationCompleteHandler(event:FlexEvent):void {
+				var txt:EMailTextField = EMailTextField(event.currentTarget);
+				this.callLater(this.set_focus,[txt.txt_emailAddress]);
+				var widget:EMailTextField = event.currentTarget as EMailTextField;
+				widget.txt_emailAddress.addEventListener(KeyboardEvent.KEY_UP, username_keyUpHandler);
+			}
+			
+			protected function username_keyUpHandler(event:KeyboardEvent):void {
+				if ( (event.keyCode == Keyboard.TAB) || (event.keyCode == Keyboard.ENTER) ) {
+					this.callLater(this.set_focus,[this.password.txt_Password]);
+				}
+			}
+			
+			protected function password_keyUpHandler(event:KeyboardEvent):void {
+				if ( (event.keyCode == Keyboard.TAB) || (event.keyCode == Keyboard.ENTER) ) {
+					if ( (this.password.text is String) && (this.password.text.length > 0) ) {
+						this.callLater(this.set_focus,[this.password2.txt_Password]);
+					}
+				}
+			}
+			
+			protected function password2_keyUpHandler(event:KeyboardEvent):void {
+				if ( (event.keyCode == Keyboard.TAB) || (event.keyCode == Keyboard.ENTER) ) {
+					if ( (this.password.text is String) && (this.password.text.length > 0) ) {
+						if (this.is_currentState_register) {
+							this.btn_register.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+						} else {
+							this.btn_chgpassword.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+						}
+					}
+				}
+			}
+			
+			protected function txt_output_creationCompleteHandler(event:FlexEvent):void {
+				FlexGlobals.topLevelApplication.determine_view_debugger_for(this,event.currentTarget as TextArea);
+				FlexGlobals.topLevelApplication.handle_get_gps_location_updates();
+			}
+			
+			protected function onClick_btn_register(event:MouseEvent):void {
+				this.handle_register_or_chgpassword_action();
+			}
+			
+			protected function btn_register_touchTapHandler(event:TouchEvent):void {
+				this.handle_register_or_chgpassword_action();
+			}
+			
+			protected function onClick_btn_chgpassword(event:MouseEvent):void {
+				this.handle_register_or_chgpassword_action();
+			}
+			
+			protected function btn_chgpassword_touchTapHandler(event:TouchEvent):void {
+				this.handle_register_or_chgpassword_action();
+			}
+			
+			private function refresh_user_data():void {
+				try {
+					ErrorTipManager.hideAllErrorTips();
+					this.navigator.popToFirstView();
+				} catch (err:Error) {FlexGlobals.topLevelApplication.app.error('WARNING: Cannot mplete your Registration at this time !');}
+			}
+			
+			protected function handle_register_or_chgpassword_action():void {
+				var _this:RegisterView = this;
+				var svc:GoogleCloudService = new GoogleCloudService();
+				var op:GoogleCloudOperation;
+				if (this.is_currentState_register) {
+					op = svc.register(this.username.text,this.password.text,this.password2.text);
+				} else {
+					op = svc.chgpassword(this.username.text,this.password.text,this.password2.text);
+				}
+				op.addEventListener(Event.COMPLETE,
+					function (event:Event):void {
+						FlexGlobals.topLevelApplication.removeBusyCursor(_this);
+						if (_this.is_currentState_register) {
+							_this.btn_register.enabled = _this.btn_activate.enabled = true;
+						} else {
+							_this.btn_chgpassword.enabled = _this.btn_activate.enabled = true;
+						}
+						FlexGlobals.topLevelApplication.user_data = event.target.data;
+						try {
+							if (event.target.data['error'] is String) {
+								FlexGlobals.topLevelApplication.app.error('ERROR.102: <p>Cannot process your request at this time.</p><p>'+event.target.data['error']+'</p><p>Please try back later.</p>');
+							}
+						} catch (err:Error) {}
+						FlexGlobals.topLevelApplication.app.show('Your request has been completed.');
+						_this.callLater(_this.refresh_user_data,[]);
+					}
+				);
+				op.addEventListener(ErrorEvent.ERROR,
+					function (event:ErrorEvent):void {
+						FlexGlobals.topLevelApplication.removeBusyCursor(_this);
+						if (_this.is_currentState_register) {
+							_this.btn_register.enabled = _this.btn_activate.enabled = true;
+						} else {
+							_this.btn_chgpassword.enabled = _this.btn_activate.enabled = true;
+						}
+						var msg:String = 'ERROR: ' + event.toString();
+						_this.panel.title = 'ERROR...';
+						FlexGlobals.topLevelApplication.app.error('ERROR.601: <p>Cannot process your request at this time.</p><p>Please try back later.</p>');
+					}
+				);
+				this.panel.title = 'Contacting the Cloud...';
+				FlexGlobals.topLevelApplication.setBusyCursor(this);
+				if (this.is_currentState_register) {
+					this.btn_register.enabled = this.btn_activate.enabled = false;
+				} else {
+					this.btn_chgpassword.enabled = this.btn_activate.enabled = false;
+				}
+				op.timeout = FlexGlobals.topLevelApplication.google_cloud_timeout;
+				op.execute();
+				//trace(op.url);
+				//this.txt_output.text = 'INFO: ' + 'REQUEST SENT !\n' + _this.txt_output.text;
+			}
+			
+			protected function onClick_btn_activate(event:MouseEvent):void {
+				this.handle_activate_action();
+			}
+			
+			protected function btn_activate_touchTapHandler(event:TouchEvent):void {
+				this.handle_activate_action();
+			}
+			
+			private function handle_activate_action():void {
+				ErrorTipManager.hideAllErrorTips();
+				this.navigator.pushView(ActivationView,{});
+			}
+			
+			protected function onClick_btn_reactivate(event:MouseEvent):void {
+				this.handle_reactivate_action();
+			}
+			
+			protected function btn_reactivate_touchTapHandler(event:TouchEvent):void {
+				this.handle_reactivate_action();
+			}
+			
+			private function handle_reactivate_action():void {
+				ErrorTipManager.hideAllErrorTips();
+				this.navigator.pushView(ReActivationView,{});
+			}
+			
+			protected function password_creationCompleteHandler(event:FlexEvent):void {
+				var txt:PasswordTextField = PasswordTextField(event.currentTarget);
+				txt.txt_Password.addEventListener(KeyboardEvent.KEY_UP, this.password_keyUpHandler);
+			}
+			
+			protected function password2_creationCompleteHandler(event:FlexEvent):void {
+				var txt:PasswordTextField = PasswordTextField(event.currentTarget);
+				txt.txt_Password.addEventListener(KeyboardEvent.KEY_UP, this.password2_keyUpHandler);
+			}
+			
+
+			protected function view1_creationCompleteHandler(event:FlexEvent):void {
+				var data:* = this.data;
+				try {
+					var currentState:String = this.data['currentState'];
+					if (currentState is String) {
+						this.currentState = currentState;
+					}
+				} catch (err:Error) {}
+				try {
+					var username:String = this.data['username'];
+					if (username is String) {
+						this.__username = username;
+					}
+				} catch (err:Error) {}
+				try {
+					var password:String = this.data['password'];
+					if (password is String) {
+						this.__password = password;
+					}
+				} catch (err:Error) {}
+				this.title = (this.is_currentState_register) ? 'Register to Win' : 'Change Password';
+				ErrorTipManager.hideAllErrorTips();
+			}
+
+			private function get isDebugger():Boolean {
+				return FlexGlobals.topLevelApplication.isDebugger;
+			}
+		]]>
+	</fx:Script>
+	<s:Panel id="panel" width="100%" height="100%" styleName="Panels" title="Welcome Starbucks Fan...">
+		<s:VGroup width="100%" height="100%">
+			<s:BorderContainer id="container" width="100%" borderColor="#ffffff" visible="true" includeInLayout="true">
+				<s:Scroller width="100%" height="100%">
+					<s:Group width="100%" height="100%">
+						<s:VGroup width="100%" height="100%" paddingLeft="5" paddingTop="20" paddingRight="5">
+							<s:HGroup width="100%" verticalAlign="middle">
+								<widgets:EMailTextField
+									id="username"
+									txt_emailAddress_styleName="TextInputs" 
+									lbl_prompt_styleName="Labels"
+									btn_target.register="{this.btn_register}" 
+									btn_target.chgpassword="{this.btn_chgpassword}" 
+									lbl_prompt_text="EMail Address:" 
+									siblings="{[this.username.txt_emailAddress,this.password.txt_Password,this.password2.txt_Password]}"
+									width="100%" txt_emailAddress_text="{this.__username}"
+									creationComplete="username_creationCompleteHandler(event)"/>
+								<mx:Spacer width="5"/>
+							</s:HGroup>
+							<s:HGroup width="100%" verticalAlign="middle">
+								<widgets:PasswordTextField 
+									id="password" 
+									lbl_prompt_text="Password:" 
+									width="100%" txt_Password_text="{this.__password}"
+									btn_target.register="{this.btn_register}" 
+									btn_target.chgpassword="{this.btn_chgpassword}" 
+									lbl_password_strength_styleName="Labels" 
+									txt_Password_styleName="TextInputs" 
+									lbl_prompt_styleName="Labels" siblings="{[this.username.txt_emailAddress,this.password.txt_Password,this.password2.txt_Password]}"
+									creationComplete="password_creationCompleteHandler(event)"/>
+								<mx:Spacer width="5"/>
+							</s:HGroup>
+							<s:HGroup width="100%" verticalAlign="middle">
+								<widgets:PasswordTextField 
+									id="password2" 
+									lbl_prompt_text="Repeat Password:" 
+									width="100%" 
+									btn_target.register="{this.btn_register}" 
+									btn_target.chgpassword="{this.btn_chgpassword}" 
+									lbl_password_strength_styleName="Labels" 
+									txt_Password_styleName="TextInputs" 
+									lbl_prompt_styleName="Labels" siblings="{[this.username.txt_emailAddress,this.password.txt_Password,this.password2.txt_Password]}"
+									creationComplete="password2_creationCompleteHandler(event)"/>
+								<mx:Spacer width="5"/>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingBottom="5" verticalAlign="middle">
+								<mx:Spacer width="10%"/>
+								<s:Button id="btn_register" label="Register" height="40" enabled="false" visible.register="true" includeInLayout.register="true" visible.chgpassword="false" includeInLayout.chgpassword="false" click="onClick_btn_register(event)" touchTap="btn_register_touchTapHandler(event)"/>
+								<s:Button id="btn_chgpassword" label="Change Password" height="40" enabled="false" visible.register="false" includeInLayout.register="false" visible.chgpassword="true" includeInLayout.chgpassword="true" click="onClick_btn_chgpassword(event)" touchTap="btn_chgpassword_touchTapHandler(event)"/>
+								<s:HGroup width="100%" paddingBottom="5" horizontalAlign="center" verticalAlign="middle">
+									<mx:Spacer width="10%"/>
+									<s:Button id="btn_activate" label="Activate" height="40" styleName="SmallButtons" visible="false" includeInLayout="false" click="onClick_btn_activate(event)" touchTap="btn_activate_touchTapHandler(event)"/>
+									<mx:Spacer width="10%"/>
+									<s:Button id="btn_reactivate" label="ReActivate" height="40" styleName="SmallButtons" click="onClick_btn_reactivate(event)" touchTap="btn_reactivate_touchTapHandler(event)"/>
+								</s:HGroup>
+							</s:HGroup>
+							<s:VGroup width="100%" height="100%" paddingLeft="5" paddingTop="20" paddingRight="5" visible="true" includeInLayout="true">
+								<s:TextArea id="txt_info" editable="false" selectable="false" styleName="INFO" text="{this._info}" width="100%" height="100%" verticalScrollPolicy="auto"/>
+							</s:VGroup>
+						</s:VGroup>
+					</s:Group>
+				</s:Scroller>  
+			</s:BorderContainer>
+			<s:HGroup width="100%" height="20%" visible="{this.isDebugger}" includeInLayout="{this.isDebugger}">
+				<s:TextArea id="txt_output" styleName="Debugger" width="100%" height="100" editable="false" selectable="false" creationComplete="txt_output_creationCompleteHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Panel>
+</s:View>

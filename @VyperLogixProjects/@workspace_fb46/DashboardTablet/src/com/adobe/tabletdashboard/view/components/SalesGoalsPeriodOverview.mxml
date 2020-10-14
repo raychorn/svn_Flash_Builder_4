@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group add="addHandler()"
+		 preinitialize="preinitializeHandler()"
+		 removedFromStage="removeHandler()"
+		 xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:charts="com.adobe.tabletdashboard.view.charts.*"
+		 xmlns:images="assets.images.*"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:components="com.adobe.tabletdashboard.view.components.*">
+
+	<fx:Metadata>
+		[Style(name="chartCornerRadius", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="chartPaddingTop", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="chartPaddingBottom", type="Number", format="Length", inherit="no",  minValue="0.0")]
+		[Style(name="chartPaddingLeft", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="chartPaddingRight", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="paddingLeft", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="paddingRight", type="Number", format="Length", inherit="no", minValue="0.0")]
+	</fx:Metadata>
+
+	<fx:Declarations>
+		<s:CurrencyFormatter id="currencyFormatter"
+							 currencySymbol="$"
+							 fractionalDigits="0"
+							 useCurrencySymbol="true"/>
+	</fx:Declarations>
+
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="selected"/>
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.dashboard.model.AppModel;
+			import com.adobe.dashboard.model.chart.SalesGoalModel;
+			import com.adobe.dashboard.presenter.SalesGoalsPresenter;
+
+			import mx.core.IVisualElement;
+
+			public static const PERIOD_MONTH:String="periodMonth";
+			public static const PERIOD_QUARTER:String="periodQuarter";
+			public static const PERIOD_YEAR:String="periodYear";
+
+			public var period:String;
+
+			[Bindable]
+			private var presenter:SalesGoalsPresenter;
+
+			[Bindable]
+			public var barHeight:int=30;
+
+			[Bindable]
+			public var vPadding:int=10;
+
+			[Bindable]
+			public var hPadding:int=10;
+
+
+			[Bindable]
+			public var dataLoaded:Boolean=false;
+
+			[Bindable]
+			protected var periodLabel:String="";
+
+			[Bindable]
+			protected var grossLabel:String="";
+
+			[Bindable]
+			protected var percentLabel:String="";
+
+			//
+			// Private Methods
+			//
+
+			private function addListeners():void
+			{
+				removeListeners();
+				switch (period)
+				{
+					case PERIOD_MONTH:
+						presenter.monthChartOverviewPresenter.addEventListener(Event.CHANGE, monthPresenterChangeHandler, false, 0, true);
+						break;
+					case PERIOD_QUARTER:
+						presenter.quarterChartOverviewPresenter.addEventListener(Event.CHANGE, quarterPresenterChangeHandler, false, 0, true);
+						break;
+					case PERIOD_YEAR:
+						presenter.yearChartOverviewPresenter.addEventListener(Event.CHANGE, yearPresenterChangeHandler, false, 0, true);
+						break;
+				}
+			}
+
+			public function removeListeners():void
+			{
+				switch (period)
+				{
+					case PERIOD_MONTH:
+						presenter.monthChartOverviewPresenter.removeEventListener(Event.CHANGE, monthPresenterChangeHandler);
+						break;
+					case PERIOD_QUARTER:
+						presenter.quarterChartOverviewPresenter.removeEventListener(Event.CHANGE, quarterPresenterChangeHandler);
+						break;
+					case PERIOD_YEAR:
+						presenter.yearChartOverviewPresenter.removeEventListener(Event.CHANGE, yearPresenterChangeHandler);
+						break;
+				}
+
+			}
+
+
+			public function loadData():void
+			{
+				var now:Date=new Date();
+				switch (period)
+				{
+					case PERIOD_MONTH:
+						periodLabel="Sales Goals - Month";
+						presenter.getSalesGoalsMonthChartData(now, now, true);
+						break;
+					case PERIOD_QUARTER:
+						periodLabel="Sales Goals - Quarter";
+						presenter.getSalesGoalsQuarterChartData(now, true);
+						break;
+					case PERIOD_YEAR:
+						periodLabel="Sales Goals - Year";
+						presenter.getSalesGoalsYearChartData(now, true);
+						break;
+				}
+			}
+
+
+			//
+			// Event Handlers
+			//
+
+			protected function preinitializeHandler():void
+			{
+				presenter=AppModel.getInstance().salesGoalsPresenter;
+			}
+
+			protected function addHandler():void
+			{
+				addListeners();
+			}
+
+			protected function removeHandler():void
+			{
+				removeListeners();
+			}
+
+			protected function monthPresenterChangeHandler(event:Event):void
+			{
+				var model:SalesGoalModel=SalesGoalModel(presenter.monthChartOverviewPresenter.dataModel);
+				grossLabel=currencyFormatter.format(model.goal / 1000) + "K";
+				periodOverviewChart.section1Percent=model.myGross / model.goal;
+				percentLabel=Math.round((model.myGross / model.goal) * 100) + "%";
+				periodOverviewChart.section1ColorList=[0x948e21, 0x87831c, 0x7b7918]
+				dataLoaded=true;
+			}
+
+			protected function quarterPresenterChangeHandler(event:Event):void
+			{
+				var model:SalesGoalModel=SalesGoalModel(presenter.quarterChartOverviewPresenter.dataModel);
+				grossLabel=currencyFormatter.format(model.goal / 1000) + "K";
+				periodOverviewChart.section1Percent=model.myGross / model.goal;
+				periodOverviewChart.section1ColorList=[0x426118, 0x395414, 0x314910]
+				percentLabel=Math.round((model.myGross / model.goal) * 100) + "%";
+				dataLoaded=true;
+			}
+
+			protected function yearPresenterChangeHandler(event:Event):void
+			{
+				var model:SalesGoalModel=SalesGoalModel(presenter.yearChartOverviewPresenter.dataModel);
+				grossLabel=currencyFormatter.format(model.goal / 1000) + "K";
+				periodOverviewChart.section1Percent=model.myGross / model.goal;
+				periodOverviewChart.section1ColorList=[0x2A65C7, 0x2853A2, 0x243D76]
+				percentLabel=Math.round((model.myGross / model.goal) * 100) + "%";
+				dataLoaded=true;
+			}
+		]]>
+	</fx:Script>
+
+
+	<!-- background -->
+	<s:Rect radiusX="2"
+			radiusY="2"
+			width="100%"
+			height="100%"
+			alpha.normal="0"
+			alpha.selected="1">
+		<s:fill>
+			<s:SolidColor color="0x2E2E2E"/>
+		</s:fill>
+	</s:Rect>
+	<s:Line width="100%"
+			top="0">
+		<s:stroke>
+			<s:SolidColorStroke color="0x262626"/>
+		</s:stroke>
+	</s:Line>
+	<s:Line width="100%"
+			bottom="0">
+		<s:stroke>
+			<s:SolidColorStroke color="0x262626"/>
+		</s:stroke>
+	</s:Line>
+	<s:Line height="100%"
+			right="0">
+		<s:stroke>
+			<s:SolidColorStroke color="0x262626"/>
+		</s:stroke>
+	</s:Line>
+	<!-- progress bars -->
+	<s:VGroup left="{getStyle('paddingLeft')}"
+			  right="{getStyle('paddingRight')}"
+			  top="14"
+			  bottom="0"
+			  gap="8">
+		<s:HGroup width="100%">
+			<s:Label styleName="labelStyle"
+					 text="{periodLabel}"/>
+			<s:Rect width="100%"/>
+			<s:Label styleName="labelStyle"
+					 text="{grossLabel}"/>
+		</s:HGroup>
+
+		<components:TabletHorizontalRule width="100%"/>
+
+		<charts:ProgressChart id="periodOverviewChart"
+							  width="100%"
+							  height="{barHeight}"
+							  cornerRadius="{getStyle('chartCornerRadius')}"
+							  paddingBottom="{getStyle('chartPaddingBottom')}"
+							  paddingLeft="{getStyle('chartPaddingLeft')}"
+							  paddingRight="{getStyle('chartPaddingRight')}"
+							  paddingTop="{getStyle('chartPaddingTop')}"
+							  skipAnimation="@{presenter.skipAnimation}"
+							  footnoteLabel="{percentLabel}"/>
+
+	</s:VGroup>
+
+
+
+</s:Group>

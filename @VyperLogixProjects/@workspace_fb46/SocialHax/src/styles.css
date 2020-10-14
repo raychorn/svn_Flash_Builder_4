@@ -1,0 +1,47 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+
+
+.Labels {
+	color: #0000ff;
+	fontFamily: Verdana;
+	textAlign: center;
+}
+
+.SmallLabels {
+	color: #000000;
+	fontFamily: Verdana;
+	fontSize: 12;
+}
+
+.NotificationTitle {
+	color: #ffffff;
+	fontFamily: Verdana;
+	fontSize: 13;
+}
+
+.NotificationMessage {
+	color: #ffffff;
+	fontFamily: Verdana;
+	fontSize: 11;
+}
+
+.Groups {
+	backgroundColor: #3f3f3f;
+}
+
+.INFO {
+	color: #ffffff;
+	fontFamily: Verdana;
+	fontSize: 15;
+}
+
+.Debugger {
+	color: #ffffff;
+	fontFamily: Verdana;
+	fontSize: 12;
+}
+
+.Panels {
+	backgroundColor: #3f3f3f;
+}

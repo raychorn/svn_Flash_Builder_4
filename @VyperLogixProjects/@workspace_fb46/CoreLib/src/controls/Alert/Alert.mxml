@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+
+			public static function show(message:String, title:String, closeHandler:Function, iconInfo:Class):Alert {
+				var popup:Alert = PopUpManager.createPopUp(FlexGlobals.topLevelApplication as DisplayObject,Alert, true) as Alert;
+				popup.width = 500;
+				popup.height = 300;
+				popup.title = title;
+				popup.message.text = message;
+				popup.img.source = iconInfo;
+				popup.btn_ok.addEventListener(MouseEvent.CLICK, 
+					function (event:MouseEvent):void {
+						PopUpManager.removePopUp(popup);
+					}
+				);
+				PopUpManager.centerPopUp(popup);
+				return popup;
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:VGroup width="100%" height="100%">
+			<s:HGroup width="20%">
+				<s:Image id="img"/>
+			</s:HGroup>
+			<s:HGroup width="80%" paddingLeft="10" paddingRight="10" paddingTop="5" paddingBottom="5">
+				<s:TextArea id="message" width="100%" height="100%" editable="false"/>
+			</s:HGroup>
+		</s:VGroup>
+		<s:HGroup width="100%" paddingTop="30" paddingLeft="10" paddingRight="10" paddingBottom="10">
+			<s:Button id="btn_ok" label="OK" width="100%" height="30"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:TitleWindow>

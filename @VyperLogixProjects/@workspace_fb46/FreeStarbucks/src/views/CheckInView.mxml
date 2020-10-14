@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View
+		xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		title="Check-In to WIN" 
+		creationComplete="view1_creationCompleteHandler(event)" 
+		xmlns:mx="library://ns.adobe.com/flex/mx" 
+		xmlns:widgets="controls.forms.widgets.*" 
+		xmlns:views="views.*"
+		xmlns:controls="controls.*" 
+		contentBackgroundColor="#ffffff">
+	<s:states>
+		<s:State name="not_logged_in"/>
+		<s:State name="logged_in"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style source="styles.css"/>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.ErrorTipManager;
+			import com.vyperlogix.GoogleCloudOperation;
+			import com.vyperlogix.GoogleCloudService;
+			
+			import controls.Alert.AlertAlternative;
+			import controls.forms.widgets.events.ValidationResultsChangedEvent;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import spark.components.TextInput;
+
+			[Bindable]
+			private var _info:String = 'Check-in to become elligible for the next drawing.\n\nIf you cannot Check-in, then please click the Register button.\n\nAfter you have Registered you will be sent an Activation Code via EMail.\n\nAfter you receive your Activation Code, return here to paste your Activation Code to complete your Registration and then Check-in to get into the next drawing.';
+			
+			protected function view1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:CheckInView = this;
+				this.addEventListener(KeyboardEvent.KEY_DOWN, 
+					function (event:KeyboardEvent):void {
+						if (event.keyCode == Keyboard.BACK) {
+							var timer:Timer = new Timer(500);
+							timer.addEventListener(TimerEvent.TIMER, 
+								function (event:TimerEvent):void {
+									timer.stop();
+									ErrorTipManager.hideAllErrorTips();
+								}
+							);
+							timer.start();
+							ErrorTipManager.hideAllErrorTips();
+						}
+					}
+				);
+				ErrorTipManager.hideAllErrorTips();
+				this.handle_getUser_action();
+			}
+			
+			protected function txt_output_creationCompleteHandler(event:FlexEvent):void {
+				FlexGlobals.topLevelApplication.determine_view_debugger_for(this,event.currentTarget as TextArea);
+				FlexGlobals.topLevelApplication.handle_get_gps_location_updates();
+			}
+
+			private function refresh_user_data():void {
+				try {
+					var user:Object = FlexGlobals.topLevelApplication.user_data.user;
+					if ( (user) && (user['starbucks']['count'] != null) && (user['starbucks']['next_drawing'] is String) ) {
+						var count:Number = Number(user['starbucks']['count']);
+						var next_drawing:String = user['starbucks']['next_drawing'];
+						var next_prize:String = user['starbucks']['next_prize'];
+						var people:String = count+' '+((count > 1) ? 'people' : 'person');
+						if (count == 0) {
+							people = 'nobody';
+						}
+						people = ((count > 1) ? 'are' : 'is')+' '+people;
+						this.txt_status.text = 'There '+people+' registered for the next drawing on\n'+next_drawing+'.  You could win a loaded Starbucks Card worth '+next_prize+'.';
+					}
+				} catch (err:Error) {
+					trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.ERROR --> '+err.getStackTrace());
+					var ii:int = -1;
+				} // FlexGlobals.topLevelApplication.app.error('WARNING: Cannot retrieve your data from the Cloud !');
+			}
+			
+			private function set_focus(txt:TextInput):void {
+				if (txt is TextInput) {
+					try {
+						this.focusManager.setFocus(txt);
+					} catch (err:Error) {
+						this.callLater(this.set_focus,[txt]);
+					}
+				} else {
+					FlexGlobals.topLevelApplication.app.error('WARNING: Cannot set focus...');
+				}
+			}
+			
+			protected function btn_login_touchTapHandler(event:TouchEvent):void {
+				this.handle_login_action(event);
+			}
+			
+			protected function btn_register_touchTapHandler(event:TouchEvent):void {
+				handle_register_action();
+			}
+			
+			protected function btn_chgpassword_touchTapHandler(event:TouchEvent):void {
+				handle_chgpassword_action();
+			}
+			
+			protected function onClick_btn_register(event:MouseEvent):void {
+				handle_register_action();
+			}
+			
+			private function handle_register_action():void {
+				ErrorTipManager.hideAllErrorTips();
+				this.navigator.pushView(RegisterView,{currentState:'register'}); // username:this.username.txt_emailAddress.text,password:this.password.txt_Password.text
+			}
+			
+			private function handle_chgpassword_action():void {
+				ErrorTipManager.hideAllErrorTips();
+				this.navigator.pushView(RegisterView,{currentState:'chgpassword'}); // username:this.username.txt_emailAddress.text,password:this.password.txt_Password.text
+			}
+			
+			protected function handle_getUser_action():void {
+				var _this:CheckInView = this;
+				var svc:GoogleCloudService = new GoogleCloudService();
+				var op:GoogleCloudOperation = svc.get_user((FlexGlobals.topLevelApplication.has_geo_data_changed) ? FlexGlobals.topLevelApplication.geo_location_result : null);
+				op.addEventListener(Event.COMPLETE,
+					function (event:Event):void {
+						FlexGlobals.topLevelApplication.removeBusyCursor(_this);
+						//_this.txt_output.text = 'COMPLETE: ' + event.toString() + '\n' + _this.txt_output.text;
+						try {
+							FlexGlobals.topLevelApplication.user_data = event.target.data;
+							var air_version:String = event.target.data['air_version'];
+							var user:Object = event.target.data['user'];
+							if (air_version is String) {
+								var versionNumber:String = FlexGlobals.topLevelApplication.appNamespace.versionNumber;
+								FlexGlobals.topLevelApplication.is_version_valid = (versionNumber == air_version);
+								if (!FlexGlobals.topLevelApplication.is_version_valid) {
+									FlexGlobals.topLevelApplication.app.error('WARNING: <p>Please update this App to the latest version to continue.</p><p>Expected you to have version {{air_version}} but you are using version {{versionNumber}}.</p><p>Also remember you will need to complete a Check-In with version {{air_version}} in case you completed a Check-In using version {{versionNumber}}.</p>'.replace(/{{air_version}}/gs,air_version).replace(/{{versionNumber}}/gs,versionNumber),{buttons:[]});
+									ErrorTipManager.hideAllErrorTips();
+									_this.navigator.popToFirstView();
+								} else {
+									//_this.txt_status.text = 'To Be Defined... Check Back Often for more...'; // (+++) Display the Status, like Next Drawing and number of potential winners...
+								}
+							}
+							_this.currentState = (this.is_loggedin) ? 'logged_in' : 'not_logged_in';
+							_this.panel.title = (this.is_loggedin) ? 'Welcome back, ' + FlexGlobals.topLevelApplication.user_data.user.name : 'Check-in to get into the next Drawing...';
+						} catch (err:Error) {trace(err.toString())}
+						_this.callLater(_this.refresh_user_data,[]);
+					}
+				);
+				op.addEventListener(ErrorEvent.ERROR,
+					function (event:ErrorEvent):void {
+						FlexGlobals.topLevelApplication.removeBusyCursor(_this);
+						var msg:String = 'ERROR: ' + event.toString();
+						trace(msg);
+						_this.panel.title = 'ERROR...';
+						FlexGlobals.topLevelApplication.app.error('ERROR.201: <p>Cannot process your request at this time.</p><p>Please try back later.</p>');
+					}
+				);
+				if (FlexGlobals.topLevelApplication.user_data) {
+					try {this.panel.title = 'Welcome back, ' + FlexGlobals.topLevelApplication.user_data.user.name;} catch (err:Error) {}
+					this.callLater(this.refresh_user_data,[]);
+				} else {
+					this.panel.title = 'Contacting the Cloud...';
+					FlexGlobals.topLevelApplication.setBusyCursor(this);
+					op.timeout = FlexGlobals.topLevelApplication.google_cloud_timeout;
+					op.execute();
+				}
+			}
+			
+			protected function handle_login_action(event:*):void {
+				var _this:CheckInView = this;
+				var svc:GoogleCloudService = new GoogleCloudService();
+				var op:GoogleCloudOperation = svc.login(this.username.text,this.password.text,(FlexGlobals.topLevelApplication.has_geo_data_changed) ? FlexGlobals.topLevelApplication.geo_location_result : null);
+				op.addEventListener(Event.COMPLETE,
+					function (event:Event):void {
+						FlexGlobals.topLevelApplication.removeBusyCursor(_this);
+						_this.btn_login.enabled = _this.btn_register.enabled = true;
+						FlexGlobals.topLevelApplication.user_data = event.target.data;
+						//FlexGlobals.topLevelApplication.app.show('INFO #111: <p>'+DebuggerUtils.explainThis(event.target.data)+'</p>');
+						try {
+							if (event.target.data['error'] is String) {
+								FlexGlobals.topLevelApplication.app.error('WARNING.101: <p>Cannot process your Check-in<BR/>at this time.<BR/><BR/>Are you sure you have completed the Registration Procss ?<BR/><BR/>If you did Register, did you click on the Activation Code ?<BR/><BR/>If you did Register and Activate,<BR/>are you using the correct EMail Address and Password ?<BR/><BR/>Maybe you just need to Change your Password and try again ?<BR/><BR/>Or maybe, have a new Activation Code sent ?!?</p>'+'<p>'+event.target.data['error']+'</p>');
+							} else {
+								FlexGlobals.topLevelApplication.app.show('<p>Your Check-In has been completed...</p><p>See you for the next Drawing and your next Check-In...</p>');
+								_this.currentState = 'logged_in';
+								_this.navigator.popToFirstView();
+							}
+						} catch (err:Error) {
+							FlexGlobals.topLevelApplication.app.error('ERROR #111: <p>Cannot process your Check-in at this time.</p><p>'+err.toString()+'</p><p>'+err.getStackTrace().substr(0,500)+'</p>');
+						}
+						_this.callLater(_this.refresh_user_data,[]);
+					}
+				);
+				op.addEventListener(ErrorEvent.ERROR,
+					function (event:ErrorEvent):void {
+						FlexGlobals.topLevelApplication.removeBusyCursor(_this);
+						_this.btn_login.enabled = _this.btn_register.enabled = true;
+						var msg:String = 'ERROR: ' + event.toString();
+						FlexGlobals.topLevelApplication.app.error('ERROR.202: <p>Cannot process your request at this time.</p><p>Please try back later.</p>');
+					}
+				);
+				if ( (this.username.text is String) && (this.username.is_validated) ) {
+					if ( (this.password.text is String) && (this.password.is_validated) ) {
+						FlexGlobals.topLevelApplication.setBusyCursor(this);
+						this.btn_login.enabled = this.btn_register.enabled = false;
+						op.timeout = FlexGlobals.topLevelApplication.google_cloud_timeout;
+						op.execute();
+					} else {
+						FlexGlobals.topLevelApplication.app.error('WARNING: Cannot process your request at this time because your password seems insubstantial or invalid.');
+					}
+				} else {
+					FlexGlobals.topLevelApplication.app.error('WARNING: Cannot process your request at this time because your EMail Address seems invalid.');
+				}
+			}
+			
+			protected function onClick_btn_login(event:MouseEvent):void {
+				this.handle_login_action(event);
+			}
+
+			protected function onClick_btn_chgpassword(event:MouseEvent):void {
+				this.handle_chgpassword_action();
+			}
+			
+			protected function username_creationCompleteHandler(event:FlexEvent):void {
+				var txt:EMailTextField = EMailTextField(event.currentTarget);
+				this.callLater(this.set_focus,[txt.txt_emailAddress]);
+				var widget:EMailTextField = event.currentTarget as EMailTextField;
+				widget.txt_emailAddress.addEventListener(KeyboardEvent.KEY_UP, username_keyUpHandler);
+			}
+			
+			protected function username_keyUpHandler(event:KeyboardEvent):void {
+				if ( (event.keyCode == Keyboard.TAB) || (event.keyCode == Keyboard.ENTER) ) {
+					this.callLater(this.set_focus,[this.password.txt_Password]);
+				}
+			}
+			
+			
+			protected function password_keyUpHandler(event:KeyboardEvent):void {
+				if ( (event.keyCode == Keyboard.TAB) || (event.keyCode == Keyboard.ENTER) ) {
+					if ( (this.password.text is String) && (this.password.text.length > 0) ) {
+						this.btn_login.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+					}
+				}
+			}
+			
+			protected function btn_venue_search_clickHandler(event:MouseEvent):void {
+				Button(event.currentTarget).enabled = false;
+				this.handle_venue_search();
+			}
+			
+			protected function handle_venue_search():void {
+				ErrorTipManager.hideAllErrorTips();
+				this.navigator.pushView(VenueSearch,{});
+			}
+			
+			protected function btn_venue_search_creationCompleteHandler(event:FlexEvent):void {
+				FlexGlobals.topLevelApplication.btn_search = event.currentTarget as Button;
+			}
+			
+			protected function btn_venue_search_touchTapHandler(event:TouchEvent):void {
+				Button(event.currentTarget).enabled = false;
+				this.handle_venue_search();
+			}
+			
+
+			protected function password_creationCompleteHandler(event:FlexEvent):void {
+				var txt:PasswordTextField = PasswordTextField(event.currentTarget);
+				txt.txt_Password.addEventListener(KeyboardEvent.KEY_UP, this.password_keyUpHandler);
+			}
+
+			protected function username_validationResultsChangedHandler(event:ValidationResultsChangedEvent):void {
+				trace(DebuggerUtils.getFunctionName(new Error())+' :: '+event.toString());
+			}
+
+			private function get isDebugger():Boolean {
+				return FlexGlobals.topLevelApplication.isDebugger;
+			}
+
+			private function get is_loggedin():Boolean {
+				return FlexGlobals.topLevelApplication.is_loggedin;
+			}
+		]]>
+	</fx:Script>
+	<s:Panel id="panel" width="100%" height="100%" styleName="Panels" title.not_logged_in="Welcome..." title.logged_in="Checked-In !!!">
+		<s:VGroup width="100%" height="100%">
+			<s:BorderContainer id="container" width="100%" backgroundColor="#ffffff" borderColor="#ffffff" visible="true" includeInLayout="true">
+				<s:Scroller id="scroller" width="100%" height="100%">
+					<s:Group width="100%" height="100%">
+						<s:VGroup width="100%" height="100%" paddingLeft="5" paddingTop="20" paddingRight="5" visible.not_logged_in="true" includeInLayout.not_logged_in="true" visible.logged_in="false" includeInLayout.logged_in="false">
+							<s:HGroup id="status_container" width="100%" paddingBottom="10" visible="{!this.is_loggedin}" includeInLayout="{this.status_container.visible}">
+								<s:TextArea id="txt_status" styleName="Status" width="{this.scroller.width-20}" editable="false" selectable="false"/>
+							</s:HGroup>
+							<s:HGroup width="100%" verticalAlign="middle">
+								<mx:Spacer width="5"/>
+								<widgets:EMailTextField 
+									id="username" enabled="{!this.is_loggedin}"
+									txt_emailAddress_styleName="TextInputs" 
+									lbl_prompt_styleName="Labels"
+									btn_target="{this.btn_login}" 
+									lbl_prompt_text="EMail Address:" 
+									siblings="{[this.username.txt_emailAddress,this.password.txt_Password]}"
+									width="{this.scroller.width-20}" validationResultsChanged="username_validationResultsChangedHandler(event)"
+									creationComplete="username_creationCompleteHandler(event)"/>
+								<mx:Spacer width="5"/>
+							</s:HGroup>
+							<s:HGroup width="100%" verticalAlign="middle">
+								<mx:Spacer width="5"/>
+								<widgets:PasswordTextField 
+									id="password" enabled="{!this.is_loggedin}"
+									lbl_prompt_text="Password:" 
+									width="{this.scroller.width-20}" 
+									btn_target="{this.btn_login}" 
+									lbl_password_strength_styleName="Labels" 
+									txt_Password_styleName="TextInputs" 
+									lbl_prompt_styleName="Labels" siblings="{[this.username.txt_emailAddress,this.password.txt_Password]}"
+									creationComplete="password_creationCompleteHandler(event)"/>
+								<mx:Spacer width="5"/>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingBottom="5" horizontalAlign="left" verticalAlign="middle">
+								<mx:Spacer width="5%"/>
+								<s:Button id="btn_login" label="Check-in" height="40" enabled="false" visible="{!this.is_loggedin}" includeInLayout="{this.btn_login.visible}" click="onClick_btn_login(event)" touchTap="btn_login_touchTapHandler(event)"/>
+								<s:Button label="Already Checked-In" height="40" enabled="false" visible="{this.is_loggedin}" includeInLayout="{this.is_loggedin}" click="onClick_btn_login(event)" touchTap="btn_login_touchTapHandler(event)"/>
+								<s:Label id="label_status" text="You have a 1 in ___ chance of winning." styleName="INFO" visible="false" includeInLayout="{this.label_status.visible}"/>
+							</s:HGroup>
+							<s:HGroup width="{this.scroller.width-20}" paddingBottom="5" paddingTop="20" horizontalAlign="center" verticalAlign="middle">
+								<s:Button id="btn_chgpassword" label="Change Password" height="40" styleName="SmallButtons" enabled="true" click="onClick_btn_chgpassword(event)" touchTap="btn_chgpassword_touchTapHandler(event)"/>
+								<mx:Spacer width="50"/>
+								<s:Button id="btn_register" label="Register/ReActivate" height="40" styleName="SmallButtons" click="onClick_btn_register(event)" touchTap="btn_register_touchTapHandler(event)"/>
+							</s:HGroup>
+							<s:HGroup width="{this.scroller.width-20}">
+								<s:TextArea id="txt_info" editable="false" styleName="INFO" selectable="false" text="{this._info}" width="100%" height="100%" verticalScrollPolicy="auto"/>
+							</s:HGroup>
+						</s:VGroup>
+					</s:Group>
+				</s:Scroller>  
+			</s:BorderContainer>
+			<s:HGroup id="container_txt_output" width="100%" height="20%" visible="{this.isDebugger}" includeInLayout="{this.container_txt_output.visible}">
+				<s:TextArea id="txt_output" styleName="Debugger" width="{this.width-20}" height="100" editable="false" selectable="false" creationComplete="txt_output_creationCompleteHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Panel>
+</s:View>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<views:CommonView xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		title="Login" 
+		initialize="view1_initializeHandler(event)"
+		creationComplete="view1_creationCompleteHandler(event)" 
+		xmlns:components="views.components.*" 
+		xmlns:popups="controls.popups.*" 
+		xmlns:views="views.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:FlipViewTransition id="flipViewTransition" direction="right" duration="500"/>
+		<s:ZoomViewTransition id="zoomViewTransition" duration="500" mode="out"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.UserManagement;
+			
+			import mx.events.FlexEvent;
+			
+			import vyperlogix.events.SuperUserLoggedInEvent;
+			
+			private var _this:LoginView;
+			
+			private var __title__:String = 'User Login';
+			
+			protected override function view1_creationCompleteHandler(event:FlexEvent):void {
+				this.title = this.__title__;
+				super.view1_creationCompleteHandler(event);
+				if (this.parentApplication.is_player) {
+					// No need to ask the user for credentials because the Player is FREE for All.
+					this.parentApplication.is_logged_in = this.parentApplication.is_player;
+					this.navigator.popAll();
+					this.navigator.pushView(HomeView);
+				}
+				this.addEventListener(TransformGestureEvent.GESTURE_SWIPE, 
+					function (event:TransformGestureEvent):void {
+						if ( (event.offsetX < 0) || (event.offsetY < 0) ) {
+							this.navigator.popToFirstView(); // flipViewTransition
+						}
+					}
+				);
+			}
+			
+			protected function dismissBtn_clickHandler(event:MouseEvent):void {
+				this.navigator.popAll();
+				this.navigator.pushView(HomeView);
+			}
+			
+			protected function submitBtn_clickHandler(event:MouseEvent):void {
+				this.parentApplication.is_logged_in = UserManagement.perform_login(this.username.text,this.password.text);
+				this.navigator.popAll();
+				this.navigator.pushView(HomeView);
+			}
+			
+			protected override function view1_initializeHandler(event:FlexEvent):void {
+				super.view1_initializeHandler(event);
+				_this = this;
+			}
+			
+			protected function registerBtn_clickHandler(event:MouseEvent):void {
+				this.navigator.pushView(RegisterView,{});
+			}
+			
+			protected function forgotBtn_clickHandler(event:MouseEvent):void {
+				this.navigator.pushView(ForgotPasswordView,{});
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%" visible="{!this.parentApplication.is_player}" includeInLayout="{!this.parentApplication.is_player}">
+		<s:HGroup>
+			<components:AppTitleCanvas id="appTitle"/>
+			<s:Form id="loginForm" width="100%" height="100%">
+				<s:FormHeading label="User Login" />
+				<s:FormItem label="Username:" required="true">
+					<s:layout>
+						<s:HorizontalLayout gap="10"/>
+					</s:layout>
+					<s:TextInput id="username" prompt="Enter your username." width="100%"/>
+					<s:Label text="Required" paddingTop="10"/>
+				</s:FormItem>
+				<s:FormItem label="Password:" required="true">
+					<s:layout>
+						<s:HorizontalLayout gap="10"/>
+					</s:layout>
+					<s:TextInput id="password" displayAsPassword="true" prompt="Enter your password." width="100%"/>
+					<s:Label text="Required" paddingTop="10"/>
+				</s:FormItem>
+				<s:FormItem>
+					<s:layout>
+						<s:HorizontalLayout gap="20"/>
+					</s:layout>
+					<s:Button id="submitBtn" label="Login" click="submitBtn_clickHandler(event)"/>
+					<s:Button id="dismissBtn" label="Dismiss" click="dismissBtn_clickHandler(event)"/>
+					<s:Button id="registerBtn" label="Register" click="registerBtn_clickHandler(event)"/>
+					<s:Button id="forgotBtn" label="Forgot Password" click="forgotBtn_clickHandler(event)"/>
+				</s:FormItem>
+			</s:Form>
+		</s:HGroup>
+	</s:VGroup>
+</views:CommonView>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%" 
+		  styleName="resourceLabel" 
+		  initialize="vgroup1_initializeHandler(event)" xmlns:components="assets.components.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.graphics.BitmapScaleMode;
+			
+			private var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+			
+			[Bindable]
+			private var __resource_label__:String;
+			
+			[Bindable]
+			private var __building_resource_image__:Class;
+			
+			[Bindable]
+			private var __padding_left__:Number;
+			
+			public function get padding_left():Number {
+				return this.__padding_left__;
+			}
+			
+			public function set padding_left(padding_left:Number):void {
+				if (this.__padding_left__ != padding_left) {
+					this.__padding_left__ = padding_left;
+				}
+			}
+			
+			public function get resource_title():String {
+				return (this.__resource_label__ is String) ? this.__resource_label__.split(' ')[0] : this.__resource_label__;
+			}
+			
+			public function get resource_label():String {
+				return this.__resource_label__;
+			}
+			
+			public function set resource_label(label:String):void {
+				if (this.__resource_label__ != label) {
+					this.__resource_label__ = label;
+					//this.title = (label is String) ? label.split(' ')[0] : label;
+				}
+			}
+			
+			public function get building_resource_image():Class {
+				return this.__building_resource_image__;
+			}
+			
+			public function set building_resource_image(image:Class):void {
+				if (this.__building_resource_image__ != image) {
+					this.__building_resource_image__ = image;
+				}
+			}
+			
+			protected function building_image_creationCompleteHandler(event:FlexEvent):void {
+				var img:Image = event.currentTarget as Image;
+				img.image_width = 100;  // this is a guess...
+				img.image_height = 140; // this is a guess...
+				img.image_scale_mode = BitmapScaleMode.ZOOM;
+				img.container.paddingTop = 5;
+				this.btn_levels.width = this.btn_levels_width;
+				app.log = '(+++) img.source='+img.source+', '+'img.image_width='+img.image_width+', img.image_height='+img.image_height;
+			}
+			
+			protected function vgroup1_initializeHandler(event:FlexEvent):void {
+			}
+			
+			private function get btn_levels_width():Number {
+				var btn_force_build_width:Number = ((this.btn_force_build.visible) ? this.btn_force_build.width : 0);
+				var width:Number = this.building_image.image_width - btn_force_build_width;
+				trace('(!!!!) width='+width+', this.building_image.image_width='+this.building_image.image_width+', btn_force_build_width='+btn_force_build_width);
+				return width;
+			}
+			
+			private function get is_mode_testing():Boolean {
+				trace('(####) resource_title='+this.resource_title+', resource_label='+this.resource_label+', app.is_mode_testing='+app.is_mode_testing);
+				return app.is_mode_testing;
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup id="building_group" name="metal_building_group" width="100%" paddingLeft="{this.__padding_left__}">
+			<components:Image id="building_image" width="100%" height="100%" source="{this.__building_resource_image__}" creationComplete="building_image_creationCompleteHandler(event)"/>
+			<s:VGroup id="building_info" name="building_info1" width="100%" height="100%"/>
+		</s:HGroup>
+		<s:HGroup width="100%" paddingLeft="10" paddingTop="0">
+			<s:Button id="btn_levels" label="(Levels)" styleName="titleButton" width="{this.btn_levels_width}" height="15"/>
+			<s:Button id="btn_force_build" label="(Build!!!)" styleName="titleButton" width="55" height="15" visible="true" includeInLayout="{this.btn_force_build.visible}"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Group>

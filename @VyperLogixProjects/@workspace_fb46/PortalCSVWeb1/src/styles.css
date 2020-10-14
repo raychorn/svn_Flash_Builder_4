@@ -1,0 +1,29 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+s|Label {
+	fontFamily: Verdana;
+	fontSize: 14;
+	fontWeight: bold;
+}
+
+.VersionLabel {
+	fontFamily: Verdana;
+	fontSize: 10;
+	fontWeight: normal;
+}
+s|Panel {
+	borderAlpha: 0.41;
+	shadowDirection: right;
+	titleStyleName: "myPanelTitle";
+}
+.myPanelTitle {
+	fontFamily: Verdana;
+	fontSize: 11;
+	fontWeight: bold;
+}
+s|Button
+{
+	chromeColor: #FC9B9B;
+}

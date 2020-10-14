@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   width="100%" height="100%" 
+		   initialize="canvas1_initializeHandler(event)" 
+		   >
+	<mx:states>
+		<s:State name="mainView"/>
+		<s:State name="debugger"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.CapabilitiesUtils;
+			import com.DebuggerUtils;
+			import com.StringUtils;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.ToolTips.HTMLToolTip;
+			
+			import core.SWFHelper;
+			
+			import flash.desktop.NativeApplication;
+			import flash.desktop.NativeProcess;
+			import flash.display.Screen;
+			import flash.utils.setTimeout;
+			
+			import mx.containers.Accordion;
+			import mx.controls.Alert;
+			import mx.controls.Tree;
+			import mx.core.FlexGlobals;
+			import mx.effects.Move;
+			import mx.effects.Resize;
+			import mx.events.CloseEvent;
+			import mx.events.EffectEvent;
+			import mx.events.FlexEvent;
+			import mx.events.SliderEvent;
+			import mx.events.TreeEvent;
+			import mx.managers.PopUpManager;
+			import mx.managers.ToolTipManager;
+			
+			import spark.components.Application;
+			import spark.components.NavigatorContent;
+			
+			import utils.APIHelper;
+			
+			import vyperlogix.events.SuperUserLoggedInEvent;
+
+			[Bindable]
+			public var is_debugging:Boolean = false;
+			
+			[Bindable]
+			public var is_logoVisible:Boolean = false;
+			
+			[Bindable]
+			public var __is_localhost__:Boolean = false;
+			
+			public var appClass:Class;
+			
+			public var termsPopUp:*;
+
+			public var LoginViewClass:Class;
+			
+			public var TermsAndConditionsClass:Class;
+			
+			public var NativeApplicationUpdater:Class;
+			public var updaterProxy:*;
+			public var AppNameSpace:*;
+			
+			[Bindable]
+			public var no_choice:Boolean = false;
+			
+			[Embed(source="assets/logos/vlcLogo/vlcLogo.swf")]
+			[Bindable]
+			public var splashLogoAnimationCls:Class;
+			
+			[Embed(source="assets/logos/plain/vlcLogo.swf")]
+			[Bindable]
+			public var splashPlainAnimationCls:Class;
+			
+			[Bindable]
+			public var splashAnimationCls:Class = splashLogoAnimationCls;
+			
+			[Event(name="cannotPerformUpdate", type="application.events.CannotPerformUpdateEvent")]
+			[Event(name="termsAndConditionsAgreement", type="vyperlogix.views.events.TermsAndConditionsAgreementEvent")]
+
+			public var Languages:Object = {
+				'English':'',
+				'Spanish':'Spanish'
+			};
+			
+			public static var force_localHost:Boolean = false;
+			
+			public var appMenu:Array = [];
+
+			public var language:String;
+			
+			public var mySO:SharedObject = SharedObject.getLocal("/vyperlogix/"+(SWFHelper.app_name)+"/data");
+
+			public function get app_title():String {
+				return SWFHelper.app_name;
+			}
+			
+			public function get app_id():String {
+				return this.AppNameSpace.app_id;
+			}
+			
+			public function get build_number():String {
+				return this.AppNameSpace.build_number;
+			}
+			
+			public function get splashPopUp():* {
+				var splashPopUp:*;
+				try {splashPopUp = this.parentApplication['splashPopUp'];} 
+					catch (err:Error) {trace(DebuggerUtils.getFunctionName(err)+'.1 --> Is there supposed to be a splashPopUp ?');}
+				return splashPopUp;
+			}
+			
+			public function determine_capabilities():void {
+				var c:CapabilitiesUtils = new CapabilitiesUtils();
+			}
+			
+			public function do_fullScreen():void {
+				FlexGlobals.topLevelApplication.nativeWindow.stage.displayState = StageDisplayState.FULL_SCREEN_INTERACTIVE;
+				this.isFullScreen = true;
+			}
+			
+			public function do_windowed():void {
+				FlexGlobals.topLevelApplication.nativeWindow.stage.displayState = StageDisplayState.NORMAL;
+				this.isFullScreen = false;
+			}
+			
+			public function get is_localHost():Boolean {
+				return FlexGlobals.topLevelApplication.domain == FlexGlobals.topLevelApplication.__local_domain__;
+			}
+			
+			public function set is_localHost(is_localHost:Boolean):void {
+				this.__is_localhost__ = is_localHost;
+			}
+			
+			public function get splashAnimationClass():Class {
+				return this.splashAnimationCls;
+			}
+			
+			public function set splashAnimationClass(splashAnimation:Class):void {
+				if (this.splashAnimationCls != splashAnimation) {
+					this.splashAnimationCls = splashAnimation;
+				}
+			}
+			
+			public function get force_localHost():Boolean {
+				return ApplicatonProxy.force_localHost;
+			}
+			
+			public function set force_localHost(force_localHost:Boolean):void {
+				if (ApplicatonProxy.force_localHost != force_localHost) {
+					ApplicatonProxy.force_localHost = force_localHost;
+				}
+			}
+			
+			public function get user():Object {
+				return this.mySO.data.__user;
+			}
+			
+			public function set user(user:Object):void {
+				if (this.mySO.data.__user != user) {
+					this.mySO.data.__user = user;
+				}
+			}
+
+			public function get has_read_terms_and_conditions():Boolean {
+				return this.mySO.data.__has_read_terms_and_conditions__;
+			}
+			
+			public function set has_read_terms_and_conditions(has_read_terms_and_conditions:Boolean):void {
+				this.mySO.data.__has_read_terms_and_conditions__ = has_read_terms_and_conditions;
+				this.mySO.flush();
+			}
+			
+			public function get has_agreed_to_terms_and_conditions():Boolean {
+				return this.mySO.data.__has_agreed_to_terms_and_conditions__;
+			}
+			
+			public function set has_agreed_to_terms_and_conditions(has_agreed_to_terms_and_conditions:Boolean):void {
+				this.mySO.data.__has_agreed_to_terms_and_conditions__ = has_agreed_to_terms_and_conditions;
+				this.mySO.flush();
+			}
+			
+			public function get has_declined_terms_and_conditions():Boolean {
+				return this.mySO.data.__has_agreed_to_terms_and_conditions__ == false;
+			}
+			
+			public function get isLoggedIn():Boolean {
+				return this.mySO.data.__isLoggedIn;
+			}
+			
+			public function set isLoggedIn(isLoggedIn:Boolean):void {
+				this.mySO.data.__isLoggedIn = isLoggedIn;
+				this.mySO.flush();
+			}
+			
+			public function get isFullScreen():Boolean {
+				return this.mySO.data.isFullScreen;
+			}
+			
+			public function set isFullScreen(isFullScreen:Boolean):void {
+				this.mySO.data.isFullScreen = isFullScreen;
+				this.mySO.flush();
+			}
+			
+			// BEGIN: Remap these to the NativeApplicationUpdater...
+			
+			public function do_updater():void {
+				if (this.updaterProxy) {
+					try {this.updaterProxy.do_updater();} 
+					catch (err:Error) {AlertPopUp.surpriseNoOkay('Cannot perform automatic updater due to some kind of system problem because '+err.toString(),'WARNING #1 ('+DebuggerUtils.getFunctionName(err)+')')}
+				}
+			}
+			
+			// END !   Remap these to the NativeApplicationUpdater...
+			
+			private function determine_debugging_Level():void {
+				var app_name:String = SWFHelper.app_name;
+				trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> app_name='+app_name); 
+				this.is_debugging = (!SWFHelper.is_web_based) ? DebuggerUtils.isDebugging : SWFHelper.is_localhost;
+				this.is_logoVisible = (this.is_debugging == false);
+				if ( (ApplicatonProxy.force_localHost) && (this.is_debugging) ) {
+					this.__is_localhost__ = this.is_debugging;
+				}
+				// BEGIN: Maintain compatability with past releases of the Framework...
+				try {FlexGlobals.topLevelApplication['is_debugging'] = this.is_debugging;} catch (err:Error) {}
+				try {FlexGlobals.topLevelApplication['is_logoVisible'] = this.is_logoVisible;} catch (err:Error) {}
+				try {FlexGlobals.topLevelApplication['__is_localhost__'] = this.__is_localhost__;} catch (err:Error) {}
+				// END!   Maintain compatability with past releases of the Framework...
+				trace(DebuggerUtils.getFunctionName(new Error())+'.2 --> this.is_debugging='+this.is_debugging+', this.is_logoVisible='+this.is_logoVisible+', this.__is_localhost__='+this.__is_localhost__);
+			}
+			
+			protected function canvas1_initializeHandler(event:FlexEvent):void {
+				var _this:ApplicatonProxy = this;
+				this.currentState = 'mainView';
+
+				ToolTipManager.toolTipClass = HTMLToolTip;
+				
+				try {this.AppNameSpace = FlexGlobals.topLevelApplication['AppNameSpace'];} catch (err:Error) {}
+				if (this.AppNameSpace == null) {
+					AlertPopUp.surpriseNoOkay('Cannot access the "AppNameSpace" variable in the Top-Level Application.','WARNING #4 ('+DebuggerUtils.getFunctionName(new Error())+')');
+				}
+
+				this.addEventListener(SuperUserLoggedInEvent.TYPE_SUPER_USER_LOGGED_IN, 
+					function (event:SuperUserLoggedInEvent):void {
+						_this.currentState = 'debugger';
+					}
+				);
+				
+				if (!SWFHelper.is_web_based) {
+					try {
+						this.updaterProxy = new NativeApplicationUpdater();
+						this.updaterProxy.x = 0;
+						this.updaterProxy.y = 0;
+						this.updaterProxy.name = 'updaterProxy';
+						this.updaterProxy.percentWidth = 100.0;
+						this.updaterProxy.percentHeight = 100.0;
+						this.updaterProxy.no_choice = this.no_choice;
+						this.updaterProxy.addEventListener('completedNativeApplicationUpdater',
+							function (event:*):void {
+								try {_this.removeChild(_this.updaterProxy);}
+									catch (err:Error) {}
+							}
+						);
+						this.addChild(this.updaterProxy);
+					} 
+					catch (err:Error) {
+						var is_nativeUpdater_undefined:Boolean = (NativeApplicationUpdater == null);
+						AlertPopUp.surpriseNoOkay('Cannot initialize automatic updater due to some kind of system problem because '+((is_nativeUpdater_undefined) ? 'the NativeApplicationUpdater class is undefined' : 'some other problem not related to the NativeApplicationUpdater class')+' due to '+err.toString(),'WARNING #3 ('+DebuggerUtils.getFunctionName(err)+')');
+					}
+				}
+			}
+
+			public function _onCreationComplete_appProxy(appMenu:Array):void {
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 !');
+				if (appMenu is Array) {
+					this.appMenu = appMenu;
+				}
+				this.determine_debugging_Level();
+				this.language = this.Languages.English;
+				this.determine_capabilities();
+				if (this.updaterProxy) {
+					try {
+						this.updaterProxy._onCreationComplete_appProxy(); // +++
+						try {
+							FlexGlobals.topLevelApplication.AppNameSpace.app_title = FlexGlobals.topLevelApplication.AppNameSpace.app_title.replace('{{version}}',this.updaterProxy.build_number);
+						} catch (err:Error) {}
+						this.mySO = SharedObject.getLocal("/vyperlogix/"+this.AppNameSpace.app_id+"/data");
+					} 
+					catch (err:Error) {AlertPopUp.surpriseNoOkay('Cannot perform automatic updater due to some kind of system problem because '+err.toString(),'WARNING #2 ('+DebuggerUtils.getFunctionName(err)+')')}
+				} else {
+					this.mySO = SharedObject.getLocal("/vyperlogix/"+this.app_id+"/data");
+				}
+				this.currentState = (this.is_debugging) ? 'debugger' : this.currentState;
+			}
+
+			private function get debugger_height():Number {
+				var height:Number = this.height*(this.heightSlider.value/100);
+				var min_height:Number = 200;
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> height='+height);
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 --> min_height='+min_height);
+				height = (height < min_height) ? min_height : height;
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.3 --> height='+height);
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.4 --> min_height='+min_height);
+				return height;
+			}
+			
+			protected function heightSlider_creationCompleteHandler(event:FlexEvent):void {
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> event='+event.toString());
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 --> value='+this.heightSlider.value);
+				var value:Number = this.mySO.data.__ApplicatonProxy__heightSlider_value;
+				if ( (value is Number) && (!isNaN(value)) ) {
+					this.heightSlider.value = (value > 40) ? 40 : value;
+				} else {
+					this.heightSlider.value = 20;
+				}
+			}
+
+			private function change_heightSlider(event:SliderEvent):void {
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> event='+event.toString());
+				this.debugger.y = this.height-this.debugger_height;
+				var pcent:Number = (this.debugger.height / this.height) * 100;
+				this.heightSlider.value = (pcent > 50) ? 50 : pcent;
+				this.debugger.height = this.height * (this.heightSlider.value/100.0);
+				this.mySO.data.__ApplicatonProxy__heightSlider_value = this.heightSlider.value;
+				this.mySO.flush();
+			}
+			
+			public function get is_debugger_visible():Boolean {
+				return (this.debugger.visible && this.debugger.includeInLayout);
+			}
+
+		]]>
+	</fx:Script>
+	<mx:TitleWindow x="0" y="{this.height-this.debugger_height}" id="debugger" visible.mainView="false" visible.debugger="true" includeInLayout.mainView="false" includeInLayout.debugger="true" width="100%" height="100%" title="Debugger">
+		<mx:VBox width="100%" height="100%">
+			<mx:HBox width="100%" horizontalAlign="center">
+				<mx:HSlider id="heightSlider" width="100%"
+							minimum="0" maximum="100" value="10"
+							dataTipPlacement="top" 
+							tickColor="black" toolTip="{this.heightSlider.value}"
+							snapInterval="1" tickInterval="1"
+							labels="[0%,100%]" 
+							allowTrackClick="true" 
+							liveDragging="true"
+							change="change_heightSlider(event)" creationComplete="heightSlider_creationCompleteHandler(event)"/>
+			</mx:HBox>
+			<mx:TextArea id="txt_debugger" width="100%" height="100%" borderColor="red" borderAlpha="1.0"/>
+		</mx:VBox>
+	</mx:TitleWindow>
+</mx:Canvas>

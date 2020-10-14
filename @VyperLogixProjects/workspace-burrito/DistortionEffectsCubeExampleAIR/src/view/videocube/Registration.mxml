@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<view:CubeSide xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:view="view.cube.*"
+    title="Registration">
+
+    <mx:Metadata>
+		[Event("direction", type="view.cube.DirectionEvent")]
+	</mx:Metadata>
+
+    <view:sideContent>
+
+        <mx:Accordion creationPolicy="all">
+            <mx:Canvas label="Personal Details">
+                <mx:Form>
+                    <mx:FormItem label="Name">
+                        <mx:TextInput/>
+                    </mx:FormItem>
+                    <mx:FormItem label="Address">
+                        <mx:TextInput/>
+                    </mx:FormItem>
+                </mx:Form>
+            </mx:Canvas>
+            <mx:Canvas label="Payment Details">
+                <mx:Form>
+                    <mx:FormItem label="Credit Card">
+                        <mx:CheckBox/>
+                    </mx:FormItem>
+                    <mx:FormItem label="Delivery">
+                        <mx:RadioButton/>
+                    </mx:FormItem>
+                </mx:Form>
+            </mx:Canvas>
+        </mx:Accordion>
+
+    </view:sideContent>
+
+</view:CubeSide>

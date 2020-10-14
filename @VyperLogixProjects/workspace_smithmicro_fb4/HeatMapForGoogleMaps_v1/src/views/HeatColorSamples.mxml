@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.google.maps.MapEvent;
+			import com.google.maps.MapOptions;
+			import com.google.maps.MapType;
+			
+			import mx.controls.Spacer;
+			import mx.events.FlexEvent;
+			
+			import views.widgets.ColorSample;
+
+			private var _color:uint = 0xff0000;
+			
+			private var _alphas:Array;
+			
+			public function get color():uint {
+				return this._color;
+			}
+			
+			public function set color(color:uint):void {
+				if (this._color != color) {
+					this._color = color;
+					if (this.container is Group) {
+						//this.color_sample();
+					}
+				}
+			}
+			
+			public function get alphas():Array {
+				return this._alphas;
+			}
+			
+			public function set alphas(alphas:Array):void {
+				if (this._alphas != alphas) {
+					this._alphas = alphas;
+				}
+			}
+
+			protected function container_creationCompleteHandler(event:FlexEvent):void {
+				var aSample:ColorSample;
+				var m:int = 10;
+				var alpha:Number = 0.1;
+				var alpha_inc:Number = 0.7/m;
+				var deltaY:Number = (this.container.height/(m+5));
+				var y:Number = 0;
+				//trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> deltaY='+deltaY);
+				for (var i:int = 0; i < m; i++) {
+					aSample = new ColorSample();
+					aSample.x = 0;
+					aSample.y = y;
+					aSample.step = i+1;
+					aSample.color = this.color;
+					aSample.alpha = ((this.alphas is Array) && (i < this.alphas.length)) ? this.alphas[i] : Number(alpha.toPrecision(3));
+					aSample.percentWidth = 100.0;
+					aSample.height = deltaY-2;
+					//trace(DebuggerUtils.getFunctionName(new Error())+'.2 --> y='+y);
+					if (i < m) {
+						y = aSample.y+aSample.height-5;
+					}
+					this.container.addElement(aSample);
+					//alpha += alpha_inc;
+				}
+			}
+
+			protected function map_mapevent_mappreinitializeHandler(event:MapEvent):void {
+				var myMapOptions:MapOptions = new MapOptions();
+				myMapOptions.zoom = 16;
+				myMapOptions.center = this.parentApplication.map..getCenter();
+				myMapOptions.mapType = MapType.NORMAL_MAP_TYPE;
+				this.map.setInitOptions(myMapOptions);
+				//trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> myMapOptions='+myMapOptions.toString());
+			}
+		]]>
+	</fx:Script>
+	<s:Group id="backdrop" x="0" y="0">
+		<maps:Map 
+			id="map" 
+			xmlns:maps="com.google.maps.*" 
+			width="{this.container.width}" height="{this.container.height}" 
+			url="{this.parentApplication.url_google_maps}"
+			key="{this.parentApplication.google_maps_api_key}" 
+			mapevent_mappreinitialize="map_mapevent_mappreinitializeHandler(event)"
+			sensor="{this.parentApplication.is_using_sensor}"/>
+	</s:Group>
+	<s:Group id="container" x="0" y="0" width="100%" height="100%" creationComplete="container_creationCompleteHandler(event)"/>
+</s:TitleWindow>

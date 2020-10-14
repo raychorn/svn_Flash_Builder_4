@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TabbedViewNavigatorApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+								  xmlns:s="library://ns.adobe.com/flex/spark" 
+								  xmlns:mx="library://ns.adobe.com/flex/mx"
+								  applicationDPI="160" 
+								  initialize="tabbedviewnavigatorapplication1_initializeHandler(event)" 
+								  applicationComplete="tabbedviewnavigatorapplication1_applicationCompleteHandler(event)" 
+								  >
+	<s:ViewNavigator id="homeView" label="Home" width="100%" height="100%" firstView="views.HomeView"/>
+	<s:ViewNavigator id="loginView" label="Login" width="100%" height="100%" firstView="views.LoginView"/>
+	<s:ViewNavigator id="registerView" label="Register" width="100%" height="100%" firstView="views.RegisterView"/>
+	<s:ViewNavigator id="forgotView" label="Forgot Password" width="100%" height="100%" firstView="views.ForgotPasswordView"/>
+	<fx:Style source="styles.css"/>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:DateFormatter id="fmt_date" formatString="MMDDYYYYJNN"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.StringUtils;
+			
+			import mx.events.FlexEvent;
+
+			[Bindable]
+			public var mySO:SharedObject;
+			
+			[Bindable]
+			public var nativeApplication:NativeApplication = NativeApplication.nativeApplication;
+			
+			public var appDescriptor:XML = NativeApplication.nativeApplication.applicationDescriptor;
+			public var nsDeclaration:Namespace = appDescriptor.namespace();
+			
+			[Bindable]
+			public var app_id:String = appDescriptor.nsDeclaration::id[ 0 ] ;
+			
+			[Bindable]
+			public var versionNumber:String = appDescriptor.nsDeclaration::versionNumber[ 0 ] ;
+			
+			[Bindable]
+			public var versionLabel:String = appDescriptor.nsDeclaration::versionLabel[ 0 ] ;
+			
+			[Bindable]
+			public var appName:String = appDescriptor.nsDeclaration::name[ 0 ] ;
+			
+			[Bindable]
+			public var description:String = appDescriptor.nsDeclaration::description[ 0 ] ;
+			
+			[Bindable]
+			public var copyright:String = appDescriptor.nsDeclaration::copyright[ 0 ] ;
+			
+			[Bindable]
+			public var credits:String = 'Credits:\n\nThis Android App was produced by Ray C Horn\n\n(c). Copyright 2012, Vyper Logix Corp. (http://www.vyperlogix.com), All Rights Reserved\n\n';
+			
+			[Bindable]
+			public var is_debugging:Boolean = false; //app_id.indexOf('.debug') == -1;
+			
+			[Bindable]
+			public var is_menu_enhanced:Boolean = true;
+			
+			[Bindable]
+			public var is_player:Boolean = true;
+			
+			[Bindable]
+			public var appTitle:String = appName+' v'+versionLabel+' ('+versionNumber+')';
+			
+			[Bindable]
+			public var __appDescr__:String = 'The {this.appName} provides you with the ability to\nPlay Immersive Multimedia Presentations you and others can build using the\nInteractive {this.appName} Builder running on your\nWindows, Mac or Linux Desktop or your Mobile Device like\nyour Android Phone or Android Tablet.';
+			
+			[Bindable]
+			public var __is_logged_in__:Boolean = false;
+			
+			public function get is_logged_in():Boolean {
+				return this.__is_logged_in__;
+			}
+
+			public function set is_logged_in(is_logged_in:Boolean):void {
+				if (this.__is_logged_in__ != is_logged_in) {
+					this.__is_logged_in__ = is_logged_in;
+					if (is_logged_in) {
+						while (this.tabbedNavigator.length > 1) {
+							this.tabbedNavigator.removeItemAt(1);
+						}
+					}
+					trace(this.className+'.set is_logged_in.1 --> is_logged_in='+is_logged_in);
+				}
+			}
+			
+			public function get appDescr():String {
+				return StringUtils.replaceAll(this.__appDescr__,'{this.appName}',this.appName);
+			}
+			
+			public function get_SO_value_by_name(name:String):* {
+				var value:*;
+				try {
+					value = this.mySO.data[name];
+				} catch (err:Error) {
+					value = null;
+				}
+				return value;
+			}
+			
+			public function put_SO_value(name:String,value:*):void {
+				try {
+					this.mySO.data[name] = value;
+					this.mySO.flush();
+				} catch (err:Error) {}
+			}
+			
+			protected function tabbedviewnavigatorapplication1_initializeHandler(event:FlexEvent):void {
+				var toks:Array = app_id.split('.');
+				toks.pop();
+				app_id = toks.join('.');
+				var now:Date = new Date();
+				var name:String = '/local/vyperlogix/'+this.fmt_date.format(now)+'/data/';
+				this.mySO = SharedObject.getLocal(name);
+				trace('tabbedviewnavigatorapplication1_initializeHandler.1 --> app_id='+app_id);
+				trace('tabbedviewnavigatorapplication1_initializeHandler.2 --> name='+name);
+			}
+			
+			protected function tabbedviewnavigatorapplication1_applicationCompleteHandler(event:FlexEvent):void {
+				Multitouch.inputMode = MultitouchInputMode.GESTURE;
+				this.stage.addEventListener(KeyboardEvent.KEY_DOWN, 
+					function (event:KeyboardEvent):void {
+						try {
+							if (event.keyCode == Keyboard.BACK) {
+							} else if (event.keyCode == Keyboard.MENU) {
+								event.preventDefault();
+								this.viewMenuOpen = true;
+							} else if (event.keyCode == Keyboard.SEARCH) {
+							}
+						} catch (err:Error) {
+						}
+					}
+				);
+			}
+			
+		]]>
+	</fx:Script>
+</s:TabbedViewNavigatorApplication>

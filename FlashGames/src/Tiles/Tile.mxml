@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  layout="absolute" 
+		  width="100%" height="100%" 
+		  verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+		  title="{this.dataProvider.title} ({this.dataProvider.type})" 
+		  mouseOver="panel1_mouseOverHandler(event)" mouseOut="panel1_mouseOutHandler(event)" 
+		  useHandCursor="true" buttonMode="true">
+	<mx:states>
+		<s:State name="State1"/>
+		<s:State name="imageOnly"/>
+		<s:State name="flashOnly"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		.MouseOver {
+			backgroundColor: cyan;
+		}
+		
+		.MouseOut {
+			backgroundColor: white;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			[Bindable]
+			public var dataProvider:Object;
+
+			[Bindable]
+			public var imageWidth:Number;
+
+			[Bindable]
+			public var imageHeight:Number;
+
+			[Bindable]
+			public var mouseOverStyle:String = 'MouseOver';
+			
+			[Bindable]
+			public var mouseOutStyle:String = 'MouseOut';
+			
+			[Bindable]
+			public var maintainAspectRatio:Boolean = true;
+
+			private var _btnCloseClickCallback:Function;
+
+			[Embed(source="/assets/close.gif")]
+			[Bindable]
+			public static var closeIcon:Class;
+
+			public function get btnCloseClickCallback():Function {
+				return this._btnCloseClickCallback;
+			}
+			
+			public function set btnCloseClickCallback(callback:Function):void {
+				this._btnCloseClickCallback = callback;
+			}
+
+			protected function btnClose_creationCompleteHandler(event:FlexEvent):void {
+				var _this:* = this;
+				this.btnClose.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+					_this.btnCloseClickCallback(event)
+				});
+			}
+			
+			protected function panel1_mouseOverHandler(event:MouseEvent):void {
+				if (this.currentState == 'imageOnly') {
+					this.styleName = this.mouseOverStyle;
+				}
+			}
+
+			protected function panel1_mouseOutHandler(event:MouseEvent):void {
+				if (this.currentState == 'imageOnly') {
+					this.styleName = this.mouseOutStyle;
+				}
+			}
+			
+			private function get flashContent():String {
+				return (this.currentState == 'flashOnly') ? this.dataProvider.flash : null;
+			}
+
+			private function get bgColor():int {
+				var aColor:int = 0xffffff;
+				try { aColor = this.dataProvider.backgroundColor } catch (err:Error) {}
+				return aColor;
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%" horizontalAlign="center" verticalAlign="top">
+		<mx:HBox id="hbox2" width="100%" height="100%" horizontalAlign="center" backgroundColor="{this.bgColor}">
+			<mx:Image id="image" source="{this.dataProvider.image}" includeInLayout.flashOnly="false" visible.flashOnly="false" includeInLayout.imageOnly="true" visible.imageOnly="true" width="{this.imageWidth}" height="{this.imageHeight}" scaleContent="true"/>
+			<mx:SWFLoader id="flash" source="{this.flashContent}" includeInLayout.flashOnly="true" visible.flashOnly="true" includeInLayout.imageOnly="false" visible.imageOnly="false" width="100%" height="100%" scaleContent="true" maintainAspectRatio="{this.maintainAspectRatio}"/>
+		</mx:HBox>
+	</mx:VBox>
+	<mx:Canvas id="canvas1" x="{this.width-this.btnClose.width-10}" y="0" width="150" includeInLayout.imageOnly="false" visible.imageOnly="false" includeInLayout.flashOnly="true" visible.flashOnly="true">
+		<mx:Button id="btnClose" label="Close" width="100" height="35" icon="{closeIcon}" creationComplete="btnClose_creationCompleteHandler(event)"/>
+	</mx:Canvas>
+</mx:Panel>

@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%" 
+		  initialize="vgroup1_initializeHandler(event)" 
+		  resize="vgroup1_resizeHandler(event)" 
+		  creationComplete="vgroup1_creationCompleteHandler(event)" xmlns:popups="controls.popups.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import flash.filesystem.File;
+			
+			import mx.controls.SWFLoader;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			import mx.graphics.BitmapScaleMode;
+			
+			import spark.components.Image;
+			
+			import utils.MediaHelper;
+			
+			private var image:SWFLoader;
+			private var img:Image;
+			
+			private var __image__:String;
+			
+			private var __file__:File;
+			
+			private var _this:ImageCanvas;
+			
+			private var __image_was_added__:Boolean = false;
+			
+			[Bindable]
+			[Embed(source="/controls/MediaPresentation/assets/images/missing-image.jpg")]
+			public static var missingImageClass:Class;
+			
+			public function get imageSpec():String {
+				return this.__image__;
+			}
+			
+			private function add_image_to_canvas(f:File):void {
+				if ( (f == null) || ( (f is File) && ( (!f.exists) || (f.isDirectory) ) ) ) {
+					trace(this.className+'.add_image_to_canvas.1 --> f='+f.nativePath+', f.exists='+f.exists+', f.isDirectory='+f.isDirectory);
+					this.removeAllElements();
+					image = new SWFLoader();
+					image.source = missingImageClass;
+					image.x = 0;
+					image.y = 0;
+					image.scaleContent = true;
+					image.maintainAspectRatio = false;
+					image.showBusyCursor = true;
+					image.width = this.width;
+					image.height = this.height;
+					trace(this.className+'.add_image_to_canvas.1.1 --> image.width='+image.width+', image.height='+image.height);
+					this.canvas.addElement(image);
+					return;
+				} else if ( (f is File) && (f.exists) && (!f.isDirectory) ) {
+					var mar:*;
+					trace(this.className+'.add_image_to_canvas.2 --> f='+f.nativePath+', f.exists='+f.exists+', f.isDirectory='+f.isDirectory);
+					if (MediaHelper.is_image(f.nativePath)) {
+						this.removeAllElements();
+						trace(this.className+'.add_image_to_canvas.2.1 --> f='+f.nativePath+', f.exists='+f.exists+', f.isDirectory='+f.isDirectory);
+						if (f.name.toLowerCase().indexOf('.jpg') > -1) {
+							trace(this.className+'.add_image_to_canvas.2.2 --> f='+f.nativePath+', f.exists='+f.exists+', f.isDirectory='+f.isDirectory);
+							img = new Image();
+							img.source = f.nativePath;
+							img.x = 0;
+							img.y = 0;
+							img.scaleMode = BitmapScaleMode.STRETCH;
+							img.width = this.width;
+							img.height = this.height;
+							trace(this.className+'.add_image_to_canvas.2.2.1 --> img.width='+img.width+', img.height='+img.height);
+							img.addEventListener(HTTPStatusEvent.HTTP_STATUS, 
+								function (event:HTTPStatusEvent):void {
+									trace(this.className+'.add_image_to_canvas.2.3 --> f='+f.nativePath+', event.status='+event.status);
+									if (event.status >= 200) {
+										img.source = missingImageClass;
+										trace(this.className+'.add_image_to_canvas.2.4 --> f='+f.nativePath+', f.exists='+f.exists+', f.isDirectory='+f.isDirectory);
+									}
+								}
+							);
+							img.addEventListener(IOErrorEvent.IO_ERROR, 
+								function (event:HTTPStatusEvent):void {
+									trace(this.className+'.add_image_to_canvas.2.5 --> f='+f.nativePath+', event='+event.toString());
+									img.source = missingImageClass;
+								}
+							);
+							this.canvas.addElement(img);
+						} else {
+							image = new SWFLoader();
+							image.source = f.url;
+							image.x = 0;
+							image.y = 0;
+							image.showBusyCursor = true;
+							image.maintainAspectRatio = false;
+							image.scaleContent = true;
+							image.width = this.width;
+							image.height = this.height;
+							trace(this.className+'.add_image_to_canvas.3.1 --> image.width='+image.width+', image.height='+image.height);
+							trace(this.className+'.add_image_to_canvas.3.1.1 --> this.canvas.width='+this.canvas.width+', this.canvas.height='+this.canvas.height);
+							trace(this.className+'.add_image_to_canvas.3.1.2 --> this.width='+this.width+', this.height='+this.height);
+							image.addEventListener(IOErrorEvent.IO_ERROR, 
+								function (event:IOErrorEvent):void {
+									image.source = f.nativePath;
+									trace(_this.className+'.add_image_to_canvas.3.2 --> image.source='+image.source);
+								}
+							);
+							image.addEventListener(Event.OPEN, 
+								function (event:Event):void {
+									_this.progress.visible = true;
+									trace(_this.className+'.add_image_to_canvas.3.3 --> _this.progress.visible='+_this.progress.visible);
+								}
+							);
+							image.addEventListener(ProgressEvent.PROGRESS, 
+								function (event:ProgressEvent):void {
+									_this.progress.setProgress(event.bytesLoaded,event.bytesTotal);
+									_this.progress.label.text = 'Loading "'+f.nativePath+'"';
+									trace(_this.className+'.add_image_to_canvas.3.4 --> percent='+((event.bytesLoaded/event.bytesTotal)*100));
+								}
+							);
+							image.addEventListener('complete', 
+								function (event:*):void {
+									_this.progress.visible = false;
+									trace(_this.className+'.add_image_to_canvas.3.5 --> _this.progress.visible='+_this.progress.visible);
+								}
+							);
+							this.canvas.addElement(image);
+						}
+					}
+				}
+			}
+			
+			public function set imageSpec(image:String):void {
+				if (this.__image__ != image) {
+					this.__image__ = image;
+					this.__file__ = new File(image);
+					if (!this.__image_was_added__) {
+						this.callLater(this.add_image_to_canvas,[this.__file__]);
+					}
+				}
+			}
+			
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void {
+				if (this.__file__ is File) {
+					this.__image_was_added__ = true;
+					this.add_image_to_canvas(this.__file__);
+				}
+			}
+			
+			protected function vgroup1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+			}
+			
+			protected function vgroup1_resizeHandler(event:ResizeEvent):void {
+				if (this.canvas) {
+					if (this.image) {
+						this.image.width = this.width;
+						this.image.height = this.height;
+					}
+					if (this.img) {
+						this.img.width = this.width;
+						this.img.height = this.height;
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<popups:WinProgressBar id="progress" width="100%" visible="false" includeInLayout="{this.progress.visible}"/>
+	<s:HGroup id="canvas" width="100%" height="100%"/>
+</s:Group>

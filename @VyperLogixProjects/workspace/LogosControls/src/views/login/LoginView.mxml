@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   width="100%" height="100%" creationComplete="canvas1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.ErrorTipManager;
+			
+			import controls.login.widgets.LoginWidget;
+			import controls.login.widgets.event.HidePasswordErrorTipEvent;
+			import controls.login.widgets.event.HideUserNameErrorTipEvent;
+			import controls.login.widgets.event.LoginViewChangedEvent;
+			import controls.login.widgets.event.UpdatePasswordTextValueEvent;
+			import controls.login.widgets.event.UpdatePasswordVisibilityEvent;
+			import controls.login.widgets.event.UpdateUserNameRequiredFieldErrorEvent;
+			import controls.login.widgets.event.UpdateUserNameTextValueEvent;
+			import controls.login.widgets.event.UpdateUserNameTooLongErrorEvent;
+			import controls.login.widgets.event.UpdateUserNameTooShortErrorEvent;
+			import controls.login.widgets.event.UpdateUserNameVisibilityEvent;
+			import controls.login.widgets.event.ValidateActivationKeyRequestedEvent;
+			import controls.login.widgets.event.ValidatePasswordRequestedEvent;
+			
+			import mx.controls.Button;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.events.StateChangeEvent;
+
+			[Event(name="loginViewChanged", type="controls.login.widgets.event.LoginViewChangedEvent")]
+			[Event(name="validateActivationRequested", type="controls.login.widgets.event.ValidateActivationKeyRequestedEvent")]
+
+			[Bindable]
+			public var loginWidget:LoginWidget;
+			
+			protected function onCreationComplete_loginWidget(event:FlexEvent):void {
+				var _this:LoginView = this;
+				var target:Canvas = event.currentTarget as Canvas;
+				this.loginWidget = new LoginWidget();
+				this.loginWidget.percentWidth = 100.0;
+				this.loginWidget.percentHeight = 100.0;
+				this.loginWidget.addEventListener(FlexEvent.CREATION_COMPLETE, 
+					function (event:FlexEvent):void {
+						ErrorTipManager.registerValidator(_this.loginWidget.UserNameValidator);
+						ErrorTipManager.registerValidator(_this.loginWidget.PasswordValidator);
+						_this.loginWidget.txt_UserName.setFocus();
+					}
+				);
+
+				this.loginWidget.addEventListener(UpdateUserNameRequiredFieldErrorEvent.TYPE_UPDATE_USERNAME_REQUIRED_FIELD_ERROR, 
+					function (event:UpdateUserNameRequiredFieldErrorEvent):void {
+						_this.loginWidget._userNameRequiredFieldError = event.value;
+					}
+				);
+				
+				this.loginWidget.addEventListener(UpdateUserNameTooShortErrorEvent.TYPE_UPDATE_USERNAME_TOOSHORT_ERROR, 
+					function (event:UpdateUserNameTooShortErrorEvent):void {
+						_this.loginWidget._userNameTooShortErrorMessage = event.value;
+					}
+				);
+				
+				this.loginWidget.addEventListener(UpdateUserNameTooLongErrorEvent.TYPE_UPDATE_USERNAME_TOOLONG_ERROR, 
+					function (event:UpdateUserNameTooLongErrorEvent):void {
+						_this.loginWidget._userNameTooLongErrorMessage = event.value;
+					}
+				);
+				
+				this.loginWidget.addEventListener(ValidatePasswordRequestedEvent.TYPE_VALIDATE_PASSWORD_REQUESTED_ERROR, 
+					function (event:ValidatePasswordRequestedEvent):void {
+						_this.loginWidget.validatePassword();
+					}
+				);
+				
+				this.loginWidget.addEventListener(UpdateUserNameTextValueEvent.TYPE_UPDATE_USERNAME_TEXT_VALUE, 
+					function (event:UpdateUserNameTextValueEvent):void {
+						_this.loginWidget.txt_UserName.text = event.value;
+					}
+				);
+
+				this.loginWidget.addEventListener(UpdatePasswordTextValueEvent.TYPE_UPDATE_PASSWORD_TEXT_VALUE, 
+					function (event:UpdatePasswordTextValueEvent):void {
+						_this.loginWidget.txt_Password.text = event.value;
+					}
+				);
+
+				this.loginWidget.addEventListener(UpdateUserNameVisibilityEvent.TYPE_UPDATE_USERNAME_VISIBILITY, 
+					function (event:UpdateUserNameVisibilityEvent):void {
+						_this.loginWidget.lbl_UserName.visible = _this.loginWidget.lbl_UserName.includeInLayout = event.visible;
+					}
+				);
+
+				this.loginWidget.addEventListener(UpdatePasswordVisibilityEvent.TYPE_UPDATE_PASSWORD_VISIBILITY, 
+					function (event:UpdatePasswordVisibilityEvent):void {
+						_this.loginWidget.lbl_Password.visible = _this.loginWidget.lbl_Password.includeInLayout = event.visible;
+					}
+				);
+	
+				this.loginWidget.addEventListener(HideUserNameErrorTipEvent.TYPE_HIDE_USERNAME_ERRORTIP, 
+					function (event:HideUserNameErrorTipEvent):void {
+						ErrorTipManager.hideErrorTip(_this.loginWidget.txt_UserName,event.value);
+					}
+				);
+	
+				this.loginWidget.addEventListener(HidePasswordErrorTipEvent.TYPE_HIDE_PASSWORD_ERRORTIP, 
+					function (event:HidePasswordErrorTipEvent):void {
+						ErrorTipManager.hideErrorTip(_this.loginWidget.txt_Password,event.value);
+					}
+				);
+				
+				target.addChild(this.loginWidget);
+			}
+
+			protected function tabnavigator1_changeHandler(event:IndexChangedEvent):void {
+				var nav:TabNavigator = TabNavigator(event.currentTarget);
+				var children:Array = nav.getChildren();
+				var g_children:Array;
+				var aChildSource:Canvas;
+				var aChildDest:Canvas;
+				function copy_children(_from:int,_to:int):void {
+					aChildSource = children[_from];
+					g_children = aChildSource.getChildren();
+					if (g_children.length > 0) {
+						aChildSource.removeChildAt(0);
+						aChildDest = children[_to];
+						aChildDest.addChild(g_children[0]);
+					}
+				}
+				var i_Login:int = 0;
+				var i_Register:int = 1;
+				var i_Activate:int = 2;
+				var i_ResendActivation:int = 3;
+				var i_ChangePassword:int = 4;
+				var oldState:String = this.currentState;
+				var newState:String = null;
+				if (event.newIndex == i_Register) {
+					copy_children(event.oldIndex,event.newIndex);
+					newState = 'SimpleRegisterUserState';
+				} else if (event.newIndex == i_Login) {
+					copy_children(event.oldIndex,event.newIndex);
+					newState = null;
+				} else if (event.newIndex == i_Activate) {
+					copy_children(event.oldIndex,event.newIndex);
+					newState = 'ActivateUserFromLogin';
+				} else if (event.newIndex == i_ResendActivation) {
+					copy_children(event.oldIndex,event.newIndex);
+					newState = 'ResendActivateFromLogin';
+				} else if (event.newIndex == i_ChangePassword) {
+					copy_children(event.oldIndex,event.newIndex);
+					newState = 'SimplePasswordChangeState';
+				}
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> dispatchEvent(LoginViewChangedEvent.TYPE_LOGIN_VIEW_CHANGED,oldState='+oldState+'+,'+newState+')');
+				this.dispatchEvent(new LoginViewChangedEvent(LoginViewChangedEvent.TYPE_LOGIN_VIEW_CHANGED, oldState, newState));
+				this.loginWidget.txt_UserName.setFocus();
+				if (event.newIndex == i_ResendActivation) {
+					this.loginWidget.validateUserName();
+				} else if (event.newIndex == i_Activate) {
+					this.loginWidget.validateUserName();
+					this.dispatchEvent(new ValidateActivationKeyRequestedEvent(ValidateActivationKeyRequestedEvent.TYPE_VALIDATE_ACTIVATION_REQUESTED));
+				} else if ( (event.newIndex == i_Login) || (event.newIndex == i_Register) || (event.newIndex == i_ChangePassword) ) {
+					this.loginWidget.validateUserName();
+					this.loginWidget.validatePassword();
+				}
+			}
+			
+			private function setFocus_on(target:*):void {
+				//trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> target='+target.toString());
+				this.focusManager.setFocus(target);
+			}
+			
+			protected function canvas1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:LoginView = this;
+				this.addEventListener(StateChangeEvent.CURRENT_STATE_CHANGE, 
+					function (event:StateChangeEvent):void {
+						_this.callLater(_this.setFocus_on,[_this.loginWidget.txt_UserName]);
+					}
+				);
+			}
+
+		]]>
+	</fx:Script>
+	<mx:TabNavigator width="100%" height="100%" change="tabnavigator1_changeHandler(event)">
+		<mx:Canvas label="Login" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off" creationComplete="onCreationComplete_loginWidget(event)">
+		</mx:Canvas>
+		<mx:Canvas label="Register" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		</mx:Canvas>
+		<mx:Canvas label="Activate" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		</mx:Canvas>
+		<mx:Canvas label="Resend Activation" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		</mx:Canvas>
+		<mx:Canvas label="Change Password" width="100%" height="100%" verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		</mx:Canvas>
+	</mx:TabNavigator>
+</mx:Canvas>

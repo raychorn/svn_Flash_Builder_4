@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas 
+    width="100%" height="100%"
+    xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:view="view.videocube.*" xmlns:videos="controls.videos.*">
+	<mx:Script>
+		<![CDATA[
+			[Bindable]
+			public var video_id:String = "-eyig_V-_5o";
+		]]>
+	</mx:Script>
+	<videos:YouTubeVideo id="youtube" x="0" y="0" width="100%" height="100%" video_id="{this.video_id}" horizontalScrollPolicy="off" verticalScrollPolicy="off"/>
+</mx:Canvas>

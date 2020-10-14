@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SparkSkin 
+	minHeight="84"
+	minWidth="89"
+	xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:fb="http://ns.adobe.com/flashbuilder/2009"
+	alpha.disabled="0.5">
+
+	<fx:Metadata>
+		[HostComponent("spark.components.DataGrid")]
+	</fx:Metadata>
+
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="disabled"/>
+	</s:states>
+
+	<fx:Declarations>
+		<fx:Component id="alternatingRowColorsBackground">
+			<s:Rect implements="spark.components.gridClasses.IGridVisualElement">
+				<fx:Script>
+					<![CDATA[
+						import spark.components.DataGrid;
+						import spark.components.Grid;
+
+						public function prepareGridVisualElement(grid:Grid, rowIndex:int, columnIndex:int):void
+						{
+							const dataGrid:DataGrid = grid.dataGrid;
+							if (!dataGrid)
+								return;
+
+							const colors:Array = dataGrid.getStyle("alternatingRowColors");
+							if (colors && (colors.length > 0))
+							{
+								dataGrid.styleManager.getColorNames(colors); // lazily replace color names with ints
+								rowBackgroundFillColor.color = colors[rowIndex % colors.length];
+							}
+							else
+							{
+								// This should be the same as bgFill.color.
+								rowBackgroundFillColor.color = 0x000000;
+							}
+						}
+					]]>
+				</fx:Script>
+				<s:fill>
+					<s:SolidColor id="rowBackgroundFillColor" color="0x333333"/>
+				</s:fill>
+			</s:Rect>
+		</fx:Component>
+
+		<fx:Component id="caretIndicator">
+			<s:Rect>
+				<s:stroke>
+					<s:SolidColorStroke color="0x0167FF" weight="1" alpha="0"/>
+				</s:stroke>
+			</s:Rect>
+		</fx:Component>
+
+		<fx:Component id="columnSeparator">
+			<s:Line>
+				<s:stroke>
+					<s:SolidColorStroke color="0x000000" weight="1" caps="square"/>
+				</s:stroke>
+			</s:Line>
+		</fx:Component>
+
+		<fx:Component id="headerColumnSeparator">
+			<s:Line>
+				<s:stroke>
+					<s:SolidColorStroke color="0x000000" weight="1" caps="square"/>
+				</s:stroke>
+			</s:Line>
+		</fx:Component>
+
+		<fx:Component id="hoverIndicator">
+			<s:Rect>
+				<s:fill>
+					<s:SolidColor color="0x000000" alpha="0"/>
+				</s:fill>
+			</s:Rect>
+		</fx:Component>
+
+		<fx:Component id="rowSeparator">
+			<s:Line>
+				<s:stroke>
+					<s:SolidColorStroke color="0x000000" weight="1" caps="square"/>
+				</s:stroke>
+			</s:Line>
+		</fx:Component>
+
+		<fx:Component id="selectionIndicator">
+			<s:Rect>
+				<s:fill>
+					<s:SolidColor color="0x000000" alpha="0"/>
+				</s:fill>
+			</s:Rect>
+		</fx:Component>
+
+		<fx:Component id="editorIndicator">
+			<s:Rect>
+				<s:fill>
+					<s:SolidColor color="0xFFFFFF"/>
+				</s:fill>
+			</s:Rect>
+		</fx:Component>
+
+	</fx:Declarations>
+
+	<fx:Script fb:purpose="styling">
+		static private const exclusions:Array = [ "scroller", "background" ];
+
+		static private const contentFill:Array = [ "bgFill" ];
+
+		/**
+		 * @private
+		 */
+		override public function get colorizeExclusions():Array
+		{
+			return exclusions;
+		}
+
+		/**
+		 * @private
+		 */
+		override public function get contentItems():Array
+		{
+			return contentFill;
+		}
+
+		/**
+		 * @private
+		 */
+		override protected function initializationComplete():void
+		{
+			useChromeColor = true;
+			super.initializationComplete();
+		}
+
+		/**
+		 * @private
+		 */
+		override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void
+		{
+			if (getStyle("borderVisible") == true)
+			{
+				border.visible = true;
+				background.left = background.top = background.right = background.bottom = 1;
+				scroller.minViewportInset = 1;
+			}
+			else
+			{
+				border.visible = false;
+				background.left = background.top = background.right = background.bottom = 0;
+				scroller.minViewportInset = 0;
+			}
+
+			borderStroke.color = getStyle("borderColor");
+			borderStroke.alpha = getStyle("borderAlpha");
+
+			super.updateDisplayList(unscaledWidth, unscaledHeight);
+		}
+	</fx:Script>
+
+	<!-- fill -->
+	<!--- Defines the background appearance of the list-based component. -->
+	<s:Rect id="background"
+		left="1" right="1" top="1" bottom="1">
+		<s:fill>
+			<!--- Defines the color of the background. The default color is 0xFFFFFF. -->
+			<s:SolidColor id="bgFill" color="0xFFFFFF"/>
+		</s:fill>
+	</s:Rect>
+
+	<!-- column header, separator, scroller with grid -->
+	<s:VGroup 
+		left="0" right="0" top="0" bottom="0"
+		horizontalAlign="justify"
+		gap="0">
+		<s:GridColumnHeaderGroup id="columnHeaderGroup"
+			color="0x808080"
+			paddingLeft="0"
+			paddingRight="0"
+			paddingTop="0"
+			columnSeparator="{headerColumnSeparator}"
+			headerRenderer="com.adobe.webdashboard.view.renderer.GridHeaderRenderer"/>
+
+		<s:VGroup height="100%" horizontalAlign="justify" gap="-1">
+			<s:Line id="headerSeparator">
+				<s:stroke>
+					<s:SolidColorStroke color="0x696969" weight="1" caps="square"/>
+				</s:stroke>
+			</s:Line>
+
+			<s:Scroller id="scroller" height="100%" minViewportInset="1" hasFocusableChildren="false">
+				<s:Grid id="grid" itemRenderer="spark.skins.spark.DefaultGridItemRenderer">
+					<s:GridLayer name="backgroundLayer"/>
+					<s:GridLayer name="selectionLayer"/>
+					<s:GridLayer name="editorIndicatorLayer"/>
+					<s:GridLayer name="rendererLayer"/>
+					<s:GridLayer name="overlayLayer"/>
+				</s:Grid>
+			</s:Scroller>
+		</s:VGroup>
+	</s:VGroup>
+
+	<!-- border -->
+	<!--- @private -->
+	<s:Rect id="border"
+		left="0" right="0" top="0" bottom="0">
+		<s:stroke>
+			<!--- @private -->
+			<s:SolidColorStroke id="borderStroke" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+
+</s:SparkSkin>

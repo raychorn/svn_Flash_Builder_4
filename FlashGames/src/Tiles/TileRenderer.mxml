@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml"
+		  horizontalAlign="center"
+		  verticalAlign="middle" 
+		  width="100%" height="100%"
+		  creationComplete="panel1_creationCompleteHandler(event)" 
+		  horizontalScrollPolicy="off" verticalScrollPolicy="off">
+	<mx:Style>
+	</mx:Style>
+	<mx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			public var dataProvider:Object;
+			
+			[Bindable]
+			public var maintainAspectRatio:Boolean = true;
+
+			private var __isPopUp:Boolean = false;
+			
+			private var old_image_size:Point;
+			private var old_panel_size:Point;
+
+			[Bindable]
+			public function get _isPopUp():Boolean {
+				return this.__isPopUp;
+			}
+			
+			public function set _isPopUp(isPopUp:Boolean):void {
+				this.__isPopUp = isPopUp;
+			}
+			
+			protected function panel1_creationCompleteHandler(event:FlexEvent):void {
+				var isImage:Boolean = false;
+				var isFlash:Boolean = false;
+				var isImageAndFlash:Boolean = false;
+				try {
+					this.dataProvider = data;
+					isImage = this.isImage();
+					isFlash = this.isFlash();
+					isImageAndFlash = this.isImageAndFlash();
+					this.image.includeInLayout = this.image.visible = isImage;
+					this.swf.includeInLayout = this.swf.visible = isFlash;
+					if ( (isImage) && (isImageAndFlash) ) {
+						this.image.source = this._image;
+					}
+					if ( (isFlash) && (!isImageAndFlash) ) {
+						this.swf.source = this._flash;
+					}
+				} catch (err:Error) {}
+				this.buttonMode = true;
+				this.useHandCursor = true;
+				trace(this.className+':: panel1_creationCompleteHandler() --> '+((isImage) ? 'this.isImage()='+isImage+', this._image='+this._image : '')+((isFlash) ? 'this.isFlash()='+isFlash+', this._flash='+this._flash : ''));
+			}
+
+			protected function hbox1_creationCompleteHandler(event:FlexEvent):void {
+				var hbox:HBox = event.currentTarget as HBox;
+				hbox.includeInLayout = this._isPopUp;
+				hbox.visible = this._isPopUp;
+			}
+
+			protected function image_mouseOverHandler(event:MouseEvent):void {
+				var img:Image = event.currentTarget as Image;
+//				if ((this.old_image_size is Point) == false) {
+//					this.old_image_size = new Point(img.width,img.height);
+//					img.width = img.width * 2;
+//					img.height = img.height * 2;
+//				}
+//				if ((this.old_panel_size is Point) == false) {
+//					this.old_panel_size = new Point(this.width,this.height);
+//					this.width = this.width * 2;
+//					this.height = this.height * 2;
+//				}
+			}
+
+			protected function image_mouseOutHandler(event:MouseEvent):void {
+				var img:Image = event.currentTarget as Image;
+//				if (this.old_image_size is Point) {
+//					img.width = this.old_image_size.x;
+//					img.height = this.old_image_size.y;
+//					this.old_image_size = null;
+//				}
+//				if (this.old_panel_size is Point) {
+//					this.width = this.old_panel_size.x;
+//					this.height = this.old_panel_size.y;
+//					this.old_panel_size = null;
+//				}
+			}
+			
+			[Bindable]
+			private function get _title():String {
+				return (this.dataProvider) ? this.dataProvider['title'] : null;
+			}
+			
+			private function set _title(title:String):void {
+				this.dataProvider['title'] = title;
+			}
+
+			[Bindable]
+			private function get _image():String {
+				return (this.dataProvider) ? this.dataProvider['image'] : null;
+			}
+
+			private function set _image(image:String):void {
+				this.dataProvider['image'] = image;
+			}
+			
+			[Bindable]
+			private function get _flash():String {
+				return (this.dataProvider) ? this.dataProvider['flash'] : null;
+			}
+			
+			private function set _flash(flash:String):void {
+				this.dataProvider['flash'] = flash;
+			}
+			
+			private function isImage():Boolean {
+				return this._image is String;
+			}
+
+			private function isFlash():Boolean {
+				return this._flash is String;
+			}
+			
+			private function isImageAndFlash():Boolean {
+				return this.isImage() && this.isFlash();
+			}
+			
+		]]>
+	</mx:Script>
+	<mx:VBox width="100%" height="100%" horizontalAlign="center" verticalAlign="top">
+		<mx:HBox id="hbox0" width="100%" horizontalAlign="center" backgroundColor="cyan" includeInLayout="true" visible="true">
+			<mx:Label id="theTitle" text="{this._title}"/>
+		</mx:HBox>
+		<mx:HBox id="hbox2" width="100%" horizontalAlign="center" backgroundColor="white">
+			<mx:Image id="image" includeInLayout="false" visible="false" width="100%" height="100%" scaleContent="true" maintainAspectRatio="{this.maintainAspectRatio}" mouseOver="image_mouseOverHandler(event)" mouseOut="image_mouseOutHandler(event)"/>
+			<mx:SWFLoader id="swf" includeInLayout="false" visible="false" width="100%" height="100%" scaleContent="true" maintainAspectRatio="{this.maintainAspectRatio}" mouseOver="image_mouseOverHandler(event)" mouseOut="image_mouseOutHandler(event)"/>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Panel>

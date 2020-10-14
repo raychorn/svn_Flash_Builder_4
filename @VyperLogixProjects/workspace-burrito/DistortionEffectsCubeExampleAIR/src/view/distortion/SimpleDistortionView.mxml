@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas 
+    creationComplete="onStart();"
+    xmlns:mx="http://www.adobe.com/2006/mxml">
+    <mx:Script>
+        <![CDATA[
+            import com.adobe.ac.mxeffects.SimpleDistortion;
+            import com.adobe.ac.mxeffects.Distortion;
+            import com.adobe.ac.mxeffects.DistortionConstants;
+
+            private function onStart():void
+            {
+
+            }
+
+
+            private function distort():void
+            {
+                //var distortion:Distortion = new Distortion( dg );
+                //distortion.openDoor( 40, DistortionConstants.LEFT );	
+
+                var distortion:SimpleDistortion = new SimpleDistortion(dg);
+                distortion.openDoor(40, DistortionConstants.LEFT);
+            }
+        ]]>
+    </mx:Script>
+
+    <mx:DataGrid id="dg">
+
+    </mx:DataGrid>
+
+    <mx:Button 
+        x="284" y="120"
+        click="distort();"/>
+</mx:Canvas>

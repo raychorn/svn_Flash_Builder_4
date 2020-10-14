@@ -1,0 +1,47 @@
+<root title="Cisco Systems Inc Amazon Kindle Fire Demo produced by Ray C Horn" title.delay="15" autoplay="title.title1" information="false" stage.autoOrients="true" SystemIdleMode="KEEP_AWAKE">
+  <items>
+	  <item>
+		<navbar autohide="true"/>
+		<title>Title - Demo</title>
+		<name>title</name>
+	    <images>
+	      <image>
+			  <delay>15</delay>
+			  <title>title1</title>
+			  <name>title1</name>
+			  <play>tab1/ChoirinCm-Fm-Gm.mp3</play>
+			  <source>TitlePage.png</source>
+			  <option maintainAspectRatio="false" scaleContent="true"/>
+			  <goto-and-play>animals.item1</goto-and-play>
+	      </image>
+	    </images>
+	  </item>
+	  <item>
+		<navbar autohide="true"/>
+		<title>Animals - Demo</title>
+		<name>animals</name>
+	    <images>
+	      <image>
+			  <delay>5</delay>
+			  <title>item1</title>
+			  <name>item1</name>
+			  <play>tab1/ChoirinCm-Fm-Gm.mp3</play>
+			  <source>tab1/1.png</source>
+			  <option maintainAspectRatio="false" scaleContent="false"/>
+	      </image>
+	      <image>
+			  <delay>5</delay>
+			  <title>item2</title>
+			  <name>item2</name>
+			  <play>tab1/video02.mp4</play>
+	      </image>
+	      <image>
+			  <delay>5</delay>
+			  <title>item4</title>
+			  <name>item4</name>
+			  <play>http://www.youtube.com/v/YPJloB3HBq8</play>
+	      </image>
+	    </images>
+	  </item>
+  </items>
+</root>

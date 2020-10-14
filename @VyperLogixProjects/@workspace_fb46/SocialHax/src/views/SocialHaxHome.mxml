@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		title="SocialHax for FourSquare"
+		creationComplete="view1_creationCompleteHandler(event)" 
+		xmlns:mx="library://ns.adobe.com/flex/mx">
+	<s:states>
+		<s:State name="not_logged_in"/>
+		<s:State name="logged_in"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style source="styles.css"/>
+	<fx:Script>
+		<![CDATA[
+			import com.timwalling.foursquare.FoursquareOperation;
+			import com.timwalling.foursquare.FoursquareService;
+			
+			import controls.Alert.AlertAlternative;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;
+			
+			[Bindable]
+			[Embed(source="help_icon.png")]
+			private var helpIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="close.png")]
+			private var closeIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="checkin_64x64.png")]
+			private var checkinIconClass:Class;
+			
+			[Bindable]
+			[Embed(source="nearbyvenues_64x64.png")]
+			private var venuesIconClass:Class;
+			
+			protected function view1_creationCompleteHandler(event:FlexEvent):void {
+				this.currentState = (this.parentApplication.is_loggedin) ? 'logged_in' : 'not_logged_in';
+			}
+			
+			protected function txt_output_creationCompleteHandler(event:FlexEvent):void {
+				this.parentApplication.determine_view_debugger_for(this,event.currentTarget as TextArea);
+				this.parentApplication.handle_get_gps_location_updates();
+			}
+			
+			private function refresh_user_data():void {
+				try {
+					this.lbl_user_greeting.text = 'Welcome back, ' + this.parentApplication.full_user_name;
+					this.lbl_user_city.text = 'of ' + this.parentApplication.user_city;
+					this.img_user.source = this.parentApplication.user_photo_url;
+				} catch (err:Error) {AlertAlternative.show('WARNING: Cannot retrieve your data from FourSquare.Com !');}
+			}
+			
+			protected function handle_login_action(event:*):void {
+				var _this:SocialHaxHome = this;
+				var btn:Button = event.currentTarget as Button;
+				btn.enabled = false;
+				var svc:FoursquareService = new FoursquareService();
+				var op:FoursquareOperation = svc.getUserDetails();
+				op.addEventListener(Event.COMPLETE,
+					function (event:Event):void {
+						_this.parentApplication.removeBusyCursor(_this);
+						_this.txt_output.text = 'COMPLETE: ' + event.toString() + '\n' + _this.txt_output.text;
+						_this.parentApplication.user_data = event.target.data;
+						_this.parentApplication.user_credentials = {'username':_this.foursquare_username.text,'password':_this.foursquare_password.text};
+						_this.currentState = 'logged_in';
+						_this.callLater(_this.refresh_user_data,[]);
+					}
+				);
+				op.addEventListener(ErrorEvent.ERROR,
+					function (event:ErrorEvent):void {
+						_this.parentApplication.removeBusyCursor(_this);
+						var msg:String = 'ERROR: ' + event.toString();
+						_this.txt_output.text = msg + '\n' + _this.txt_output.text;
+						trace(msg);
+						btn.enabled = true;
+						AlertAlternative.show('ERROR.101: Cannot process your request at this time.  Please try back later.');
+					}
+				);
+				this.parentApplication.setBusyCursor(this);
+				op.execute(this.foursquare_username.text,this.foursquare_password.text);
+				trace(op.url);
+				this.txt_output.text = 'INFO: ' + 'REQUEST SENT !\n' + _this.txt_output.text;
+			}
+			
+			protected function onClick_btn_login(event:MouseEvent):void {
+				this.handle_login_action(event);
+			}
+			
+			private function set_focus(txt:TextInput):void {
+				if (txt is TextInput) {
+					try {
+						this.focusManager.setFocus(txt);
+					} catch (err:Error) {
+						this.callLater(this.set_focus,[txt]);
+					}
+				} else {
+					AlertAlternative.show('WARNING: Cannot set focus...');
+				}
+			}
+			
+			protected function foursquare_username_creationCompleteHandler(event:FlexEvent):void {
+				this.callLater(this.set_focus,[event.currentTarget as TextInput]);
+			}
+			
+			
+			protected function foursquare_username_keyUpHandler(event:KeyboardEvent):void {
+				if ( (event.keyCode == Keyboard.TAB) || (event.keyCode == Keyboard.ENTER) ) {
+					this.callLater(this.set_focus,[this.foursquare_password]);
+				}
+			}
+			
+			
+			protected function foursquare_password_keyUpHandler(event:KeyboardEvent):void {
+				if ( (event.keyCode == Keyboard.TAB) || (event.keyCode == Keyboard.ENTER) ) {
+					if ( (this.foursquare_password.text is String) && (this.foursquare_password.text.length > 0) ) {
+						this.btn_login.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+					}
+				}
+			}
+
+			private function handle_information_request():void {
+				this.navigator.pushView(InfoView,{});
+			}
+			
+			protected function btn_info_clickHandler(event:MouseEvent):void {
+				handle_information_request();
+			}
+
+			protected function btn_venue_search_clickHandler(event:MouseEvent):void {
+				Button(event.currentTarget).enabled = false;
+				this.handle_venue_search();
+			}
+
+			protected function handle_venue_search():void {
+				this.navigator.pushView(VenueSearch,{});
+			}
+			
+			protected function btn_venue_search_creationCompleteHandler(event:FlexEvent):void {
+				this.parentApplication.btn_search = event.currentTarget as Button;
+			}
+
+			protected function info_container_creationCompleteHandler(event:FlexEvent):void {
+			}
+
+			protected function btn_info_touchTapHandler(event:TouchEvent):void {
+				handle_information_request();
+			}
+
+			protected function btn_login_touchTapHandler(event:TouchEvent):void {
+				this.handle_login_action(event);
+			}
+
+			protected function btn_venue_search_touchTapHandler(event:TouchEvent):void {
+				Button(event.currentTarget).enabled = false;
+				this.handle_venue_search();
+			}
+
+
+			protected function btn_info_creationCompleteHandler(event:FlexEvent):void {
+				var btn:Button = event.currentTarget as Button;
+				btn.parent.x = this.stage.fullScreenWidth-btn.width-10;
+			}
+
+			private function handle_checkin_event():void {
+				AlertAlternative.show('INFO: Not Yet Implemented !');
+			}
+			
+			protected function btn_checkin_clickHandler(event:MouseEvent):void {
+				this.handle_checkin_event();
+			}
+			
+			protected function btn_checkin_touchTapHandler(event:TouchEvent):void {
+				this.handle_checkin_event();
+			}
+
+			private function handle_venues_event():void {
+				AlertAlternative.show('INFO: Not Yet Implemented !');
+			}
+			
+			protected function btn_venues_clickHandler(event:MouseEvent):void {
+				this.handle_venues_event();
+			}
+			
+			protected function btn_venues_touchTapHandler(event:TouchEvent):void {
+				this.handle_venues_event();
+			}
+
+			protected function lbl_checkin_touchTapHandler(event:TouchEvent):void {
+				this.handle_checkin_event();
+			}
+
+
+			protected function lbl_venues_touchTapHandler(event:TouchEvent):void {
+				this.handle_venues_event();
+			}
+
+
+			protected function lbl_checkin_clickHandler(event:MouseEvent):void {
+				this.handle_checkin_event();
+			}
+
+
+			protected function lbl_venues_clickHandler(event:MouseEvent):void {
+				this.handle_venues_event();
+			}
+
+		]]>
+	</fx:Script>
+	<s:Group id="logo_container" x="65" y="0" width="100%" height="20%">
+		<s:VGroup width="100%" height="100%">
+			<s:HGroup width="100%">
+				<mx:SWFLoader id="loader" width="35%" scaleContent="true" maintainAspectRatio="true" source="@Embed('worldmap-v3-flash8a.swf')"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Group>
+	<s:Group x="300" y="0">
+		<s:Button id="btn_info" width="50" height="50" icon="{this.helpIconClass}" enabled.not_logged_in="true" enabled.logged_in="true" click="btn_info_clickHandler(event)" touchTap="btn_info_touchTapHandler(event)" creationComplete="btn_info_creationCompleteHandler(event)"/>
+	</s:Group>
+	<s:Group id="logo_image" x="{this.logo_container.x-60}" y="{this.logo_container.height-250}">
+		<s:Image source="@Embed('VLC-header-world-05-11-2010b.png')" width="50%" scaleMode="stretch"/>
+	</s:Group>
+	<s:BorderContainer id="container_logos" x="0" y="{this.logo_container.height-130}" width="75%" height="100%" backgroundColor="#cfcfcf" borderColor="#ffffff">
+		<s:VGroup width="100%" height="100%" paddingTop="10" visible="true">
+			<s:HGroup width="100%" horizontalAlign="left" paddingLeft="10">
+				<s:VGroup>
+					<s:Button id="btn_venues" width="64" height="64" icon="{this.venuesIconClass}" click="btn_venues_clickHandler(event)" touchTap="btn_venues_touchTapHandler(event)"/>
+					<s:Label id="lbl_venues" text="Choose Any Venue, Anytime" styleName="SmallLabels" click="lbl_venues_clickHandler(event)" touchTap="lbl_venues_touchTapHandler(event)"/>
+				</s:VGroup>
+			</s:HGroup>
+			<s:HGroup width="100%" horizontalAlign="left" paddingLeft="10">
+				<s:VGroup>
+					<s:Button id="btn_checkin" width="64" height="64" icon="{this.checkinIconClass}" click="btn_checkin_clickHandler(event)" touchTap="btn_checkin_touchTapHandler(event)"/>
+					<s:Label id="lbl_checkin" text="Perform Ad-hoc Checkin (any venue, anytime)" styleName="SmallLabels" click="lbl_checkin_clickHandler(event)" touchTap="lbl_checkin_touchTapHandler(event)"/>
+				</s:VGroup>
+			</s:HGroup>
+			<s:HGroup width="100%" height="20%">
+				<s:TextArea id="txt_output" styleName="Debugger" width="100%" height="100" editable="false" creationComplete="txt_output_creationCompleteHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:BorderContainer>
+	<s:BorderContainer id="container" x="0" y="{this.logo_container.height-140}" width="85%" backgroundColor="#cfcfcf" borderColor="#ffffff" visible="false" includeInLayout="false">
+		<s:VGroup width="100%" height="100%" paddingLeft="5" paddingTop="20" paddingRight="5" visible.not_logged_in="true" includeInLayout.not_logged_in="true" visible.logged_in="false" includeInLayout.logged_in="false">
+			<s:HGroup width="100%">
+				<s:Label text="FourSquare Login:" styleName="Labels"/>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:Label text="UserName:" styleName="Labels"/>
+				<mx:Spacer width="10"/>
+				<s:TextInput id="foursquare_username" width="50%" editable="true" keyUp="foursquare_username_keyUpHandler(event)" creationComplete="foursquare_username_creationCompleteHandler(event)"/>
+				<mx:Spacer width="5"/>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:Label text="Password:" styleName="Labels"/>
+				<mx:Spacer width="10"/>
+				<s:TextInput id="foursquare_password" displayAsPassword="true" width="50%" editable="true" keyUp="foursquare_password_keyUpHandler(event)"/>
+				<mx:Spacer width="5"/>
+			</s:HGroup>
+			<s:HGroup width="100%" paddingBottom="5">
+				<mx:Spacer width="10%"/>
+				<s:Button id="btn_login" label="Login" height="40" click="onClick_btn_login(event)" touchTap="btn_login_touchTapHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+		<s:VGroup width="100%" height="100%" paddingLeft="5" paddingTop="20" paddingRight="5" visible.not_logged_in="false" includeInLayout.not_logged_in="false" visible.logged_in="true" includeInLayout.logged_in="true">
+			<s:HGroup width="100%">
+				<s:VGroup width="100%" height="100%">
+					<s:HGroup width="100%">
+						<s:Label id="lbl_user_greeting" text="Welcome back, {this.parentApplication.full_user_name}" styleName="Labels"/>
+					</s:HGroup>
+					<s:HGroup width="100%">
+						<s:Label id="lbl_user_city" text="of {this.parentApplication.user_city}" styleName="Labels"/>
+					</s:HGroup>
+				</s:VGroup>
+				<s:HGroup width="100%" paddingRight="80">
+					<s:Image id="img_user" width="100%"/>
+				</s:HGroup>
+			</s:HGroup>
+			<s:HGroup width="100%">
+				<s:Button id="btn_venue_search" label="Venue Search" height="35" click="btn_venue_search_clickHandler(event)" touchTap="btn_venue_search_touchTapHandler(event)" creationComplete="btn_venue_search_creationCompleteHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:BorderContainer>
+</s:View>

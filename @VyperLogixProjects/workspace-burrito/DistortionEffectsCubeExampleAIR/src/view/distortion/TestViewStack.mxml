@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:ViewStack xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:mxeffects="com.adobe.ac.mxeffects.*"
+    xmlns:sides="view.sides.*" 
+	xmlns:s="library://ns.adobe.com/flex/spark" 
+	creationComplete="viewstack1_creationCompleteHandler(event)">
+	<mx:Script>
+		<![CDATA[
+			import com.adobe.ac.mxeffects.*;
+			
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var flipIn:Flip;
+			
+			[Bindable]
+			private var flipBack:Flip;
+			
+			protected function viewstack1_creationCompleteHandler(event:FlexEvent):void {
+				this.flipIn = new Flip();
+				this.flipIn.direction = 'RIGHT';
+				this.flipIn.target = this.login;
+				this.flipIn.siblings = [this.registration];
+				this.flipIn.duration = 1000;
+				
+				this.flipBack = new Flip();
+				this.flipBack.direction = 'LEFT';
+				this.flipBack.target = this.registration;
+				this.flipBack.siblings = [this.login];
+				this.flipBack.duration = 1000;
+			}
+			
+		]]>
+	</mx:Script>
+	<!--
+	<dash:ToDoFront id="front"
+	width=" { width } "
+	height=" { height } "
+	change="selectedChild=back"
+	hideEffect="{ flipToBack }"/>
+	
+	<dash:ToDoBack id="back"
+	width=" { width } "
+	height=" { height } "
+	change="selectedChild=front"
+	hideEffect="{ flipToFront }"/>
+	-->
+	<s:NavigatorContent label="bar">
+		<sides:Login id="login"
+					 hideEffect="{ flipIn }"
+					 change="selectedChild = registration;"
+					 title="Login"/>
+		<sides:Registration id="registration"
+							hideEffect="{ flipBack }"
+							change="selectedChild = login;"
+							title="Registration"/>
+	</s:NavigatorContent>
+</mx:ViewStack>

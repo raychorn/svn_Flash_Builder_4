@@ -1,0 +1,563 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Panel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 initialize="panel1_initializeHandler(event)" 
+		 deactivate="panel1_deactivateHandler(event)"
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" xmlns:controls="com.HAL.controls.*" xmlns:layout="org.osmf.layout.*">
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.HAL.controls.OnlineConnectionStatusMonitor;
+			import com.HAL.sockets.JSONSocketConnector;
+			import com.HAL.sockets.XMLSocketConnector;
+			import com.HAL.sockets.events.CloseHandlerEvent;
+			import com.HAL.sockets.events.ConnectHandlerEvent;
+			import com.HAL.sockets.events.ConnectionClosedEvent;
+			import com.HAL.sockets.events.ConnectionEstablishedEvent;
+			import com.HAL.sockets.events.ConnectionRetryEvent;
+			import com.HAL.sockets.events.ConnectionTimeoutEvent;
+			import com.HAL.sockets.events.DataHandlerEvent;
+			import com.HAL.sockets.events.DataReceivedEvent;
+			import com.HAL.sockets.events.ErrorHandlerEvent;
+			import com.HAL.sockets.events.IOErrorHandledEvent;
+			import com.HAL.sockets.events.IOErrorHandlerEvent;
+			import com.HAL.sockets.events.ProgressHandlerEvent;
+			import com.HAL.sockets.events.SecurityErrorHandlerEvent;
+			import com.HAL.utils.StringUtils;
+			import com.adobe.serialization.json.JSON;
+			
+			import flash.events.TimerEvent;
+			import flash.utils.Timer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.collections.Sort;
+			import spark.collections.SortField;
+			
+			import controls.Alert.AlertPopUp;
+			
+			[Event(name="connectionTimeout", type="com.HAL.sockets.events.ConnectionTimeoutEvent")]
+			[Event(name="dataReceived", type="com.HAL.sockets.events.DataReceivedEvent")]
+			[Event(name="connectionEstablished", type="com.HAL.sockets.events.ConnectionEstablishedEvent")]
+			[Event(name="ioErrorHandled", type="com.HAL.sockets.events.IOErrorHandledEvent")]
+			[Event(name="connectionClosed", type="com.HAL.sockets.events.ConnectionClosedEvent")]
+			[Event(name="connectionRetry", type="com.HAL.sockets.events.ConnectionRetryEvent")]
+			
+			public const DEFAULT_IP_ADDRESS:String = '127.0.0.1';
+			
+			private var _this:SocketConnectionManager2;
+			
+			private var socketsXMLConnection:XMLSocketConnector;
+			private var socketsJSONConnection:JSONSocketConnector;
+			private var _port:uint = 55555;
+			private var _ipAddress:String = DEFAULT_IP_ADDRESS;
+			
+			private var _isXML:Boolean = false;
+			private var _isJSON:Boolean = true;
+			
+			private var _timerPeriodMs:int = 250;
+			private var _timer:Timer;
+			private var _missedServerCount:int = 0;
+			private var _terminateConnectionCommand:uint = 999;
+			private var _terminateConnection:String;
+			
+			private var _onlineStatusCanvas:OnlineConnectionStatusMonitor;
+			
+			private var __keep_alive_timer__:Timer = new Timer(10000);
+
+			private var __recovery_timer__:Timer = new Timer(1000);
+			
+			[Bindable]
+			private var __responses__:ArrayCollection = new ArrayCollection();
+			
+			public static function arrayCollectionSort(ar:ArrayCollection, fieldName:String, isNumeric:Boolean, isDescending:Boolean = true):void {
+				var dataSortField:SortField = new SortField();
+				dataSortField.name = fieldName;
+				dataSortField.numeric = isNumeric;
+				dataSortField.descending = isDescending;
+				var numericDataSort:Sort = new Sort();
+				numericDataSort.fields = [dataSortField];
+				ar.sort = numericDataSort;
+				ar.refresh();
+			}
+			
+			private function set record_response(message:String):void {
+				var ms:Number = (new Date()).time;
+				this.__responses__.addItem({'__row__':ms,'__text__':message});
+				arrayCollectionSort(this.__responses__, '__row__', true, true);
+			}
+			
+			protected function panel1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				
+				trace(this.className+'.panel1_initializeHandler().1 Auto connect...');
+				this.__recovery_timer__.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						_this.__recovery_timer__.stop();
+						trace(this.className+'.panel1_initializeHandler().2 Auto connecting...');
+						_this.Initialize();
+					}
+				);
+				this.__recovery_timer__.start();
+			}
+			
+			public function set onlineStatusCanvas(statusCanvas:OnlineConnectionStatusMonitor):void {
+				this._onlineStatusCanvas = statusCanvas;
+			}
+			
+			public function get onlineStatusCanvas():OnlineConnectionStatusMonitor {
+				return this._onlineStatusCanvas;
+			}
+			
+			public function set terminateConnectionCommand(command:uint):void {
+				this._terminateConnectionCommand = command;
+				this._terminateConnection = '<command value="' + command.toString() + '"></command>';
+			}
+			
+			public function get terminateConnectionCommand():uint {
+				return this._terminateConnectionCommand;
+			}
+			
+			public function set port(port:uint):void {
+				if (this._port != port) {
+					this._port = port;
+				}
+			}
+			
+			public function get port():uint {
+				return this._port;
+			}
+			
+			public function set ipAddress(ipAddress:String):void {
+				if (this._ipAddress != ipAddress) {
+					this._ipAddress = ipAddress;
+				}
+			}
+			
+			public function get ipAddress():String {
+				return this._ipAddress;
+			}
+			
+			public function get isConnected():Boolean {
+				return this.connection_monitor.isConnected;  
+			}
+			
+			public function set timerPeriodMs(delay:uint):void {
+				this._timerPeriodMs = delay;
+			}
+			
+			public function get timerPeriodMs():uint {
+				return this._timerPeriodMs;
+			}
+			
+			public function get missedServerCount():int {
+				return this._missedServerCount;
+			}
+			
+			private function makeIntoCommand(value:String):String {
+				var response:String = '';
+				if (this._isXML) {
+					response = '<command value="' + value + '"></command>';
+				} else if (this._isJSON) {
+					var data:Object = {'command':value};
+					response = com.adobe.serialization.json.JSON.encode(data);
+				}
+				return response;
+			}
+			
+			public function set terminateConnection(value:String):void {
+				this._terminateConnection = this.makeIntoCommand(value);
+			}
+			
+			public function get terminateConnection():String {
+				return this._terminateConnection;
+			}
+			
+			private function removeTimer():void {
+				if (this._timer) {
+					this._timer.stop();
+					this._timer.removeEventListener(TimerEvent.TIMER, onTimerEvent);
+					this._timer = null;
+					this.recover_connection();
+				}
+			}
+			
+			private function onTimerEvent(event:TimerEvent):void {
+				if (this.connection_monitor.isConnected == false) {
+					this.dispatchEvent(new ConnectionRetryEvent(ConnectionRetryEvent.TYPE_CONNECTION_RETRY,event))
+					this.makeConnection();
+					this._missedServerCount += 1;
+					if (this._missedServerCount > (5/(this._timerPeriodMs/1000))) {
+						this.removeTimer();
+						this.parentApplication.enabled = false;
+						this.dispatchEvent(new ConnectionTimeoutEvent(ConnectionTimeoutEvent.TYPE_CONNECTION_TIMEOUT,event))
+					}
+				} else {
+					this.removeTimer();
+					//this.establish_keep_alives();
+				}
+			}
+			
+			private function establish_keep_alives():void {
+				if (!this.__keep_alive_timer__.running) {
+					this.__keep_alive_timer__.addEventListener(TimerEvent.TIMER, 
+						function (event:TimerEvent):void {
+									trace(_this.className+'.establish_keep_alives().1 --> Sending "keep-alive"...');
+									_this.sendCommandToSocket('keep-alive');
+								}
+							);
+					this.__keep_alive_timer__.start();
+				}
+			}
+			
+			public function Initialize():void {
+				this.connection_monitor.isConnected = false;
+				
+				this._timer = new Timer(this._timerPeriodMs);
+				this._timer.addEventListener(TimerEvent.TIMER, onTimerEvent);
+				this._timer.start();
+				
+				this.btn_1.enabled = false;
+				this.terminateConnectionCommand = this._terminateConnectionCommand;
+			}
+			
+			private function reportThisEvent(event:*, reason:String):void {
+				var s:String;
+				try {
+					s = event.evnt.toString();
+				} catch (err:Error) {
+					s = event.toString();
+				}
+				if (event is ConnectHandlerEvent) {
+					var cEvent:ConnectHandlerEvent = ConnectHandlerEvent(event);
+					s += ' (' + cEvent.type + ')';
+				} else {
+					if (event is DataHandlerEvent) {
+						var dEvent:DataHandlerEvent = DataHandlerEvent(event);
+						var data:*;
+						try {
+							data = dEvent.evnt.data;
+						} catch (err:Error) {
+							data = dEvent.evnt;
+						}
+						s += ' (' + StringUtils.reportCharCodes(data,StringUtils.dummyReportFunc,translateChar) + ')';
+					}
+				}
+				this.record_response = reason + ' :: [' + s + ']';
+			}
+			
+			private function recover_connection():void {
+				var timer:Timer = new Timer(10000);
+				timer.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						if ( (!_this.onlineStatusCanvas.isOnline) && (!_this.onlineStatusCanvas.isConnected) ) {
+							trace('Connection has been lost... trying to reconnect.');
+							timer.stop();
+							_this.Initialize();
+						}
+					}
+				);
+				trace('Starting connection watcher... will try to recover when connection is lost.');
+				timer.start();
+			}
+			
+			private function onCloseHandlerEvent(event:CloseHandlerEvent):void {
+				this.reportThisEvent(event,'CloseHandlerEvent');
+				this.onlineStatusCanvas.isOnline = this.onlineStatusCanvas.isConnected = false;
+				this.dispatchEvent(new ConnectionClosedEvent(ConnectionClosedEvent.TYPE_CONNECTION_CLOSED, event));
+			}
+			
+			private function onConnectHandlerEvent(event:ConnectHandlerEvent):void {
+				this.reportThisEvent(event,'ConnectHandlerEvent');
+				this.onlineStatusCanvas.isOnline = this.onlineStatusCanvas.isConnected = true;
+				this.removeTimer();
+				this.btn_1.enabled = true;
+				this.dispatchEvent(new ConnectionEstablishedEvent(ConnectionEstablishedEvent.TYPE_CONNECTION_ESTABLISHED, event));
+			}
+			
+			private function objectAsString(obj:Object):String {
+				var sResult:String = '';
+				for (var name:String in obj) {
+					sResult += name + '=' + obj[name];
+				}
+				return sResult;
+			}
+			
+			private function getObjectsFromNode(node:XMLNode,obj:Object):void {
+				if (node) {
+					obj['name'] = node.localName;
+					obj['attributes'] = '(' + this.objectAsString(node.attributes) + ')';
+					obj['value'] = node.nodeValue;
+					obj['type'] = node.nodeType;
+					if (node.hasChildNodes()) {
+						var children:Array = [];
+						var aChild:Object;
+						var aNode:XMLNode;
+						var hasValidChildren:Boolean = true;
+						if ( (node.childNodes.length == 1) && (node.nodeValue == null) ) {
+							var pNode:XMLNode = XMLNode(node.childNodes[0]);
+							if ( (pNode.childNodes.length == 0) && (pNode.localName == null) ) {
+								obj['value'] = pNode.nodeValue;
+								obj['attributes'] += '(' + this.objectAsString(pNode.attributes) + ')';
+								obj['attributes'] = String(obj['attributes']).replace(')(','');
+								hasValidChildren = false;
+							}
+						}
+						if (hasValidChildren) {
+							for (var n:int = 0; n < node.childNodes.length; n++) {
+								aNode = node.childNodes[n];
+								aChild = {};
+								this.getObjectsFromNode(aNode,aChild);
+								children.push(aChild);
+							}
+						}
+						obj['children'] = children;
+					}
+				}
+			}
+			
+			private function onDataHandlerEvent(event:DataHandlerEvent):void {
+				var data:*;
+				var sData:String = '';
+				try {
+					sData = data = event.evnt.data;
+				} catch (err:Error) {
+					sData = data = event.evnt;
+				}
+				trace(this.className+'.onDataHandlerEvent().1 --> sData='+sData);
+				try {
+					var doc:XMLDocument = new XMLDocument();
+					doc.parseXML(sData);
+					data = {}; // required for the API being used...
+					this.getObjectsFromNode(doc.firstChild,data);
+				} catch (err:Error) {
+					try {
+						data = com.adobe.serialization.json.JSON.decode(sData);
+					} catch (err:Error) {}
+				}
+				if (data['name'] == null)  {
+					data = com.adobe.serialization.json.JSON.decode(sData);
+				}
+				this.onlineStatusCanvas.isOnline = this.onlineStatusCanvas.isConnected = true;
+				try { this.onlineStatusCanvas.signalResponseFromServer(); } catch (err:Error) { }
+				this.reportThisEvent(event,'DataHandlerEvent');
+				this.dispatchEvent(new DataReceivedEvent(DataReceivedEvent.TYPE_DATA_RECEIVED,data))
+			}
+			
+			private function onIOErrorHandlerEvent(event:IOErrorHandlerEvent):void {
+				this.reportThisEvent(event,'IOErrorHandlerEvent');
+				this.btn_1.enabled = false;
+				this.onlineStatusCanvas.isOnline = this.onlineStatusCanvas.isConnected = false;
+				this.dispatchEvent(new IOErrorHandledEvent(IOErrorHandledEvent.TYPE_IOERROR_HANDLED, event));
+			}
+			
+			private function onProgressHandlerEvent(event:ProgressHandlerEvent):void {
+				this.reportThisEvent(event,'ProgressHandlerEvent');
+				this.onlineStatusCanvas.isOnline = this.onlineStatusCanvas.isConnected = true;
+			}
+			
+			private function onSecurityErrorHandlerEvent(event:SecurityErrorHandlerEvent):void {
+				this.reportThisEvent(event,'SecurityErrorHandlerEvent');
+				this.onlineStatusCanvas.isOnline = this.onlineStatusCanvas.isConnected = true;
+			}
+			
+			private function onErrorHandlerEvent(event:ErrorHandlerEvent):void {
+				this.reportThisEvent(event,'ErrorHandlerEvent');
+				this.onlineStatusCanvas.isOnline = this.onlineStatusCanvas.isConnected = false;
+			}
+			
+			private function makeConnection():void {
+				trace(this.className+'.makeConnection().1 --> this._isJSON='+this._isJSON+', this._isXML='+this._isXML);
+				if (this._isJSON) {
+					this.socketsJSONConnection = new JSONSocketConnector('127.0.0.1', this._port);
+					this.socketsJSONConnection.useEncryptionCustom = true;
+					this.socketsJSONConnection.addEventListener(CloseHandlerEvent.TYPE_CLOSE_HANDLER, onCloseHandlerEvent);
+					this.socketsJSONConnection.addEventListener(ConnectHandlerEvent.TYPE_CONNECT_HANDLER, onConnectHandlerEvent);
+					this.socketsJSONConnection.addEventListener(DataHandlerEvent.TYPE_DATA_HANDLER, onDataHandlerEvent);
+					this.socketsJSONConnection.addEventListener(IOErrorHandlerEvent.TYPE_IOERROR_HANDLER, onIOErrorHandlerEvent);
+					this.socketsJSONConnection.addEventListener(ProgressHandlerEvent.TYPE_PROGRESS_HANDLER, onProgressHandlerEvent);
+					this.socketsJSONConnection.addEventListener(SecurityErrorHandlerEvent.TYPE_SECURITY_ERROR_HANDLER, onSecurityErrorHandlerEvent);
+					this.socketsJSONConnection.addEventListener(ErrorHandlerEvent.TYPE_ERROR_HANDLER, onErrorHandlerEvent);
+				} else if (this._isXML) {
+					this.socketsXMLConnection = new XMLSocketConnector('127.0.0.1', this._port);
+					this.socketsXMLConnection.useEncryptionCustom = true;
+					this.socketsXMLConnection.addEventListener(CloseHandlerEvent.TYPE_CLOSE_HANDLER, onCloseHandlerEvent);
+					this.socketsXMLConnection.addEventListener(ConnectHandlerEvent.TYPE_CONNECT_HANDLER, onConnectHandlerEvent);
+					this.socketsXMLConnection.addEventListener(DataHandlerEvent.TYPE_DATA_HANDLER, onDataHandlerEvent);
+					this.socketsXMLConnection.addEventListener(IOErrorHandlerEvent.TYPE_IOERROR_HANDLER, onIOErrorHandlerEvent);
+					this.socketsXMLConnection.addEventListener(ProgressHandlerEvent.TYPE_PROGRESS_HANDLER, onProgressHandlerEvent);
+					this.socketsXMLConnection.addEventListener(SecurityErrorHandlerEvent.TYPE_SECURITY_ERROR_HANDLER, onSecurityErrorHandlerEvent);
+					this.socketsXMLConnection.addEventListener(ErrorHandlerEvent.TYPE_ERROR_HANDLER, onErrorHandlerEvent);
+				} else {
+					AlertPopUp.errorNoOkay('Programming Error 101 - Must choose either XML or JSON but not neither...\n\nCannot proceed at this time.','ERROR');
+				}
+			}
+			
+			public function sendRawDataToSocket(data:*):void {
+				this.onlineStatusCanvas.beginCommunication();
+				if (this._isJSON) {
+					this.socketsJSONConnection.send(data);
+				} else if (this._isXML) {
+					this.socketsXMLConnection.send(data);
+				} else {
+					AlertPopUp.errorNoOkay('Programming Error 201 - Must choose either XML or JSON but not neither...\n\nCannot proceed at this time.','ERROR');
+				}
+				this.record_response = '(sendRawDataToSocket) :: [' + data.toString() + ']';
+				trace(DebuggerUtils.getFunctionName(new Error())+' --> data='+DebuggerUtils.explainThis(data));
+			}
+			
+			private function translateChar(ch:String):String {
+				var s:String;
+				if (this._isJSON) {
+					s = ch;
+				} else if (this._isXML) {
+					s = ch.replace('<','&lt;').replace('>','&gt;');
+				}
+				return s;
+			}
+			
+			public function sendCommandToSocket(data:*):void {
+				var s:String;
+				this.onlineStatusCanvas.beginCommunication();
+				trace(this.className+'.sendCommandToSocket().1 --> this._isJSON='+this._isJSON+', this._isXML='+this._isXML);
+				if (this._isJSON) {
+					var d:Object = {'command':data};
+					s = com.adobe.serialization.json.JSON.encode(d);
+					this.socketsJSONConnection.send(s);
+				} else if (this._isXML) {
+					s = '<command value="' + data + '"></command>'
+					this.socketsXMLConnection.send(s);
+				} else {
+					AlertPopUp.errorNoOkay('Programming Error 301 - Must choose either XML or JSON but not neither...\n\nCannot proceed at this time.','ERROR');
+				}
+				this.record_response = '(sendCommandToSocket) :: s.length=(' + s.length + '), [' + StringUtils.reportCharCodes(s,StringUtils.dummyReportFunc,translateChar).replace('<br>','\n') + ']';
+			}
+			
+			public function sendCommandToSocketWithArgs(data:*,...args):void {
+				var n:uint = args.length;
+				var s:String;
+				var i:int;
+				this.onlineStatusCanvas.beginCommunication();
+				if (this._isJSON) {
+					var data:Object = {};
+					if (n > 0) {
+						for (i=0; i < n; i++) {
+							data['arg_'+i] = args[i];
+						}
+					}
+					s = com.adobe.serialization.json.JSON.encode(data);
+					this.socketsJSONConnection.send(s);
+				} else if (this._isXML) {
+					s = '<command value="' + data + '">'
+					if (n > 0) {
+						for (i=0; i < n; i++) {
+							s += '<arg value="' + args[i] + '"></arg>';
+						}
+					}
+					s += '</command>';
+					this.socketsXMLConnection.send(s);
+				} else {
+					AlertPopUp.errorNoOkay('Programming Error 401 - Must choose either XML or JSON but not neither...\n\nCannot proceed at this time.','ERROR');
+				}
+				this.record_response = '(sendCommandToSocketWithArgs) :: [' + s + ']';
+			}
+			
+			private function onClick_btn1():void {
+				this.onlineStatusCanvas.beginCommunication();
+				this.sendCommandToSocket('some data');
+			}
+			
+			public function onClosing():void {
+				this.sendRawDataToSocket(this.terminateConnection);
+			}
+			
+			protected function connection_monitor_creationCompleteHandler(event:FlexEvent):void {
+				this.onlineStatusCanvas = this.connection_monitor;
+			}
+			
+			protected function panel1_deactivateHandler(event:Event):void {
+				this.__recovery_timer__.stop();
+				this.__keep_alive_timer__.stop();
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%" verticalAlign="top" horizontalAlign="left">
+		<s:HGroup width="100%" horizontalAlign="left">
+			<s:HGroup width="95%" horizontalAlign="left" paddingTop="5" paddingBottom="5" visible="{DebuggerUtils.isDebugging}" includeInLayout="{DebuggerUtils.isDebugging}">
+				<s:HGroup paddingLeft="5" paddingRight="5">
+					<s:Button label="Click Me !" toolTip="Send some data..." id="btn_1" click="onClick_btn1()"/>
+				</s:HGroup>
+			</s:HGroup>
+			<s:HGroup width="15%" horizontalAlign="right" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5">
+				<controls:OnlineConnectionStatusMonitor id="connection_monitor" width="50" height="50" creationComplete="connection_monitor_creationCompleteHandler(event)"/>
+			</s:HGroup>
+		</s:HGroup>
+		<s:VGroup id="response_items_container" width="100%" height="100%">
+			<s:List id="response_items" width="100%" height="100%" labelField="info" dataProvider="{this.__responses__}">
+				<s:layout>
+					<s:VerticalLayout/>
+				</s:layout>
+				<s:itemRenderer>
+					<fx:Component>
+						<s:ItemRenderer>
+							<fx:Script>
+								<![CDATA[
+									import mx.controls.Alert;
+									import controls.Alert.AlertPopUp;
+									import mx.events.CloseEvent;
+									import mx.managers.PopUpManager;
+									import mx.core.FlexGlobals;
+									
+									private function get top_level_app_width():Number {
+										return FlexGlobals.topLevelApplication.width;
+									}
+									
+									protected function hgroup1_clickHandler(event:MouseEvent):void {
+										var popup:Alert = AlertPopUp.infoNoOkay(data.__text__,data.__row__);
+										popup.width = Capabilities.screenResolutionX - 200;
+										popup.height = 400;
+										popup.addEventListener(CloseEvent.CLOSE, 
+											function (event:CloseEvent):void {
+												PopUpManager.removePopUp(popup);
+											}
+										);
+										PopUpManager.centerPopUp(popup);
+									}
+									
+								]]>
+							</fx:Script>
+							<s:states>
+								<mx:State name="normal" />
+								<mx:State name="hovered" />
+								<mx:State name="selected" />
+							</s:states>
+							<s:Rect left="0" right="0" top="0" bottom="0">
+								<s:stroke>
+									<mx:SolidColorStroke color="0xCCCCCC" joints="round" weight="2"/>
+								</s:stroke>
+								<s:fill>
+									<mx:SolidColor color="0x999999" alpha="0" alpha.hovered="0.2"
+												   alpha.selected="0.6" />
+								</s:fill>
+							</s:Rect>
+							<s:HGroup width="{top_level_app_width}" height="80" click="hgroup1_clickHandler(event)">
+								<s:HGroup paddingLeft="5" paddingRight="5" paddingTop="15" paddingBottom="15">
+									<s:Label id="__row__" text="{data.__row__}"/>
+								</s:HGroup>
+								<s:TextArea id="__text__" width="100%" height="100%" editable="false" text="{data.__text__}"/>
+							</s:HGroup>
+						</s:ItemRenderer>
+					</fx:Component>
+				</s:itemRenderer>
+			</s:List>
+		</s:VGroup>
+	</s:VGroup>
+</s:Panel>

@@ -1,0 +1,102 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace esri "http://www.esri.com/2008/ags";
+@namespace components "components.*";
+
+
+.leftNav s|ActionBar 
+{
+	skinClass: ClassReference("skins.LeftActionBarSkin");	
+}
+
+.rightNav s|ActionBar 
+{
+	skinClass: ClassReference("skins.RightActionBarSkin");	
+}
+
+s|List
+{
+	contentBackgroundColor: #B6C2BA;
+	selectionColor: #B6C2BA;
+	downColor: #B6C2BA;
+}
+
+.footer
+{
+	color: #FFFFFF;
+	skinClass: ClassReference("skins.FooterSkin");
+}
+
+.header
+{
+	color: #FFFFFF;
+	skinClass: ClassReference("skins.HeaderSkin");
+}
+
+.title
+{
+	fontSize: 22;
+}
+
+@media (os-platform: "ios") {
+	s|ActionBar {
+		defaultButtonAppearance: "beveled";
+		titleAlign: "center";
+	}
+}
+
+s|View
+{
+	backgroundColor: #F0F0F0;
+}
+
+components|ExpenseInfo
+{
+	skinClass:ClassReference("skins.ExpenseInfoSkin");
+}
+
+esri|InfoSymbolWindow
+{
+	skinClass: ClassReference("com.esri.ags.skins.InfoSymbolWindowSkin");
+	paddingLeft: 3;
+	paddingRight: 3;
+	paddingTop: 3;
+	paddingBottom: 3;
+	backgroundColor: #FFFFFF;
+	backgroundAlpha: 1.0;
+	borderThickness: 1;
+	borderColor: #999999;
+	borderAlpha: 1.0;
+	upperLeftRadius: 0;
+	upperRightRadius: 10;
+	lowerLeftRadius: 10;
+	lowerRightRadius: 0;
+	infoPlacementMode: auto;
+	infoPlacement: top;
+	infoOffsetX: 10;
+	infoOffsetY: 20;
+	infoOffsetW: 5;
+	shadowDistance: 0.0;
+	shadowAlpha: 1.0;
+	shadowAngle: 45.0;
+	shadowColor: #000000;
+}
+
+.subtle {
+	color: #B5B5B5;
+}
+
+.expenseDate {
+	fontWeight: normal;
+	color: #595959;
+}
+
+.expenseAmount {
+	fontWeight: normal;
+	color: #003860;
+}
+
+components|CategoryPopUpList 
+{
+	skinClass: ClassReference("skins.CategoryPopUpSkin");	
+}

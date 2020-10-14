@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vzwPopUpMenuButton 
+	xmlns="vzw.adobe.controls.*" 
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	popUpStyleName="SmartPopupButton"
+	>
+	<mx:Script>
+		<![CDATA[
+			import mx.events.DropdownEvent;
+			import mx.events.FlexEvent;
+			import vzw.adobe.controls.events.MenuShowEvent;
+			import mx.events.MenuEvent;
+			import mx.controls.Menu;
+			import mx.managers.PopUpManager;
+			import mx.core.IUIComponent;
+
+			public var target:*;
+			
+			private function onCreationComplete(event:FlexEvent):void {
+				var _this:* = this;
+				trace(this.className+'.onCreationComplete().1 !');
+				_this.addEventListener(MenuEvent.ITEM_CLICK, function (event:MenuEvent):void {
+					trace(_this.className+'.MenuEvent.ITEM_CLICK.1 event.currentTarget='+event.currentTarget);
+					PopUpManager.bringToFront(event.currentTarget as Menu)
+				});
+				_this.addEventListener(DropdownEvent.OPEN, function (event:DropdownEvent):void {
+					trace(_this.className+'.DropdownEvent.OPEN.1 event.currentTarget='+event.currentTarget);
+				});
+				_this.addEventListener(DropdownEvent.CLOSE, function (event:DropdownEvent):void {
+					trace(_this.className+'.DropdownEvent.CLOSE.1 event.currentTarget='+event.currentTarget);
+				});
+			}
+		]]>
+	</mx:Script>
+</vzwPopUpMenuButton>

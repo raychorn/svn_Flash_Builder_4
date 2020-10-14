@@ -1,0 +1,379 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+@font-face {
+	src: url("/assets/fonts/NeoSansIntel.ttf");
+	fontFamily: NeoSansIntel;
+	embed-as-cff: false;
+}
+
+@font-face {
+	src: url("/assets/fonts/NeoSansIntel-Medium.ttf");
+	fontFamily: NeoSansIntelMedium;
+}
+
+@font-face {
+	src: url("/assets/fonts/GARA.TTF");
+	fontFamily: Garamond;
+}
+
+@font-face {
+	src: url("/assets/fonts/NeoSansIntel-Light.ttf");
+	fontFamily: NeoSansIntelLight;
+}
+
+@font-face {
+	src: url("/assets/fonts/_LDS_sui generis free.ttf");
+	fontFamily: LDSSuiGenerisFree;
+}
+
+s|Application {
+	fontFamily: LDSSuiGenerisFree;
+}
+
+s|Label {
+	fontFamily: LDSSuiGenerisFree;
+	color: #000000;
+}
+
+s|TextInput {
+	fontFamily: LDSSuiGenerisFree;
+}
+
+mx|ToolTip {
+	backgroundAlpha: 1.0;
+	fontSize: 14;
+	backgroundColor: #3F3F3F;
+	color: white;
+	cornerRadius: 0.5;
+}
+
+.mainCanvas {
+	backgroundColor: #000000;
+}
+
+s|TitleWindow {
+	fontSize: 18;
+	fontFamily: LDSSuiGenerisFree;
+	backgroundColor: #757575;
+	chromeColor: #4D4D4D;
+	color: #FFFFFF;
+}
+
+s|Panel {
+	fontFamily: LDSSuiGenerisFree;
+	color: #000000;
+}
+
+s|Button {
+	fontFamily: LDSSuiGenerisFree;
+}
+
+s|TabBar {
+	fontSize: 12;
+	fontFamily: LDSSuiGenerisFree;
+	color: #FFFFFF;
+}
+
+.PanelStyle {
+	fontWeight: bold;
+	fontSize: 18;
+	fontFamily: LDSSuiGenerisFree;
+}
+
+.AlertPanelTitle {
+	fontFamily: NeoSansIntel;
+	fontSize: 14pt;
+	color: #000000;
+	fontWeight: "normal";
+}
+
+.ErrorAlert {
+	fontFamily: NeoSansIntel;
+	fontSize: 11pt;
+	backgroundAlpha: .5;
+	shadowDistance: 7;
+	backgroundColor: #ff0000;
+	borderColor: #ff0000;
+	cornerRadius: 10;
+	titleStyleName: "AlertPanelTitle";
+}	
+
+.ErrorMessage {
+	fontFamily: NeoSansIntel;
+	fontSize: 16pt;
+	backgroundAlpha: .5;
+	shadowDistance: 7;
+	backgroundColor: #FFFFFF;
+	borderColor: #ff0000;
+	cornerRadius: 10;
+	color: #FF0000;
+}	
+
+.NormalMessage {
+	fontFamily: NeoSansIntel;
+	fontSize: 16pt;
+	backgroundAlpha: .5;
+	shadowDistance: 7;
+	backgroundColor: #FFFFFF;
+	borderColor: #00ff00;
+	cornerRadius: 10;
+	color: #00FF00;
+}	
+
+s|DataGrid {
+	fontSize: 12;
+	fontFamily: LDSSuiGenerisFree;
+	color: #000000;
+	fontWeight: bold;
+	alternatingRowColors: #FFFFFF, #CCCCCC;
+}
+
+s|DefaultGridHeaderRenderer
+{
+	color: #000000;
+	fontFamily: LDSSuiGenerisFree;
+	fontSize: 14;
+	fontWeight: normal;
+}
+
+.builderTitleWindow {
+	fontSize: 18;
+	fontFamily: LDSSuiGenerisFree;
+	color: #000000;
+}
+
+.buildQueuePanel {
+	fontWeight: bold;
+	fontSize: 16;
+	fontFamily: LDSSuiGenerisFree;
+	color: #FFFFFF;
+}
+
+.resourceLabel {
+	fontWeight: bold;
+	fontSize: 12;
+	textAlign: left;
+	fontFamily: LDSSuiGenerisFree;
+}
+
+.resourceVolumeLabel {
+	fontWeight: normal;
+	fontSize: 11;
+	textAlign: left;
+	fontFamily: LDSSuiGenerisFree;
+	color: #FFFFFF;
+}
+
+.resourceVolumeAmberLabel {
+	fontWeight: normal;
+	fontSize: 11;
+	textAlign: left;
+	fontFamily: LDSSuiGenerisFree;
+	color: #FF8000;
+}
+
+.resourceVolumeRedLabel {
+	fontWeight: normal;
+	fontSize: 11;
+	textAlign: left;
+	fontFamily: LDSSuiGenerisFree;
+	color: #FF0000;
+}
+
+.OverviewItemLabel {
+	fontWeight: normal;
+	fontSize: 12;
+	textAlign: left;
+	fontFamily: NeoSansIntelLight;
+	fontWeight: bold;
+	color: #000000;
+}
+
+.OverviewGoalsItemLabel {
+	fontWeight: normal;
+	fontSize: 10;
+	textAlign: left;
+	fontFamily: NeoSansIntelLight;
+	fontWeight: bold;
+	color: #000000;
+}
+
+.OverviewTelemetryItemLabel {
+	fontWeight: normal;
+	fontSize: 11;
+	textAlign: left;
+	fontFamily: NeoSansIntelLight;
+	fontWeight: bold;
+	color: #000000;
+}
+
+.TimerWidgetLabel {
+	fontWeight: normal;
+	fontSize: 9;
+	textAlign: left;
+	fontFamily: LDSSuiGenerisFree;
+}
+
+.TimerWidgetLbl {
+	fontWeight: normal;
+	fontSize: 9;
+	textAlign: left;
+	fontFamily: LDSSuiGenerisFree;
+}
+
+.premiumLabel {
+	fontWeight: normal;
+	fontSize: 10;
+	textAlign: left;
+	fontFamily: LDSSuiGenerisFree;
+}
+
+.chooseLabel {
+	fontWeight: normal;
+	fontSize: 10;
+	textAlign: left;
+	fontFamily: LDSSuiGenerisFree;
+	color: #FFFFFF;
+}
+
+.resourceBuildPanel {
+	fontWeight: bold;
+	fontSize: 12;
+	fontFamily: LDSSuiGenerisFree;
+	color: #000000;
+	backgroundColor: #FFFFFF;
+	borderStyle: solid;
+	borderColor: #000000;
+	borderThickness: 1;
+}
+
+.resourceBuildPanelTitleDisplayBlack {
+	fontWeight: bold;
+	fontSize: 14;
+	fontFamily: LDSSuiGenerisFree;
+	color: #000000;
+}
+
+.resourceBuildPanelTitleDisplayWhite {
+	fontWeight: bold;
+	fontSize: 12;
+	fontFamily: LDSSuiGenerisFree;
+	color: #FFFFFF;
+}
+
+.resourceBuildPanel2 {
+	fontWeight: bold;
+	fontSize: 12;
+	fontFamily: LDSSuiGenerisFree;
+	headerHeight: 0;
+}
+
+.resourceBuilderLabel {
+	fontWeight: bold;
+	fontSize: 18;
+	fontFamily: LDSSuiGenerisFree;
+}
+
+.navBar {
+	borderStyle: outset;
+	borderColor: #FFFFFF;
+	borderThickness: 1;
+	backgroundColor: #CCCCCC;
+}
+
+.PanelHighlightMetal {
+	backgroundColor: #00FFFF;
+	color: #000000;
+}
+
+.PanelHighlightCrystal {
+	backgroundColor: #00FFFF;
+	color: #000000;
+}
+
+.PanelHighlightDeuterium {
+	backgroundColor: #00FFFF;
+	color: #000000;
+}
+
+.DarkMatterMarketPanel {
+	fontSize: 18;
+	fontFamily: LDSSuiGenerisFree;
+	backgroundColor: #757575;
+	chromeColor: #4D4D4D;
+	color: #F5B810;
+}
+
+.DarkMatterMarketItemPanel {
+	fontSize: 20;
+	fontFamily: LDSSuiGenerisFree;
+	backgroundColor: #757575;
+	chromeColor: #4D4D4D;
+	color: #F5B810;
+}
+
+.DarkMatterMarketItemPanelHovered {
+	fontSize: 20;
+	fontFamily: LDSSuiGenerisFree;
+	backgroundColor: #757575;
+	chromeColor: #CCCCCC;
+	color: #000000;
+}
+
+.DarkMatterMarketBenefitsLabel {
+	fontWeight: bold;
+	fontSize: 18;
+	fontFamily: LDSSuiGenerisFree;
+}
+
+.DarkMatterMarketItemPriceLabel {
+	fontWeight: bold;
+	fontSize: 18;
+	fontFamily: LDSSuiGenerisFree;
+}
+
+.DarkMatterMarketItemPriceLabelHovered {
+	fontWeight: bold;
+	fontSize: 18;
+	fontFamily: LDSSuiGenerisFree;
+	color: #000000;
+}
+
+.DarkMatterRichText {
+	color: #F5E210;
+	fontFamily: LDSSuiGenerisFree;
+	fontSize: 12;
+}
+
+.confirmationDialogLabel {
+	fontWeight: bold;
+	fontSize: 22;
+	color: #0000FF;
+	fontFamily: LDSSuiGenerisFree;
+}
+
+.confirmationDialogButton {
+	fontSize: 14;
+	fontFamily: LDSSuiGenerisFree;
+	backgroundColor: #757575;
+	chromeColor: #4D4D4D;
+	color: #F5B810;
+}
+
+.titleButton {
+	fontSize: 10;
+	fontFamily: LDSSuiGenerisFree;
+	backgroundColor: #A5A5A5;
+	chromeColor: #4D4D4D;
+	color: #FFFF00;
+}
+
+.FacilitiesVGroup {
+	verticalScrollPolicy: auto;
+}
+
+.StorageProgressBar {
+	chromeColor: green;
+}

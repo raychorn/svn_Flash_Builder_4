@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel 
+    width="288" height="206"
+    xmlns:mx="http://www.adobe.com/2006/mxml"
+    title="Login">
+
+    <mx:Metadata>
+		[Event("change", type="mx.events.Event")]
+	</mx:Metadata>
+
+    <mx:Form>
+
+        <mx:FormItem label="Username">
+            <mx:TextInput/>
+        </mx:FormItem>
+
+        <mx:FormItem label="Password">
+            <mx:TextInput displayAsPassword="true"/>
+        </mx:FormItem>
+
+        <mx:FormItem>
+            <mx:Button 
+                label="Login"
+                click="dispatchEvent( new Event( Event.CHANGE, true ) );"/>
+        </mx:FormItem>
+
+        <mx:LinkButton label="Forgotten Password? Click Here."/>
+        <mx:LinkButton label="Not Registered? Click Here."/>
+
+    </mx:Form>
+
+</mx:Panel>

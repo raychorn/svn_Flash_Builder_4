@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:employeeservice="services.employeeservice.*"
+		
+		
+		title="Employees" xmlns:components="custompopup.components.*"
+		viewActivate="view1_viewActivateHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import events.ScrollingEvent;
+			
+			import flashx.textLayout.tlf_internal;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.events.TouchInteractionEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.ViewNavigatorEvent;
+		
+			
+			
+			protected function myList_touchInteractionStartHandler(event:TouchInteractionEvent):void
+			{
+				var myScrollEvent:ScrollingEvent = new ScrollingEvent(ScrollingEvent.SCROLLING_STARTED);
+				this.parentApplication.dispatcher.dispatchEvent(myScrollEvent);
+				
+			}
+			
+			
+			
+			protected function view1_viewActivateHandler(event:ViewNavigatorEvent):void
+			{
+				// TODO Auto-generated method stub
+				trace("ok view");
+			 myEmployees = data as ArrayCollection;
+			}
+			
+			protected function myList_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				navigator.pushView(views.EmployeeDetailsView, myList.selectedItem);
+			}
+			
+			protected function myList_creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				
+				this.parentApplication.dispatcher.addEventListener(ScrollingEvent.TAP_ACTION, onTapItem);
+				this.parentApplication.dispatcher.addEventListener(ScrollingEvent.DELETE_ACTION, onDeleteAction);
+			}
+			
+			private function onTapItem(event:ScrollingEvent):void
+			{
+				// TODO Auto Generated method stub
+				this.parentApplication.dispatcher.removeEventListener(ScrollingEvent.TAP_ACTION, onTapItem);
+				this.parentApplication.dispatcher.removeEventListener(ScrollingEvent.DELETE_ACTION, onDeleteAction);
+				navigator.pushView(views.EmployeeDetailsView, event.userObj);
+			}
+			
+			private function getItemIndexByProperty(array:ArrayCollection, property:String, value:String):Number
+			{
+				
+				for (var i:Number = 0; i < array.length; i++)
+				{
+					var obj:Object = Object(array[i])
+					if (obj[property] == value)
+						return i;
+				}
+				return -1;
+			}
+			
+			private function onDeleteAction(event:ScrollingEvent):void
+			{
+				// TODO Auto Generated method stub
+				
+				var userIndex:int = getItemIndexByProperty(myEmployees, "id", String(event.userId));
+				myEmployees.removeItemAt(userIndex);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:ArrayCollection id="myEmployees"/>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:SkinnablePopUpContainer x="90"  id="myAlert" backgroundAlpha="0">
+			<components:GreyPopUp/>
+			<s:Image id="popUpImage" source="{myList.selectedItem.picture}" width="40" height="40" x="30" y="10"/>
+			<s:Label x="80" y="15" color="0xEEEEEE" text="{myList.selectedItem.firstName} {myList.selectedItem.lastName}" fontSize="12"/>
+		</s:SkinnablePopUpContainer>
+	</fx:Declarations>
+	<s:viewMenuItems>
+		<s:ViewMenuItem label="search" width="60" icon="@Embed('search.png')"/>
+		<s:ViewMenuItem label="search" width="60" icon="@Embed('search.png')"/>
+		<s:ViewMenuItem label="search" width="60" icon="@Embed('search.png')"/>
+	</s:viewMenuItems>
+	
+	<s:List width="100%"   useVirtualLayout="false" dataProvider="{myEmployees}" creationComplete="myList_creationCompleteHandler(event)" itemRenderer="views.MyIR" touchInteractionStart="myList_touchInteractionStartHandler(event)"    height="100%" id="myList"/>
+	<!--<s:BusyIndicator width="60" height="60" x="100" y="100"/>-->
+</s:View>

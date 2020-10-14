@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   minWidth="955" minHeight="600" 
+			   initialize="application1_initializeHandler(event)" 
+			   xmlns:flow="controls.flow.*" xmlns:flash="controls.flash.*" xmlns:viewers="controls.viewers.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ObjectUtils;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.ToolTips.HTMLToolTip;
+			
+			import mobile.MobileDebuggerUtils;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.ToolTipManager;
+			
+			import spark.events.TextOperationEvent;
+			
+			[Bindable]
+			public var __swf__:String = ''; // place this in the flashvars {swf:'/videoplayers/flowplayer-3.2.8.swf?config='}
+			
+			[Bindable]
+			public var __captions_plugin__:String = ''; // place this in the flashvars {captions_plugin:'blah...blah...blah'}
+			
+			private var __isJavaScriptReady__:Boolean = false;
+			
+			private var __JavaScriptReadyTimer__:Timer = new Timer(250,0);
+			
+			private var __delayed__:Array = [];
+			private var __delayed_timer__:Timer = new Timer(100,0);
+			
+			[Bindable]
+			private var __configs__:Array = [];
+			
+			private var __channels__:*;
+			
+			[Bindable]
+			private var __data__:* = {};
+			
+			private function issue_debug_message(message:String):void {
+			}
+			
+			public function set debug_message(message:String):void {
+			}
+			
+			private function checkJavaScriptReady():Boolean {
+				this.__isJavaScriptReady__ = ExternalInterface.call("isReady");
+				return this.__isJavaScriptReady__;
+			}
+			
+			private function add_channel(value:*):void {
+				var s:String;
+				try {
+					s = value['url'].replace('../includes/player/','/miq/includes/player/');
+				} catch (err:Error) {
+					s = String(value).replace('../includes/player/','/miq/includes/player/');
+				}
+				this.__configs__.push(s);
+				this.player.configs = this.__configs__;
+				this.__data__ = value;
+				this.viewer.dataProvider = value;
+			}
+			
+			private function add_channels(value:*):void {
+				this.__channels__ = value; // list of objects each of which defines a specific channel...
+				this.player.channels = this.__channels__;
+			}
+			
+			private function drop_channels():void {
+				this.__configs__ = [];
+				this.player.configs = this.__configs__;
+				this.viewer.flush();
+			}
+			
+			private function establish_externalInterface():void {
+				if (ExternalInterface.available) {
+					ExternalInterface.addCallback('add_channel',this.add_channel);
+					ExternalInterface.addCallback('add_channels',this.add_channels);
+					ExternalInterface.addCallback('drop_channels',this.drop_channels);
+				} else {
+					//AlertPopUp.surpriseNoOkay('Cannot establish the required connection with JavaScript therefore cannot display channels !!!','WARNING');
+				}
+			}
+			
+			private function javascript_ready_timerHandler(event:TimerEvent):void {
+				this.__isJavaScriptReady__ = checkJavaScriptReady();
+				this.debug_message = this.className+'.javascript_ready_timerHandler().1 --> this.__isJavaScriptReady__='+this.__isJavaScriptReady__;
+				if (this.__isJavaScriptReady__) {
+					this.__JavaScriptReadyTimer__.removeEventListener(TimerEvent.TIMER, this.javascript_ready_timerHandler);
+					Timer(event.target).stop();
+				}
+			}
+			
+			private function handle_delayed_timer(event:TimerEvent):void {
+				var vector:*;
+				var func:Function;
+				var args:*;
+				while (this.__delayed__.length > 0) {
+					vector = this.__delayed__.pop();
+					if (vector) {
+						func = vector['func'];
+						if (func is Function) {
+							try {
+								args = vector['args'];
+								(args) ? func(args) : func();
+							} catch (err:Error) {
+								trace(this.className+'.handle_delayed_timer().1 --> err='+err.toString()+'\n'+err.getStackTrace());
+							}
+						}
+					}
+				}
+			}
+			
+			protected function application1_initializeHandler(event:FlexEvent):void {
+				ToolTipManager.toolTipClass = HTMLToolTip;
+				this.__swf__ = FlexGlobals.topLevelApplication.parameters['swf'];
+				this.__captions_plugin__ = (FlexGlobals.topLevelApplication.parameters['captions_plugin']) ? ','+FlexGlobals.topLevelApplication.parameters['captions_plugin'] : '';
+				this.__delayed_timer__.addEventListener(TimerEvent.TIMER, this.handle_delayed_timer);
+				this.__delayed_timer__.reset();
+				this.__delayed_timer__.start();
+				try {
+					if (ExternalInterface.available) {
+						this.establish_externalInterface();
+					} else {
+						this.__JavaScriptReadyTimer__.addEventListener(TimerEvent.TIMER, this.javascript_ready_timerHandler);
+						this.__JavaScriptReadyTimer__.reset();
+						this.__JavaScriptReadyTimer__.start();
+					}
+				} catch (err:SecurityError) {
+					//AlertPopUp.surpriseNoOkay('Cannot establish the required connection with JavaScript therefore cannot display channels !!!','SECURITY ERROR');
+				} catch (err:Error) {
+					//AlertPopUp.surpriseNoOkay('Cannot establish the required connection with JavaScript therefore cannot display channels !!!','ERROR');
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<viewers:ObjectViewer id="viewer" width="100%" height="100"/>
+		<flash:FlashContainerTileView id="player" swf="{this.__swf__}" captions_plugin="{this.__captions_plugin__}" data="{this.__data__}" x="0" y="0" width="100%" height="100%"/>
+	</s:VGroup>
+</s:Application>

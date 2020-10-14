@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml"
+	width="100%" height="100%" 
+	verticalScrollPolicy="off" horizontalScrollPolicy="off"
+	verticalAlign="top" horizontalAlign="left"
+	paddingBottom="0" paddingLeft="{_menuTextPaddingLeft}" 
+	paddingRight="{_menuTextPaddingRight}" paddingTop="{_menuTextPaddingTop}" 
+	verticalGap="0" creationComplete="_init()">
+	
+	<mx:Script>
+		<![CDATA[
+			import mx.managers.CursorManager;
+			import utils.strings.Strings;
+			import mx.events.FlexEvent;
+			import mx.controls.Label;
+			import flash.utils.*;
+			import libs.vo.GlobalsVO;
+			
+			private var _mcr:*;
+
+			public var menuLevel:int;
+			public var menuItemID:int;
+			public var currentData:Object;
+			public var menuPosition:int;
+			public var title:String;
+			public var body:String;
+			
+			[Bindable]
+			private var _menuTextPaddingTop:Number;
+			
+			[Bindable]
+			private var _menuTextPaddingLeft:Number;
+			
+			[Bindable]
+			private var _menuTextPaddingRight:Number;
+			
+			public var menuItems:Array;
+			public var menuToolTip:String;
+
+			private var _prevWordPointer:int;
+			private var _wordPointer:int;
+			private var _timer:Timer;
+			private var _subString:String;
+			private var _body:Array;
+			private var _callBack:Function;
+			
+			private const SPACE:String = " ";
+			private const STYLE1:String = "MenuTextTitle";
+			private const STYLE2:String = "MenuTextBody";
+			private const MTTH:String = "menuTextTitleHeight";
+			private const MTPT:String = "menuTextPaddingTop";
+			private const MTPL:String = "menuTextPaddingLeft";
+			private const MTPR:String = "menuTextPaddingRight";
+			private const MCR:String = "MenuController";
+			
+			/**
+			 * Initialize the Menu Text
+			 */
+			 
+			private function _init():void {
+	   			this._mcr = GlobalsVO.getGlobal(MCR);
+	  		}
+	  
+			public function init(callBack:Function):void {
+				
+				// Set callback after submenutitle complete
+				_callBack = callBack;
+				
+				// Initialize all Vars
+				cleanUp();
+				
+				// Split the string into an array of elements based on the "space" delimeter
+				_body = body.split(SPACE);
+				
+				// Build title text
+				newLabel(this,title,STYLE1,Number(GlobalsVO.getCSSProperty(MTTH)));
+				
+				// Build body text
+				_timer = new Timer(0,0);
+				_timer.addEventListener(TimerEvent.TIMER,buildText);
+				_timer.start();
+				
+				this.addEventListener(MouseEvent.MOUSE_OVER,onMouse);
+				this.addEventListener(MouseEvent.MOUSE_OUT,onMouse);
+				this.addEventListener(MouseEvent.CLICK,onMouse);
+			}
+
+			
+			
+			private var _textCursorID:int;
+			
+			private function onMouse(e:MouseEvent):void {
+				var isAdminPopUp:Boolean = GlobalsVO.getGlobal(GlobalsVO.ISADMIN) && (e.target.toString().indexOf('.popup') > -1);
+				switch(e.type) {
+					
+					case MouseEvent.MOUSE_OVER :
+		      			if ( (this._mcr) && (this._mcr.onMouseOverMenuBody_callback) ) {
+		      				this._mcr.onMouseOverMenuBody_callback(e, this);
+		      			}
+						if (isAdminPopUp == false) {
+							_textCursorID = CursorManager.setCursor(GlobalsVO.TextCursor);
+						}
+					break;
+					
+					
+					case MouseEvent.MOUSE_OUT :
+		      			if ( (this._mcr) && (this._mcr.onMouseOutMenuBody_callback) ) {
+		      				this._mcr.onMouseOutMenuBody_callback(e, this);
+		      			}
+						if (isAdminPopUp == false) {
+							CursorManager.removeCursor(_textCursorID);
+						}
+					break;
+
+					case MouseEvent.CLICK :
+		      			if ( (this._mcr) && (this._mcr.onMouseClickMenuBody_callback) ) {
+		      				this._mcr.onMouseClickMenuBody_callback(e, this);
+		      			}
+					break;
+				}				
+			}
+
+
+
+
+
+			/**
+			 * Initialize Variables
+			 */
+
+			private function cleanUp():void {
+				_body = new Array();
+				_wordPointer = 0;
+				_prevWordPointer = 0;
+				
+				_menuTextPaddingTop = Number(GlobalsVO.getCSSProperty(MTPT));
+				_menuTextPaddingLeft = Number(GlobalsVO.getCSSProperty(MTPL));
+				_menuTextPaddingRight = Number(GlobalsVO.getCSSProperty(MTPR));
+			}
+
+			
+			/**
+			 * Create a new label container
+			 * for holding the line of subString text
+			 * @param target:Object - Target container
+			 * @param subString:String - Substring
+			 * to place in the label.
+			 * @return void
+			 */
+			
+			private function newLabel(target:Object, subString:String, style:String, height:Number):void {
+				var l:Label = new Label();
+				
+				
+				
+				target.addChild(l);
+				l.htmlText = subString;
+				l.styleName = style;
+				l.height = height;
+				
+				// Add the CSS Style to this menu object
+				GlobalsVO.setStyle(l);
+				this.validateNow();
+			}
+			
+			
+			
+			
+
+			/**
+			 * Figure out the size of the sentence
+			 * and copy the substring of the sentence
+			 * to the label.
+			 */
+			 
+			private function buildLabel():void {
+				_subString = utils.strings.Strings.buildSentence(_prevWordPointer, _wordPointer, _body, SPACE);
+				if(this.measureText(utils.strings.Strings.buildSentence(_prevWordPointer, _wordPointer, _body, SPACE)).width >= Number(GlobalsVO.getCSSProperty("menuTextRightMargin"))) {
+					newLabel(this,_subString = utils.strings.Strings.buildSentence(_prevWordPointer, --_wordPointer, _body, SPACE),STYLE2, Number(GlobalsVO.getCSSProperty("menuTextBodyHeight")));
+					this._prevWordPointer = this._wordPointer;
+				}
+			}			
+			
+			
+			
+			
+			
+			/**
+			 * If no more words to insert, then stop
+			 */
+			 
+			private function buildText(e:TimerEvent):void {
+				if(_wordPointer<=_body.length) {
+					buildLabel();
+					++_wordPointer;
+					dispatchEvent(new Event(Event.CHANGE));
+				} else {
+					
+					// Finished building the text field
+					this.newLabel(this,_subString,STYLE2, Number(GlobalsVO.getCSSProperty("menuTextBodyHeight")));
+					
+					// Stop and Remove timer and timer event listener
+					_timer.stop();
+					_timer.removeEventListener(TimerEvent.TIMER,buildText);
+					
+					/*
+					 * Dispatch an event to tell the main
+					 * menu container that the building
+					 * of the text field is complete
+					 * @see Menu.mxml for the eventListener
+					 */
+					
+					_callBack();
+				}
+			}
+		]]>
+	</mx:Script>
+</mx:VBox>

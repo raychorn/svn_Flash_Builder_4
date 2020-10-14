@@ -1,0 +1,789 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+	<mx:VBox width="100%" height="100%" xmlns:mx="http://www.adobe.com/2006/mxml" verticalScrollPolicy="off" xmlns:views="views.*">
+	
+	<mx:HBox width="100%" height="100%">
+
+
+
+	<mx:VBox height="100%"  styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="STYLE CONTROLS"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+		
+		<mx:TabNavigator width="100%" id="controlNavigator" height="550" styleName="styleControlTabNavigator" tabWidth="94">
+		<mx:Box label="Button" >
+		
+		<mx:Form styleName="noPadding">
+			
+		
+			
+			<mx:FormItem label="Corner Radius">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="28"
+						value="5"
+						id="myCornerRadiusButton"
+						
+						snapInterval="1"
+						change="setValue('cornerRadius', event.target.value, 'number', 'button');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Text Indent">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="0"
+						id="myTextIndentButton"
+						
+						snapInterval="1"
+						change="setValue('textIndent', event.target.value, 'number', 'button');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Padding Left">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="3"
+						id="myPaddingLeftButton"
+						snapInterval="1"
+						change="setValue('paddingLeft', event.target.value, 'number', 'button');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Padding Right">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="3"
+						id="myPaddingRightButton"
+						snapInterval="1"
+						change="setValue('paddingRight', event.target.value, 'number', 'button');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Padding Top">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="3"
+						id="myPaddingTopButton"
+						snapInterval="1"
+						change="setValue('paddingTop', event.target.value, 'number', 'button');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Padding Bottom">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="3"
+						id="myPaddingBottomButton"
+						snapInterval="1"
+						change="setValue('paddingBottom', event.target.value, 'number', 'button');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			
+	<mx:FormItem label="Highlight Alphas">
+				<mx:HBox>
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value=".30"
+						id="highlightAlpha1Button"
+						
+						snapInterval=".01"
+						change="myButton.setStyle('highlightAlphas',[highlightAlpha1Button.value, highlightAlpha2Button.value]);
+						setArrayCSS('highlightAlphas', highlightAlpha1Button.value, highlightAlpha2Button.value, false, 'button')"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				
+					<mx:HSlider
+						width="70" 
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="0"
+						id="highlightAlpha2Button"
+						
+						snapInterval=".01"
+						change="myButton.setStyle('highlightAlphas',[highlightAlpha1Button.value, highlightAlpha2Button.value]);
+						setArrayCSS('highlightAlphas', highlightAlpha1Button.value, highlightAlpha2Button.value, false, 'button')"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+					</mx:HBox>
+				</mx:FormItem>
+			
+			<mx:Box styleName="conditionalBox" horizontalAlign="right" toolTip="Note: This is an array of four colors, the second two being the fill colors on roll over.">
+				<mx:HBox width="100%">
+				<mx:Box width="100%" horizontalAlign="left" paddingLeft="5" paddingTop="5">
+				<mx:Image id="alert" source="@Embed('assets/alert.png')" />	
+				</mx:Box>
+				
+				<mx:Form styleName="conditionalForm"  >
+				
+					<mx:FormItem label="Fill Alphas">
+					<mx:HBox  horizontalGap="2">
+					<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".60"
+								id="myFillAlpha1Button"
+								
+								snapInterval=".01"
+								change="myButton.setStyle('fillAlphas', [myFillAlpha1Button.value, myFillAlpha2Button.value, myFillAlpha3Button.value, myFillAlpha4Button.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1Button.value, myFillAlpha2Button.value, myFillAlpha3Button.value, myFillAlpha4Button.value, false, 'button');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".40"
+								id="myFillAlpha2Button"
+								
+								snapInterval=".01"
+								change="myButton.setStyle('fillAlphas', [myFillAlpha1Button.value, myFillAlpha2Button.value, myFillAlpha3Button.value, myFillAlpha4Button.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1Button.value, myFillAlpha2Button.value, myFillAlpha3Button.value, myFillAlpha4Button.value, false, 'button');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".75"
+								id="myFillAlpha3Button"
+								
+								snapInterval=".01"
+								change="myButton.setStyle('fillAlphas', [myFillAlpha1Button.value, myFillAlpha2Button.value, myFillAlpha3Button.value, myFillAlpha4Button.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1Button.value, myFillAlpha2Button.value, myFillAlpha3Button.value, myFillAlpha4Button.value, false, 'button');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".65"
+								id="myFillAlpha4Button"
+								
+								snapInterval=".01"
+								change="myButton.setStyle('fillAlphas', [myFillAlpha1Button.value, myFillAlpha2Button.value, myFillAlpha3Button.value, myFillAlpha4Button.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1Button.value, myFillAlpha2Button.value, myFillAlpha3Button.value, myFillAlpha4Button.value, false, 'button');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							</mx:HBox>
+						</mx:FormItem>
+						<mx:FormItem label="Fill Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="fill1Button" height="23" width="35" selectedColor="0xFFFFFF"
+								close="myButton.setStyle('fillColors', [fill1Button.selectedColor, fill2Button.selectedColor, fill3Button.selectedColor, fill4Button.selectedColor]);
+								setArrayFourCSS('fillColors', fill1Button.selectedColor, fill2Button.selectedColor, fill3Button.selectedColor, fill4Button.selectedColor, true, 'button');
+								"/>
+								<mx:ColorPicker id="fill2Button" height="23" width="35" selectedColor="0xCCCCCC"
+								close="myButton.setStyle('fillColors', [fill1Button.selectedColor, fill2Button.selectedColor, fill3Button.selectedColor, fill4Button.selectedColor]);
+								setArrayFourCSS('fillColors', fill1Button.selectedColor, fill2Button.selectedColor, fill3Button.selectedColor, fill4Button.selectedColor, true, 'button');
+								"/>
+								<mx:ColorPicker id="fill3Button" height="23" width="35" selectedColor="0xFFFFFF"
+								close="myButton.setStyle('fillColors', [fill1Button.selectedColor, fill2Button.selectedColor, fill3Button.selectedColor, fill4Button.selectedColor]);
+								setArrayFourCSS('fillColors', fill1Button.selectedColor, fill2Button.selectedColor, fill3Button.selectedColor, fill4Button.selectedColor, true, 'button');
+								"/>
+								<mx:ColorPicker id="fill4Button" height="23" width="35" selectedColor="0xEEEEEE"
+								close="myButton.setStyle('fillColors', [fill1Button.selectedColor, fill2Button.selectedColor, fill3Button.selectedColor, fill4Button.selectedColor]);
+								setArrayFourCSS('fillColors', fill1Button.selectedColor, fill2Button.selectedColor, fill3Button.selectedColor, fill4Button.selectedColor, true, 'button');
+								"/>
+							
+							</mx:HBox>
+						</mx:FormItem>
+						
+				
+				
+				</mx:Form>
+				</mx:HBox>
+				</mx:Box>
+			
+			<mx:FormItem label="Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myColorButton"
+								close="setValue('color', event.target.selectedColor, 'color', 'button')"/>
+		</mx:FormItem>
+		<mx:FormItem label="Text Roll Over Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myTextRollOverColorButton"
+								close="setValue('textRollOverColor', event.target.selectedColor, 'color', 'button')"/>
+		</mx:FormItem>
+		<mx:FormItem label="Text Selected Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myTextSelectedColorButton"
+								close="setValue('textSelectedColor', event.target.selectedColor, 'color', 'button')"/>
+		</mx:FormItem>
+			<mx:FormItem label="Border Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xAAB3B3" id="myBorderColorButton"
+								close="setValue('borderColor', event.target.selectedColor, 'color', 'button')"/>
+		</mx:FormItem>
+	<mx:FormItem label="Theme Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x009DFF" id="myThemeColorButton"
+								close="setValue('themeColor', event.target.selectedColor, 'color', 'button')"/>
+		</mx:FormItem>
+			
+			
+			</mx:Form>
+		
+		
+		
+		</mx:Box>
+		<mx:Box label="Popup Button">
+			<mx:Form styleName="noPadding">
+			
+		
+			
+			<mx:FormItem label="Corner Radius">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="28"
+						value="5"
+						id="myCornerRadiusPopUpButton"
+						snapInterval="1"
+						change="setValue('cornerRadius', event.target.value, 'number', 'popUpButton');"
+						dataTipPlacement="right"
+						liveDragging="false"/>
+			</mx:FormItem>
+			<mx:FormItem label="Arrow Button Width">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="50"
+						value="16"
+						id="myArrowButtonWidthPopUpButton"
+						snapInterval="1"
+						change="setValue('arrowButtonWidth', event.target.value, 'number', 'popUpButton');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Pop Up Gap">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="-25"
+						maximum="25"
+						value="0"
+						id="myPopUpGapPopUpButton"
+						snapInterval="1"
+						change="setValue('popUpGap', event.target.value, 'number', 'popUpButton');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Text Indent">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="0"
+						id="myTextIndentPopUpButton"
+						
+						snapInterval="1"
+						change="setValue('textIndent', event.target.value, 'number', 'popUpButton');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Padding Left">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="3"
+						id="myPaddingLeftPopUpButton"
+						snapInterval="1"
+						change="setValue('paddingLeft', event.target.value, 'number', 'popUpButton');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Padding Right">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="3"
+						id="myPaddingRightPopUpButton"
+						snapInterval="1"
+						change="setValue('paddingRight', event.target.value, 'number', 'popUpButton');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Padding Top">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="3"
+						id="myPaddingTopPopUpButton"
+						snapInterval="1"
+						change="setValue('paddingTop', event.target.value, 'number', 'popUpButton');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Padding Bottom">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="3"
+						id="myPaddingBottomPopUpButton"
+						snapInterval="1"
+						change="setValue('paddingBottom', event.target.value, 'number', 'popUpButton');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			
+	<mx:FormItem label="Highlight Alphas">
+				<mx:HBox>
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value=".30"
+						id="highlightAlpha1PopUpButton"
+						
+						snapInterval=".01"
+						change="myPopUpButton.setStyle('highlightAlphas',[highlightAlpha1PopUpButton.value, highlightAlpha2PopUpButton.value]);
+						setArrayCSS('highlightAlphas', highlightAlpha1PopUpButton.value, highlightAlpha2PopUpButton.value, false, 'popUpButton')"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+		
+				
+					<mx:HSlider
+						width="70" 
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="0"
+						id="highlightAlpha2PopUpButton"
+						
+						snapInterval=".01"
+						change="myPopUpButton.setStyle('highlightAlphas',[highlightAlpha1PopUpButton.value, highlightAlpha2PopUpButton.value]);
+						setArrayCSS('highlightAlphas', highlightAlpha1PopUpButton.value, highlightAlpha2PopUpButton.value, false, 'popUpButton')"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+					</mx:HBox>
+				</mx:FormItem>
+			
+			<mx:Box styleName="conditionalBox" horizontalAlign="right" toolTip="Note: This is an array of four colors, the second two being the fill colors on roll over.">
+				<mx:HBox width="100%">
+				<mx:Box width="100%" horizontalAlign="left" paddingLeft="5" paddingTop="5">
+				<mx:Image id="alert2" source="@Embed('assets/alert.png')" />	
+				</mx:Box>
+				
+				<mx:Form styleName="conditionalForm"  >
+				
+					<mx:FormItem label="Fill Alphas">
+					<mx:HBox  horizontalGap="2">
+					<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".60"
+								id="myFillAlpha1PopUpButton"
+								
+								snapInterval=".01"
+								change="myPopUpButton.setStyle('fillAlphas', [myFillAlpha1PopUpButton.value, myFillAlpha2PopUpButton.value, myFillAlpha3PopUpButton.value, myFillAlpha4PopUpButton.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1PopUpButton.value, myFillAlpha2PopUpButton.value, myFillAlpha3PopUpButton.value, myFillAlpha4PopUpButton.value, false, 'popUpButton');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".40"
+								id="myFillAlpha2PopUpButton"
+								
+								snapInterval=".01"
+								change="myPopUpButton.setStyle('fillAlphas', [myFillAlpha1PopUpButton.value, myFillAlpha2PopUpButton.value, myFillAlpha3PopUpButton.value, myFillAlpha4PopUpButton.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1PopUpButton.value, myFillAlpha2PopUpButton.value, myFillAlpha3PopUpButton.value, myFillAlpha4PopUpButton.value, false, 'popUpButton');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".75"
+								id="myFillAlpha3PopUpButton"
+								
+								snapInterval=".01"
+								change="myPopUpButton.setStyle('fillAlphas', [myFillAlpha1PopUpButton.value, myFillAlpha2PopUpButton.value, myFillAlpha3PopUpButton.value, myFillAlpha4PopUpButton.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1PopUpButton.value, myFillAlpha2PopUpButton.value, myFillAlpha3PopUpButton.value, myFillAlpha4PopUpButton.value, false, 'popUpButton');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".65"
+								id="myFillAlpha4PopUpButton"
+								
+								snapInterval=".01"
+								change="myPopUpButton.setStyle('fillAlphas', [myFillAlpha1PopUpButton.value, myFillAlpha2PopUpButton.value, myFillAlpha3PopUpButton.value, myFillAlpha4PopUpButton.value]);
+								setArrayFourCSS('fillAlphas', myFillAlpha1PopUpButton.value, myFillAlpha2PopUpButton.value, myFillAlpha3PopUpButton.value, myFillAlpha4PopUpButton.value, false, 'popUpButton');"
+								dataTipPlacement="right"
+								liveDragging="true"/>
+							</mx:HBox>
+						</mx:FormItem>
+						<mx:FormItem label="Fill Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="fill1PopUpButton" height="23" width="35" selectedColor="0xFFFFFF"
+								close="myPopUpButton.setStyle('fillColors', [fill1PopUpButton.selectedColor, fill2PopUpButton.selectedColor, fill3PopUpButton.selectedColor, fill4PopUpButton.selectedColor]);
+								setArrayFourCSS('fillColors', fill1PopUpButton.selectedColor, fill2PopUpButton.selectedColor, fill3PopUpButton.selectedColor, fill4PopUpButton.selectedColor, true, 'popUpButton');
+								"/>
+								<mx:ColorPicker id="fill2PopUpButton" height="23" width="35" selectedColor="0xCCCCCC"
+								close="myPopUpButton.setStyle('fillColors', [fill1PopUpButton.selectedColor, fill2PopUpButton.selectedColor, fill3PopUpButton.selectedColor, fill4PopUpButton.selectedColor]);
+								setArrayFourCSS('fillColors', fill1PopUpButton.selectedColor, fill2PopUpButton.selectedColor, fill3PopUpButton.selectedColor, fill4PopUpButton.selectedColor, true, 'popUpButton');
+								"/>
+								<mx:ColorPicker id="fill3PopUpButton" height="23" width="35" selectedColor="0xFFFFFF"
+								close="myPopUpButton.setStyle('fillColors', [fill1PopUpButton.selectedColor, fill2PopUpButton.selectedColor, fill3PopUpButton.selectedColor, fill4PopUpButton.selectedColor]);
+								setArrayFourCSS('fillColors', fill1PopUpButton.selectedColor, fill2PopUpButton.selectedColor, fill3PopUpButton.selectedColor, fill4PopUpButton.selectedColor, true, 'popUpButton');
+								"/>
+								<mx:ColorPicker id="fill4PopUpButton" height="23" width="35" selectedColor="0xEEEEEE"
+								close="myPopUpButton.setStyle('fillColors', [fill1PopUpButton.selectedColor, fill2PopUpButton.selectedColor, fill3PopUpButton.selectedColor, fill4PopUpButton.selectedColor]);
+								setArrayFourCSS('fillColors', fill1PopUpButton.selectedColor, fill2PopUpButton.selectedColor, fill3PopUpButton.selectedColor, fill4PopUpButton.selectedColor, true, 'popUpButton');
+								"/>
+							
+							</mx:HBox>
+						</mx:FormItem>
+						
+				
+				
+				</mx:Form>
+				</mx:HBox>
+				</mx:Box>
+			
+			<mx:FormItem label="Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myColorPopUpButton"
+								close="setValue('color', event.target.selectedColor, 'color', 'popUpButton')"/>
+		</mx:FormItem>
+		<mx:FormItem label="Text Roll Over Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myTextRollOverColorPopUpButton"
+								close="setValue('textRollOverColor', event.target.selectedColor, 'color', 'popUpButton')"/>
+		</mx:FormItem>
+		<mx:FormItem label="Text Selected Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myTextSelectedColorPopUpButton"
+								close="setValue('textSelectedColor', event.target.selectedColor, 'color', 'popUpButton')"/>
+		</mx:FormItem>
+			<mx:FormItem label="Border Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xAAB3B3" id="myBorderColorPopUpButton"
+								close="setValue('borderColor', event.target.selectedColor, 'color', 'popUpButton')"/>
+		</mx:FormItem>
+	<mx:FormItem label="Theme Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x009DFF" id="myThemeColorPopUpButton"
+								close="setValue('themeColor', event.target.selectedColor, 'color', 'popUpButton')"/>
+		</mx:FormItem>
+			
+			
+			</mx:Form>
+		
+		</mx:Box>
+		<mx:Box label="Button Bar">
+		
+		
+		<mx:Form styleName="noPadding">
+				<mx:FormItem label="Corner Radius">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="28"
+						value="5"
+						id="myCornerRadiusButtonBar"
+						snapInterval="1"
+						change="setButtonStyleValue('cornerRadius', event.target.value, 'number', 'buttonBar');"
+						dataTipPlacement="right"
+						liveDragging="false"/>
+			</mx:FormItem>
+			<mx:FormItem label="Button Height">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="50"
+						value="22"
+						id="myButtonHeightButtonBar"
+						snapInterval="1"
+						change="setValue('buttonHeight', event.target.value, 'number', 'buttonBar');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Button Width">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="200"
+						value="75"
+						id="myButtonWidthButtonBar"
+						snapInterval="1"
+						change="setValue('buttonWidth', event.target.value, 'number', 'buttonBar');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Horizontal Gap">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="0"
+						id="myHorizontalGapButtonBar"
+						snapInterval="1"
+						change="setValue('horizontalGap', event.target.value, 'number', 'buttonBar');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+		
+			
+		
+			
+			<mx:FormItem label="Text Indent">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="0"
+						id="myTextIndentButtonBar"
+						
+						snapInterval="1"
+						change="setValue('textIndent', event.target.value, 'number', 'buttonBar');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+	<mx:FormItem label="Highlight Alphas">
+				<mx:HBox>
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value=".30"
+						id="highlightAlpha1ButtonBar"
+						snapInterval=".01"
+						change="setButtonStyleArrayValue('highlightAlphas',highlightAlpha1ButtonBar.value, highlightAlpha2ButtonBar.value);
+						setArrayCSS('highlightAlphas', highlightAlpha1ButtonBar.value, highlightAlpha2ButtonBar.value, false, 'buttonBar')"
+						dataTipPlacement="right"
+						liveDragging="false"/>
+		
+				
+					<mx:HSlider
+						width="70" 
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="0"
+						id="highlightAlpha2ButtonBar"
+						snapInterval=".01"
+						change="setButtonStyleArrayValue('highlightAlphas',highlightAlpha1ButtonBar.value, highlightAlpha2ButtonBar.value);
+						setArrayCSS('highlightAlphas', highlightAlpha1ButtonBar.value, highlightAlpha2ButtonBar.value, false, 'buttonBar')"
+						dataTipPlacement="right"
+						liveDragging="false"/>
+					</mx:HBox>
+				</mx:FormItem>
+			
+			<mx:Box styleName="conditionalBox" horizontalAlign="right" toolTip="Note: This is an array of four colors, the second two being the fill colors on roll over.">
+				<mx:HBox width="100%">
+				<mx:Box width="100%" horizontalAlign="left" paddingLeft="5" paddingTop="5">
+				<mx:Image id="alert3" source="@Embed('assets/alert.png')" />	
+				</mx:Box>
+				
+				<mx:Form styleName="conditionalForm"  >
+				
+					<mx:FormItem label="Fill Alphas">
+					<mx:HBox  horizontalGap="2">
+					<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".60"
+								id="myFillAlpha1ButtonBar"
+								snapInterval=".01"
+								change="setButtonStyleArrayFourValue('fillAlphas', myFillAlpha1ButtonBar.value, myFillAlpha2ButtonBar.value, myFillAlpha3ButtonBar.value, myFillAlpha4ButtonBar.value);
+								setArrayFourCSS('fillAlphas', myFillAlpha1ButtonBar.value, myFillAlpha2ButtonBar.value, myFillAlpha3ButtonBar.value, myFillAlpha4ButtonBar.value, false, 'buttonBar');"
+								dataTipPlacement="right"
+								liveDragging="false"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".40"
+								id="myFillAlpha2ButtonBar"
+								snapInterval=".01"
+								change="setButtonStyleArrayFourValue('fillAlphas', myFillAlpha1ButtonBar.value, myFillAlpha2ButtonBar.value, myFillAlpha3ButtonBar.value, myFillAlpha4ButtonBar.value);
+								setArrayFourCSS('fillAlphas', myFillAlpha1ButtonBar.value, myFillAlpha2ButtonBar.value, myFillAlpha3ButtonBar.value, myFillAlpha4ButtonBar.value, false, 'buttonBar');"
+								dataTipPlacement="right"
+								liveDragging="false"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".75"
+								id="myFillAlpha3ButtonBar"
+								snapInterval=".01"
+								change="setButtonStyleArrayFourValue('fillAlphas', myFillAlpha1ButtonBar.value, myFillAlpha2ButtonBar.value, myFillAlpha3ButtonBar.value, myFillAlpha4ButtonBar.value);
+								setArrayFourCSS('fillAlphas', myFillAlpha1ButtonBar.value, myFillAlpha2ButtonBar.value, myFillAlpha3ButtonBar.value, myFillAlpha4ButtonBar.value, false, 'buttonBar');"
+								dataTipPlacement="right"
+								liveDragging="false"/>
+							<mx:HSlider
+								width="35"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".65"
+								id="myFillAlpha4ButtonBar"
+								snapInterval=".01"
+								change="setButtonStyleArrayFourValue('fillAlphas', myFillAlpha1ButtonBar.value, myFillAlpha2ButtonBar.value, myFillAlpha3ButtonBar.value, myFillAlpha4ButtonBar.value);
+								setArrayFourCSS('fillAlphas', myFillAlpha1ButtonBar.value, myFillAlpha2ButtonBar.value, myFillAlpha3ButtonBar.value, myFillAlpha4ButtonBar.value, false, 'buttonBar');"
+								dataTipPlacement="right"
+								liveDragging="false"/>
+							</mx:HBox>
+						</mx:FormItem>
+						<mx:FormItem label="Fill Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="fill1ButtonBar" height="23" width="35" selectedColor="0xFFFFFF"
+								close="setButtonStyleArrayFourValue('fillColors', fill1ButtonBar.selectedColor, fill2ButtonBar.selectedColor, fill3ButtonBar.selectedColor, fill4ButtonBar.selectedColor);
+								setArrayFourCSS('fillColors', fill1ButtonBar.selectedColor, fill2ButtonBar.selectedColor, fill3ButtonBar.selectedColor, fill4ButtonBar.selectedColor, true, 'buttonBar');
+								"/>
+								<mx:ColorPicker id="fill2ButtonBar" height="23" width="35" selectedColor="0xCCCCCC"
+								close="setButtonStyleArrayFourValue('fillColors', fill1ButtonBar.selectedColor, fill2ButtonBar.selectedColor, fill3ButtonBar.selectedColor, fill4ButtonBar.selectedColor);
+								setArrayFourCSS('fillColors', fill1ButtonBar.selectedColor, fill2ButtonBar.selectedColor, fill3ButtonBar.selectedColor, fill4ButtonBar.selectedColor, true, 'buttonBar');
+								"/>
+								<mx:ColorPicker id="fill3ButtonBar" height="23" width="35" selectedColor="0xFFFFFF"
+								close="setButtonStyleArrayFourValue('fillColors', fill1ButtonBar.selectedColor, fill2ButtonBar.selectedColor, fill3ButtonBar.selectedColor, fill4ButtonBar.selectedColor);
+								setArrayFourCSS('fillColors', fill1ButtonBar.selectedColor, fill2ButtonBar.selectedColor, fill3ButtonBar.selectedColor, fill4ButtonBar.selectedColor, true, 'buttonBar');
+								"/>
+								<mx:ColorPicker id="fill4ButtonBar" height="23" width="35" selectedColor="0xEEEEEE"
+								close="setButtonStyleArrayFourValue('fillColors', fill1ButtonBar.selectedColor, fill2ButtonBar.selectedColor, fill3ButtonBar.selectedColor, fill4ButtonBar.selectedColor);
+								setArrayFourCSS('fillColors', fill1ButtonBar.selectedColor, fill2ButtonBar.selectedColor, fill3ButtonBar.selectedColor, fill4ButtonBar.selectedColor, true, 'buttonBar');
+								"/>
+							
+							</mx:HBox>
+						</mx:FormItem>
+						
+				
+				
+				</mx:Form>
+				</mx:HBox>
+				</mx:Box>
+			
+			<mx:FormItem label="Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myColorButtonBar"
+								close="setValue('color', event.target.selectedColor, 'color', 'buttonBar')"/>
+		</mx:FormItem>
+		<mx:FormItem label="Text Roll Over Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myTextRollOverColorButtonBar"
+								close="setValue('textRollOverColor', event.target.selectedColor, 'color', 'buttonBar')"/>
+		</mx:FormItem>
+		<mx:FormItem label="Text Selected Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myTextSelectedColorButtonBar"
+								close="setValue('textSelectedColor', event.target.selectedColor, 'color', 'buttonBar')"/>
+		</mx:FormItem>
+			<mx:FormItem label="Border Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xAAB3B3" id="myBorderColorButtonBar"
+								close="setButtonStyleValue('borderColor', event.target.selectedColor, 'color', 'buttonBar')"/>
+		</mx:FormItem>
+	<mx:FormItem label="Theme Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x009DFF" id="myThemeColorButtonBar"
+								close="setValue('themeColor', event.target.selectedColor, 'color', 'buttonBar')"/>
+		</mx:FormItem>
+			
+			
+			</mx:Form>
+		
+		
+		
+		</mx:Box>
+		</mx:TabNavigator>
+		
+		</mx:Box>
+		
+		
+		
+		
+		<mx:Box width="100%" paddingRight="5" paddingBottom="5" horizontalAlign="right">
+			<mx:LinkButton label="Restore Defaults" click="restoreDefaults()" styleName="undoLink" />
+		</mx:Box>
+	</mx:VBox>
+
+
+<!-- Sandbox -->
+<mx:VBox height="100%" width="100%" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="SANDBOX"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+			<mx:Button label="My Button" id="myButton"/>
+			<mx:PopUpButton id="myPopUpButton" label="My PopUp Button" creationComplete="initMenu();" />
+			<mx:ButtonBar id="myButtonBar" buttonStyleName="myButtonBarStyleName">
+            <mx:dataProvider>
+                <mx:Array>
+                    <mx:String>My Button Bar</mx:String>
+                    <mx:String>Action 2</mx:String>
+                    <mx:String>Action 3</mx:String>
+                    <mx:String>Action 4</mx:String>
+                </mx:Array>
+            </mx:dataProvider>
+        </mx:ButtonBar>
+			
+			
+			
+		</mx:Box>
+	</mx:VBox>
+
+
+<!-- CSS -->
+<mx:VBox height="100%" width="315" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="CSS"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+			<mx:TextArea id="myCSS" width="100%" height="100%" styleName="cssTextArea"	/>
+		</mx:Box>
+</mx:VBox>
+
+	<mx:Script source="as/buttons.as" />
+	</mx:HBox>
+</mx:VBox>
+
+
+  
+
+

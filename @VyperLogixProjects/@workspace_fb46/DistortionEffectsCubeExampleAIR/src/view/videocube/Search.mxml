@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<view:CubeSide xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:view="view.cube.*"
+    title="Search">
+
+    <mx:Metadata>
+		[Event("direction", type="view.cube.DirectionEvent")]
+	</mx:Metadata>
+
+    <view:sideContent>
+
+        <mx:Form 
+            width="263" height="163"
+            verticalScrollPolicy="off" horizontalScrollPolicy="off">
+
+            <mx:FormItem label="Product A">
+                <mx:TextInput/>
+            </mx:FormItem>
+            <mx:FormItem label="Purchase">
+                <mx:DateField/>
+            </mx:FormItem>
+            <mx:FormItem label="Item No">
+                <mx:TextInput restrict="0-9"/>
+            </mx:FormItem>
+            <mx:FormItem>
+                <mx:Button label="Advanced Search"/>
+            </mx:FormItem>
+
+        </mx:Form>
+
+    </view:sideContent>
+
+</view:CubeSide>

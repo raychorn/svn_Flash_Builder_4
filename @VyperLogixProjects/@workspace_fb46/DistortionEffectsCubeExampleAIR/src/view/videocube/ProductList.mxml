@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<view:CubeSide xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:view="view.cube.*"
+    title="Product List">
+
+    <mx:Metadata>
+		[Event("direction", type="view.cube.DirectionEvent")]
+	</mx:Metadata>
+
+    <view:sideContent>
+
+        <mx:DataGrid 
+            width="233" height="101">
+            <mx:columns>
+                <mx:DataGridColumn headerText="Product A"/>
+                <mx:DataGridColumn headerText="Product B"/>
+                <mx:DataGridColumn headerText="Product C"/>
+            </mx:columns>
+        </mx:DataGrid>
+
+    </view:sideContent>
+
+</view:CubeSide>

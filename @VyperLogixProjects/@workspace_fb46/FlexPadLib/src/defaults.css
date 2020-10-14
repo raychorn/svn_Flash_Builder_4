@@ -1,0 +1,177 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+@namespace flexpad "com.flexpad.*";
+
+@font-face { 
+	src: url("HelveticaNeue Bold.ttf"); 
+	fontFamily: HelveticaNeue;  
+	fontWeight: bold; 
+	unicodeRange: U+0020-U+002F,U+0030-U+0039,U+003A-U+0040,U+0041-U+005A,U+005B-U+0060,U+0061-U+007A,U+007B-U+007E,U+02C6,U+02DC,U+2013-U+2014,U+2018-U+201A,U+201C-U+201E,U+2020-U+2022,U+2026,U+2030,U+2039-U+203A,U+20AC,U+2122;
+	embedAsCFF: true;
+}
+
+@font-face { 
+	src: url("HelveticaNeue Light.ttf"); 
+	fontFamily: HelveticaNeue;   
+	unicodeRange: U+0020-U+002F,U+0030-U+0039,U+003A-U+0040,U+0041-U+005A,U+005B-U+0060,U+0061-U+007A,U+007B-U+007E,U+02C6,U+02DC,U+2013-U+2014,U+2018-U+201A,U+201C-U+201E,U+2020-U+2022,U+2026,U+2030,U+2039-U+203A,U+20AC,U+2122;
+	embedAsCFF: true;
+}
+
+@font-face { 
+	src: url("Helvetica Bold.ttf"); 
+	fontFamily: Helvetica;  
+	fontWeight: bold; 
+	unicodeRange: U+0020-U+002F,U+0030-U+0039,U+003A-U+0040,U+0041-U+005A,U+005B-U+0060,U+0061-U+007A,U+007B-U+007E,U+02C6,U+02DC,U+2013-U+2014,U+2018-U+201A,U+201C-U+201E,U+2020-U+2022,U+2026,U+2030,U+2039-U+203A,U+20AC,U+2122;
+	embedAsCFF: true;
+}
+
+.hintText{
+	font-family: Helvetica;
+	font-size: 15px;
+	color: #b3b3b3;
+}
+
+flexpad|BarGreyLabel{
+	font-family: HelveticaNeue;
+	font-weight: bold;
+	color: #717880;
+	font-size: 20px;
+}
+
+flexpad|BarBlackLabel{
+	font-family: HelveticaNeue;
+	font-weight: bold;
+	color: #FFFFFF;
+	font-size: 20px;
+}
+
+.buttonBarGreyButtonLabel{
+	font-family: Helvetica;
+	font-weight: bold;
+	font-size: 12px;
+}
+
+.buttonBarGreyButtonLabel:normal{
+	color: #4f5459;
+}
+
+.buttonBarGreyButtonLabel:selected{
+	color: #FFFFFF;
+}
+
+.buttonBarBlackButtonLabel{
+	font-family: Helvetica;
+	font-weight: bold;
+	font-size: 12px;
+	color: #FFFFFF;
+}
+
+.largeButtonBarGreyButtonLabel{
+	font-family: HelveticaNeue;
+	font-weight: bold;
+	font-size: 17px;
+}
+
+.largeButtonBarGreyButtonLabel:normal{
+	color: #7f7f7f;
+}
+
+.largeButtonBarGreyButtonLabel:selected{
+	color: #ffffff;
+}
+
+flexpad|HintTextInput{
+	font-family: Helvetica;
+	font-size: 15px;
+}
+
+flexpad|SearchTextInput{
+	icon: Embed("search.png");
+	font-family: Helvetica;
+	font-size: 15px;
+}
+
+flexpad|ButtonLabel{
+	font-family: HelveticaNeue;
+	font-weight: bold;
+	color: #FFFFFF;
+	font-size: 12px;
+}
+
+.tabBarBlackButtonLabel{
+	font-family: HelveticaNeue;
+	font-weight: bold;
+	color: #FFFFFF;
+	font-size: 10px;
+}
+.tabBarBlackButtonLabel:normal{
+	color: #c6c6c5;
+}
+
+.tabBarBlackButtonLabel:selected{
+	color: #FFFFFF;
+}
+
+flexpad|Switch{
+	font-family: HelveticaNeue;
+	font-weight: bold;
+	font-size: 17px;
+}
+
+flexpad|AlertPanelTitleLabel{
+	font-family: HelveticaNeue;
+	font-weight: bold;
+	font-size: 18px;
+	color: #FFFFFF;
+}
+
+flexpad|AlertPanelTextLabel{
+	font-family: HelveticaNeue;
+	font-weight: normal;
+	font-size: 16px;
+	color: #FFFFFF;
+}
+
+flexpad|AlertPanelButton{
+	font-family: HelveticaNeue;
+	font-weight: bold;
+	font-size: 18px;
+	color: #FFFFFF;
+}
+
+flexpad|CheckBox{
+	font-family: Helvetica;
+	font-weight: bold;
+	font-size: 12px;
+	color: #FFFFFF;
+}
+
+flexpad|RadioButton{
+	font-family: Helvetica;
+	font-weight: bold;
+	font-size: 12px;
+	color: #FFFFFF;
+}
+
+.listItemRendererLabel{
+	font-family: HelveticaNeue;
+	font-weight: bold;
+	font-size: 17px;
+}
+.listItemRendererLabel:normal{
+	color: #040404;
+}
+.listItemRendererLabel:selected{
+	color: #FFFFFF;
+}
+.listItemRendererHintLabel{
+	font-family: HelveticaNeue;
+	font-size: 17px;
+}
+.listItemRendererHintLabel:normal{
+	color: #395587;
+}
+.listItemRendererHintLabel:selected{
+	color: #FFFFFF;
+}

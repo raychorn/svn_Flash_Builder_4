@@ -1,0 +1,10 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+Accordion {
+	themeColor: #0000ff;
+	backgroundColor: #0066ff;
+	dropShadowEnabled: true;
+	shadowDirection: right;
+}

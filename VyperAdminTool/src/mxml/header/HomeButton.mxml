@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+	verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+	creationComplete="init()">
+	
+	<mx:Canvas id="houseN" buttonMode="true" ></mx:Canvas>
+	<mx:Canvas id="imgHighlight" buttonMode="true" alpha="{_currentAlpha}" 
+		mouseOver="onMouse(event)" click="onMouse(event)"></mx:Canvas>
+		<mx:Script>
+			<![CDATA[
+				import mxml.header.utils.EditableLabel;
+				import models.Menu_Model;
+				import controller.MenuController;
+				import mx.events.FlexEvent;
+				import utils.graphics.SnapshotDisplayObject;
+				import utils.displayObject.RotateGraphics;
+				import communication.WebServices;
+				import libs.utils.ErrorMessages;
+				import mx.controls.Image;
+				import utils.displayObject.DuplicateImage;
+				import libs.vo.GlobalsVO;
+				import utils.displayObject.LoopIterator;
+				
+				public var categoryPosition:int=-1;		// Selected Category
+				
+				[Bindable]
+				public var componentHeight:Number;
+				
+				[Bindable]
+				public var overRideSelect:Boolean = false;	// External Flash vars will tell this Category to stay highlighted
+				
+				[Bindable]
+				private var _componentWidth:Number = 0;
+				
+				[Bindable]
+				private var _currentAlpha:Number = 0;		// Mouse Over alpha effect
+		
+				public var currentData:Object;
+
+				public var menuItems:Array;
+				public var menuToolTip:String;
+
+				private var _mcr:*;
+				private var _iterator:LoopIterator;		// Fade Effect
+				private var headerData:*;
+				private var highlight:Image;
+				private var houseImageN:Image;
+				private var houseImageH:Image;
+				private var divAsset:Image;
+				private var _tabOrder:int;
+				private var _dataModel:Menu_Model;
+				private var _url:String;
+				private var _target:String;
+				private var _isAdmin:Boolean = Boolean(GlobalsVO.getGlobal(GlobalsVO.ISADMIN));
+				
+				private const MCR:String = "MenuController";
+				private const P1:String = "image_homeAssetN";		// Background asset
+				private const P2:String = "image_homeAssetH";		// Background asset
+				private const P3:String = "image_logoutDivAsset";		// Background asset
+				private const P4:String = "categoryFadeStart";
+				private const P5:String = "categoryFadeEnd";
+				private const P6:String = "categoryFadeInSpeed";
+				private const P7:String = "categoryFadeInStep";
+				private const P8:String = "categoryFadeOutSpeed";
+				private const P9:String = "categoryFadeOutStep";
+				private const P10:String = "categoryItemScaleContent";
+				private const P11:String = "categoryItemMaintainAspectRatio";
+				
+				
+				private function addIcon(data:*):* {
+					var l:*;
+					l = new EditableLabel();
+					l._mouseChildren = false;
+					l._buttonMode = true;
+					l._useHandCursor = true;
+					l.onClickHandler = GlobalsVO.getGlobal(GlobalsVO.EDITABLEICON_onClickHandler);
+					l.onCreationCompleteHandler = GlobalsVO.getGlobal(GlobalsVO.EDITABLEHOUSEICON_onCreationComplete);
+					l._dataProvider = data;
+					l.currentState = "NoLabels";
+					return l;
+				}				
+
+				/**
+				 * Initialize and get the background
+				 * image from GlobalsVO
+				 */
+				 		
+				public function init():void {
+				
+		   			this._mcr = GlobalsVO.getGlobal(MCR);
+
+					// Fade Effect
+					_iterator = new LoopIterator();
+					
+					// Set focus listener and it's tab priority
+					_tabOrder = GlobalsVO.INIT_TAB_LOGO;
+					
+					_dataModel = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL);
+					headerData = _dataModel.getHeaderData("home");
+					
+					var model:Menu_Model = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL);
+					this.currentData = model.headerData.data.home;
+
+					// Set focus listener and it's tab priority
+					GlobalsVO.addFocus(houseN,_tabOrder++);
+					
+					// House Image
+					var asset:Object;
+					asset = DuplicateImage.validate(GlobalsVO.getGlobal(P1),this);
+					houseImageN = Image(asset.image);// as Image;
+					houseImageN = DuplicateImage.copy(houseImageN,false,true);
+
+					houseN.addChild(houseImageN);
+					
+					var anIcon:* = this.addIcon(headerData);
+					if (this._isAdmin) {
+						//houseN.addChild(anIcon);
+					}
+
+					// Catch missing graphic asset error message					
+					if(asset.error != null) new ErrorMessages(houseImageN,asset.error);
+					
+					asset = DuplicateImage.validate(GlobalsVO.getGlobal(P2),this);
+					houseImageH = Image(asset.image);// as Image;
+					houseImageH = DuplicateImage.copy(houseImageH,false,true);
+					imgHighlight.addChild(houseImageH);
+
+					if (this._isAdmin) {
+						var onCreationCompleteHandler:Function = GlobalsVO.getGlobal(GlobalsVO.EDITABLEHOUSEICON_onCreationComplete);
+						if (onCreationCompleteHandler is Function) {
+							var e:* = {'currentTarget':this};
+							onCreationCompleteHandler(e);
+						}
+					}
+					
+					// Catch missing graphic asset error message					
+					if(asset.error != null) new ErrorMessages(houseImageH,asset.error);
+					
+					var _url:String = _dataModel.getUrl(headerData[0]).toString();
+					var _target:*;
+					try { _target = headerData[0][_dataModel.getMetaDataHash(GlobalsVO.META_TARGET)]; }
+						catch (err:Error) {trace(this.className+'.init().ERROR '+err.toString()+'\n'+err.getStackTrace());}
+					if(_target == undefined) _target = _dataModel.getMetaDataHash(GlobalsVO.TARGET_DEFAULT);
+					if(GlobalsVO.DEVMODE) new ErrorMessages(this,_url+" , "+_target);
+				}
+				
+				
+				
+				private function update(e:Event):void {
+					try {
+						_componentWidth = houseImageH.width;
+						trace("#####_componentWidth: "+_componentWidth);
+					} catch(e:Error) {}
+				}
+				
+				
+				/**
+				 * Accessibility, get the current selected
+				 * instance from this class
+				 * @see Accessibility_Model:talk()
+				 */
+				 
+				public function getDataByAccessibility(instance:*):Object {
+					return headerData;
+				}		
+
+				
+				
+				/**
+				 * Check the array with the current
+				 * selected component to see if the
+				 * component should be styled differently
+				 * @param:MouseEvent - Any mouse event
+				 */
+				
+							
+				private function onMouse(e:MouseEvent):void {
+					var url:String = _dataModel.getUrl(headerData[0]).toString();
+					var target:*;
+					try { target = headerData[0][_dataModel.getMetaDataHash(GlobalsVO.META_TARGET)]; }
+						catch (err:Error) {trace(this.className+'.onMouse().ERROR '+err.toString()+'\n'+err.getStackTrace());}
+					if (!target) {
+						target = headerData[0];
+					}
+					switch(e.type) {
+						case MouseEvent.MOUSE_OVER :
+							// Set MenuController to show menu
+							if (target) {
+								GlobalsVO.getGlobal(MCR).onHomeButton(e);
+								this.onMouseOver();
+							}
+							
+						break;
+						
+						case MouseEvent.MOUSE_OUT :
+							// Set MenuController to show menu
+							GlobalsVO.getGlobal(MCR).onHomeButton(e);
+							this.onMouseOut();
+							
+						break;
+						
+						case MouseEvent.CLICK :
+			      			if ( (this._mcr) && (this._mcr.onMouseClickMenuHome_callback) ) {
+			      				this._mcr.onMouseClickMenuHome_callback(e, this);
+			      			}
+							GlobalsVO.getGlobal(MCR).onHomeButton(e);
+						break; 
+					}
+				}
+				
+				
+				
+				
+				/**
+				 * If the user scrols the mouse over
+				 * this component, then fade in
+				 * @param e:Event - N/A
+				 * @return void
+				 */
+				
+				public function onMouseOver():void {
+				
+					_iterator.stop();
+	      			_iterator.init({from:_currentAlpha,
+	      						   _to:Number(GlobalsVO.getCSSProperty(P5)),
+	      						   speed:int(GlobalsVO.getCSSProperty(P6)),
+	      						   step:Number(GlobalsVO.getCSSProperty(P7))});
+	
+	      			_iterator.addEventListener(Event.CHANGE,onChange);
+					if (GlobalsVO.ISLoggedOut == false) {
+		      			_iterator.addEventListener(Event.COMPLETE,onComplete);
+					}
+	      			_iterator.play();
+				}
+			
+				
+				
+			
+				/**
+				 * If the user selects a different category
+				 * Then call this method, to cause
+				 * the fade out effect.
+				 * @param e:Event - N/A
+				 * @return void
+				 * @see MenuController.as
+				 */
+				 
+				public function onMouseOut():void {
+					// Stay Highlighted based on Flashvar parameters
+					if(overRideSelect) return;
+					
+					_iterator.stop();
+	      			_iterator.init({from:_currentAlpha,
+	      						   _to:Number(GlobalsVO.getCSSProperty(P4)),
+	      						   speed:int(GlobalsVO.getCSSProperty(P8)),
+	      						   step:Number(GlobalsVO.getCSSProperty(P9))});
+	      			_iterator.addEventListener(Event.CHANGE,onChange);
+					if (GlobalsVO.ISLoggedOut == false) {
+		      			_iterator.addEventListener(Event.COMPLETE,onComplete);
+					}
+	      			_iterator.play();
+	      			
+				}
+				
+				
+			
+				
+			/**
+			 * Set new value for tween effect
+			 * @param value:Number - The image alpha value
+			 * from the tweener fade in effect
+			 * @return - void
+			 */
+			 
+			private function onChange(e:Event):void {
+				_currentAlpha = e.currentTarget.value;
+			}
+			
+			
+			
+			
+			private function onComplete(e:Event):void {
+				_currentAlpha = e.currentTarget.value;
+				_iterator.removeEventListener(Event.CHANGE,onChange);
+      			_iterator.removeEventListener(Event.COMPLETE,onComplete);
+				
+				if(_currentAlpha < 0) _currentAlpha = 0;
+				if(_currentAlpha > 1) _currentAlpha = 1;
+			}
+			
+			]]>
+	</mx:Script>
+</mx:Canvas>

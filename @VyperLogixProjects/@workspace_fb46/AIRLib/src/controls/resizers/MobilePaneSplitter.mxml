@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%" 
+		  currentState="button" 
+		  initialize="hgroup1_initializeHandler(event)" 
+		  xmlns:sliders="controls.sliders.*">
+	<s:states>
+		<mx:State name="button"/>
+		<mx:State name="slider"/>
+	</s:states>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		.CloseButton {
+			fontSize: 10;
+		}
+	</fx:Style>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Metadata>
+		[Event(name="resizerOpened",type="controls.resizers.events.ResizerOpenedEvent")]
+		[Event(name="resizerClosed",type="controls.resizers.events.ResizerClosedEvent")]
+		[Event(name="resizerUpdated",type="controls.resizers.events.ResizerUpdatedEvent")]
+	</fx:Metadata>
+	<fx:Script>
+		<![CDATA[
+			import controls.resizers.events.ResizerClosedEvent;
+			import controls.resizers.events.ResizerOpenedEvent;
+			import controls.resizers.events.ResizerUpdatedEvent;
+			
+			import mx.events.FlexEvent;
+			
+			private var _this:MobilePaneSplitter;
+			
+			[Bindable]
+			private var __slider_min__:Number;
+			
+			[Bindable]
+			private var __slider_max__:Number;
+			
+			[Bindable]
+			private var __slider_value__:Number;
+			
+			[Bindable]
+			private var __thumb_button_styleName__:String;
+			
+			private var __timer__:Timer;
+			
+			public static var defaultDelay:int = 5000;
+			
+			public var delay:int = defaultDelay;
+			
+			public function get thumb_button_styleName():String {
+				return this.__thumb_button_styleName__;
+			}
+			
+			public function set thumb_button_styleName(thumb_button_styleName:String):void {
+				if (this.__thumb_button_styleName__ != thumb_button_styleName) {
+					this.__thumb_button_styleName__ = thumb_button_styleName;
+					if (this.slider is CustomHSlider) {
+						this.slider.thumb_button_styleName = thumb_button_styleName;
+					}
+				}
+			}
+			public function get slider_value():Number {
+				return this.__slider_value__;
+			}
+			
+			public function set slider_value(slider_value:Number):void {
+				if (this.__slider_value__ != slider_value) {
+					this.__slider_value__ = slider_value;
+					if (this.slider is CustomHSlider) {
+						this.slider.value = slider_value;
+					}
+				}
+			}
+			
+			public function get slider_min():Number {
+				return this.__slider_min__;
+			}
+			
+			public function set slider_min(slider_min:Number):void {
+				if (this.__slider_min__ != slider_min) {
+					this.__slider_min__ = slider_min;
+					if (this.slider is CustomHSlider) {
+						this.slider.minimum = slider_min;
+					}
+				}
+			}
+			
+			public function get slider_max():Number {
+				return this.__slider_max__;
+			}
+			
+			public function set slider_max(slider_max:Number):void {
+				if (this.__slider_max__ != slider_max) {
+					this.__slider_max__ = slider_max;
+					if (this.slider is CustomHSlider) {
+						this.slider.maximum = slider_max;
+					}
+				}
+			}
+			
+			private function flip_state():void {
+				this.currentState = (this.currentState == 'button') ? 'slider' : 'button';
+			}
+			
+			private function get is_slider_state():Boolean {
+				return this.currentState == 'slider';
+			}
+			
+			public function _closeSplitter():void {
+				if (this.is_slider_state) {
+					this.flip_state();
+					if (this.__timer__.running) {
+						this.__timer__.stop();
+					}
+				}
+			}
+			
+			public function _openSplitter():void {
+				if (!this.is_slider_state) {
+					this.flip_state();
+				}
+			}
+			
+			protected function btn_clickHandler(event:MouseEvent):void {
+				if ( (!this.btnClose.visible) && (!this.btnClose.includeInLayout) ) {
+					this.__timer__.start();
+				}
+				this.flip_state();
+				this.dispatchEvent(new ResizerOpenedEvent(ResizerOpenedEvent.TYPE_RESIZER_OPENED));
+			}
+			
+			protected function closeSplitter():void {
+				this.flip_state();
+				this.dispatchEvent(new ResizerClosedEvent(ResizerClosedEvent.TYPE_RESIZER_CLOSED));
+			}
+			
+			protected function btnClose_clickHandler(event:MouseEvent):void {
+				this.closeSplitter();
+			}
+			
+			public function slider_has_changed():void {
+				if (this.__timer__.running) {
+					this.__timer__.reset();
+					this.__timer__.start();
+				}
+			}
+			
+			protected function slider_changeHandler(event:Event):void {
+				this.slider_has_changed();
+				this.dispatchEvent(new ResizerUpdatedEvent(ResizerUpdatedEvent.TYPE_RESIZER_UPDATED, event.currentTarget.value));
+			}
+			
+			protected function hgroup1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				this.delay = (this.delay > 0) ? this.delay : defaultDelay;
+				if (!this.__slider_min__) {
+					this.__slider_min__ = 1;
+				}
+				if (!this.__slider_max__) {
+					this.__slider_max__ = 100;
+				}
+				if (!this.__timer__) {
+					this.__timer__ = new Timer(this.delay,1);
+					this.__timer__.addEventListener(TimerEvent.TIMER_COMPLETE, 
+						function (event:TimerEvent):void {
+							_this.__timer__.stop();
+							_this.closeSplitter();
+						}
+					);
+				}
+			}
+			
+			protected function slider_creationCompleteHandler(event:FlexEvent):void {
+			}
+			
+			protected function btnClose_creationCompleteHandler(event:FlexEvent):void {
+				var btn:Button = event.currentTarget as Button;
+				if ( (btn.visible) && (btn.includeInLayout) ) {
+					this.__timer__.stop();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup width="100%"
+				  visible.button="true" includeInLayout.button="true" 
+				  visible.slider="false" includeInLayout.slider="false" 
+				  >
+			<s:Button id="btn" 
+					  width="100%" height="15"
+					  click="btn_clickHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup width="100%"
+				  visible.button="false" includeInLayout.button="false" 
+				  visible.slider="true" includeInLayout.slider="true"
+				  >
+			<sliders:CustomHSlider id="slider" 
+								   minimum="{this.__slider_min__}" maximum="{this.__slider_max__}"
+								   thumb_button_styleName="{this.__thumb_button_styleName__}"
+								   width="100%" height="30"
+								   skinClass.slider="controls.skins.CustomHSliderSkin" 
+								   change="slider_changeHandler(event)" 
+								   creationComplete="slider_creationCompleteHandler(event)"
+								   />
+			<s:Button id="btnClose" 
+					  label="(^^)" 
+					  height="30" 
+					  styleName="CloseButton" 
+					  visible="false" includeInLayout="{this.btnClose.visible}"
+					  click="btnClose_clickHandler(event)" 
+					  creationComplete="btnClose_creationCompleteHandler(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:HGroup>

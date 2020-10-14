@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		title="MonitorIQFlowPlayerDemoView1">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import freevana.util.Settings;
+			import freevana.view.VideoPlayer;
+			
+			import mx.events.FlexEvent;
+
+			private var _settings:Settings = new Settings();
+
+			private var _subtitleURL:String = '';
+			
+			private function startLoadingVideo(movieURL:String):void {
+				_settings.setPreferredPlayer(VideoPlayer.VIDEO_PLAYER_FLOW);
+				var _videoPlayer:* = VideoPlayer.create(_settings, movieURL, _subtitleURL);
+				_videoPlayer.addEventListener(VideoPlayer.PLAYER_INITIALIZING, onVideoPlayerInit);
+				_videoPlayer.addEventListener(VideoPlayer.PLAYER_READY, onVideoPlayerReady);
+				_videoPlayer.addEventListener(VideoPlayer.PLAYER_STOPPED, onVideoPlayerStopped);
+				_videoPlayer.addEventListener(VideoPlayer.VIDEO_NOT_AVAILABLE, onVideoNotAvailable);
+				
+				function onVideoPlayerInit(event:Event):void {
+					// Change to VideoView
+					currentState = "videoState";
+					videoCanvas.addChild(_videoPlayer.getUIComponent());
+					_videoPlayer.onAddedToStage();
+				}
+				
+				function onVideoPlayerReady(event:Event):void {
+					trace("[main] onVideoPlayerReady.");
+				}
+				
+				function onVideoPlayerStopped(event:Event):void {
+					//resetVideoPlayer();
+				}
+				
+				function onVideoNotAvailable(event:Event):void {
+					//Alert.show(resourceManager.getString('Strings', 'VIDEO_NOT_AVAILABLE'));
+					//resetVideoPlayer();
+				}
+				
+				_videoPlayer.init();
+			}
+
+			protected function videoCanvas_creationCompleteHandler(event:FlexEvent):void {
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup id="videoCanvas" width="100%" height="100%" creationComplete="videoCanvas_creationCompleteHandler(event)"/>
+</s:View>

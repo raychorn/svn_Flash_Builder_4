@@ -1,0 +1,33 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+@namespace charts "mx.charts.*";
+
+
+charts|AreaChart
+{
+	color: #999999;	
+	fill: #1A1A1A;
+}
+
+charts|BarChart
+{
+	color: #999999;	
+	fill: #1A1A1A;
+}
+
+charts|ColumnChart
+{
+	color: #999999;	
+	fill: #1A1A1A;
+}        
+
+charts|AxisRenderer
+{
+	show-line: false;
+	tick-length: 0;
+	minor-tick-length: 0;
+	tick-placement: none;
+	minor-tick-placement: none;
+	font-size: 14;
+}

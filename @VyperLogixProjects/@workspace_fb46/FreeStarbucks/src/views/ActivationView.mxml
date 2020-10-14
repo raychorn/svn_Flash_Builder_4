@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" title="Register to Win" xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:widgets="controls.forms.widgets.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style source="styles.css"/>
+	<fx:Script>
+		<![CDATA[
+			import com.vyperlogix.GoogleCloudOperation;
+			import com.vyperlogix.GoogleCloudService;
+			
+			import controls.Alert.AlertAlternative;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import spark.components.TextInput;
+			
+			[Bindable]
+			private var _info:String = 'Now you can copy-n-paste the Activation Code\nyou received via EMail.\n\nIf you have lost your Activation Code you may have another resent.\n\nIf you have changed your email address ou may Register again using a different email address.';
+			
+			private function set_focus(txt:TextInput):void {
+				if (txt is TextInput) {
+					try {
+						this.focusManager.setFocus(txt);
+					} catch (err:Error) {
+						this.callLater(this.set_focus,[txt]);
+					}
+				} else {
+					FlexGlobals.topLevelApplication.app.error('WARNING: Cannot set focus...');
+				}
+			}
+			
+			protected function username_creationCompleteHandler(event:FlexEvent):void {
+				var txt:EMailTextField = EMailTextField(event.currentTarget);
+				this.callLater(this.set_focus,[txt.txt_emailAddress]);
+				var widget:EMailTextField = event.currentTarget as EMailTextField;
+				widget.txt_emailAddress.addEventListener(KeyboardEvent.KEY_UP, username_keyUpHandler);
+			}
+			
+			protected function username_keyUpHandler(event:KeyboardEvent):void {
+				if ( (event.keyCode == Keyboard.TAB) || (event.keyCode == Keyboard.ENTER) ) {
+					this.callLater(this.set_focus,[this.activation_key.txt_activationCode]);
+				}
+			}
+			
+			protected function activation_key_keyUpHandler(event:KeyboardEvent):void {
+				if ( (event.keyCode == Keyboard.TAB) || (event.keyCode == Keyboard.ENTER) ) {
+					if ( (this.activation_key.text is String) && (this.activation_key.text.length > 0) ) {
+						this.callLater(this.set_focus,[this.activation_key.txt_activationCode]);
+					}
+				}
+			}
+			
+			protected function txt_output_creationCompleteHandler(event:FlexEvent):void {
+				FlexGlobals.topLevelApplication.determine_view_debugger_for(this,event.currentTarget as TextArea);
+				FlexGlobals.topLevelApplication.handle_get_gps_location_updates();
+			}
+			
+			protected function onClick_btn_activate(event:MouseEvent):void {
+				this.handle_activate_action();
+			}
+			
+			protected function btn_activate_touchTapHandler(event:TouchEvent):void {
+				this.handle_activate_action();
+			}
+			
+			private function refresh_user_data():void {
+				try {
+				} catch (err:Error) {FlexGlobals.topLevelApplication.app.error('WARNING: Cannot mplete your Registration at this time !');}
+			}
+			
+			protected function handle_activate_action():void {
+				var _this:ActivationView = this;
+				var svc:GoogleCloudService = new GoogleCloudService();
+				var op:GoogleCloudOperation = svc.activate(this.username.text,this.activation_key.text);
+				op.addEventListener(Event.COMPLETE,
+					function (event:Event):void {
+						FlexGlobals.topLevelApplication.removeBusyCursor(_this);
+						_this.btn_activate.enabled = _this.btn_activate.enabled = true;
+						FlexGlobals.topLevelApplication.user_data = event.target.data;
+						_this.currentState = (FlexGlobals.topLevelApplication.is_loggedin) ? 'logged_in' : 'not_logged_in';
+						_this.panel.title = (FlexGlobals.topLevelApplication.is_loggedin) ? 'Welcome back, ' + FlexGlobals.topLevelApplication.user_data.user.name : 'Please Register';
+						_this.callLater(_this.refresh_user_data,[]);
+					}
+				);
+				op.addEventListener(ErrorEvent.ERROR,
+					function (event:ErrorEvent):void {
+						FlexGlobals.topLevelApplication.removeBusyCursor(_this);
+						_this.btn_activate.enabled = _this.btn_activate.enabled = true;
+						var msg:String = 'ERROR: ' + event.toString();
+						_this.panel.title = 'ERROR...';
+						FlexGlobals.topLevelApplication.app.error('ERROR.101: Cannot process your request at this time.  Please try back later.');
+					}
+				);
+				this.panel.title = 'Contacting the Cloud...';
+				FlexGlobals.topLevelApplication.setBusyCursor(this);
+				this.btn_activate.enabled = this.btn_activate.enabled = false;
+				op.timeout = FlexGlobals.topLevelApplication.google_cloud_timeout;
+				op.execute();
+			}
+			
+			protected function activation_key_creationCompleteHandler(event:FlexEvent):void {
+				var txt:ActivationTextField = ActivationTextField(event.currentTarget);
+				txt.txt_activationCode.addEventListener(KeyboardEvent.KEY_UP, this.activation_key_keyUpHandler);
+			}
+			
+			private function get isDebugger():Boolean {
+				return FlexGlobals.topLevelApplication.isDebugger;
+			}
+		]]>
+	</fx:Script>
+	<s:Panel id="panel" width="100%" height="100%" styleName="Panels" title="Welcome...">
+		<s:VGroup width="100%" height="100%">
+			<s:BorderContainer id="container" width="100%" backgroundColor="#cfcfcf" borderColor="#ffffff" visible="true" includeInLayout="true">
+				<s:Scroller width="100%" height="100%">
+					<s:Group width="100%" height="100%">
+						<s:VGroup width="100%" height="100%" paddingLeft="5" paddingTop="20" paddingRight="5">
+							<s:HGroup width="100%" verticalAlign="middle">
+								<widgets:EMailTextField
+									id="username"
+									txt_emailAddress_styleName="TextInputs" 
+									lbl_prompt_styleName="Labels"
+									btn_target="{this.btn_activate}" 
+									lbl_prompt_text="EMail Address:" 
+									siblings="{[this.username.txt_emailAddress,this.activation_key.txt_activationCode]}"
+									width="100%"
+									creationComplete="username_creationCompleteHandler(event)"/>
+								<mx:Spacer width="5"/>
+							</s:HGroup>
+							<s:HGroup width="100%" verticalAlign="middle">
+								<widgets:ActivationTextField
+									id="activation_key" 
+									lbl_prompt_text="Activation Code:" 
+									width="100%" 
+									btn_target="{this.btn_activate}" 
+									txt_activationCode_styleName="TextInputs" 
+									lbl_prompt_styleName="Labels" siblings="{[this.username.txt_emailAddress,this.activation_key.txt_activationCode]}"
+									creationComplete="activation_key_creationCompleteHandler(event)"/>
+								<mx:Spacer width="5"/>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingBottom="5" verticalAlign="middle">
+								<mx:Spacer width="10%"/>
+								<s:Button id="btn_activate" label="Activate" height="40" enabled="false" click="onClick_btn_activate(event)" touchTap="btn_activate_touchTapHandler(event)"/>
+								<mx:Spacer width="10%"/>
+							</s:HGroup>
+							<s:VGroup width="100%" height="100%" paddingLeft="5" paddingTop="20" paddingRight="5" visible="true" includeInLayout="true">
+								<s:TextArea id="txt_info" editable="false" selectable="false" styleName="INFO" text="{this._info}" width="100%" height="100%" verticalScrollPolicy="auto"/>
+							</s:VGroup>
+						</s:VGroup>
+					</s:Group>
+				</s:Scroller>  
+			</s:BorderContainer>
+			<s:HGroup width="100%" height="20%" visible="{this.isDebugger}" includeInLayout="{this.isDebugger}">
+				<s:TextArea id="txt_output" styleName="Debugger" width="100%" height="100" editable="false" selectable="false" creationComplete="txt_output_creationCompleteHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Panel>
+</s:View>

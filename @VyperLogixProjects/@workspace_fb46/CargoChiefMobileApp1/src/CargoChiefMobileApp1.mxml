@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ViewNavigatorApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							xmlns:s="library://ns.adobe.com/flex/spark" 
+							firstView="views.CargoChiefMobileApp1HomeView" 
+							initialize="viewnavigatorapplication1_initializeHandler(event)" 
+							applicationDPI="160">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:DateTimeFormatter id="fmt_date" dateTimePattern="MMddyyyy"/>
+		<!-- 
+		<exceptions:GlobalExceptionHandler handlerActions="{[global_exception_handler]}"/>
+		-->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.components.TextArea;
+			import spark.components.TitleWindow;
+			
+			[Bindable]
+			public var mySO:SharedObject;
+			
+			[Bindable]
+			public static var root_file_name_xml:String = 'app:/data/com.CargoChief.CargoChiefMobileApp1/options.xml'; // Make this null to use /mnt/sdcard/com.CargoChief.CargoChiefMobileApp1
+			
+			[Bindable]
+			public var nativeApplication:NativeApplication = NativeApplication.nativeApplication;
+			
+			public var appDescriptor:XML = NativeApplication.nativeApplication.applicationDescriptor;
+			public var nsDeclaration:Namespace = appDescriptor.namespace();
+			
+			public var app_id:String = appDescriptor.nsDeclaration::id[ 0 ] ;
+			
+			[Bindable]
+			public var versionNumber:String = appDescriptor.nsDeclaration::versionNumber[ 0 ] ;
+			
+			[Bindable]
+			public var description:String = appDescriptor.nsDeclaration::description[ 0 ] ;
+			
+			[Bindable]
+			public var credits:String = 'Credits:\n\nThis Android App was produced by Ray C Horn for Cargo Chief, Inc.; (c). Copyright 2012, Vyper Logix Corp. (http://www.vyperlogix.com), All Rights Reserved\n\n';
+			
+			[Bindable]
+			public var is_debugging:Boolean = false; //app_id.indexOf('.debug') == -1;
+			
+			[Bindable]
+			public var is_menu_enhanced:Boolean = true;
+			
+			[Bindable]
+			public var string1:String = 'Cargo Chief Mobile App';
+			
+			[Bindable]
+			public var string2:String = 'When this mobile application is turned on, every hour from 8 AM to 6 PM local time your phone will send a tiny message to Cargo Chief with the location of this phone.  This location data will only be used to provide your customers the approximate location of their cargo.';
+			
+			[Bindable]
+			public var string3:String = 'I Accept & Install';
+			
+			[Bindable]
+			public var string4:String = 'Is starting\n\nPlease Turn\n\nON your GPS';
+			
+			[Bindable]
+			public var string5:String = 'Show Location Settings OK';
+			
+			[Bindable]
+			public var string6:String = 'Cargo Chief Is Now On';
+			
+			[Bindable]
+			public var string7:String = 'Last reported latitude';
+			
+			[Bindable]
+			public var string8:String = 'Last reported longitude';
+			
+			[Bindable]
+			public var string9:String = 'Last Update sent';
+			
+			[Bindable]
+			public var string10:String = 'New Driver';
+			
+			[Bindable]
+			public var string11:String = 'Turn Off';
+			
+			[Bindable]
+			public var string12:String = "Enter New Driver's Smart Phone Number";
+			
+			[Bindable]
+			public var string13:String = "Switch Your Load's Driver Now";
+			
+			public function popUpHelpWindow(parent:*,x:Number,y:Number,width:Number,height:Number,info:String,callback:Function=null):void {
+				var window:TitleWindow = PopUpManager.createPopUp(parent,TitleWindow,true) as TitleWindow;
+				window.x = x;
+				window.y = y;
+				window.width = width;
+				window.height = height;
+				window.title = '(Touch this window to dismiss...)';
+				window.addEventListener(FlexEvent.CREATION_COMPLETE, 
+					function (event:FlexEvent):void {
+						var ta:TextArea = new TextArea();
+						ta.x = 0;
+						ta.y = 0;
+						ta.editable = false;
+						ta.percentWidth = 100;
+						ta.percentHeight = 100;
+						ta.text = info;
+						window.addElement(ta);
+					}
+				);
+				window.addEventListener(MouseEvent.CLICK, 
+					function (event:MouseEvent):void {
+						PopUpManager.removePopUp(window);
+						if (callback is Function) {
+							try {callback()} catch (err:Error) {}
+						}
+					}
+				);
+				PopUpManager.centerPopUp(window);
+				PopUpManager.bringToFront(window);
+			}
+			
+			private function initialize_SharedObject():void {
+				var now:Date = new Date();
+				var name:String = '/local/vyperlogix/'+this.app_id+'/'+this.fmt_date.format(now)+'/cargochief/data/';
+				trace(this.className+'.initialize_SharedObject().1 --> name='+name);
+				try {
+					this.mySO = SharedObject.getLocal(name);
+				} catch (err:Error) {
+					trace(this.className+'.initialize_SharedObject().2 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+			}
+			
+			protected function viewnavigatorapplication1_initializeHandler(event:FlexEvent):void {
+				var toks:Array = app_id.split('.');
+				toks.pop();
+				app_id = toks.join('.');
+				this.initialize_SharedObject();
+			}
+			
+			protected function viewnavigatorapplication1_applicationCompleteHandler(event:FlexEvent):void  {
+				this.stage.addEventListener(KeyboardEvent.KEY_DOWN, 
+					function (event:KeyboardEvent):void {
+						try {
+							if (event.keyCode == Keyboard.BACK) {
+							} else if (event.keyCode == Keyboard.MENU) {
+								event.preventDefault();
+								this.viewMenuOpen = true;
+							} else if (event.keyCode == Keyboard.SEARCH) {
+							}
+						} catch (err:Error) {
+						}
+					}
+				);
+			}
+			
+		]]>
+	</fx:Script>
+</s:ViewNavigatorApplication>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.SWFLoader;
+			import mx.core.Application;
+			import mx.events.FlexEvent;
+			import mx.managers.SystemManager;
+			private var _currentLocation:String;
+			
+			public function set currentLocation(currentLocation:String):void {
+				if (this._currentLocation != currentLocation) {
+					this._currentLocation = currentLocation;
+					this.init_video_from(this._currentLocation);
+				}
+			}
+			
+			public function get currentLocation():String {
+				return this._currentLocation;
+			}
+			
+			private function init_video_from(url:String):void {
+				var _this:VideoViewer = this;
+				var loader:SWFLoader = new SWFLoader();
+				loader.addEventListener(Event.INIT, function (event:Event):void {
+					var content:DisplayObject = loader.content;
+					_this.addChild(content);
+					var sysmgr:SystemManager = (content as SystemManager);
+					sysmgr.addEventListener(FlexEvent.APPLICATION_COMPLETE, function (event:FlexEvent):void {
+						var sysmgr:SystemManager = (event.currentTarget as SystemManager);
+						var swfApp:Application = (sysmgr.application as Application);
+						if (swfApp.hasOwnProperty("helloWorld")) {
+							var helloWorld:Function = (swfApp["helloWorld"] as Function);
+							helloWorld("hi");
+						}
+					}); 
+				});
+				loader.load(url);
+			}
+		]]>
+	</fx:Script>
+</mx:Canvas>

@@ -1,0 +1,16 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+
+
+global
+{
+}
+
+.Lists {
+	backgroundColor: #CCCCCC;
+	backgroundAlpha: 1.0;
+	color: #FF0000;
+	borderColor: #000000;
+	borderAlpha: 1.0;
+	borderStyle: solid;
+}

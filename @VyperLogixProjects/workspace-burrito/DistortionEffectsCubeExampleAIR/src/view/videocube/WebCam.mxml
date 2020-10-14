@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<view:CubeSide xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:view="view.videocube.*"
+    title="Video">
+
+    <mx:Script>
+        <![CDATA[
+            flash.media.Camera;
+
+            private function initVideo():void
+            {
+                var cam:Camera = Camera.getCamera();
+                myVideo.attachCamera(cam);
+            }
+        ]]>
+    </mx:Script>
+
+
+    <view:sideContent>
+
+        <mx:VideoDisplay id="myVideo"
+            width="150" height="150"
+            creationComplete="initVideo();"/>
+
+    </view:sideContent>
+
+</view:CubeSide>

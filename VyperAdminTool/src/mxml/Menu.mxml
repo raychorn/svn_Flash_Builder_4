@@ -1,0 +1,691 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"  
+	width="{_componentWidth}" height="1%" creationPolicy="all"
+	verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+	borderStyle="none" 
+	added="displayEvent(event)" creationComplete="init()"
+	render="displayEvent(event)" resize="displayEvent(event)"
+	updateComplete="displayEvent(event)" 
+	valid="displayEvent(event)" valueCommit="displayEvent(event)">
+	
+	<mx:Canvas id="foo" width="{_componentWidth}" height="{_componentHeight}" alpha="1" 
+		verticalScrollPolicy="off" horizontalScrollPolicy="off">
+		<mx:VBox id="container" width="100%" height="100%" 
+			verticalScrollPolicy="off" horizontalScrollPolicy="off"
+			visible="true" styleName="{menuStyle}" resize="onResize_container(event)" creationComplete="onCreationComplete_container()">
+		</mx:VBox>	
+	</mx:Canvas>
+	
+	<mx:Canvas id="maskContainer" width="{_componentWidth}" height="{_componentHeight}"
+		verticalScrollPolicy="off" horizontalScrollPolicy="off">
+	</mx:Canvas>
+	
+	<mx:Canvas id="effectContainer" width="{_componentWidth}" height="{_componentHeight}"
+		verticalScrollPolicy="off" horizontalScrollPolicy="off">
+	</mx:Canvas>
+	
+	
+	<mx:Canvas id="mymask" width="{_componentWidth}" height="{_componentHeight}"
+		verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+		cornerRadius="5" borderStyle="solid">
+	</mx:Canvas>
+	
+	<mx:Script>
+		<![CDATA[
+			import mx.events.ResizeEvent;
+			import libs.vo.EventVO;
+			import controller.MenuController;
+			import controller.MenuEffectController;				// Designed to set the approprate effect
+			import views.InitializeMenu_View;					// To build the sub components for the new menu
+			import views.CreateMenu_View;						// To return a new menu with the menu type
+			import utils.graphics.SnapshotDisplayObject;		// To take a graphic snapshot of the new menu container
+			import libs.vo.GlobalsVO;							// Access to the CSS variables
+			import mx.collections.ArrayCollection;				// Needed to compair if the data is from json or xml
+			import mx.managers.PopUpManager;					// Needed for creating a new menu in the popup manager
+			import mx.controls.Image;							// Needed for the effect masking
+			
+			public var menuInitializer:InitializeMenu_View;
+			// BEGIN: WARNING: DO NOT CHANGE THE FOLLOWING LINE OF CODE OR THE ADMIN TOOL WILL CEASE TO FUNCTION PROPERLY...
+			public var subMenuTitle:MenuText;					// Reference to SubMenuTitle Class
+			// END!   WARNING: DO NOT CHANGE THE FOLLOWING LINE OF CODE OR THE ADMIN TOOL WILL CEASE TO FUNCTION PROPERLY...
+			public var parentRef:Object;						// Reference to parent
+			public var parentMenu:Object;						// Parent menu object
+			public var vOrientation:String;						// Sub-Menu Vertical positioning
+			public var hOrientation:String;						// Sub-Menu Left or Right positioning
+			public var containerWidth:Number;					// Container width initializer 
+			public var menuType:int;							// 0 - Category Menu, 1 - Sub-Menu
+			public var effectType:int;							// Display the proper effect
+			
+			private var _newMenu:Object;						// New menu object to build
+			private var _interrupt:Boolean;						// User interaction to fast
+			private var _effectMask:Image;
+			private var _childObject:Object;					// This Object's Child Object
+            private var _menuDelay:Timer;						// New Menu Delay
+			private var _selectedMenuItem:MenuItem;				// Previous menu item selection
+			private var _currentState:int;						// Place holder for the current menu state
+			private var _currentStateObj:Object;				// Place holder for the menu states
+			private var _menuEffectController:MenuEffectController;	// For the menu animation and effects
+			
+			[Bindable]
+			public var _componentWidth:Number;					// Required to set the correct width
+			
+			[Bindable]
+			public var _componentHeight:Number;				// Required to set the correct height
+			
+			[Bindable]
+			private var menuStyle:String;
+			
+			[Bindable]
+			public var menuLevel:int = 2; // by default this must be a level 2...
+			
+			private var _ignoreEvents:Boolean = false;
+
+			private var _img:Image; // used for the Admin Tool
+
+			private var _timer:Timer; // used for the Admin Tool
+		
+			// State conditions
+			private const PREINIT:String = "PREINITIALIZE";
+			private const ONLOAD:String = "ONLOAD";
+			private const DELAYED:String = "DELAYED";
+			private const CREATION_COMPLETE:String = "CREATION_COMPLETE"; 
+			private const MENUDELAY:String = "menuAppearDelay";
+			private const RIGHT:String = "right";				// Menu hOrientation
+			private const LEFT:String = "left";					// Menu hOrientation
+			private const MENUBAR:String = "MenuBarContainer";	// Target Container to place this menu object
+			private const STYLE2:String = "SubMenuContainer";
+			private const STYLE1:String = "MenuContainer";
+			private const EFFECT_END:String = "effectEnd";		// Event listener constant
+			private const MCR:String = "MenuController";
+			private const CWIDTH:String = "menuContainerWidth";
+			
+			
+			/**
+			 * Pre-initialize class object
+			 */
+			 
+			public function preInit(newMenu:Object):void {
+				
+				// Setup the type of style based on the menu type			
+				newMenu.categoryItem != null ? menuStyle = STYLE1 : menuStyle = STYLE2;
+				
+				// Initialize the state Object
+				_currentStateObj = { PREINIT:0, CREATION_COMPLETE:1, DELAYED:2, ONLOAD:3 };
+				
+				/* Set to no interrupt, unless another menu
+				 * has been invoked to quickly */
+				_interrupt = false;
+				
+				// Store this data to construct a new menu
+				_newMenu = newMenu;
+				
+				// Build this new menu in the target
+				_currentState = getStatebyName(PREINIT);
+				
+				// Get the container width property from CSS
+				_newMenu.menuContainerWidth = containerWidth = Number(GlobalsVO.getCSSProperty(CWIDTH));
+				
+				// Initially set this component height
+				_componentHeight = 0;
+				
+				// Store the reference of the parentmenu
+				this.parentMenu = newMenu.parentMenu;
+				
+				// Set the menuLevel here...
+				this.menuLevel = newMenu.menuLevel;
+				//trace('this.menuLevel='+this.menuLevel);
+				
+				// Add this object to the PopupManager
+				PopUpManager.addPopUp(this, newMenu.target as Canvas);
+				
+				// Add the CSS Style to this menu object
+				GlobalsVO.setStyle(this);
+				
+				// Set the Horizontal Orientation
+				var dataModel:Object = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL);
+				try {
+					int(GlobalsVO.getGlobal(MCR).selectedCategoryItem.categoryPosition) < 
+					int(dataModel.menuData.data.length) + 
+					int(dataModel.getMetaDataValue([GlobalsVO.META_H_ORIENTATION]))
+					 ? this.hOrientation = RIGHT : this.hOrientation = LEFT;
+				} catch(err:Error) {}
+			}
+			
+			
+			
+			
+			
+			/**
+			 * After creation complete
+			 * for all renderable display objects
+			 */
+			 
+			public function init():void {
+				_currentState = getStatebyName(CREATION_COMPLETE);
+				menuInitializer = new InitializeMenu_View(this,_newMenu);
+				menuInitializer.addEventListener(Event.COMPLETE,onBuildMenu);
+   			}	
+            
+            
+            
+            
+            
+            /**
+             * After the menu has been assembled
+             * with menu items and or other viewable
+             * menu features, then delay the menu
+             * based on the CSS
+             * @param e:Event - N/A
+             * @return void
+             */
+             
+            public function onBuildMenu(e:Event):void {
+				// Add the CSS Style to this menuitem object
+				GlobalsVO.setStyle(container);
+				
+				// Show effect container
+				setMenuInteraction(false);
+				
+				// Set the canvas width
+            	_componentWidth = containerWidth;
+				
+				// Setup the Menu Delay
+				_menuDelay = new Timer(int(GlobalsVO.getCSSProperty(MENUDELAY)),1);
+				_menuDelay.addEventListener(TimerEvent.TIMER_COMPLETE, onLoad);
+				_menuDelay.start();
+				
+				_currentState = getStatebyName(DELAYED);
+            }
+            
+            
+           
+            
+            /**
+            * After the menu has initially rendered
+            * Listen to the events during
+            * and after the ONLOAD state to 
+            * adjust the size of the menu container
+            */
+            
+            public function displayEvent(e:Event):void {
+				if(_currentState >= getStatebyName(ONLOAD)) {
+					updateSize();
+				}
+			}
+			
+            
+            
+            
+            /**
+             * Return the current menu state
+             * @return - Menu state as integet
+             */
+             
+            public function getState():int {
+            	return _currentState;
+            }
+            
+            
+            
+            
+            /**
+            * Return the integer value
+            * of the string name of the 
+            * menu state
+            * @return state:int - Menu State
+            */
+            
+            public function getStatebyName(status:String):int {
+            	for(var i:Object in _currentStateObj) {
+            		if(String(i).toLowerCase() == status.toLowerCase()) {
+            			return int(_currentStateObj[i]);
+            		}
+            	}
+            	
+            	return -1;
+            }
+            
+            
+            
+            /**
+            * Return the string name
+            * of the menu state
+            * @return statename:String - Menu state
+            */
+            
+            public function getStatebyNum(status:int):String {
+            	for(var i:Object in _currentStateObj) {
+            		if(int(_currentStateObj[i]) == status) return String(i);
+            	}
+            	
+            	return null;
+            }
+            
+            
+            
+            
+            /**
+             * Return the reference of the
+             * menu delay timer object
+             * @return Reference to Timer
+             */
+             
+            public function get menuDelay():Timer {
+				return _menuDelay;     	
+            }
+			
+           
+           	
+           	/**
+           	 * Set an interrupt to stop the
+           	 * rendering of a new menu
+           	 * This is used if the user moves
+           	 * their mouse quickly accross the
+           	 * different categories and menu items
+           	 */
+           	 
+           	public function set interrupt(b:Boolean):void {
+           		_interrupt = b;
+           	}
+            
+            
+            
+            
+            
+            /**
+            * If the _menuDelay timer has finished
+            * adjusting the canvas height to the same
+            * height as the VBox container,
+            * Display the menu.
+            * @param e:TimerEvent - N/A
+            * @return void
+            */
+            private function onLoad(e:TimerEvent):void {
+            	
+            	// If user has moved the mouse to quickly
+            	if(_interrupt) {
+            		removeMenu();
+            		return;
+            	}
+            	
+            	// Dispatch to any listener that the menu is ready
+            	dispatchEvent(new Event(EventVO.ONMENULOAD));
+            	
+            	/* Display the menu effect container
+            	 * hide the real menu container */
+            	setMenuInteraction(false);
+				
+            	_currentState = getStatebyName(ONLOAD);
+				
+				/*
+				 * Check to see if the menu container has
+				 * a SubMenuTitle.  If so, then delay
+				 * the display until the final resize
+				 * has been performed by the SubMenuTitle
+				 * call the updateSize() to keep resizing the object 
+				 * until the final measurements have been performed
+				 * then call the main start() method to display
+				 * the menu.
+				 */
+				 
+            	subMenuTitle != null ? subMenuTitle.init(showMenu) : showMenu();
+            }
+            
+            
+            
+            
+            
+            /**
+            * Display the real menu container
+            * if true.
+            * Display the bitmap container and hide
+            * the real menu container if false
+            */
+            
+            private function setMenuInteraction(b:Boolean):void {
+            	container.visible = b;						// Display the actual menu container
+            	effectContainer.visible = !b;				// Hide the menu effect container
+            }
+            
+            
+            /**
+            * Called from Accessibility class
+            * when a user uses a keyboard to
+            * navigate
+            */
+            
+			public function selectMenuItem(e:MouseEvent,menuItem:MenuItem=null):void {
+            	
+            	if(menuItem == null) { 
+					menuItemSelect(e.currentTarget as MenuItem);
+					// If the user clicks on a menu item
+					if(e.type == MouseEvent.CLICK) {
+						//trace("## : "+e.currentTarget.url);
+						GlobalsVO.getGlobal(MCR).buildURL(e);
+					}
+				} else {
+					menuItem.onMouseOver();
+					menuItemSelect(menuItem);
+				}
+            }
+            
+            
+            
+            /**
+			 * If the user mouse's over the menuItem
+			 * then, create a new menu
+			 * @param e:Event - The current menu item selected
+			 */
+			public function menuItemSelect(menuItem:MenuItem):void {
+				
+				// If previous menu item selection is different or null
+       			if(menuItem != _selectedMenuItem || _selectedMenuItem == null) {
+       				
+       				/* If the user moves the mouse to quickly
+       				 * then remove the menu with no effects */
+       				
+       				if(_childObject != null) {
+       					if(_childObject.getState() < _childObject.getStatebyName(ONLOAD)) {
+       						_childObject.interrupt = true;
+       						PopUpManager.removePopUp(_childObject as Menu);
+       					}
+       				}
+       				/* Try to un-highlight the previous selected
+       				 * menuitem unless this is the first time */
+       				try {
+       					_selectedMenuItem.onMouseOut();
+       				} catch(e:Error){}
+       				
+       				// Set the previous selected category for hightlight purposes
+       				_selectedMenuItem = menuItem;
+       				deleteChildrenObjects();
+       			} else {
+       				return;
+       			}
+       			
+       			/* Build new Menu and set the current
+       			 * child pointer for this object */
+       			_childObject = new CreateMenu_View().createNewMenu( {
+       				 selectedMenuItem:menuItem, parentMenu:menuItem.parent.parent.parent,
+       				 target:GlobalsVO.getGlobal(MENUBAR).parent, menuData:menuItem.currentData,
+       				 'menuLevel':3
+       				 } );
+			}
+			
+			
+			
+			
+			
+			/**
+			 * Delete all child objects
+			 * from this object
+			 */
+			 
+			public function deleteChildrenObjects():void {
+				if(_childObject == null) return;
+				_childObject.deleteChildrenObjects();
+				_childObject.hideMenu();
+			}
+            
+            public function get ignoreEvents():Boolean {
+            	return this._ignoreEvents;
+            }
+            
+            private function onCreationComplete_container():void {
+            	//trace(this.className+'.onCreationComplete_container().1 this='+this);
+            }
+            
+            private function _takeSnapshot(_this:Menu):void {
+				//trace(_this.className+'._takeSnapshot().1 --> this._img='+_this._img);
+				if (_this._img == null) {
+					try {
+						_this._img = _this.takeSnapshot();
+						var app:* = GlobalsVO.getGlobal(GlobalsVO.APPLICATION);
+						var aPt:Point = new Point(_this.foo.x,_this.foo.y);
+						var cPt:Point = _this.foo.contentToGlobal(aPt);
+						//trace(_this.className+'._takeSnapshot().2 --> aPt='+aPt);
+						//trace(_this.className+'._takeSnapshot().3 --> cPt='+cPt);
+						var gPt:Point = app.globalToContent(cPt);
+						//trace(_this.className+'._takeSnapshot().4 --> gPt='+gPt);
+						app.addChild(_this._img);
+						_this._img.x = gPt.x;
+						_this._img.y = gPt.y;
+						GlobalsVO.getGlobal(MCR).fakeMenuImage(_this._img);
+						//trace(_this.className+'._takeSnapshot().5 --> removeMenu() !');
+						if (_this._childObject != null) {
+							_this._childObject.ignoreEvents = this._ignoreEvents;
+						}
+						_this.removeMenu();
+					} catch (err:Error) {
+		            	this.handle_takeSnapshot();
+					}
+				}
+            }
+            
+            private function handle_takeSnapshot():void {
+            	var _this:Menu = this;
+				//trace(this.className+'.handle_takeSnapshot().1 --> GlobalsVO.getGlobal(MCR).isAdminTool='+GlobalsVO.getGlobal(MCR).isAdminTool);
+				//trace(this.className+'.handle_takeSnapshot().2 --> this._ignoreEvents='+this._ignoreEvents);
+				//trace(this.className+'.handle_takeSnapshot().3 --> this._img='+this._img);
+            	if ( (GlobalsVO.getGlobal(MCR).isAdminTool) && (this._img == null) && (this._ignoreEvents) ) {
+					//trace(this.className+'.handle_takeSnapshot().4 --> this._timer='+this._timer);
+            		if (this._timer == null) {
+            			this._timer = new Timer(250);
+            			this._timer.addEventListener(TimerEvent.TIMER,
+            				function (event:TimerEvent):void {
+								trace(className+'.handle_takeSnapshot().TimerEvent.1 --> !');
+								_timer.stop();
+								_this._takeSnapshot(_this);
+            				}
+            			);
+						//trace(this.className+'.handle_takeSnapshot().5 --> this._timer.start() !');
+            			this._timer.start();
+            		} else {
+						//trace(this.className+'.handle_takeSnapshot().6 --> this._timer.reset()() !');
+            			this._timer.reset();
+						//trace(this.className+'.handle_takeSnapshot().7 --> this._timer.start() !');
+            			this._timer.start();
+            		}
+            	}
+            }
+            
+            private function onResize_container(event:ResizeEvent):void {
+            	var c:* = event.currentTarget;
+            	//trace(this.className+'.onResize_container().1 c='+c+', width/height='+c.width+','+c.height);
+            	if ( (c.width > 0) && (c.height > 0) ) {
+	            	//this.handle_takeSnapshot();
+            	}
+            }
+            
+            public function set ignoreEvents(ignoreEvents:Boolean):void {
+            	//trace(this.className+'.ignoreEvents.1 = '+ignoreEvents);
+            	//this._ignoreEvents = ignoreEvents;
+            	//var c:* = this.container;
+            	//trace(this.className+'.ignoreEvents.2 c='+c+', width/height='+c.width+','+c.height);
+            	//this._takeSnapshot(this);
+            }
+            
+            /**
+            * Display the Menu Effects Container
+            * hollowed by the real menu container
+            * @param e:Event
+            */
+            
+          	private function showMenu(e:Event=null):void {
+          		// Don't show the menu if interrupted
+          		if(_interrupt) {
+					removeMenu();          		
+	          		return;
+          		}
+          		
+          		
+          		// Display effectContainer
+          		if(GlobalsVO.ISLoggedOut) {
+          			setMenuInteraction(false);
+          		} else {
+          			setMenuInteraction(true);
+          		}
+          		
+          		/* If the menu container is not present
+          		 * then cancel the construction of this
+          		 * menu and tell the controller to re-build
+          		 * a new one, only if the selecteMenuItem has
+          		 * a child menu object */
+          		 
+          		try {
+          			// Try to take a picture of the newly constructed menu
+          			effectContainer.addChild(new SnapshotDisplayObject().takeSnapshot(container));
+          		} catch(e:Error) {
+          				// The newly constructed menu didn't render property
+          				//GlobalsVO.diagnostics("ERROR 1: "+e);
+	          			try {
+	          				/* If the parentMenu's selected menu item has
+	          				 * a child object (Another menu), then stop
+	          				 * this rendering and reload a new menu */
+		          			if(parentMenu._selectedMenuItem.currentData.data is Array ||
+		          			   parentMenu._selectedMenuItem.currentData.data is ArrayCollection) {
+			          			reLoadMenu();
+			          			_interrupt=true;
+			          			return;
+		          			}
+	          			} catch(e:Error) {
+	          				//GlobalsVO.diagnostics("ERROR 2: "+e);
+	          			}
+          			
+          		}
+          		
+          		/* Just to make sure the logic doesn't 
+          		 * continue if reLoadMenu was invoked */
+          		if(_interrupt) {
+					//GlobalsVO.diagnostics("ERROR 4: Logic is trying to continue");          		
+	          		return;
+          		}
+          		
+          		/* Now display the menu with effects */
+          		_menuEffectController = new MenuEffectController(this);
+          		_menuEffectController.showMenuEffects(this.effectType,endShowMenu);
+          		
+          		/* Determine the size of 
+          		 * the menu with the menubar */
+          		var menuController:MenuController = GlobalsVO.getGlobal(MCR);
+          		this.addEventListener(MouseEvent.MOUSE_OVER,function (event:MouseEvent):void {if (!ignoreEvents) {menuController.onMenu(event)} else {trace('### ignoring event='+event);}});
+       			this.addEventListener(MouseEvent.MOUSE_OUT,function (event:MouseEvent):void {if (!ignoreEvents) {menuController.onMenu(event)} else {trace('### ignoring event='+event);}});
+       			
+       			// Set new height
+          		menuController.setExternalContainerHeight(this);
+			}
+            
+            
+            
+            /**
+             * Hide the real menu container, show
+             * the menu effect container for
+             * the menu effects
+             */
+             
+          	public function hideMenu():void {
+          		if(_interrupt) {
+          			removeMenu();
+	          		return;
+          		}
+          		
+          		setMenuInteraction(false);
+          		
+          		try {
+          			// Hide menu effects
+          			_menuEffectController.hideMenuEffects(this.effectType,endHideMenu);
+          		} catch(e:Error) {
+          			//GlobalsVO.diagnostics("ERROR 3: "+e);
+          			removeMenu();
+          		}
+            }
+            
+            
+            
+            /**
+             * After the menu has finished
+             * rendering all of it's show effects
+             */
+            
+            private function endShowMenu():void {
+       			setMenuInteraction(true);
+			}
+			
+			
+			
+			/**
+             * After the menu has finished
+             * rendering all of it's hide effects
+             */
+			
+           	public function endHideMenu():void {
+            	//trace("endHideMenu");
+           		removeMenu();
+			}
+           	
+           	
+           	/**
+           	 * Remove the menu class object
+           	 * from the PopupManager window
+           	 */
+           	 
+           	public function removeMenu():void {
+          		PopUpManager.removePopUp(this);
+          	}
+          	
+          	public function takeSnapshot():Image {
+				trace(this.className+'.takeSnapshot().1 --> container='+container);
+				trace(this.className+'.takeSnapshot().2 --> container.width='+container.width);
+				trace(this.className+'.takeSnapshot().3 --> container.height='+container.height);
+          		return new SnapshotDisplayObject().takeSnapshot(container)
+          	}
+          	
+          	private function reLoadMenu():void {
+          		_interrupt = true;
+          		var menuBar_View:Object = GlobalsVO.getGlobal(MCR);
+          		menuBar_View.createMenu(this);
+          		removeMenu();
+          	}
+          	
+			
+            
+            
+           /**
+            * Update the new height
+            */
+            
+            private function updateSize():void {
+            	this.validateNow();
+            	_componentHeight = container.height;
+            }
+            
+          
+          
+			/**
+			 * Required for recursive menu creation
+			 * Store the menuitem from the parent
+			 * menu that invoked the new menu
+			 * @param menuItem:MenuItem - DisplayObject
+			 * that was selected by the user from a menu
+			 */
+			 
+			public function set selectedMenuItem(menuItem:MenuItem):void {
+				this._selectedMenuItem = menuItem;
+			}
+			
+			
+			
+			
+			/**
+			 * Required for recursive menu creation
+			 * Get the reference of the current
+			 * selected menu item that opened
+			 * the new menu
+			 */
+			 			
+			public function get selectedMenuItem():MenuItem {
+				return this._selectedMenuItem;
+			}
+		]]>
+	</mx:Script>
+</mx:Canvas>

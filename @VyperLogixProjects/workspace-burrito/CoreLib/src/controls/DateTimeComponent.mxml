@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="100%" height="100%" xmlns:georg="com.georg.*" xmlns:datetime="com.georg.datetime.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.events.CollectionEvent;
+			import mx.utils.ObjectProxy;
+			
+			[Bindable] private var acData:ArrayCollection = new ArrayCollection();
+			[Bindable] private var d:Date = new Date(2005, 8, 10, 14, 35, 10);
+			
+			public function initApp():void 
+			{
+				acData.addEventListener(CollectionEvent.COLLECTION_CHANGE, cChange);
+				
+				acData.addItem(new ObjectProxy({title:"First", date: d}));
+				acData.addItem(new ObjectProxy({title:"Second", date: new Date()}));
+			}
+			
+			private function cChange(e:CollectionEvent):void
+			{
+				if (acData.length > 1)
+				{
+					fd.text = acData[0].title + " date: " + acData[0].date;
+					sd.text = acData[1].title + " date: " + acData[1].date;
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:Panel title="DateTime Controls">
+		<s:HGroup paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
+			<s:VGroup>
+				<georg:DateTimeField selectedDate="{d}" />
+				<datetime:DateTimeChooser selectedDate="{d}" />
+			</s:VGroup>
+			<s:VGroup>
+				<mx:DataGrid id="datagrid" width="300" height="120" editable="true" dataProvider="{acData}" rowHeight="24">
+					<mx:columns>
+						<mx:DataGridColumn headerText="Title" dataField="title" />
+						<mx:DataGridColumn headerText="Date" dataField="date" itemRenderer="com.georg.DateTimeField" editable="false" />
+					</mx:columns>
+				</mx:DataGrid>
+				
+				<s:Label id="fd" />
+				<s:Label id="sd" />
+			</s:VGroup>
+		</s:HGroup>
+	</s:Panel>
+</s:Group>

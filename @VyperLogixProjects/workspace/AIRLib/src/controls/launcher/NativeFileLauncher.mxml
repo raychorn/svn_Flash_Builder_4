@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				layout="absolute" width="100%" height="100%" 
+				creationComplete="titlewindow1_creationCompleteHandler(event)" 
+				horizontalScrollPolicy="off" verticalScrollPolicy="off">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.CapabilitiesUtils;
+			import com.FileUtils;
+			
+			import controls.Alert.AlertPopUp;
+			
+			import flash.desktop.NativeProcess;
+			import flash.desktop.NativeProcessStartupInfo;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			import vyperlogix.FileIO.FileUpload;
+			import vyperlogix.FileIO.events.FileExeCompletedEvent;
+			import vyperlogix.FileIO.events.FileFolderCompletedEvent;
+			
+			public var dataProvider:String; // this is the path for the file...
+			
+			private var uploader:FileUpload;
+			
+			private function setupAndLaunch(nativePath:String):void {
+				var _this:NativeFileLauncher = this;
+				var nativeProcessStartupInfo:NativeProcessStartupInfo = new NativeProcessStartupInfo();
+				var file:File = new File(nativePath);
+				nativeProcessStartupInfo.executable = file;
+				
+				var processArgs:Vector.<String> = new Vector.<String>();
+				processArgs[0] = this.dataProvider;
+				nativeProcessStartupInfo.arguments = processArgs;
+				
+				var process:NativeProcess = new NativeProcess();
+				process.start(nativeProcessStartupInfo);
+				process.addEventListener(ProgressEvent.STANDARD_OUTPUT_DATA, 
+					function (event:ProgressEvent):void {
+						trace("Got: ", process.standardOutput.readUTFBytes(process.standardOutput.bytesAvailable)); 
+					});
+				process.addEventListener(ProgressEvent.STANDARD_ERROR_DATA,
+					function (event:ProgressEvent):void {
+						AlertPopUp.surpriseNoOkay(process.standardError.readUTFBytes(process.standardError.bytesAvailable),'ERROR');
+					}
+				);
+				process.addEventListener(NativeProcessExitEvent.EXIT, 
+					function (event:NativeProcessExitEvent):void {
+						trace("Process exited with ", event.exitCode);
+					}
+				);
+				process.addEventListener(IOErrorEvent.STANDARD_OUTPUT_IO_ERROR, 
+					function (event:IOErrorEvent):void {
+						trace(event.toString());
+					}
+				);
+				process.addEventListener(IOErrorEvent.STANDARD_ERROR_IO_ERROR, 
+					function (event:IOErrorEvent):void {
+						trace(event.toString());
+					}
+				);
+			}
+			
+			private function perform_executable_chooser_for(aFileName:String):void {
+				var _this:NativeFileLauncher = this;
+				if (NativeProcess.isSupported) {
+					if (aFileName is String) {
+						if (this.uploader is FileUpload) {
+							this.uploader.visible = this.uploader.includeInLayout = true;
+						} else {
+							this.uploader = new FileUpload();
+							this.uploader.addEventListener(FlexEvent.CREATION_COMPLETE, 
+								function (event:FlexEvent):void {
+									var up:FileUpload = FileUpload(event.currentTarget);
+									up.title = 'Choose the Program you want to use to Edit "'+aFileName+'"';
+									up.width = FlexGlobals.topLevelApplication.stage.nativeWindow.width - 50;
+									var t:Array = [];
+									if (CapabilitiesUtils.isOSWindows()) {
+										t.push('*.exe');
+										t.push('*.cmd');
+										t.push('*.bat');
+									} else if ((CapabilitiesUtils.isOSMac())) {
+										t.push('*');
+										t.push('*.dmg');
+										t.push('*.app');
+									} else { // Linux could care less what file types are executables...
+										t.push('*');
+										t.push('*.*');
+									}
+									var s:String = t.join(';');
+									up.file_filter_description = "Executable (" + s + ")";
+									up.file_filter_types = s;
+									up.file_begin_folder = FlexGlobals.topLevelApplication.appProxy.mySO.data.__progLastFolder;
+									up.currentState = 'Choose_EXE';
+									up.addFiles();
+								}
+							);
+							this.uploader.addEventListener(FileExeCompletedEvent.TYPE_FILE_EXE_COMPLETE, 
+								function (event:FileExeCompletedEvent):void {
+									var up:FileUpload = FileUpload(event.currentTarget);
+									if (up is FileUpload) {
+										up.visible = up.includeInLayout = false;
+									}
+									var aFile:File = File(event.data);
+									var progDict:Object = FlexGlobals.topLevelApplication.appProxy.mySO.data.__progDict;
+									progDict[_this.dataProvider] = aFile.nativePath;
+									FlexGlobals.topLevelApplication.appProxy.mySO.data.__progDict = progDict;
+									FlexGlobals.topLevelApplication.appProxy.mySO.data.__progLastFolder = FileUtils.makeFileSpecIntoFolderSpec(aFile.nativePath);
+									FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+									_this.dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+									_this.callLater(_this.setupAndLaunch, [aFile.nativePath]);
+								}
+							);
+							this.addChild(this.uploader);
+						}
+					} else {
+						this.dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+						AlertPopUp.surpriseNoOkay('Cannot choose an executable unless you choose a file name.','WARNING');
+					}
+				} else {
+					this.dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+					AlertPopUp.surpriseNoOkay('Cannot choose an executable unless Native Process is Supported and right now it is not, sorry.','WARNING');
+				}
+			}
+
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void {
+				var progDict:Object = FlexGlobals.topLevelApplication.appProxy.mySO.data.__progDict;
+				if (progDict == null) {
+					FlexGlobals.topLevelApplication.appProxy.mySO.data.__progDict = {};
+					FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+					progDict = FlexGlobals.topLevelApplication.appProxy.mySO.data.__progDict;
+				}
+				var toks:Array;
+				var progName:String = progDict[this.dataProvider];
+				if (!(progName is String)) {
+					this.perform_executable_chooser_for(this.dataProvider);
+				} else {
+					toks = progName.split();
+				}
+			}
+
+		]]>
+	</fx:Script>
+</mx:TitleWindow>

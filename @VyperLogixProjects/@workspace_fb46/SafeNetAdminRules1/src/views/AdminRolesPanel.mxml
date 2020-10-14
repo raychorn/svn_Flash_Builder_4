@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Panel xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="100%" height="100%" currentState="view_state" title="Roles">
+	<s:states>
+		<s:State name="State1"/>
+		<s:State name="view_state"/>
+		<s:State name="add_state"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<fx:XMLList id="treeData">
+			<node label="Roles">
+				<node label="Admin">
+					<node label="User Role Management">
+						<node label="User Management">
+							<node label="addUser"/>
+							<node label="deleteUser"/>
+							<node label="changePassword"/>
+							<node label="changePasswordForUser"/>
+						</node>
+						<node label="Role Management">
+							<node label="addRole"/>
+							<node label="updateRoleDescription"/>
+							<node label="updateRolePermissions"/>
+							<node label="deleteRole"/>
+							<node label="reassignRole"/>
+						</node>
+					</node>
+					<node label="Network Cloud Operations Management">
+						<node label="Network Management">
+							<node label="addNetworkInterface"/>
+							<node label="updateNetworkInterface"/>
+							<node label="deleteNetworkInterface"/>
+							<node label="applyNetworkChanges"/>
+							<node label="cancelNetworkChanges"/>
+							<node label="revertNetworkConfiguration"/>
+							<node label="addNetworkRoute"/>
+							<node label="deleteNetworkRoute"/>
+							<node label="addDNS"/>
+							<node label="deleteDNS"/>
+						</node>
+						<node label="Cloud Management">
+							<node label="addCloudCredentials"/>
+							<node label="removeCloudCredentials"/>
+							<node label="setDefaultCloudCredentials"/>
+							<node label="setCurrentCloudCredentials"/>
+							<node label="setCloudCredentialsForUser"/>
+						</node>
+						<node label="Operations Management">
+							<node label="registerInstanceIP"/>
+							<node label="configureServiceAws"/>
+							<node label="unregisterAllPeers"/>
+						</node>
+					</node>
+					<node label="Partition and Recovery Management">
+						<node label="bootupProtectedInstanceEx"/>
+						<node label="bootupProtectedInstance"/>
+						<node label="bootupProtectedInstanceExAsync"/>
+						<node label="bootupProtectedInstanceAsync"/>
+						<node label="reassignPartitionToInstance"/>
+						<node label="recoverPartition"/>
+					</node>
+					<node label="Logging and Miscellaneous Management">
+						<node label="updateSyslogServer"/>
+						<node label="enableSyslogForwarding"/>
+						<node label="disableSyslogForwarding"/>
+						<node label="safeLogTransfer"/>
+						<node label="debugLogTransfer"/>
+						<node label="clearLogs"/>
+						<node label="submitLogMessage"/>
+						<node label="updateSNMPTrapConfig"/>
+					</node>
+					<node label="Key and Certificate Management">
+						<node label="Key Management">
+							<node label="setKeyManagementType"/>
+							<node label="setKeySecureCredentials"/>
+							<node label="setKeySecureProperties"/>
+							<node label="setKeySecureCACert"/>
+						</node>
+						<node label="Certificate Management">
+							<node label="generateSSLCSR"/>
+							<node label="deleteSSLCertificate"/>
+						</node>
+					</node>
+					<node label="License and EULA Management">
+						<node label="addLicense"/>
+						<node label="eulaAccept"/>
+					</node>
+				</node>
+				<node label="User">
+					<node label="User Role Management">
+						<node label="User Management">
+							<node label="listUsers"/>
+							<node label="listUsersEx"/>
+							<node label="getUserRole"/>
+							<node label="getDescriptionForRole"/>
+							<node label="getPermissionsForRole"/>
+							<node label="getCurrentPermissions"/>
+						</node>
+						<node label="Role Management">
+							<node label="listRoles"/>
+							<node label="listRolesEx"/>
+						</node>
+					</node>
+					<node label="Network Cloud Operations Management">
+						<node label="Network Management">
+							<node label="listNetworkInterfaces"/>
+							<node label="getNetworkInterfaceInfo"/>
+							<node label="backupNetworkConfiguration"/>
+							<node label="listNetworkRoutes"/>
+							<node label="listDNS"/>
+						</node>
+						<node label="Cloud Management">
+							<node label="listSupportedClouds"/>
+							<node label="getDefaultCloudCredentials"/>
+							<node label="listCloudCredentials"/>
+							<node label="getCurrentCloudCredentials"/>
+							<node label="getCloudCredentialsForUser"/>
+							<node label="getCloudParams"/>
+							<node label="listInstances"/>
+							<node label="startInstance"/>
+							<node label="listProtectedInstances"/>
+							<node label="getInstanceStatus"/>
+						</node>
+						<node label="Operations Management">
+							<node label="listInstancesJobID"/>
+							<node label="getJobDetails"/>
+							<node label="rebootSystem"/>
+							<node label="getHaAwsConfig"/>
+							<node label="registerPeer"/>
+							<node label="unregisterPeer"/>
+							<node label="configureHeartBeat"/>
+							<node label="getHaHeartBeatConfig"/>
+						</node>
+					</node>
+					<node label="Partition and Recovery Management">
+						<node label="getPartitions"/>
+						<node label="getPartitionStatus"/>
+						<node label="collectRecoveryDataFromInstance"/>
+					</node>
+					<node label="Logging and Miscellaneous Management">
+						<node label="getSysLogServerInfo"/>
+						<node label="getStatusOverview"/>
+						<node label="getPowerStatusOverview"/>
+						<node label="getSNMPTrapConfig"/>
+						<node label="enableSNMPTraps"/>
+						<node label="disableSNMPTraps"/>
+						<node label="listApi"/>
+						<node label="getVersion"/>
+					</node>
+					<node label="Key and Certificate Management">
+						<node label="getKeyManagementType"/>
+						<node label="getKeySecureCredentials"/>
+						<node label="getKeySecureProperties"/>
+						<node label="checkKeySecure"/>
+						<node label="saveSSLCertificate"/>
+						<node label="uploadSignedSSLCertificate"/>
+					</node>
+					<node label="License and EULA Management">
+						<node label="getLicenseInfo"/>
+						<node label="getLockingCode"/>
+						<node label="eulaText"/>
+						<node label="isEulaDone"/>
+					</node>
+				</node>
+				<node label="Observer">
+					<node label="User Role Management">
+						<node label="User Management">
+							<node label="listUsers"/>
+							<node label="listUsersEx"/>
+						</node>
+						<node label="Role Management">
+							<node label="getUserRole"/>
+							<node label="getDescriptionForRole"/>
+							<node label="getPermissionsForRole"/>
+							<node label="getCurrentPermissions"/>
+							<node label="listRoles"/>
+							<node label="listRolesEx"/>
+						</node>
+					</node>
+					<node label="Network Cloud Operations Management">
+						<node label="Network Management">
+							<node label="listNetworkInterfaces"/>
+							<node label="getNetworkInterfaceInfo"/>
+							<node label="listNetworkRoutes"/>
+							<node label="listDNS"/>
+						</node>
+						<node label="Cloud Management">
+							<node label="listSupportedClouds"/>
+							<node label="getDefaultCloudCredentials"/>
+							<node label="listCloudCredentials"/>
+							<node label="getCurrentCloudCredentials"/>
+							<node label="getCloudCredentialsForUser"/>
+							<node label="getCloudParams"/>
+							<node label="listInstances"/>
+							<node label="listProtectedInstances"/>
+							<node label="getInstanceStatus"/>
+						</node>
+						<node label="Operations Management">
+							<node label="listInstancesJobID"/>
+							<node label="getJobDetails"/>
+							<node label="getHaAwsConfig"/>
+							<node label="getHaHeartBeatConfig"/>
+						</node>
+					</node>
+					<node label="Partition and Recovery Management">
+						<node label="getPartitions"/>
+						<node label="getPartitionStatus"/>
+						<node label="collectRecoveryDataFromInstance"/>
+					</node>
+					<node label="Logging and Miscellaneous Management">
+						<node label="getSysLogServerInfo"/>
+						<node label="getStatusOverview"/>
+						<node label="getPowerStatusOverview"/>
+						<node label="getSNMPTrapConfig"/>
+						<node label="listApi"/>
+						<node label="getVersion"/>
+					</node>
+					<node label="Key and Certificate Management">
+						<node label="getKeyManagementType"/>
+						<node label="getKeySecureCredentials"/>
+						<node label="getKeySecureProperties"/>
+						<node label="checkKeySecure"/>
+					</node>
+					<node label="License and EULA Management">
+						<node label="getLicenseInfo"/>
+						<node label="getLockingCode"/>
+						<node label="eulaText"/>
+						<node label="isEulaDone"/>
+					</node>
+				</node>
+			</node>
+		</fx:XMLList>	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import controls.Alert.AlertPopUp;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.CloseEvent;
+			import mx.events.ListEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			private const __add_symbol__:String = 'add';
+			private const __delete_symbol__:String = 'delete';
+			private const __change_symbol__:String = 'change';
+			private const __update_symbol__:String = 'update';
+			private const __refresh_symbol__:String = 'refresh';
+			
+			[Bindable]
+			private var __button_bar_objects__:ArrayCollection = new ArrayCollection(
+				[
+					{'name':'Add', 'action':__add_symbol__},
+					{'name':'Delete', 'action':__delete_symbol__},
+					{'name':'Change Description', 'action':__change_symbol__},
+					{'name':'Update Permissions', 'action':__update_symbol__},
+					{'name':'Refresh', 'action':__refresh_symbol__}
+				]
+			);
+			
+			[Bindable]
+			private var __roles_objects__:ArrayCollection = new ArrayCollection(
+				[
+				]
+			);
+			
+			private function perform_action_for(item:*):void {
+				try {
+					if (item.action == this.__add_symbol__) {
+						this.currentState = 'add_state';
+						//AlertPopUp.surpriseNoOkay(item.action,'DEBUG');
+					} else if (item.action == this.__change_symbol__) {
+						AlertPopUp.surpriseNoOkay(item.action,'DEBUG');
+					} else if (item.action == this.__delete_symbol__) {
+						AlertPopUp.surpriseNoOkay(item.action,'DEBUG');
+					} else if (item.action == this.__refresh_symbol__) {
+						AlertPopUp.surpriseNoOkay(item.action,'DEBUG');
+					} else if (item.action == this.__update_symbol__) {
+						AlertPopUp.surpriseNoOkay(item.action,'DEBUG');
+					}
+				} catch (err:Error) {AlertPopUp.surpriseNoOkay(err.toString(),'ERROR');}
+			}
+			
+			protected function btn_bar_changeHandler(event:IndexChangeEvent):void {
+				var btnbar:ButtonBar = event.currentTarget as ButtonBar;
+				var i:int = event.newIndex;
+				var item:* = btnbar.dataProvider.getItemAt(i);
+				this.perform_action_for(item);
+				var ii:int = -1;
+			}
+			
+			protected function myRolesTree_changeHandler(event:ListEvent):void {
+			}
+			
+			protected function panel_role_editor_closeHandler(event:CloseEvent):void {
+				this.currentState = 'view_state';
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%" paddingTop="10" paddingBottom="10">
+		<s:HGroup id="hbox_button_bar" width="100%" horizontalAlign="right" paddingRight="10" visible.view_state="true" visible.add_state="false" includeInLayout="{this.hbox_button_bar.visible}">
+			<s:ButtonBar id="btn_bar" labelField="name" change="btn_bar_changeHandler(event)" dataProvider="{this.__button_bar_objects__}"/>
+		</s:HGroup>
+		<s:HGroup id="hbox_data_grid" width="100%" height="100%" paddingLeft="10" paddingRight="10" visible.view_state="true" visible.add_state="false" includeInLayout="{this.hbox_data_grid.visible}">
+			<s:DataGrid id="grid_current_roles" width="100%" skinClass="spark.skins.spark.DataGridSkin">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn width="{this.width*0.2}" minWidth="200" dataField="role" headerText="Role"></s:GridColumn>
+						<s:GridColumn width="{this.width*0.8}" minWidth="400" dataField="description" headerText="Description"></s:GridColumn>
+					</s:ArrayList>
+				</s:columns>
+				<s:ArrayList>
+					<fx:Object role="admin" description="Built-in Administrator Role"></fx:Object>
+					<fx:Object role="observer" description="Built-in Observer Role"></fx:Object>
+					<fx:Object role="user" description="Built-in User Role"></fx:Object>
+				</s:ArrayList>
+			</s:DataGrid>
+		</s:HGroup>
+		<s:TitleWindow x="0" y="0" width="100%" height="100%" id="panel_role_editor" title.add_state="Role Editor" close="panel_role_editor_closeHandler(event)" visible.view_state="false" visible.add_state="true" includeInLayout="{this.hbox_role_editor.visible}">
+			<s:HGroup id="hbox_role_editor" width="100%" height="100%" paddingLeft="10" paddingRight="10">
+				<mx:Tree id="myRolesTree" width="100%" height="100%" labelField="@label" showRoot="false" dataProvider="{treeData}" change="myRolesTree_changeHandler(event)"/>
+			</s:HGroup>
+		</s:TitleWindow>
+	</s:VGroup>
+</s:Panel>

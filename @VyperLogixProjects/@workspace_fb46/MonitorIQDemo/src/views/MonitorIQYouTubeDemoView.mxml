@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		title="HomeView" 
+		creationComplete="view1_creationCompleteHandler(event)" 
+		xmlns:google="controls.google.*" xmlns:DropDownList="controls.MediaPresentation.DropDownList.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.GUID;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.layouts.TileOrientation;
+			
+			[Bindable]
+			private var __items__:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var __orientation__:String = TileOrientation.COLUMNS;
+			
+			[Bindable]
+			private var __player_controls__:ArrayCollection = new ArrayCollection(['Play','Pause']);
+			
+			private function get get_current_name():String {
+				return (this.__items__.length+1).toString();
+			}
+			
+			protected function view1_creationCompleteHandler(event:FlexEvent):void {
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'delay':0,
+						'autoplay':false,
+						'videoID':'qDMXkPfxjOc'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'delay':0,
+						'autoplay':false,
+						'videoID':'GokKUqLcvD8'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'delay':0,
+						'autoplay':false,
+						'videoID':'iJv2Wno1cA4'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'delay':0,
+						'autoplay':false,
+						'videoID':'VWMZAZkFDbk'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'delay':0,
+						'autoplay':false,
+						'videoID':'6eFkx65ZhAE'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'delay':0,
+						'autoplay':false,
+						'videoID':'mZIzoDuUDJc'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'delay':0,
+						'autoplay':false,
+						'videoID':'V2YMu52MfqA'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'delay':0,
+						'autoplay':false,
+						'videoID':'KYoJ6eLbjm0'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'delay':0,
+						'autoplay':false,
+						'videoID':'ltzgADbdQcE'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'delay':0,
+						'autoplay':false,
+						'videoID':'CNCVF0yzFK0'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'delay':0,
+						'autoplay':false,
+						'videoID':'7JDDsBiJ_68'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'delay':0,
+						'autoplay':false,
+						'videoID':'alHm9EhCPa4'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'delay':0,
+						'autoplay':false,
+						'videoID':'CPCp0Hcp5RQ'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'delay':0,
+						'autoplay':false,
+						'videoID':'p4pk3-8nGUw'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'delay':0,
+						'autoplay':false,
+						'videoID':'f0k01b99Yuc'
+					}
+				);
+				this.__items__.addItem(
+					{	'name':get_current_name,
+						'GUID':GUID.create(),
+						'target':this,
+						'delay':0,
+						'autoplay':false,
+						'videoID':'-38wxD8BIJg'
+					}
+				);
+			}
+			
+			private function refresh_items():void {
+				this.items.enabled = false;
+				this._width_.enabled = false;
+				this._height_.enabled = false;
+				var player:*;
+				for (var i:int = 0; i < this.__items__.length; i++) {
+					player = this.__items__.getItemAt(i)['player'];
+					if (player) {
+						player['width'] = this._width_.value;
+						player['height'] = this._height_.value;
+					}
+				}
+				this.items.enabled = true;
+				this._width_.enabled = true;
+				this._height_.enabled = true;
+			}
+			
+			protected function _width__changeHandler(event:Event):void {
+				var target:HSlider = event.currentTarget as HSlider;
+				var aspect:Number = this.width/this.height;
+				this._height_.value = target.value / aspect;
+				trace(this.className+'(_width__changeHandler).1 --> target.value='+target.value+', aspect='+aspect+', _height_.value='+this._height_.value);
+				this.callLater(refresh_items,[]);
+			}
+			
+			protected function _height__changeHandler(event:Event):void {
+				var target:VSlider = event.currentTarget as VSlider;
+				trace(this.className+'(_height__changeHandler).1 --> target.value='+target.value);
+				this.callLater(refresh_items,[]);
+			}
+			
+			protected function orientationC_changeHandler(event:Event):void {
+				var target:RadioButton = event.currentTarget as RadioButton;
+				trace('(###).orientationC_changeHandler.1 --> target.selected='+target.selected+', target.label='+target.label);
+				this.__orientation__ = target.label;
+			}
+			
+			protected function orientationR_changeHandler(event:Event):void {
+				var target:RadioButton = event.currentTarget as RadioButton;
+				trace('(###).orientationR_changeHandler.1 --> target.selected='+target.selected+', target.label='+target.label);
+				this.__orientation__ = target.label;
+			}
+			
+			protected function _rows__changeHandler(event:Event):void {
+				var target:HSlider = event.currentTarget as HSlider;
+				trace('(###)._rows__changeHandler.1 --> target.value='+target.value);
+			}
+			
+			protected function _cols__changeHandler(event:Event):void {
+				var target:HSlider = event.currentTarget as HSlider;
+				trace('(###)._cols__changeHandler.1 --> target.value='+target.value);
+			}
+			
+			protected function btns_changeHandler(event:IndexChangeEvent):void {
+				var item:*;
+				var i:int;
+				var target:ButtonBar = event.currentTarget as ButtonBar;
+				trace('(###).btns_changeHandler.1 --> target.selectedItem='+target.selectedItem);
+				this.busy.visible = true;
+				if (target.selectedItem.toString().toLowerCase() == 'pause') {
+					for (i = 0; i < this.__items__.length; i++) {
+						item = this.__items__.getItemAt(i);
+						item.player.pause();
+					}
+				} else if (target.selectedItem.toString().toLowerCase() == 'play') {
+					for (i = 0; i < this.__items__.length; i++) {
+						item = this.__items__.getItemAt(i);
+						item.player.play();
+					}
+				}
+				this.busy.visible = false;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0">
+			<s:HGroup paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0" visible="false" includeInLayout="false">
+				<s:HSlider id="_width_" 
+						   height="30" width="{this.width-this.orientationsContainer.width-50-30}" 
+						   value="300" minimum="1" maximum="{this.width}" 
+						   skinClass="controls.skins.CustomMobileHSliderSkin" 
+						   change="_width__changeHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0">
+				<s:HGroup paddingTop="10">
+					<s:Label text="Rows:"/>
+				</s:HGroup>
+				<s:HSlider id="_rows_" 
+						   height="30" width="250" 
+						   value="4" minimum="2" maximum="10" 
+						   skinClass="controls.skins.CustomMobileHSliderSkin" 
+						   change="_rows__changeHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0">
+				<s:HGroup paddingTop="10">
+					<s:Label text="Cols:"/>
+				</s:HGroup>
+				<s:HSlider id="_cols_" 
+						   height="30" width="250" 
+						   value="4" minimum="2" maximum="10" 
+						   skinClass="controls.skins.CustomMobileHSliderSkin" 
+						   change="_cols__changeHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup id="orientationsContainer" paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0">
+				<s:HGroup paddingLeft="10" paddingTop="0" paddingRight="10" paddingBottom="10">
+					<s:RadioButton id="orientationC" groupName="orientations" selected="true" label="{TileOrientation.COLUMNS}" change="orientationC_changeHandler(event)"/>
+				</s:HGroup>
+				<s:HGroup paddingLeft="10" paddingTop="0" paddingRight="10" paddingBottom="10">
+					<s:RadioButton id="orientationR" groupName="orientations" selected="false" label="{TileOrientation.ROWS}" change="orientationR_changeHandler(event)"/>
+				</s:HGroup>
+			</s:HGroup>
+			<s:HGroup id="playerControlsContainer" paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0">
+				<s:ButtonBar id="btns" selectedIndex="1" dataProvider="{this.__player_controls__}" change="btns_changeHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup id="busyContainer" paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0">
+				<s:BusyIndicator id="busy" width="50" height="50" alpha="1.0" visible="false" includeInLayout="{this.busy.visible}"/>
+			</s:HGroup>
+		</s:HGroup>
+		<s:HGroup paddingLeft="10" paddingRight="10">
+			<s:HGroup paddingLeft="10" paddingRight="20" paddingTop="10" paddingBottom="10" visible="false" includeInLayout="false">
+				<s:VSlider id="_height_" 
+						   skinClass="controls.skins.CustomMobileVSliderSkin"
+						   height="{this.height-100}" width="30" 
+						   value="150" minimum="1" maximum="{this.height}" 
+						   change="_height__changeHandler(event)"/>
+			</s:HGroup>
+			<s:List id="items" width="100%" height="100%" dataProvider="{this.__items__}">
+				<s:layout>
+					<s:TileLayout 
+						orientation="{__orientation__}" 
+						horizontalGap="0" 
+						verticalGap="0" 
+						requestedRowCount="{_rows_.value}" 
+						requestedColumnCount="{_cols_.value}"
+						/>
+				</s:layout>
+				<s:itemRenderer>
+					<fx:Component>
+						<s:ItemRenderer>
+							<fx:Script>
+								<![CDATA[
+									import freevana.util.Settings;
+									import freevana.view.IVideoPlayer;
+									import freevana.view.VideoPlayer;
+									
+									import mx.events.FlexEvent;
+									
+									private var __stack__:Array = [];
+									
+									private function get _player():* {
+										return data['player'];
+									}
+									
+									private function set _player(_player:*):void {
+										if (data['player'] != _player) {
+											data['player'] = _player;
+										}
+									}
+									
+									private function get _videoID():* {
+										return data['videoID'];
+									}
+									
+									private function get _source():* {
+										return data['source'];
+									}
+									
+									private function get _url():* {
+										return data['url'];
+									}
+									
+									private function get _delay():Number {
+										return data['delay'];
+									}
+									
+									private function get width_value():Number {
+										return ((data['target'] && data['target']['_width_']) ? data['target']['_width_']['value'] : 150);
+									}
+
+									private function get height_value():Number {
+										return ((data['target'] && data['target']['_height_']) ? data['target']['_height_']['value'] : 100);
+									}
+									
+									protected function generic_clickHandler(target:AS3Player):void {
+										if (target) {
+											if (__stack__.length == 0) {
+												__stack__.push({'x':target.x,'y':target.y,'width':target.width,'height':target.height});
+												target.x = 0;
+												target.y = 0;
+												target.width = data.target.width-btn.width-10;
+												target.height = data.target.height;
+												btn.label = ')(';
+											} else {
+												var opts:* = __stack__.pop();
+												target.x = opts.x;
+												target.y = opts.y;
+												target.width = opts.width;
+												target.height = opts.height;
+												btn.label = '()';
+											}
+										}
+									}
+
+									protected function player_creationCompleteHandler(event:FlexEvent):void {
+										data['player'] = event.currentTarget;
+									}
+									
+									protected function btn_clickHandler(event:MouseEvent):void {
+										generic_clickHandler(player);
+									}
+									
+								]]>
+							</fx:Script>
+							<s:states>
+								<s:State name="normal" />
+								<s:State name="hovered" />
+								<s:State name="selected" />
+							</s:states>
+							<s:Rect left="0" right="0" top="0" bottom="0">
+								<s:stroke>
+									<s:SolidColorStroke color="0xCCCCCC" joints="round" weight="2"/>
+								</s:stroke>
+								<s:fill>
+									<s:SolidColor color="0x999999" alpha="0" alpha.hovered="0.2" alpha.selected="0.6" />
+								</s:fill>
+							</s:Rect>
+							<s:HGroup width="100%">
+								<google:AS3Player 
+									id="player" 
+									width="300" height="150" 
+									videoID="{data.videoID}" 
+									timer_delay="{data.delay}" 
+									autoplay="{data.autoplay}" 
+									creationComplete="player_creationCompleteHandler(event)"/>
+								<s:Button id="btn" label="()" click="btn_clickHandler(event)" visible="false" includeInLayout="{btn.visible}"/>
+							</s:HGroup>
+						</s:ItemRenderer>
+					</fx:Component>
+				</s:itemRenderer>
+			</s:List>
+		</s:HGroup>
+	</s:VGroup>
+</s:View>

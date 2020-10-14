@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" paddingLeft="13">
+	<mx:Script>
+		<![CDATA[
+			public function get asObject():Object {
+				var sources:Array = [
+										this.menu_id
+									];
+				var obj:Object = {};
+				var aSource:*;
+				for (var i:String in sources) {
+					aSource = sources[i];
+					obj[aSource.id] = (aSource is Label) ? aSource.text : '';
+				}
+				return obj;
+			}
+		]]>
+	</mx:Script>
+	<mx:Label id="menu_id_label" text="Menu ID:" styleName="SmartPanelLabelText"/>
+	<mx:Label id="menu_id" styleName="SmartPanelLabelText"/>
+</mx:HBox>

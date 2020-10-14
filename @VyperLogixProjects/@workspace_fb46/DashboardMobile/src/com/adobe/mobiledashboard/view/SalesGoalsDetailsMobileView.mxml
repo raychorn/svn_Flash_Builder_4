@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View preinitialize="preinitializeHandler()"
+		viewDeactivate="viewDeactivateHandler()"
+		viewActivate="viewActivateHandler()"
+		actionBarVisible.portrait="true"
+		actionBarVisible.landscape="true"
+		xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:components="com.adobe.mobiledashboard.view.components.*"
+		xmlns:renderer="com.adobe.mobiledashboard.view.renderer.*"
+		title="Sales Goals">
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.dashboard.model.AppModel;
+			import com.adobe.dashboard.presenter.SalesGoalsPresenter;
+
+			[Bindable]
+			private var presenter:SalesGoalsPresenter;
+
+
+			private function addListeners():void
+			{
+				presenter.chartListDetailsPresenter.addEventListener(Event.CHANGE, dataChangeHandler, false, 0, true);
+			}
+
+			private function removeListeners():void
+			{
+				if (presenter && presenter.chartDetailsPresenter && presenter.chartDetailsPresenter.hasEventListener(Event.CHANGE))
+				{
+					presenter.chartListDetailsPresenter.removeEventListener(Event.CHANGE, dataChangeHandler);
+				}
+			}
+
+			//
+			// Event Handlers
+			//
+
+			protected function preinitializeHandler():void
+			{
+				presenter=AppModel.getInstance().salesGoalsPresenter;
+			}
+
+			protected function viewActivateHandler():void
+			{
+				addListeners();
+
+				// Help with smooth animation by waiting till View Activate to load chart data
+				presenter.getSalesGoalDetails(presenter.dateRangeStartDate, presenter.dateRangeStartDate);
+				presenter.hideAllTourTips();
+			}
+
+			protected function viewDeactivateHandler():void
+			{
+				// Prevent memory leaks and remove listeners when this view is removed from the stage
+				removeListeners();
+			}
+
+			protected function dataChangeHandler(event:Event):void
+			{
+				listDisplay.visible=true;
+				listDisplay.includeInLayout=true;
+			}
+		]]>
+	</fx:Script>
+
+	<!-- frameworks changes states on device rotation -->
+	<s:states>
+		<s:State name="portrait"/>
+		<s:State name="landscape"/>
+	</s:states>
+
+	<!-- background -->
+	<s:Rect width="100%"
+			height="100%"
+			includeIn="portrait">
+		<s:fill>
+			<s:SolidColor color="0x262626"/>
+		</s:fill>
+	</s:Rect>
+
+
+
+	<!-- details in text list -->
+	<s:List id="listDisplay"
+			left.landscape="0"
+			left.portrait="0"
+			right.landscape="0"
+			right.portrait="0"
+			top="0"
+			bottom.landscape="0"
+			bottom.portrait="0"
+			dataProvider="{presenter.chartListDetailsPresenter.dataProvider}"
+			includeInLayout="false"
+			visible="false">
+		<s:layout>
+			<s:VerticalLayout gap="0"/>
+		</s:layout>
+		<s:itemRenderer>
+			<fx:Component>
+				<renderer:SaleRenderer width="100%"
+									   height="144"
+									   dateStyleName="dateTextStyle"
+									   statusStyleName="statusTextStyle"
+									   totalStyleName="totalTextStyle"
+									   titleStyleName="titleTextStyle"/>
+			</fx:Component>
+		</s:itemRenderer>
+	</s:List>
+
+
+	<!-- the title content for this view -->
+	<s:titleContent>
+		<s:Label styleName="titleWhiteStyle"
+				 text="Sales Goals"/>
+	</s:titleContent>
+
+</s:View>

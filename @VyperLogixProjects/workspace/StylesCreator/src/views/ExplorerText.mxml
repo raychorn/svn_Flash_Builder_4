@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+	<mx:VBox width="100%" height="100%" xmlns:mx="http://www.adobe.com/2006/mxml" verticalScrollPolicy="off" xmlns:views="views.*">
+	<mx:Script source="as/text.as" />
+	
+	<mx:HBox width="100%" height="100%">
+
+
+
+	<mx:VBox height="100%" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="STYLE CONTROLS"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+		<mx:Form styleName="noPadding">
+				
+		
+		<mx:FormItem label="Font Family">
+		<mx:ComboBox dataProvider="{fonts}" id="myFontFamily" selectedIndex="11" editable="true"
+			change="myTextArea.setStyle('fontFamily', myFontFamily.text);
+			setCSS('fontFamily', 0, myFontFamily.text);"/>
+		</mx:FormItem>	
+		
+		<mx:FormItem label="Font Size">
+		<mx:ComboBox dataProvider="{fontsizes}" id="myFontSize" selectedIndex="11" editable="true"
+			change="myTextArea.setStyle('fontSize', myFontSize.text);
+			setCSS('fontSize', 0, myFontSize.text);"/>
+		</mx:FormItem>	
+		<mx:FormItem label="Font Color">
+							<mx:ColorPicker height="23" width="23" selectedColor="0x0B333C" id="myColor"
+								close="setValue('color', event.target.selectedColor, 'color')"/>
+				</mx:FormItem>
+		<mx:FormItem label="Text Formatting">
+			<mx:HBox horizontalGap="-1" 
+							paddingTop="1"
+							paddingBottom="1"
+							paddingLeft="1"
+							paddingRight="1"
+							>
+							
+							<mx:Button label="B" fontWeight="bold" width="20" cornerRadius="0" id="boldButton" 
+								click=" if (isBold == false) {
+										boldButton.setStyle('fillColors', [0x666666, 0x666666]);
+										isBold = true;
+										myTextArea.setStyle('fontWeight', 'bold');
+										setCSS('fontWeight', 0, 'bold');
+									} else {
+										boldButton.clearStyle('fillColors');
+										isBold = false;
+										myTextArea.setStyle('fontWeight', 'normal');
+										setCSS('fontWeight', 0, 'normal');
+									}
+								"
+								/>
+								
+							<mx:Button label="I" fontStyle="italic" width="20" cornerRadius="0" id="italicButton" 
+								click="if (isItalic == false) {
+										italicButton.setStyle('fillColors', [0x666666, 0x666666]);
+										isItalic = true;
+										myTextArea.setStyle('fontStyle', 'italic');
+										setCSS('fontStyle', 0, 'italic');
+									} else {
+										italicButton.clearStyle('fillColors');
+										isItalic = false;
+										myTextArea.setStyle('fontStyle', 'normal');
+										setCSS('fontStyle', 0, 'normal');
+									}
+								"
+								/>
+								
+							<mx:Button label="U" textDecoration="underline" width="20"  cornerRadius="0" id="underlineButton"
+								click="if (isUnderline == false) {
+										underlineButton.setStyle('fillColors', [0x666666, 0x666666]);
+										isUnderline = true;
+										myTextArea.setStyle('textDecoration', 'underline');
+										setCSS('textDecoration', 0, 'underline');
+									} else {
+									underlineButton.clearStyle('fillColors');
+										isUnderline = false;
+										myTextArea.setStyle('textDecoration', 'none');
+										setCSS('textDecoration', 0, 'none');
+									}
+								"
+								
+								
+								/> 
+						</mx:HBox>
+		</mx:FormItem>
+		<mx:FormItem label="Text Alignment">
+						<mx:HBox horizontalGap="-1" 
+							paddingTop="1"
+							paddingBottom="1"
+							paddingLeft="1"
+							paddingRight="1"
+							>
+							<mx:Button width="20" cornerRadius="0" id="leftButton"  icon="@Embed('assets/left.gif')"
+							  click="setAlign('left');"
+								/>
+							<mx:Button   width="20" cornerRadius="0" id="centerButton"  icon="@Embed('assets/center.gif')"
+								click="setAlign('center');"
+								/>
+							<mx:Button   width="20"  cornerRadius="0" id="rightButton" icon="@Embed('assets/right.gif')"
+							click="setAlign('right'); "
+							/>
+						</mx:HBox>
+						
+					</mx:FormItem>
+		
+		<mx:FormItem label="Padding Left">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="30"
+						value="0"
+						id="myPaddingLeft"
+						
+						snapInterval="1"
+						change="setValue('paddingLeft', event.target.value , 'number');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Padding Right">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="30"
+						value="0"
+						id="myPaddingRight"
+						
+						snapInterval="1"
+						change="setValue('paddingRight', event.target.value , 'number');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Text Indent">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="30"
+						value="0"
+						id="myTextIndent"
+						
+						snapInterval="1"
+						change="setValue('textIndent', event.target.value , 'number');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Leading">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="2"
+						id="myLeading"
+						
+						snapInterval="1"
+						change="setValue('leading', event.target.value , 'number');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+		
+		
+		
+		</mx:Form>
+		
+		<mx:HBox width="100%">
+				<mx:Box horizontalAlign="left" paddingLeft="5" paddingTop="5">
+				<mx:Image id="alert1" source="@Embed('assets/alert.png')" />	
+				</mx:Box>
+				<mx:Box width="100%">
+					<mx:Text width="100%" color="0xFFFFFF" text="Note: While the generated CSS refers specifically to TextArea, these properties could just as well define Text, Label, Text Input, Button, Menu, or any item that has text in it.  Alternatively, you can assign these to Application and all text on the children will be formatted per the definition." />
+				</mx:Box>
+				</mx:HBox>
+		
+		
+		</mx:Box>
+		<mx:Box width="100%" paddingRight="5" paddingBottom="5" horizontalAlign="right">
+			<mx:LinkButton label="Restore Defaults" click="restoreDefaults()" styleName="undoLink" />
+		</mx:Box>
+	</mx:VBox>
+
+
+<!-- Sandbox -->
+<mx:VBox height="100%" width="100%" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="SANDBOX"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+		
+			<mx:TextArea id="myTextArea" text="Enter your own text into this area if you wish to customize the look and feel of your personalized text." width="100%" height="100%" editable="true" paddingLeft="5" paddingRight="5"/>
+			
+		</mx:Box>
+	</mx:VBox>
+
+
+<!-- CSS -->
+<mx:VBox height="100%" width="315" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="CSS"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+		
+			<mx:TextArea id="myCSS" width="100%" height="100%" styleName="cssTextArea"	/>
+		</mx:Box>
+</mx:VBox>
+
+	</mx:HBox>
+</mx:VBox>
+
+  
+
+
+

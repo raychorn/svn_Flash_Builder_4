@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<view:FlexpadView xmlns:fx="http://ns.adobe.com/mxml/2009"
+    xmlns:s="library://ns.adobe.com/flex/spark"
+    xmlns:mx="library://ns.adobe.com/flex/mx"
+    xmlns:flexpad="http://code.google.com/p/flexpad/"
+    xmlns:view="com.flexpad.view.*">
+
+    <view:layout>
+        <s:VerticalLayout/>
+    </view:layout>
+
+    <flexpad:BarGrey 
+        width="100%" height="45">
+        <flexpad:layout>
+            <s:HorizontalLayout 
+                paddingLeft="10"
+                paddingRight="10"
+                verticalAlign="middle"/>
+        </flexpad:layout>
+        <flexpad:ButtonBarGrey requireSelection="true">
+            <flexpad:dataProvider>
+                <s:ArrayCollection>
+                    <fx:String>Search</fx:String>
+                    <fx:String>Directions</fx:String>
+                </s:ArrayCollection>
+            </flexpad:dataProvider>
+        </flexpad:ButtonBarGrey>
+    </flexpad:BarGrey>
+
+    <flexpad:BarBlack 
+        width="100%" height="45">
+        <flexpad:layout>
+            <s:HorizontalLayout 
+                horizontalAlign="center"
+                verticalAlign="middle"/>
+        </flexpad:layout>
+
+        <flexpad:BarBlackLabel text="Label"/>
+
+    </flexpad:BarBlack>
+
+    <flexpad:BarBlackSemiTrans 
+        width="100%" height="45">
+        <flexpad:BackButtonBlack 
+            left="5"
+            verticalCenter="0"
+            label="Back"/>
+        <flexpad:BarBlackLabel 
+            horizontalCenter="0"
+            verticalCenter="0"
+            text="Label"/>
+    </flexpad:BarBlackSemiTrans>
+
+    <flexpad:TabBarBlack 
+        width="100%" height="50"
+        iconField="icon"
+        iconSelectedField="iconSelected">
+        <mx:ArrayCollection>
+            <fx:Object 
+                icon="@Embed(source='/asset/icon/tabBarBlackicon1.png')"
+                label="Label One"
+                iconSelected="@Embed(source='/asset/icon/tabBarBlackicon1Selected.png')"/>
+            <fx:Object 
+                icon="@Embed(source='/asset/icon/tabBarBlackIcon2.png')"
+                label="Label Two"
+                iconSelected="@Embed(source='/asset/icon/tabBarBlackIcon2Selected.png')"/>
+            <fx:Object 
+                icon="@Embed(source='/asset/icon/tabBarBlackIcon3.png')"
+                label="Label Three"
+                iconSelected="@Embed(source='/asset/icon/tabBarBlackIcon3Selected.png')"/>
+        </mx:ArrayCollection>
+    </flexpad:TabBarBlack>
+
+    <flexpad:ButtonBarBlack requireSelection="true">
+        <flexpad:dataProvider>
+            <s:ArrayCollection>
+                <fx:String>Label 1</fx:String>
+                <fx:String>Label 2</fx:String>
+                <fx:String>Label 3</fx:String>
+            </s:ArrayCollection>
+        </flexpad:dataProvider>
+    </flexpad:ButtonBarBlack>
+
+    <flexpad:LargeButtonBarGrey requireSelection="true">
+        <flexpad:dataProvider>
+            <s:ArrayCollection>
+                <fx:String>Label One</fx:String>
+                <fx:String>Label Two</fx:String>
+                <fx:String>Label Three</fx:String>
+            </s:ArrayCollection>
+        </flexpad:dataProvider>
+    </flexpad:LargeButtonBarGrey>
+
+</view:FlexpadView>

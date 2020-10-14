@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.CapabilitiesUtils;
+			
+			import controls.Alert.AlertPopUp;
+			
+			import flash.desktop.NativeProcess;
+			import flash.filesystem.File;
+			
+			import utils.AIRHelper;
+			[Embed(source="assets/icons/add-database.gif")]
+			[Bindable]
+			public var addCls:Class;
+			
+			[Embed(source="assets/icons/down.gif")]
+			[Bindable]
+			public var downloadCls:Class;
+
+			[Embed(source="assets/icons/help.gif")]
+			[Bindable]
+			public var helpCls:Class;
+			
+			[Embed(source="assets/icons/save-16x16.gif")]
+			[Bindable]
+			public var saveAsCls:Class;
+			
+			[Embed(source="assets/icons/computer-16x16.gif")]
+			[Bindable]
+			public var launchCls:Class;
+			
+			public static var executable_file:String = '';
+			
+			private function get is_software_available():Boolean {
+				var aFile:File = AIRHelper.resolve('/BibleDesktop/' + ((CapabilitiesUtils.isOSWindows()) ? 'windows/BibleDesktop_Windows.exe' : ((CapabilitiesUtils.isOSMac()) ? 'mac/BibleDesktop_Mac.dmg' : ((CapabilitiesUtils.isOSLinux()) ? 'linux' : ''))));
+				if (!aFile.exists) {
+					aFile = AIRHelper.resolve('/BibleDesktop/' + ((CapabilitiesUtils.isOSWindows()) ? 'BibleDesktop_Windows.exe' : ((CapabilitiesUtils.isOSMac()) ? 'BibleDesktop_Mac.dmg' : ((CapabilitiesUtils.isOSLinux()) ? 'linux' : ''))));
+				}
+				BibleButtonBar.executable_file = aFile.nativePath;
+				var aBool:Boolean = (aFile.exists && (aFile.isDirectory == false));
+				trace(this.className+'.is_software_available().1 --> aBool='+aBool);
+				return aBool;
+			}
+			
+			private function get is_software_launchable():Boolean {
+				var isSupported:Boolean = NativeProcess.isSupported;
+				var aBool:Boolean = this.is_software_available;
+				trace(this.className+'.is_software_launchable().1 --> aBool='+aBool+', isSupported='+isSupported);
+				return (aBool && isSupported);
+			}
+			
+			public function refresh_buttons():void {
+				this.btn_install.visible = this.btn_install.includeInLayout = this.is_software_available;
+			}
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle" paddingTop="3">
+			<mx:Button id="btn_download" label="Download Bible Desktop" labelPlacement="left" icon="{this.downloadCls}"/>
+			<mx:Button id="btn_install" label="Launch Bible Desktop" labelPlacement="left" icon="{this.launchCls}" visible="{this.is_software_launchable}" includeInLayout="{this.is_software_launchable}"/>
+			<mx:Button id="btn_saveAs" label="Save Bible Desktop to Desktop" labelPlacement="left" icon="{this.saveAsCls}" visible="{this.is_software_available}" includeInLayout="{this.is_software_available}"/>
+			<mx:Button id="btn_addDatabase" label="Add More Books" labelPlacement="left" icon="{this.addCls}"/>
+			<mx:Button id="btn_getSupport" label="Get Support" labelPlacement="left" icon="{this.helpCls}"/>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Canvas>

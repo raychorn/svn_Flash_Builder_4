@@ -1,0 +1,125 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+
+
+.Labels {
+	color: #0000ff;
+	fontFamily: Verdana;
+	fontSize: 16;
+	textAlign: center;
+	font-weight: bold;
+}
+
+.LinkLabels {
+	color: #0000ff;
+	fontFamily: Verdana;
+	fontSize: 14;
+	textAlign: center;
+	text-decoration: underline;
+}
+
+.TextInputs {
+	color: #0000ff;
+	fontFamily: Verdana;
+	fontSize: 18;
+}
+
+.FeedbackInputs {
+	color: #0000ff;
+	contentBackgroundColor: #ffffff;
+	fontFamily: Verdana;
+	fontSize: 16;
+}
+
+.SmallLabels {
+	color: #000000;
+	fontFamily: Verdana;
+	fontSize: 16;
+}
+
+.SmallErrorLabels {
+	color: #ff0000;
+	fontFamily: Verdana;
+	fontSize: 16;
+	font-weight: bold;
+}
+
+.SmallInfoTexts {
+	color: #ffffff;
+	fontFamily: Verdana;
+	fontSize: 14;
+}
+
+.SmallAdMobButtons {
+	color: #0000ff;
+	fontFamily: Verdana;
+	fontSize: 12;
+}
+
+.SmallButtons {
+	color: #0000ff;
+	fontFamily: Verdana;
+	fontSize: 15;
+}
+
+.ReallySmallButtons {
+	color: #0000ff;
+	fontFamily: Verdana;
+	fontSize: 12;
+}
+
+.NoIconDonationButtons {
+	color: #0000ff;
+	fontFamily: Verdana;
+	fontSize: 14;
+}
+
+.NotificationTitle {
+	color: #ffffff;
+	fontFamily: Verdana;
+	fontSize: 13;
+}
+
+.NotificationMessage {
+	color: #ffffff;
+	fontFamily: Verdana;
+	fontSize: 11;
+}
+
+.Groups {
+	backgroundColor: #3f3f3f;
+}
+
+.INFO {
+	color: #000000;
+	fontFamily: Verdana;
+	fontSize: 20;
+	borderVisible: false;
+	content-background-color: #ffffff;
+}
+
+.INFO2 {
+	color: #ffffff;
+	fontFamily: Verdana;
+	fontSize: 16;
+}
+
+.Debugger {
+	color: #000000;
+	fontFamily: Verdana;
+	fontSize: 14;
+	content-background-color: #ffffff;
+}
+
+.Status {
+	color: #0000ff;
+	fontFamily: Verdana;
+	fontSize: 14;
+	borderVisible: false;
+	chromeColor: #ffffff;
+	contentBackgroundColor: #ffffff;
+}
+
+.Panels {
+	content-background-color: #ffffff;
+}

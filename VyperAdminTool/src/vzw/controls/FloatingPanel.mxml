@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml" 
+	layout="absolute" 
+	width="100%" height="100%" 
+	xmlns:builder="vzw.menu.builder.*">
+	<mx:states>
+		<mx:State name="ControlPanel">
+			<mx:AddChild position="lastChild">
+				<builder:ControlPanel id="controlPanel" x="0" y="0" width="100%" height="100%"/>
+			</mx:AddChild>
+		</mx:State>
+	</mx:states>
+	<mx:Script>
+		<![CDATA[
+			
+		]]>
+	</mx:Script>
+</mx:Panel>

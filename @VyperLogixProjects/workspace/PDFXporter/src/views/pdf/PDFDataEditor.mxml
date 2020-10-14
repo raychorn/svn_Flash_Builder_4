@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				layout="absolute" width="100%" height="100%" 
+				showCloseButton="false">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+
+			[Bindable]
+			private var _dataProvider:ArrayCollection;
+			
+			[Bindable]
+			private var _fdataProvider:ArrayCollection;
+			
+			public function set dataProvider(dataProvider:Array):void {
+				if (dataProvider is Array) {
+					var ar:Array = [];
+					for (var i:int = 0; i < dataProvider.length; i++) {
+						ar.push({'num':i+1,'data':dataProvider[i]});
+					}
+					trace(this.className+'.dataProvider.1 --> ar.length='+ar.length);
+					this._dataProvider = new ArrayCollection(ar);
+				}
+			}
+			
+			public function get dataProvider():Array {
+				return this._dataProvider.source;
+			}
+			
+			private function get col1_width():Number {
+				return 5;
+			}
+
+			private function get col2_width():Number {
+				return 200;
+			}
+			
+			private function onClick_dgrid(event:MouseEvent):void {
+				var dg:AdvancedDataGrid = AdvancedDataGrid(event.currentTarget);
+				var item:Object = dg.selectedItem;
+				var ii:int = -1;
+			}
+
+			private function get fcol1_width():Number {
+				return 5;
+			}
+			
+			private function get fcol2_width():Number {
+				return 200;
+			}
+			
+			private function onClick_fgrid(event:MouseEvent):void {
+				var dg:AdvancedDataGrid = AdvancedDataGrid(event.currentTarget);
+				var item:Object = dg.selectedItem;
+				var ii:int = -1;
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:HDividedBox id="hdivbox" width="100%" height="100%">
+		<mx:VBox backgroundColor="haloGreen" width="100%" height="100%">
+			<mx:AdvancedDataGrid id="dgrid" width="100%" height="100%" dataProvider="{this._dataProvider}" click="onClick_dgrid(event)">
+				<mx:columns>
+					<mx:AdvancedDataGridColumn fontFamily="Calibri" dataField="num" editable="false" fontSize="12" headerText="#" resizable="true" sortable="false" width="{this.col1_width}" minWidth="50"/>
+					<mx:AdvancedDataGridColumn fontFamily="Calibri" dataField="data" editable="false" fontSize="12" headerText="Data" resizable="true" sortable="false" width="{this.col2_width}" minWidth="200"/>
+				</mx:columns>
+			</mx:AdvancedDataGrid>
+		</mx:VBox>
+		<mx:VBox backgroundColor="haloBlue" width="100%" height="100%">
+			<mx:AdvancedDataGrid id="fgrid" width="100%" height="100%" dataProvider="{this._fdataProvider}" click="onClick_fgrid(event)">
+				<mx:columns>
+					<mx:AdvancedDataGridColumn fontFamily="Calibri" dataField="num" editable="false" fontSize="12" headerText="#" resizable="true" sortable="false" width="{this.fcol1_width}" minWidth="50"/>
+					<mx:AdvancedDataGridColumn fontFamily="Calibri" dataField="item" editable="false" fontSize="12" headerText="Item" resizable="true" sortable="false" width="{this.fcol2_width}" minWidth="200"/>
+				</mx:columns>
+			</mx:AdvancedDataGrid>
+		</mx:VBox>
+	</mx:HDividedBox>
+</mx:TitleWindow>

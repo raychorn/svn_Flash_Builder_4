@@ -1,0 +1,667 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (c) 2002-2010, Open-Plug
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without 
+  modification, are permitted provided the above copyright notice, 
+  this list of conditions and the following disclaimer is retained.
+  
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+  IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+  THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+  PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR 
+  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<mob:ScreenStackApplication xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" 
+							navBarStyleName="styleBlue" isCreatingAllChildren="false"
+							xmlns:mob="openplug.elips.controls.*" 
+							xmlns:scr="openplug.elips.controls.screenClasses.*" 
+							creationComplete="init()" xmlns:local="*" 
+							>
+
+	<!-- UI Catalog Generic Cascading Style Sheet -->
+	<mx:Style source="GenericStyle.css"/>
+
+	<!-- UI Catalog Platform Variant Cascading Style Sheet -->
+	<mx:Style source="VariantStyle.css"/>
+
+	<!-- UI Catalog AS part -->
+	<mx:Script source="UICat.as"/>
+	
+	<!-- Localized Strings-->
+	<mx:Metadata>
+		[ResourceBundle("Internationalization")]
+	</mx:Metadata>
+	
+	<!-- Custom Animation -->
+	<mx:Fade id="fadeIn" duration="1000" alphaFrom="0.0" alphaTo="1.0"/>
+    <mx:Sequence id="animateScaleXUpDown" >
+        <mx:AnimateProperty property="x" fromValue="40" toValue="140" duration="200" />
+        <mx:AnimateProperty property="x" fromValue="140" toValue="40" duration="600" />
+    </mx:Sequence>
+
+    <!-- Main Menu Item Collection-->
+    <mx:ArrayCollection id="widgetsCollection">
+        <mx:Object id="firstObj" label="Text Fields and Keys" data="Text"/>
+		<mx:Object label="Text Style" data="TextStyle"/>
+        <mx:Object label="Image" data="Image"/>
+        <mx:Object label="Containers" data="Container"/>
+        <mx:Object label="Buttons and Alert" data="Button"/>
+        <mx:Object label="Lists" data="List"/>
+        <mx:Object label="Photo and Video" data="Video"/>
+        <mx:Object label="ActivityIndicator" data="Activity"/>
+        <mx:Object label="URL navigation" data="URL"/>
+		<mx:Object label="Geolocation" data="GPSLocation"/>
+		<mx:Object label="Google Search" data="GoogleSearch"/>
+		<mx:Object label="Internationalization" data="LangMgt"/>
+	 </mx:ArrayCollection>
+
+    <!-- SlideShow Item Collection-->
+    <mx:ArrayCollection id="slideCollection">
+        <mx:Object data="911.gif"/>
+        <mx:Object data="458.gif"/>
+        <mx:Object data="rapide.gif"/>
+    </mx:ArrayCollection>
+
+    <!-- Android Menu Item Collection-->
+	<mx:ArrayCollection id="menu1">
+		<scr:MenuItem actionClick="Alert.show('Copyright 2002-2010 Open-Plug', 'About UICatalog');" label="About" icon="@Embed('info.png')"/>
+	</mx:ArrayCollection>
+
+	<!-- SoftKey Bottom Bar -->
+	<scr:SoftKeyBarDescriptor id="backSoftKey" leftAction="Back" leftActionClick="goBack()"/>
+	
+    <!-- iPhone Top Navigation Bar -->
+	<scr:NavigationBarDescriptor title="UICatalog" id="baseNavBar" styleName="styleBlue"/>
+
+	<!-- Main Screen -->
+	<mob:ScreenView id="Base" softKeyBarStatus="none" navBarDescriptor="{baseNavBar}" menuProvider="{menu1}" clipContent="true" verticalScrollPolicy="auto">
+		<mob:TabNavigator id="mainTab" width="100%" height="100%">
+			<mx:VBox width="100%" height="100%" horizontalGap="0" verticalGap="0" label="Main" icon="@Embed('main.png')">
+				<mx:HBox excludeFromPlatform="iPhone OS 3.0,Android 1.6" horizontalAlign="center" verticalAlign="middle" horizontalGap="0" id="Header" width="100%" height="{height/10}" backgroundImage="header.gif">
+        			<mx:Label width="10%" text=" " fontSize="17" color="white"/>
+        			<mx:Label textAlign="center" width="80%" id="title" text="UI Catalog" fontSize="17" color="white"/>
+        			<mx:Label width="10%" text="x" fontSize="20" color="white" touchTap="exit()"/>
+	    		</mx:HBox>
+				<mob:List id="widgetsList" showSelection="true" dataProvider="{widgetsCollection}" 
+						  rowHeight="50" itemRenderer="WidgetsListRenderer" width="100%" height="100%" 
+						  itemTouchTap="onWidgetSelect(event)" styleName="lstStyle"/>
+			</mx:VBox>
+			<mx:VBox id="helpBox" width="100%" height="100%" horizontalGap="0" verticalGap="0" horizontalAlign="center" label="Info" icon="@Embed('info.png')" backgroundColor="white">
+				<mx:HBox id="helpTitle" excludeFromPlatform="iPhone OS 3.0,Android 1.6" horizontalAlign="center" verticalAlign="middle" horizontalGap="0" width="100%" height="{height/10}" backgroundImage="header.gif">
+					<mx:Label width="10%" text=" " fontSize="17" color="white"/>
+        			<mx:Label text="Info" width="80%" textAlign="center" fontSize="17" color="white"/>
+        			<mx:Label width="10%" text="x" fontSize="20" color="white" touchTap="exit()"/>
+	    		</mx:HBox>
+				<mx:Canvas height="100%" width="100%" clipContent="true" verticalScrollPolicy="auto">
+					<mx:VBox width="100%" height="100%" horizontalGap="0" verticalGap="0" horizontalAlign="center">
+						<mx:HBox  width="95%" horizontalAlign="center" verticalAlign="middle" horizontalGap="5" verticalGap="5">
+							<mx:Text fontWeight="bold" color="black" text="{'UI Catalog for '}"/> 
+							<mx:Image source="platform.png"/>
+						</mx:HBox>	    		
+	    				<mx:Text width="95%" color="black" textAlign="center" text="{'\nUI Catalog exhibits the main UI Components available in ELIPS with associated properties and style as well as the way to use them.\nIt also illustrates how to use the ScreenStack class for designing an application with multiple screens and handling the navigation.\n\nThe UI Catalog application can be used as a reference to build your own application User Interface.\n\nCopyright 2002-2010 OpenPlug\n\n'}"/>
+	    				<mx:Image source="Logo_ELIPS_Studio.png"/>
+	    			</mx:VBox>
+	    	    </mx:Canvas>
+	    	</mx:VBox>
+		</mob:TabNavigator>
+	</mob:ScreenView>
+
+	<!-- Text controls Screen -->
+	<mob:ScreenView id="Text" softKeyBarDescriptor="{backSoftKey}" clipContent="true" verticalScrollPolicy="auto">
+		<mob:navBarDescriptor>
+			<scr:NavigationBarDescriptor title="Text Fields"/>
+		</mob:navBarDescriptor>
+		<mx:VBox width="100%" height="100%">
+				<mx:Canvas width="100%">
+					<mx:Label x="5" y="0" text="&lt;mx:Label&gt;" fontWeight="bold"/>
+					<mx:Label id="txtLabel" x="40" y="20" text="single line non-editable text" width="{width-65}"/>
+				</mx:Canvas>
+				<mx:Canvas width="100%">
+					<mx:Label x="5" y="0" text="&lt;mx:Text&gt;" fontWeight="bold"/>
+					<mx:Canvas verticalScrollPolicy="auto" clipContent="true" x="40" y="20" width="{width-65}">
+						<mx:Text id="txtText" width="100%" text="multi-line text that wraps when the text is too long"/>
+					</mx:Canvas>
+				</mx:Canvas>
+			
+				<mx:Canvas width="100%">
+					<mx:Label x="5" y="0" text="&lt;mob:TextInput&gt;" fontWeight="bold"/>
+					<mx:VBox width="100%" x="40" y="20">
+						<local:CommentText width="{width-65}" text="When tapping the textFields below, a keyboard will appear allowing you to modify the text. The modification of the 1st text field will affect the mx:Label above. The second one works as a password entry."/>
+						<mob:TextInput id="txtInput" width="{width-65}" height="30" text="" textChanged="txtLabel.text=txtInput.text"/>
+						<mob:TextInput id="txtInputPW" width="{width-65}" height="30" text="Password" displayAsPassword="true" />
+					</mx:VBox>
+				</mx:Canvas>
+
+				<mx:Canvas width="100%">
+					<mx:Label x="5" y="0" text="&lt;mob:TextArea&gt;" fontWeight="bold"/>
+					<mx:VBox width="100%" x="40" y="20">
+						<local:CommentText width="{width-65}" text="When tapping the textField below, a keyboard will appear allowing you to modify the text. The text changes will affect the mx:Text above. Tap the 'Change Style' button to see the text colored in red highlighted in yellow." />
+						<mob:TextArea id="txtArea" width="{width-65}" height="100" text=" ALICE was beginning to get very tired of sitting by her sister on the bank and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, 'and what is the use of a book,' thought Alice, 'without pictures or conversations?'" textChanged="txtText.text=txtArea.text" autoCapitalization="None" autoCorrection="false"/>
+						<mx:Button width="150" height="{buttonSize}" label="Change style" touchTap="txtArea.styleName='txtStyle'"/>
+						<mx:Canvas id="txtAreaNativeOptions" visible="false" width="150" height="25">
+							<mx:Button x="0" width="50" height="{buttonSize}" label="OK" touchTap="txtArea.validateText()"/>
+							<mx:Button x="50" width="50" height="{buttonSize}" label="Cap" touchTap="txtArea.autoCapitalization='Sentences'"/>
+							<mx:Button x="100" width="50" height="{buttonSize}" label="Cor" touchTap="txtArea.autoCorrection=true"/>
+						</mx:Canvas>
+					</mx:VBox>
+				</mx:Canvas>
+			
+				<mx:Canvas width="100%">
+					<mx:Label x="5" y="0" text="SystemAPI.getEntryString" fontWeight="bold"/>
+					<mx:VBox width="100%" x="40" y="20">
+						<local:CommentText width="{width-65}" text="Tap the 'Show Text Entry' button to invoke a textField and a keyboard. You can then edit your text. By tapping 'OK' button, you should see the text your entered below the 'Show Text Entry' button. By tapping 'Cancel' button, you cancel your modifications." />
+						<mx:Button height="{buttonSize}" label="Show Text Entry" touchTap="SystemAPI.dispatcher.addEventListener('textEntry', onTextEntryComplete); SystemAPI.getEntryString('Text Entry:', false)"/>
+						<mx:Label id="txtEntry" text="Text Entry:"/>
+					</mx:VBox>
+				</mx:Canvas>
+			
+				<mx:Canvas width="100%" excludeFromPlatform="iPhone OS 3.0">
+					<mx:Label x="5" y="0" text="flash.events.KeyboardEvent" fontWeight="bold"/>
+					<mx:VBox width="100%" x="40" y="20">
+						<local:CommentText width="{width-65}" text="Press a Key and its ID will be displayed in the label below." />
+						<mx:Label id="txtKey" text="Press a Key"/>
+					</mx:VBox>
+				</mx:Canvas>
+				<mx:Canvas width="100%" height="5"/>
+		</mx:VBox>
+	</mob:ScreenView>
+
+	<!-- Image controls Screen -->
+	<mob:ScreenView id="Image" viewCreated="initImage()" softKeyBarDescriptor="{backSoftKey}" clipContent="true" verticalScrollPolicy="auto">
+		<mob:navBarDescriptor>
+			<scr:NavigationBarDescriptor title="Image"/>
+		</mob:navBarDescriptor>
+	  	<mx:VBox width="100%" height="100%">
+			<mx:Canvas width="100%">
+				<mx:Label x="5" y="0" text="&lt;mx:Image&gt;" fontWeight="bold"/>
+				<mx:VBox width="100%" x="40" y="20">
+					<local:CommentText width="{width-65}" text="Tap the 'Start SlideShow' button to start the slide show. You should see a new image (among 3) every 3 seconds. Hit the 'Start SlideShow' button again to change image before the 3 seconds. Hit the 'Stop SlideShow' button to stop the slide show." />
+					<mx:Image id="slideShow" width="160" height="120" source="911.gif" showEffect="fadeIn"/>
+					<mx:Button width="160" height="{buttonSize}" label="Start SlideShow" touchTap="slideShowIterate(); slideTimer.start();"/>
+					<mx:Button width="160" height="{buttonSize}" label="Stop SlideShow" touchTap="slideTimer.stop();"/>						
+				</mx:VBox>
+			</mx:Canvas>
+			
+			<mx:Canvas width="100%">
+				<mx:Label x="40" y="0" text="AspectRatio:"/>
+				<mx:Image x="40" y="20" width="100" height="40" source="meteo.gif" maintainAspectRatio="true"/>
+				<mx:Image x="40" y="40" width="100" height="40" source="meteo.gif" maintainAspectRatio="false"/>
+			</mx:Canvas>
+			
+			<mx:Canvas width="100%" horizontalScrollPolicy="off" verticalScrollPolicy="off">
+				<mx:Label x="40" y="0" text="Click below image to animate:"/>
+				<mx:Image x="40" y="20" width="100" height="60" id="anim" scaleContent="true" touchTap="{animateScaleXUpDown.play([anim])}" source="game.gif"/>
+			</mx:Canvas>
+			
+			<mx:Canvas width="100%">
+				<mx:Label x="40" y="0" text="Remote image:"/>
+				<mx:VBox width="100%" x="40" y="20">
+					<local:CommentText width="{width-65}" text="Tap the 'Download' button to download an image. After a few seconds, you should see the OpenPlug logo below the 'Download' button." />
+					<mx:HBox width="100%">
+						<mx:Button width="100" height="{buttonSize}" label="Download" touchTap="imgLoader.load(); actImg.start();"/>
+						<mob:ActivityIndicator width="25" height="25" id="actImg" autoStart="false"/>
+					</mx:HBox>
+					<mx:SWFLoader id="imgLoader" autoLoad="false" width="{width-65}" source="http://developer.openplug.com/templates/openplug/images/header/logo-open-plug.jpg"/>
+				</mx:VBox>
+			</mx:Canvas>
+			<mx:Canvas width="100%" height="5"/>
+		</mx:VBox>
+	</mob:ScreenView>
+
+	<!-- Container controls Screen -->
+	<mob:ScreenView id="Container" softKeyBarDescriptor="{backSoftKey}" clipContent="true" verticalScrollPolicy="auto">
+		<mob:navBarDescriptor>
+			<scr:NavigationBarDescriptor title="Containers"/>
+		</mob:navBarDescriptor>
+   		<mx:VBox width="100%" height="100%">
+			<mx:Canvas width="100%" horizontalScrollPolicy="off" verticalScrollPolicy="off">
+				<mx:Label x="5" y="0" text="&lt;mx:Canvas&gt;" fontWeight="bold"/>
+				<mx:Label x="40" y="20" text="Scrolling: AUTO"/>
+				<mx:Canvas  id="imgCanvas2" x="40" y="40" width="180" height="100" horizontalScrollPolicy="auto" verticalScrollPolicy="auto" clipContent="true">
+					<mx:Image width="240" height="320" source="interlaced_transparency.png" maintainAspectRatio="false"/>
+				</mx:Canvas>
+				<mx:Label x="40" y="140" text="Scrolling:" excludeFromPlatform="iPhone OS 3.0"/>
+				<mx:Label x="40" y="160" text="Horizontal ON - Vertical OFF" excludeFromPlatform="iPhone OS 3.0"/>
+				<mx:Canvas id="imgCanvas" x="40" y="180" width="180" height="100" horizontalScrollPolicy="on" verticalScrollPolicy="off" clipContent="true" excludeFromPlatform="iPhone OS 3.0">
+					<mx:Image width="240" height="320" source="interlaced_transparency.png" maintainAspectRatio="false"/>
+				</mx:Canvas>
+			</mx:Canvas>
+			
+			<mx:Canvas width="100%">
+				<mx:Label x="5" y="0" text="&lt;mx:Box&gt;" fontWeight="bold"/>
+				<mx:VBox width="100%" x="40" y="20">
+					<local:CommentText width="{width-65}" text="Tap the 'horizontal' button to make the &lt;mx:Box&gt; horizontal (both buttons on the same row). Hit the 'vertical' button to make the &lt;mx:Box&gt; vertical (one button per row)." />
+					<mx:Box id="box" direction="vertical" width="{width-65}" height="{buttonSize*2+5}" paddingLeft="10" paddingRight="10">
+		            	<mx:Button height="{buttonSize}" label="horizontal" touchTap="box.direction='horizontal'"/>
+		            	<mx:Button height="{buttonSize}" label="vertical" touchTap="box.direction='vertical'"/>
+					</mx:Box>
+				</mx:VBox>
+			</mx:Canvas>
+			
+			<mx:Canvas width="100%">
+				<mx:Label x="5" y="0" text="&lt;mx:HBox&gt;" fontWeight="bold"/>
+				<mx:HBox x="40" y="20" width="{width-65}">
+		            <mx:Label text="label 1"/>
+		            <mx:Label text="label 2"/>
+				</mx:HBox>
+			</mx:Canvas>
+			
+			<mx:Canvas width="100%">
+				<mx:Label x="5" y="0" text="&lt;mx:VBox&gt;" fontWeight="bold"/>
+				<mx:VBox x="40" y="20" width="{width-65}">
+		            <mx:Label text="label 1"/>
+		            <mx:Label text="label 2"/>
+				</mx:VBox>
+			</mx:Canvas>
+			<mx:Canvas width="100%" height="5"/>
+		</mx:VBox>
+	</mob:ScreenView>
+
+	<!-- Button controls Screen -->
+	<mob:ScreenView id="Button" viewCreated="initButton()" softKeyBarDescriptor="{backSoftKey}" clipContent="true" verticalScrollPolicy="auto">
+		<mob:navBarDescriptor>
+			<scr:NavigationBarDescriptor title="Buttons and Alerts"/>
+		</mob:navBarDescriptor>
+   		<mx:VBox width="100%" height="100%">
+			<mx:Canvas width="100%">
+				<mx:Label x="5" y="0" text="&lt;mx:Button&gt;" fontWeight="bold"/>
+				<mx:VBox width="100%" x="40" y="20">
+					<local:CommentText width="{width-65}" text="Tap the 'Click me' button to change the button label to 'You win!'." />
+					<mx:Button id="btn1" width="{width-65}" height="{buttonSize}" label="Click me" borderColor="white" color="white" cornerRadius="10" fillColors="[ 0x000000, 0xFFFFFF ]" touchTap="btn1.label='You win!'"/>
+				</mx:VBox>
+			</mx:Canvas>
+			
+			<!--<mx:VBox width="100%" x="40" includeInPlatform="iPhone OS3.0">
+				<mx:Button label="is not yet Retina" width="179" height="44"/>
+				<mx:Button label="is Retina" width="179" height="44" styleName="MainButton"/>
+			</mx:VBox>-->
+			
+			<mx:Canvas width="100%">
+				<mx:Label x="5" y="0" text="&lt;mob:Alert&gt;" fontWeight="bold"/>
+				<mx:VBox width="100%" x="40" y="20">
+					<local:CommentText width="{width-65}" text="Tap the 'Show Alert!' button to invoke an alert box with the message 'Hello world!'." />
+					<mx:Button x="40" y="60" height="{buttonSize}" label="Show Alert!" touchTap="Alert.show('Hello world!', 'Title')"/>
+				</mx:VBox>
+			</mx:Canvas>
+			
+			<mx:Canvas width="100%">
+				<mx:Label x="5" y="0" text="&lt;mx:ViewStack&gt;" fontWeight="bold"/>
+				<mx:VBox width="100%" x="40" y="20">
+					<local:CommentText width="{width-65}" text="Displays one image among the 3 available in &lt;mob:ToggleButtonBar&gt;. The image will appear with a Fade animation effect." />
+					<mx:ViewStack id="viewStack" width="{width-65}" height="100" backgroundColor="gray">
+						<mx:Canvas width="100%" height="100%" icon="@Embed('clock_toggleBar.gif')" hideEffect="Fade" showEffect="Fade">
+							<mx:Image width="100%" height="100%" maintainAspectRatio="true" source="clock.gif"/>
+						</mx:Canvas>
+						<mx:Canvas horizontalCenter="0" width="100%" height="100%" icon="@Embed('game_toggleBar.gif')" hideEffect="Fade" showEffect="Fade">
+							<mx:Image width="100%" height="100%" maintainAspectRatio="true" source="game.gif"/>
+						</mx:Canvas>
+						<mx:Canvas right="0" width="100%" height="100%" icon="@Embed('meteo_toggleBar.gif')" hideEffect="Fade" showEffect="Fade">
+							<mx:Image width="100%" height="100%" maintainAspectRatio="true" source="meteo.gif"/>
+						</mx:Canvas>
+					</mx:ViewStack>
+				</mx:VBox>
+			</mx:Canvas>
+			
+			<mx:Canvas width="100%">
+				<mx:Label x="5" y="0" text="&lt;mob:ToggleButtonBar&gt;" fontWeight="bold"/>
+				<mx:VBox width="100%" x="40" y="20">
+					<local:CommentText width="{width-65}" text="Tap on one of the images to display it in the &lt;mx:ViewStack&gt;." />
+					<mob:ToggleButtonBar width="{width-65}" height="45" dataProvider="{viewStack}" backgroundColor="black" buttonStyleName="buttonStyleName" horizontalGap="0"/>
+				</mx:VBox>
+			</mx:Canvas>
+			
+			<mx:Canvas width="100%">
+				<mx:Label x="5" y="0" text="&lt;mob:NavigationBar&gt;" fontWeight="bold"/>
+				<mx:VBox width="100%" x="40" y="20">
+					<local:CommentText width="{width-65}" text="Navigation bar example. Hit 'left' or 'right' button to invoke an alert view with the button which was clicked as message. Click 'Ok' button in this first alert view to invoke a second alert view with 'Ok' as message. Click 'Cancel' button in the first alert view to invoke a second alert view with 'Cancel' as message. Click 'Ok' button in this second alert view to remove it." />
+					<mob:NavigationBar id="navBar" width="{width-65}" height="{buttonSize+5}"  leftNavigationItem="left" middleNavigationItem="mid" rightNavigationItem="right"/>
+				</mx:VBox>
+			</mx:Canvas>
+			<mx:Canvas width="100%" height="5"/>
+		</mx:VBox>
+	</mob:ScreenView>
+
+	<!-- List controls Screen -->
+	<mob:ScreenView id="List" viewCreated="initLists()" softKeyBarDescriptor="{backSoftKey}" clipContent="true" verticalScrollPolicy="auto">
+		<mob:navBarDescriptor>
+			<scr:NavigationBarDescriptor id="listsNavBar" title="Lists" rightAction="Modify" rightActionClick="setListMode()"/>
+		</mob:navBarDescriptor>
+		<mx:VBox width="100%" height="100%">
+           	<mob:TabNavigator id="listStack" width="100%" height="100%" change="updateRightButtonLabel(listStack.selectedIndex)">
+				<mx:Canvas right="0" width="100%" height="100%" label="mob:List">
+					<mx:VBox height="100%" width="100%" >
+						<mob:List id="simpleList" width="100%" height="85%" rowHeight="70" dataProvider="{simpleDataProvider}" itemRenderer="ListItemRenderer"
+								  change="curListItem.text='Selected item: '+simpleList.selectedIndex.toString();"
+								  itemDeleted="list_itemDeletedHandlerSimple(simpleDataProvider, event, curListItem);"
+								  itemInserted="list_itemInsertedHandlerSimple(simpleDataProvider, event, curListItem);"
+								  itemMoved="list_itemMovedHandlerSimple(simpleDataProvider, event, curListItem);"/>
+						<mx:VBox width="100%">
+							<mx:Text id="curListItem" text="No selection" width="100%"/>
+							<mx:Button id="btnList0" label="Modify" touchTap="setListMode()" excludeFromPlatform="iPhone OS 3.0"/>
+						</mx:VBox>
+					</mx:VBox>
+				</mx:Canvas>
+				
+				<mx:Canvas right="0" width="100%" height="100%" label="mob:GroupList">
+					<mx:VBox height="100%" width="100%" >
+						<mob:GroupList width="100%" height="90%" showSelection="false" id="lst2" 
+									   change="grpCurrentItem.text='Selected item: '+ lst2.selectedIndex.toString();"
+									   dataProvider="{myData}" rowHeight="50"
+									   itemRenderer="GroupListItemRenderer"
+									   accessoryButtonTap="grpList_accessoryButtonTapped(myData, event, grpCurrentItem);"
+									   itemTouchTap="grpList_touchHandler(event);"/>
+						<mx:Text width="100%" id="grpCurrentItem" text="No Selection"/>
+					</mx:VBox>
+				</mx:Canvas>
+			</mob:TabNavigator>
+		</mx:VBox>
+	</mob:ScreenView>
+	
+	<!-- Video Screen -->
+	<mob:ScreenView id="Video" softKeyBarDescriptor="{backSoftKey}" clipContent="true" verticalScrollPolicy="auto">
+		<mob:navBarDescriptor>
+			<scr:NavigationBarDescriptor title="Photos and Videos"/>
+		</mob:navBarDescriptor>
+		<mx:VBox width="100%" height="100%">
+			<mx:Canvas width="100%" excludeFromPlatform="iPhone OS 3.0,Android 1.6">
+				<mx:Label x="5" y="0" text="&lt;mx:VideoDisplay&gt;" fontWeight="bold"/>
+				<mx:VideoDisplay autoPlay="false" x="40" y="20" width="{width-65}" height="100" id="videoDisp" source="/sample.3gp" touchTap="videoDisp.play()"/>
+				<mx:HBox x="40" y="120" width="{width-65}" height="{buttonSize}">
+					<mx:Button width="33%" height="{buttonSize}" label="&gt;" touchTap="videoDisp.play()"/>
+					<mx:Button width="33%" height="{buttonSize}" label="||" touchTap="videoDisp.pause()"/>
+					<mx:Button width="33%" height="{buttonSize}" label="[]" touchTap="videoDisp.stop()"/>
+				</mx:HBox>
+			</mx:Canvas>
+			
+			<mx:Canvas width="100%" excludeFromPlatform="S60 5th Edition">
+				<mx:Label x="5" y="0" text="SystemAPI.playVideoFile" fontWeight="bold"/>
+				<mx:VBox width="100%" x="40" y="20">
+					<local:CommentText width="{width-65}" text="Hit the 'Play Local' button to bring up a movie player to show a video stored in the app itself.{'\n'} Hit the 'Play Remote' button to display a video stored on a server." />
+					<mx:Button height="{buttonSize}" label="Play Local" width="{width-65}" touchTap="SystemAPI.playVideoFile('/sample.3gp')"/>
+					<mx:Button height="{buttonSize}" label="Play Remote" width="{width-65}" touchTap="SystemAPI.playVideoFile('http://developer.openplug.com/downloads/sample.3gp')"/>
+				</mx:VBox>
+			</mx:Canvas>
+			
+			<mx:Canvas width="100%" includeInPlatform="iPhone OS 3.0,Android 1.6">
+				<mx:Label x="5" y="0" text="SystemAPI.storeImageFileFromGallery" fontWeight="bold"/>
+				<mx:VBox width="100%" x="40" y="20">
+					<local:CommentText width="{width-65}" text="Hit the 'Get Gallery pict' button to bring up the photos directory. If you select a picture, it will be displayed in the image view below and an alert view will be shown with 'Done' as message, otherwise no action and an alert view will be shown with 'Aborted' as message." />
+					<mx:Button id="btnCapture" width="{width-65}" height="{buttonSize}" label="Get Gallery pict" touchTap="SystemAPI.storeImageFileFromGallery('/pict'+pictIndex+'.jpg', null, btnCapture)"/>
+					<mx:Image id="photo" width="68" height="96" source="/photo.jpg"/>
+				</mx:VBox>
+			</mx:Canvas>
+
+			<mx:Canvas width="100%" includeInPlatform="iphone,android">
+				<mx:Label x="5" y="0" text="SystemAPI.storeImageFileFromCamera" fontWeight="bold"/>
+				<mx:VBox width="100%" x="40" y="20">
+					<local:CommentText width="{width-65}" text="Hit the 'Get Cam pict' button to bring up the phone camera. Take a picture. If you validate the picture, it will be displayed in the image view below and an alert view will be shown with 'Done' as message, otherwise no action and an alert view will be shown with 'Aborted' as message." />
+					<mx:Button width="{width-65}" height="{buttonSize}" label="Get Cam pict" touchTap="SystemAPI.storeImageFileFromCamera('/pict'+pictIndex+'.jpg')"/> 
+				</mx:VBox>
+			</mx:Canvas>
+
+			<mx:Canvas width="100%" height="5"/>
+		</mx:VBox>
+	</mob:ScreenView>
+
+	<!-- Activity control Screen -->
+	<mob:ScreenView id="Activity" softKeyBarDescriptor="{backSoftKey}" clipContent="true" verticalScrollPolicy="auto">
+		<mob:navBarDescriptor>
+			<scr:NavigationBarDescriptor title="ActivityIndicator"/>
+		</mob:navBarDescriptor>
+		<mx:VBox width="100%" height="100%">
+			<mx:Canvas width="100%">
+				<mx:Label x="5" y="0" text="&lt;mob:ActivityIndicator&gt;" fontWeight="bold"/>
+				<mx:VBox width="100%" x="40" y="20">
+					<local:CommentText width="{width-65}" text="Hit the 'Start' button to animate the 5 activity indicators. Hit the 'Stop' button to stop animating the activity indicators." />
+					<mx:HBox width="100%" backgroundColor="#a8b8c8">
+						<mob:ActivityIndicator id="actSmall" autoStart="true" width="20" height="20"/>
+						<mob:ActivityIndicator id="actMed" autoStart="true" width="25" height="25" color-scheme="shadowed"/>
+						<mob:ActivityIndicator id="actBig" autoStart="false" width="40" height="40" color-scheme="light"/>
+						<mob:ActivityIndicator id="actOvalH" autoStart="false" width="40" height="20" color-scheme="light"/>
+						<mob:ActivityIndicator id="actOvalV" autoStart="false" width="20" height="40" color-scheme="shadowed"/>
+					</mx:HBox>
+					<mx:HBox width="100%">
+						<mx:Button height="{buttonSize}" label="Start" touchTap="actSmall.start(); actMed.start(); actBig.start(); actOvalH.start(); actOvalV.start();"/>
+						<mx:Button height="{buttonSize}" label="Stop" touchTap="actSmall.stop(); actMed.stop(); actBig.stop(); actOvalH.stop(); actOvalV.stop();"/>
+					</mx:HBox>
+				</mx:VBox>
+			</mx:Canvas>
+			<mx:Canvas width="100%" height="5"/>
+		</mx:VBox>
+	</mob:ScreenView>
+
+	<!-- URL Navigation related Screen -->
+	<mob:ScreenView id="URL" softKeyBarDescriptor="{backSoftKey}" clipContent="true" verticalScrollPolicy="auto">
+		<mob:navBarDescriptor>
+			<scr:NavigationBarDescriptor title="URL Navigation"/>
+		</mob:navBarDescriptor>
+		<mx:VBox width="100%" height="100%">
+			<mx:Canvas width="100%">
+				<mx:Label  x="5" text="flash.net.navigateToURL " fontWeight="bold"/>
+				<mx:VBox width="100%" x="40" y="20">
+					<local:CommentText width="{width-65}" text="Hit the 'Open in Browser' button to open the URL entered in the text field in a web browser (leaves the application)." />
+					<mx:HBox width="100%">		
+						<mx:Label id="lblHTTP" text="http://"/>
+						<mob:TextInput id="txtBrowse" width="{width-65-lblHTTP.width}" height="30" text="www.openplug.com"/>
+					</mx:HBox>	
+					<mx:Button width="{width-105}" height="{buttonSize}" label="Open in Browser" touchTap="navigateToURL(new URLRequest(lblHTTP.text+txtBrowse.text))"/>
+
+					<mx:VBox includeInPlatform="iPhone OS 3.0,Android 1.6" width="100%" horizontalGap="0" verticalGap="0">
+						<local:CommentText width="{width-65}" text="Open a video on Youtube." />
+						<mx:HBox width="100%">	
+							<mx:Label id="lblYouTube" text="http://www.youtube.com/"/>
+							<mob:TextInput id="txtYouTube" width="{width-65-lblYouTube.width}" height="30" text="watch?v=cPt8otPBOms"/>
+						</mx:HBox>	
+						<mx:Button width="{width-105}" height="{buttonSize}" label="Open in YouTube" touchTap="navigateToURL(new URLRequest(lblYouTube.text+txtYouTube.text))"/>
+					</mx:VBox>
+	
+					<local:CommentText width="{width-65}" text="Hit the 'Mail to' button to bring up the mail tool with the to list set with the mail address entered in the text field (leaves the application)." />
+					<mx:HBox width="100%">		
+						<mx:Label id="lblMailTo" text="mailto:"/>
+						<mob:TextInput id="txtMail" width="{width-65-lblMailTo.width}" height="30" text="someone@somewhere.com"/>
+					</mx:HBox>	
+					<mx:Button width="{width-105}" height="{buttonSize}" label="Mail to" touchTap="navigateToURL(new URLRequest('mailto:'+txtMail.text))"/>
+					
+					<mx:VBox includeInPlatform="iPhone OS 3.0,Android 1.6" width="100%" horizontalGap="0" verticalGap="0">
+						<local:CommentText width="{width-65}" text="Open the Twitteasy application on the store." />
+						<mx:Label width="{width-65}" text="Twitteasy App"/>
+						<mx:Button width="{width-105}" height="{buttonSize}" label="Open in App Store" touchTap="openApp()"/>
+					</mx:VBox>
+
+					<mx:VBox width="100%" horizontalGap="0" excludeFromPlatform="ipad">						
+						<local:CommentText width="{width-65}" text="Hit the 'Call' button to call the phone number entered in the text field (leaves the application)." />
+						<mx:HBox width="100%">		
+							<mx:Label id="lblCall" text="tel:"/>
+							<mob:TextInput id="txtCall" width="{width-65-lblCall.width}" height="30" text="11111111"/>
+						</mx:HBox>					
+						<mx:Button width="{width-105}" height="{buttonSize}" label="Call" touchTap="navigateToURL(new URLRequest('tel:'+txtCall.text));"/>
+					</mx:VBox>
+				</mx:VBox>
+			</mx:Canvas>
+			<mx:Canvas width="100%" height="5"/>
+		</mx:VBox>
+	</mob:ScreenView>
+
+	<!-- Geolocation Screen -->
+	<mob:ScreenView id="GPSLocation" viewCreated="loadMap()" softKeyBarDescriptor="{backSoftKey}" clipContent="true" verticalScrollPolicy="auto">
+		<mob:navBarDescriptor>
+			<scr:NavigationBarDescriptor title="GPS location" styleName="styleBlue"/>
+		</mob:navBarDescriptor>
+		<mx:VBox width="100%" height="100%">
+			<mx:VBox width="100%">
+				<mx:Text text="GPS disabled" width="100%" textAlign="center" id="GPSstate"/>
+				<mx:Text text="----" width="100%" textAlign="center" id="position"/>
+			</mx:VBox>
+			
+			<mx:Canvas width="100%">
+				<mx:VBox x="40" width="100%">
+					<local:CommentText width="{width-65}" text="Hit the button start/stop the GPS localisation. Your actual position will be shown in the label with the '-----' content." />
+					<mx:Button id="geolocBtn"  width="{width-65}" height="{buttonSize}" label="Start Geolocation" touchTap="startGPS()"/>
+					<mx:Button width="{width-65}" height="{buttonSize}" label="Load Google Static Map" touchTap="loadMap()"/>
+					<mx:Button includeInPlatform="iPhone OS 3.0,Android 1.6" width="{width-65}" height="{buttonSize}" label="Open in Google Maps" touchTap="navigateToURL(new URLRequest('http://maps.google.com/maps?ll='+latMap+','+lonMap))"/>
+				</mx:VBox>
+			</mx:Canvas>
+			<mx:Canvas height="{width}" width="100%">
+				<mob:ActivityIndicator width="25" height="25" id="actMap" autoStart="false"/>
+				<mx:SWFLoader id="staticMap" autoLoad="false" complete="{actMap.stop()}" width="{width}"/>
+			</mx:Canvas>
+		</mx:VBox>
+	</mob:ScreenView>
+	
+	<!-- TextStyle Screen -->
+	<mob:ScreenView id="TextStyle" exitScreen="backToDefaultStyle()" softKeyBarDescriptor="{backSoftKey}" clipContent="true" verticalScrollPolicy="auto">
+		<mob:navBarDescriptor>
+			<scr:NavigationBarDescriptor title="Text Style" styleName="styleBlue"/>
+		</mob:navBarDescriptor>
+		
+		<mx:VBox x="5" width="{width-10}" height="100%">
+			<mx:Label x="5" text="&lt;mx:VBox&gt;" fontWeight="bold"/>
+			<mx:HBox width="100%">
+				<mx:VBox id="theBox" width="{width/2}" backgroundColor="gray" horizontalAlign="center">
+					<mx:Label text="inside the VBox" styleName="inBox"/>
+					<mx:Button label="inside" />
+					<mx:Label text="style abc" styleName="abc"/>
+				</mx:VBox>
+				<mx:VBox width="{width/2}" horizontalAlign="center">
+					<mx:Label text="outside the VBox" styleName="inBox"/>
+					<mx:Button label="outside"/>
+					<mx:Label text="style abc" styleName="abc"/>			
+				</mx:VBox>				
+			</mx:HBox>
+
+			<local:CommentText x="40" width="{width-65}" text="'vbox blue' button sets text of all elements of the VBox to blue color. {'\n'}'vbox yellow' button sets text of all elements of the VBox to yellow color.{'\n'}'clear vbox color' button remove the color effect on &lt;mx:VBox&gt;" />
+			<mx:VBox width="100%">
+				<mx:HBox width="100%">
+					<mx:Button height="{buttonSize}" label="vbox blue" touchTap="theBox.setStyle('color', 'blue')"/>
+					<mx:Button height="{buttonSize}" label="vbox yellow" touchTap="theBox.setStyle('color', 'yellow')"/>
+					<mx:Button height="{buttonSize}" label="clear color" touchTap="theBox.clearStyle('color')"/>
+				</mx:HBox>
+				
+			</mx:VBox>
+
+			<local:CommentText width="{width-65}" text="'button red' button sets all button texts to red color. {'\n'}'clear button red' button sets all buttons texts to default color"/>
+			<mx:HBox width="100%">
+				<mx:Button height="{buttonSize}" label="button red" touchTap="changeStyle('Button', 'color', 'red')"/>
+				<mx:Button height="{buttonSize}" label="clear color" touchTap="clearProp('Button', 'color')"/>
+			</mx:HBox>
+			
+			<local:CommentText width="{width-65}" text="Change both 'style abc' texts to green color." />
+				<mx:HBox width="100%">					
+					<mx:Button height="{buttonSize}" label="style green" touchTap="changeStyle('.abc', 'color', 'green')"/>
+					<mx:Button height="{buttonSize}" label="clear color" touchTap="clearProp('.abc', 'color')"/>
+				</mx:HBox>
+					
+			<local:CommentText width="{width-65}" text="'to italic' button puts its text in italic.{'\n'}'clear italic' button removes the italic effect from 'to italic' button." />
+			<mx:HBox width="100%">
+				<mx:Button height="{buttonSize}" id="btoit" label="to italic" touchTap="btoit.setStyle('fontStyle', 'italic')"/>
+				<mx:Button height="{buttonSize}" label="clear italic" touchTap="btoit.clearStyle('fontStyle')"/>
+			</mx:HBox>
+			
+			<local:CommentText width="{width-65}" text="Set text of all elements in the left vertical box to bold style." />
+			<mx:HBox width="100%">
+				<mx:Button height="{buttonSize}" label="vbox bold" touchTap="theBox.setStyle('fontWeight', 'bold')"/>
+				<mx:Button height="{buttonSize}" label="clear bold" touchTap="theBox.clearStyle('fontWeight')"/>
+			</mx:HBox>
+						
+			<local:CommentText width="{width-65}" text="'add style' button sets a new style for 'add style' button (set the text in white). {'\n'}'clear style' button deletes the new style affected to 'add style' button. This button will come back to its default style." />
+			<mx:HBox width="100%">
+				<mx:Button height="{buttonSize}" label="add style" styleName="def" touchTap="changeStyle('.def', 'color', 'white')"/>
+				<mx:Button height="{buttonSize}" label="clear style" touchTap="StyleManager.clearStyleDeclaration('.def', true)"/>
+			</mx:HBox>
+			<mx:Canvas width="100%" height="5"/>
+		</mx:VBox> 
+	</mob:ScreenView>
+	
+	<!-- Google Search Screen -->
+	<mob:ScreenView id="GoogleSearch" softKeyBarDescriptor="{backSoftKey}" clipContent="true" verticalScrollPolicy="auto">
+		<mob:navBarDescriptor>
+			<scr:NavigationBarDescriptor title="Google Search" styleName="styleBlue"/>
+		</mob:navBarDescriptor>
+		
+		<mob:TextInput id="searchBox"  x="10" y="10" width="100" height="20"/>
+		<mx:Button id="searchButton" x="120" y="10" label="Google" touchTap="googleSearch(searchBox.text)"/>	
+		<mob:ActivityIndicator id="searchActivity" x="200" y="10" width="20" height="20" visible="false"/>
+		
+		<mx:Label  id="total" text="" x="10" y="35"/>
+		
+		<mx:Canvas id="resultCanvas" x="10" y="60" width="95%" height="75%" verticalScrollPolicy="auto" clipContent="true">
+			<mx:Text  id="result" text="" width="100%" />							
+		</mx:Canvas>
+	</mob:ScreenView>
+
+	<!-- Langage Management Screen -->
+	<mob:ScreenView id="LangMgt" softKeyBarDescriptor="{backSoftKey}" clipContent="true" verticalScrollPolicy="auto">
+		<mob:navBarDescriptor>
+			<scr:NavigationBarDescriptor title="Langage Management" styleName="styleBlue"/>
+		</mob:navBarDescriptor>
+		<mx:VBox width="100%" height="100%">
+			<mx:Canvas width="100%">
+				<mx:Label x="5" y="0" text="resourceManager.getString" fontWeight="bold"/>
+				<mx:VBox width="100%" x="40" y="20">
+					<local:CommentText width="{width-65}" text="Shows the selected langage (modified by hitting the buttons below)" />
+					<mx:Text text="Selected Langage : {resourceManager.getString('Internationalization', 'L_first')}" width="{width-10}"/>
+				</mx:VBox>
+			</mx:Canvas>
+			
+			<mx:Canvas width="100%">
+				<mx:Label x="5" y="0" text="SystemAPI.getDeviceLanguage()" fontWeight="bold"/>
+				<mx:VBox width="100%" x="40" y="20">
+					<local:CommentText width="{width-65}" text="Shows the phone langage" />
+					<mx:Label text="Phone Langage : {SystemAPI.getDeviceLanguage()}"/>
+				</mx:VBox>
+			</mx:Canvas>
+			
+			<mx:Canvas width="100%">
+				<mx:Label x="5" y="0" text="resourceManager.localeChain" fontWeight="bold"/>
+				<mx:VBox width="100%" x="40" y="20">
+					<local:CommentText width="{width-65}" text="Select a langage. Will modify the label in resourceManager.getString" />
+					<mx:HBox width="100%">
+						<mx:Button label="FRANÇAIS" touchTap="resourceManager.localeChain=['fra_FR']"/>
+						<mx:Button label="ENGLISH" touchTap="resourceManager.localeChain=['eng_US']"/>
+					</mx:HBox>
+				</mx:VBox>
+			</mx:Canvas>
+			<mx:Canvas width="100%" height="5"/>
+		</mx:VBox> 
+	</mob:ScreenView>
+	
+	<!-- Web View Screen -->
+	<mob:ScreenView id="Web" viewCreated="initWeb()" softKeyBarDescriptor="{backSoftKey}" clipContent="true" verticalScrollPolicy="auto">
+		<mob:navBarDescriptor>
+			<scr:NavigationBarDescriptor title="Web View"/>
+		</mob:navBarDescriptor>
+		<mx:VBox id="vboxWeb" width="100%" height="100%" includeInPlatform="iPhone OS 3.0,Android 1.6" horizontalGap="0" verticalGap="0">
+			<mx:Canvas id="cvsWebComment" width="100%">
+				<mx:Label x="5" y="0" text="&lt;mob:HTML&gt;" fontWeight="bold"/>
+				<local:CommentText width="{width-65}" x="40" y="20" text="Type the URL you want to visit by clicking on the text field on the left. {'\n'} - 'Go' button will load the HTML page {'\n'} - 'R' button will refresh the HTML page. {'\n'} - 'X' button will stop refreshing the HTML page. {'\n'} - '&lt;' and '&gt;' buttons navigate in HTML history." />
+			</mx:Canvas>
+
+			<mx:Canvas width="100%">
+				<mx:HBox width="100%" height="{buttonSize}" horizontalGap="0" verticalGap="0">
+					<mob:TextInput id="txtUrl" width="40%" height="{buttonSize}" text="http://www.google.com"/>
+					<mx:Button height="{buttonSize}" width="12%" label="Go!" touchTap="html.location = txtUrl.text" styleName="htmlButton"/>
+					<mx:Button height="{buttonSize}" width="10%" label="R" touchTap="html.reload()" styleName="htmlButton"/>
+					<mx:Button height="{buttonSize}" width="10%" label="X" touchTap="html.cancelLoad(); act.stop()" styleName="htmlButton"/>
+					<mx:Button height="{buttonSize}" width="9%" label="&lt;" touchTap="html.historyBack()" styleName="htmlButton"/>
+					<mx:Button height="{buttonSize}" width="9%" label="&gt;" touchTap="html.historyForward()" styleName="htmlButton"/>
+					<mob:ActivityIndicator id="act" height="{buttonSize}" width="{buttonSize}"/>
+				</mx:HBox>
+			</mx:Canvas>
+			
+			<mx:Canvas width="100%" height="100%">
+				<mob:HTML width="100%" height="100%" id="html" locationChange="act.start()" loading="act.start()" complete="act.stop()"></mob:HTML>
+			</mx:Canvas>
+			<mx:Canvas width="100%" height="5"/>
+		</mx:VBox>
+	</mob:ScreenView>
+	
+</mob:ScreenStackApplication>

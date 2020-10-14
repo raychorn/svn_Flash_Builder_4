@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				click="itemrenderer1_clickHandler(event)"
+				autoDrawBackground="false" height="100%" width="100%"
+				xmlns:controls="controls.*" creationComplete="itemrenderer1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.ImageUtils;
+			import com.ObjectUtils;
+			
+			import controls.HTMLViewer;
+			import controls.events.ClickedDocsListMediaCardEvent;
+			
+			import flash.filesystem.File;
+			
+			import mx.controls.Alert;
+			import mx.controls.Image;
+			import mx.controls.TextArea;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			import spark.components.TextArea;
+			import spark.components.TextInput;
+			import spark.filters.DropShadowFilter;
+			
+			import utils.AIRHelper;
+			
+			[Bindable]
+			public static var cell_width:Number = 290;
+			
+			[Bindable]
+			public static var cell_height:Number = 105;
+			
+			public static var renderers:Array = [];
+			
+			[Bindable]
+			public var icon_width:Number = 70;
+			
+			[Bindable]
+			public var icon_height:Number = 70;
+			
+			private var has_reported_status:Boolean = false;
+			
+			private var missing_file_textarea:spark.components.TextArea;
+			
+			private var tips:Object = {
+				'AFStudyGuideIcon' : '27 Amazing Facts Study Guides, enjoyed all over the world',
+				'AudioIcon' : 'Audio File, Questions and answers from the hit radio program Bible Answers Live',
+				'BookIcon' : 'A huge library of books, including 44 booklets by trusted Bible experts, an electronic health magazine, plus these timeless works: Steps to Christ, Acts of the Apostles, and more!',
+				'KidStudyGuideIcon' : 'Kids Study Guide, topical study guides for kids, called Amazing Adventure',
+				'StoraclesIcon' : '24 Storacles of Prophecy Bible lessons, providing new biblical insights',
+				'VideoIcon' : '30 videos totaling over 25 hours of life-changing Bible teaching'
+			};
+
+			private function set_image_tooltip(data:Object):void {
+				for (var i:String in this.tips) {
+					if (String(data.data.image).toLowerCase().indexOf(i.toLowerCase()) > -1) {
+						this.anImage.toolTip = this.tips[i];
+						break;
+					}
+				}
+			}
+			
+			private function callback_is_media_valid(_data:*):void {
+				var _this:ListItemRenderer = this;
+				var aFile:File = AIRHelper.resolve(_data.data.media);
+				this.enabled = aFile.exists;
+				if (!this.has_reported_status) {
+					if (!this.enabled) {
+						var top:Number = this.titleLbl.y+this.titleLbl.height+5;
+						this.missing_file_textarea = new spark.components.TextArea();
+						this.missing_file_textarea.text = aFile.nativePath;
+						this.missing_file_textarea.percentWidth = 100.0;
+						this.missing_file_textarea.height = this.height - top;
+						this.missing_file_textarea.x = 5;
+						this.missing_file_textarea.y = top;
+						this.missing_file_textarea.editable = false;
+						this.missing_file_textarea.styleName = 'docs_listItemMissingText';
+						this.addElement(this.missing_file_textarea);
+						this.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+							trace(_this.className+'.callback_is_media_valid().1 --> text='+_this.missing_file_textarea.text);
+							System.setClipboard(_this.missing_file_textarea.text);
+						});
+					}
+					var aLabel:Label = new Label();
+					if ( (_data.reasons is Array) && (_data.reasons.length > 0) ) {
+						var reasons:Object = {};
+						for (var i:String in _data.reasons) {
+							reasons[_data.reasons[i]] = _data.reasons[i];
+						}
+						var keys:Array = ObjectUtils.keys(reasons);
+						aLabel.x = 10;
+						aLabel.y = this.height - 15;
+						aLabel.text = ((_data.reasons.length > 0) ? 'Found via: ' : '')+keys.join(', ');
+						aLabel.styleName = 'docs_listItemReasonsText';
+						aLabel.percentWidth = 100.0;
+						this.addElement(aLabel);
+					} else if (FlexGlobals.topLevelApplication.is_debugging) {
+						aLabel.x = 10;
+						aLabel.y = this.height - 15;
+						aLabel.text = data.data.image;
+						aLabel.styleName = 'docs_listItemReasonsText';
+						aLabel.percentWidth = 100.0;
+						this.addElement(aLabel);
+					}
+					this.has_reported_status = true;
+				}
+			}
+
+			override public function set data(value:Object):void {
+				super.data = ObjectUtils.cloneIfNecessary(value, true); // +++ Make an Object Proxy that has just the required data elements...
+				
+				if (value) {
+					titleLbl.text = data.label;
+					contentLbl.text = data.data.text;
+					this.set_image_tooltip(data);
+					titleLbl.visible = true;
+					contentLbl.visible = true;
+					this.enabled = false;
+					this.callLater(this.callback_is_media_valid,[data]);
+				} else {
+					titleLbl.text = "";
+					contentLbl.text = "";
+					titleLbl.visible = false;
+					contentLbl.visible = false;
+				}
+				
+			}
+
+			protected function itemrenderer1_clickHandler(event:MouseEvent):void {
+				this.dispatchEvent(new ClickedDocsListMediaCardEvent(ClickedDocsListMediaCardEvent.TYPE_CLICKED_DOCSLIST_MEDIA_CARD,this.data));
+			}
+			
+			private function get image_file():File {
+				var aFile:File = AIRHelper.resolve(data.data.image);
+				trace('(+++) '+this.className+'.image_url --> url='+aFile.nativePath);
+				return aFile;
+			}
+			
+			private function draw_line_on(hbox:HBox):void {
+				if (hbox is HBox) {
+					var y:Number = 17;
+					var gr:Graphics = hbox.graphics;
+					gr.lineStyle(2.0,0xffffff,1.0);
+					gr.moveTo(this.icon_width+5,y);
+					gr.lineTo(ListItemRenderer.cell_width-5,y); // -this.icon_width+50
+				}
+			}
+			
+			private function onCreationComplete_anImage(event:FlexEvent):void {
+				var _this:ListItemRenderer = this;
+				var aFile:File = this.image_file;
+				trace('(+++) '+this.className+'.onCreationComplete_anImage().1 --> aFile='+aFile.nativePath);
+				var hbox:HBox = event.currentTarget as HBox;
+//				ImageUtils.read_image2(aFile,function (image:UIComponent):void {
+				ImageUtils.load_image(AIRHelper.normalize_url(aFile.nativePath),function (image:UIComponent,content:*):void {
+					hbox.addChildAt(image,0);
+					image.addEventListener(FlexEvent.CREATION_COMPLETE, function (event:FlexEvent):void {
+						_this.draw_line_on(hbox);
+					});
+				});
+			}
+
+			protected function itemrenderer1_creationCompleteHandler(event:FlexEvent):void {
+				var shadow:DropShadowFilter = new DropShadowFilter();
+				shadow.distance = 5;
+				shadow.angle = 25;
+				this.filters = [shadow];
+			}
+
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="hovered" />
+		<s:State name="selected" />
+	</s:states>
+	
+	<s:Rect left="0" right="0" top="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color.selected="0x383c40" color.normal="0x2a2d2b" color.hovered="0x383c40"
+						  alpha.selected="0.8" alpha.hovered="0.5" alpha.normal="0.8" />
+		</s:fill>
+		
+		<s:stroke>
+			<s:SolidColorStroke id="borderStroke" color="0x2a2b2c" weight="2"/>
+		</s:stroke>
+	</s:Rect>
+
+	<mx:HBox id="anImage" x="5" y="5" creationComplete="onCreationComplete_anImage(event)">
+		<mx:Spacer id="spacer" width="{this.icon_width-10}"/>
+		<mx:VBox id="vbox1" width="100%" height="100%">
+			<s:Label id="titleLbl" width="100%" styleName="docs_listItemTitle"/>
+			<controls:MultiLineLabel id="contentLbl" width="{ListItemRenderer.cell_width-this.spacer.width-15}" styleName="docs_listItemTitleText" _text="{data.data.text}" paddingRight="5" textAlign="left"/>
+		</mx:VBox>
+	</mx:HBox>
+	
+</s:ItemRenderer>

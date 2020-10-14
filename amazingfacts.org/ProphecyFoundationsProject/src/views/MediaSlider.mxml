@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   xmlns:tabs="controls.tabs.*"
+		   xmlns:controls="controls.*"
+		   height="100%" maxWidth="{this.parentApplication.width*1}"
+		   currentState="Empty" 
+		   horizontalAlign="left" 
+		   horizontalScrollPolicy="off">
+	<mx:states>
+		<s:State name="Empty"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace controls "controls.*";
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel.ttf");
+			fontFamily: NeoSansIntel;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Light.ttf");
+			fontFamily: NeoSansIntelLight;
+			embedAsCFF: true;
+		}
+		
+		.media_slider {
+			backgroundColor: #454444;
+		}
+		
+		.tab_label {
+			color: #ffffff;
+			contentBackgroundColor: #454444;
+			borderStyle: none;
+			dropShadowEnabled: false;
+			shadowDirection: right;
+		}		
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import controls.events.ClickedDocsListMediaCardEvent;
+			import controls.events.DocsListPopulatedEvent;
+			import controls.events.ShowDocsListDetailsEvent;
+			import controls.tabs.events.TabClickedEvent;
+			
+			import mx.events.EffectEvent;
+			import mx.events.FlexEvent;
+			
+			import spark.effects.Resize;
+			
+			[Bindable]
+			private var __vertical_tab_height:Number = 180;
+			
+			[Bindable]
+			private var __docsList_width:Number = 0;
+			
+			private var __last_widest:Number = -1;
+			
+			private var __width_stack:Array = [];
+			
+			private var __resize_effect:Resize;
+			
+			private const __default_docsList_width:Number = 300;
+			
+			public function set vertical_tab_height(vertical_tab_height:Number):void {
+				if (this.__vertical_tab_height != vertical_tab_height) {
+					this.__vertical_tab_height = vertical_tab_height;
+				}
+			}
+			
+			public function get vertical_tab_height():Number {
+				return this.__vertical_tab_height;
+			}
+			
+			private function setup_resize_effect(factor:Number):void {
+				this.__resize_effect = new Resize(this.docsList);
+				this.__resize_effect.duration = 1000*((factor is Number) ? factor : 1);
+			}
+			
+			private function do_docsList_slide():void {
+				var _this:* = this;
+				this.setup_resize_effect(1);
+				this.__resize_effect.widthFrom = this.__docsList_width;
+				if (this.__docsList_width == 0) {
+					this.__resize_effect.widthTo = (this.__last_widest > 0) ? this.__last_widest : this.__default_docsList_width;
+				} else if (this.__docsList_width > 0) {
+					this.__resize_effect.widthTo = 0;
+				}
+				this.__resize_effect.addEventListener(EffectEvent.EFFECT_END, function (event:EffectEvent):void {
+					_this.__docsList_width = _this.__resize_effect.widthTo;
+					_this.__last_widest = Math.max(_this.__last_widest,_this.__docsList_width);
+					_this.vertical_tab.currentState = (_this.vertical_tab.currentState == 'inactive') ? 'active' : 'inactive';
+					//trace(_this.className+'do_docsList_slide().EffectEvent.EFFECT_END.1 --> event='+event.toString()+', _this.__docsList_width='+_this.__docsList_width);
+				});
+				this.__resize_effect.play();
+			}
+			
+			private function do_docsList_slide_out():void {
+				var _this:* = this;
+				this.setup_resize_effect(1);
+				this.__resize_effect.widthFrom = this.__docsList_width;
+				if (this.__docsList_width > 0) {
+					this.__resize_effect.widthTo = this.parentApplication.width *0.7;
+				}
+				//trace(this.className+'do_docsList_slide_out().1 !');
+				this.__resize_effect.addEventListener(EffectEvent.EFFECT_END, function (event:EffectEvent):void {
+					_this.__docsList_width = _this.__resize_effect.widthTo;
+					_this.__last_widest = Math.max(_this.__last_widest,_this.__docsList_width);
+					//trace(_this.className+'.do_docsList_slide_out().EffectEvent.EFFECT_END.1 --> event='+event.toString()+', _this.__docsList_width='+_this.__docsList_width);
+
+					_this.docsList.populate_details();
+					
+					var cols:Number = _this.docsList.docsListDetails.tile_list.columnCount;
+					var colWidth:Number = _this.docsList.docsListDetails.tile_list.columnWidth;
+					var real_width:Number = (cols*colWidth)+50;
+//					if ( (cols == 1) && (real_width < _this.__docsList_width) ) {
+					if (real_width < _this.__docsList_width) {
+						var c:int = int(_this.__docsList_width / colWidth);
+						real_width = (c*colWidth)+50;
+					}
+					//trace(_this.className+'.do_docsList_slide_out().EffectEvent.EFFECT_END.2 --> cols='+cols+', colWidth='+colWidth+', real_width='+real_width);
+					_this.setup_resize_effect(1.5);
+					_this.__resize_effect.widthFrom = _this.__docsList_width;
+					_this.__resize_effect.widthTo = real_width;
+					_this.__resize_effect.addEventListener(EffectEvent.EFFECT_END, function (event:EffectEvent):void {
+						_this.__docsList_width = _this.__resize_effect.widthTo;
+						_this.__last_widest = Math.max(_this.__last_widest,_this.__docsList_width);
+						_this.vertical_tab.currentState = (_this.vertical_tab.currentState == 'inactive') ? 'active' : 'inactive';
+					});
+					_this.__resize_effect.play();
+				});
+				this.__resize_effect.play();
+			}
+			
+			private function do_docsList_slide_in():void {
+				var _this:* = this;
+				this.setup_resize_effect(1);
+				this.__resize_effect.widthFrom = this.__docsList_width;
+				this.__resize_effect.widthTo = this.__width_stack.pop();
+				//trace(this.className+'do_docsList_slide_in().1 !');
+				this.__resize_effect.addEventListener(EffectEvent.EFFECT_END, function (event:EffectEvent):void {
+					_this.__docsList_width = _this.__resize_effect.widthTo;
+					//trace(_this.className+'.do_docsList_slide_out().EffectEvent.EFFECT_END.1 --> event='+event.toString()+', _this.__docsList_width='+_this.__docsList_width);
+					
+					//_this.docsList.populate_details();
+				});
+				this.__resize_effect.play();
+			}
+			
+			protected function vertical_tab_creationCompleteHandler(event:FlexEvent):void {
+				var _this:* = this;
+				var tab:VerticalTab = event.currentTarget as VerticalTab;
+				tab.addEventListener(TabClickedEvent.TYPE_TAB_CLICKED, function (event:TabClickedEvent):void {
+					//trace('TabClickedEvent.TYPE_TAB_CLICKED.1 !');
+					_this.do_docsList_slide();
+				});
+			}
+
+			protected function onCreationComplete_docsList(event:FlexEvent):void {
+				var _this:* = this;
+				this.docsList.width = this.__default_docsList_width;
+//				this.docsList.addEventListener(ShowDocsListDetailsEvent.TYPE_SHOW_DOCSLIST_DETAILS_COMPLETED, function (event:ShowDocsListDetailsEvent):void {
+//					_this.parentDocument.currentLocation = _this.parentDocument.getHomePage();
+//					//trace('ShowDocsListDetailsEvent.TYPE_SHOW_DOCSLIST_DETAILS_COMPLETED !');
+//					if (_this.docsList.currentState == 'details') {
+//						//trace(_this.className+'.ShowDocsListDetailsEvent.TYPE_SHOW_DOCSLIST_DETAILS_COMPLETED.1 --> _this.width='+_this.width);
+//						//trace(_this.className+'.ShowDocsListDetailsEvent.TYPE_SHOW_DOCSLIST_DETAILS_COMPLETED.2 --> _this.docsList.x/y='+_this.docsList.x+','+_this.docsList.x);
+//						if (_this.__width_stack.length == 0) {
+//							_this.__width_stack.push(_this.width);
+//							_this.do_docsList_slide_out();
+//						} else {
+//							var app:* = _this.parentApplication;
+//							var mc:MainCanvas = app.mainCanvas;
+//							if (mc is MainCanvas) {
+//								mc.document_slider.detachDocumentViewer();
+//								mc.document_slider.visible = false;
+//							}
+//							var w:Number = _this.__width_stack.pop();
+//							_this.docsList.do_docsListDetails_slide_out();
+//						}
+//					}
+//				});
+//				this.docsList.addEventListener(ClickedDocsListMediaCardEvent.TYPE_CLICKED_DOCSLIST_MEDIA_CARD, function (event:ClickedDocsListMediaCardEvent):void {
+//					//trace(_this.className+'.ClickedDocsListMediaCardEvent.TYPE_CLICKED_DOCSLIST_MEDIA_CARD !');
+//					if (_this.docsList.currentState == 'details') {
+//						//_this.do_docsList_slide();
+//					}
+//				});
+//				this.docsList.addEventListener(DocsListPopulatedEvent.TYPE_DOCSLIST_POPULATED, function (event:DocsListPopulatedEvent):void {
+//					//trace(_this.className+'.DocsListPopulatedEvent.TYPE_DOCSLIST_POPULATED !');
+//					_this.vertical_tab.currentState = (_this.vertical_tab.currentState == 'inactive') ? 'active' : 'inactive';
+//					_this.__docsList_width = _this.__default_docsList_width;
+//				});
+			}
+		]]>
+	</fx:Script>
+	<tabs:VerticalTab id="vertical_tab" styleName="media_slider" height="{this.__vertical_tab_height}" currentState="inactive" visible="false" includeInLayout="false" label_text="Study Guides" creationComplete="vertical_tab_creationCompleteHandler(event)"/>
+	<controls:DocsList id="docsList" styleName="docs_list" height="100%" creationComplete="onCreationComplete_docsList(event)"/>
+</mx:HBox>

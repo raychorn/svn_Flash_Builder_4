@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<application xmlns="http://ns.adobe.com/air/application/2.5">
+	<id>AndroidGamersLoungeV1</id>
+	<versionNumber>1.0.0</versionNumber>
+	<filename>AndroidGamersLoungeV1</filename>
+	<name>Gamers Lounge v1</name>
+	<description>Produced by: Vyper Logix Corp. (VyperLogix.Com)</description>
+	<copyright>© 2011, VyperLogix.Com, All Rights Reserved.</copyright>
+	<supportedProfiles>mobileDevice</supportedProfiles>
+	<initialWindow>
+		<content>AndroidGamersLoungeV1.swf</content>
+		<visible>true</visible>
+		<!-- <autoOrients>true</autoOrients> -->
+	</initialWindow>
+    <!-- <icon>
+        <image16x16>assets/icons/icons/app_icon_16.png</image16x16>
+        <image32x32>assets/icons/icons/app_icon_32.png</image32x32>
+        <image48x48>assets/icons/icons/app_icon_48.png</image48x48>
+        <image128x128>assets/icons/icons/app_icon_128.png</image128x128>
+    </icon> -->
+	<android>
+	    <manifestAdditions>
+	    <![CDATA[
+	    <manifest android:installLocation="auto">
+	        <uses-permission android:name="android.permission.INTERNET"/>
+	        <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+	        <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+	        <uses-configuration android:reqFiveWayNav="true"/>
+	        <supports-screens android:normalScreens="true"/>
+	        <uses-feature android:required="true" android:name="android.hardware.touchscreen.multitouch"/>
+	        <application android:enabled="true">
+	            <activity android:excludeFromRecents="false">
+	                <intent-filter>
+	                    <action android:name="android.intent.action.MAIN"/>
+	                    <category android:name="android.intent.category.LAUNCHER"/>
+	                </intent-filter>
+	            </activity>
+	            <activity>
+	            </activity>
+	        </application>
+	    </manifest>
+	    ]]>
+	    </manifestAdditions>
+	</android>
+</application>

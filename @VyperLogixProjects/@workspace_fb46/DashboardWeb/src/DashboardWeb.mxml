@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:view="com.adobe.webdashboard.view.*"
+			   width="100%" height="100%" initialize="initializeHandler()"
+			   preinitialize="preinitializeHandler()">
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.dashboard.control.AppController;
+			import com.adobe.dashboard.event.SetUpEvent;
+			import com.adobe.dashboard.model.AppModel;
+			import com.adobe.dashboard.presenter.MainPresenter;
+			import com.adobe.webdashboard.view.MainView;
+
+			private var presenter:MainPresenter;
+
+			private var appController:com.adobe.dashboard.control.AppController;
+
+
+			protected function preinitializeHandler():void
+			{
+				// Instantiate the Application Controller
+				appController = new AppController(true);
+
+				// Set the presenter
+				presenter = AppModel.getInstance().mainPresenter;
+			}
+
+			protected function initializeHandler():void
+			{
+				presenter.addEventListener(SetUpEvent.SET_UP_COMPLETE_EVENT, setUpCompleteHandler, false, 0, true);
+
+				// Set up the services
+				presenter.setUp();
+			}
+
+			protected function setUpCompleteHandler(event:SetUpEvent):void
+			{
+				// Wait to initialize the MainView till the mock data is loaded
+				currentState = "main";
+			}
+		]]>
+	</fx:Script>
+
+	<fx:Style source="assets/styles/chartStyles.css"/>
+	<fx:Style source="assets/styles/styles.css"/>
+
+	<s:states>
+		<s:State name="loading"/>
+		<s:State name="main"/>
+	</s:states>
+
+	<s:Label horizontalCenter="0" verticalCenter="0" text="Loading" includeIn="loading"/>
+
+	<view:MainView width="100%" height="100%" includeIn="main"/>
+
+</s:Application>

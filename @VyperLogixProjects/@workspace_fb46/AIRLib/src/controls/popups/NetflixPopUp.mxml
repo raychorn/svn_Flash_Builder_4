@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:s="library://ns.adobe.com/flex/spark" 
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		.Buttons {
+			fontFamily: 'Verdana';
+			fontSize: 10;
+			fontWeight: normal;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			private var __deltaX__:int = 20;
+			
+			[Bindable]
+			public var title:String;
+			
+			public static const ARROW_LEFT:String = 'ARROW_LEFT';
+			public static const ARROW_RIGHT:String = 'ARROW_RIGHT';
+			
+			[Bindable]
+			public var __arrow_orientation__:String = ARROW_RIGHT; // ARROW_LEFT or ARROW_RIGHT
+
+			private var __arrow_color__:uint = 0x000000;
+			
+			public function use_arrow_left():void {
+				this.__arrow_orientation__ = ARROW_LEFT;
+				this.draw_callout_arrow(this.canvas);
+			}
+			
+			public function use_arrow_right():void {
+				this.__arrow_orientation__ = ARROW_RIGHT;
+				this.draw_callout_arrow(this.canvas);
+			}
+			
+			public function get is_arrow_left():Boolean {
+				return this.__arrow_orientation__ == ARROW_LEFT;
+			}
+			
+			public function get is_arrow_right():Boolean {
+				return this.__arrow_orientation__ == ARROW_RIGHT;
+			}
+			
+			public function get deltaX():int {
+				return this.__deltaX__;
+			}
+			
+			public function set deltaX(deltaX:int):void {
+				if (this.__deltaX__ != deltaX) {
+					this.__deltaX__ = deltaX;
+				}
+			}
+			
+			public function get arrow_color():uint {
+				return this.__arrow_color__;
+			}
+			
+			public function set arrow_color(arrow_color:uint):void {
+				if (this.__arrow_color__ != arrow_color) {
+					this.__arrow_color__ = arrow_color;
+				}
+			}
+			
+			protected function btnClose_clickHandler(event:MouseEvent):void {
+				PopUpManager.removePopUp(this);
+			}
+			
+			protected function draw_callout_arrow(target:HGroup):void {
+				var gr:Graphics = target.graphics;
+				gr.clear();
+				
+				var alpha:Number = 0.8;
+				var y:int = 5;
+				var i:int = 20;
+				var alphaDelta:Number = (0.8-0.2)/20;
+				
+				var originX:int = (this.is_arrow_right) ? target.width : 0;
+				
+				gr.lineStyle(1,this.__arrow_color__,alpha);
+				gr.moveTo(originX-1,15);
+				gr.lineTo(originX-__deltaX__,y);
+				gr.moveTo(originX-1,15);
+				gr.lineTo(originX-__deltaX__,y+i);
+				
+				i--;
+				alpha -= alphaDelta;
+				for (; y < 25; y++) {
+					gr.lineStyle(1,this.__arrow_color__,alpha);
+					gr.moveTo(originX-1,15);
+					gr.lineTo(originX-__deltaX__,y);
+					gr.moveTo(originX-1,15);
+					gr.lineTo(originX-__deltaX__,y+i);
+					i--;
+					alpha -= alphaDelta;
+				}
+			}
+			
+			protected function hgroup1_creationCompleteHandler(event:FlexEvent):void {
+				var target:HGroup = HGroup(event.currentTarget);
+				this.draw_callout_arrow(target);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:HGroup id="canvas" width="100%" paddingRight="{__deltaX__}" horizontalAlign="left" creationComplete="hgroup1_creationCompleteHandler(event)">
+		<s:Panel title="{this.title}" width="100%" height="100%" skinClass="controls.skins.CustomNetflixPanelSkin">
+			<s:VGroup width="100%" height="100%" verticalAlign="bottom">
+				<s:HGroup id="infoCanvas" width="100%" horizontalAlign="left" paddingTop="5" paddingRight="5" paddingBottom="5" paddingLeft="5">
+				</s:HGroup>
+				<s:HGroup width="100%" horizontalAlign="right" paddingTop="5" paddingRight="5" paddingBottom="5" paddingLeft="5">
+					<s:Button id="btnClose" label="Dismiss" height="25" styleName="Buttons" click="btnClose_clickHandler(event)"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:Panel>
+	</s:HGroup>
+</s:HGroup>

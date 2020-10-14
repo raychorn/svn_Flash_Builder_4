@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark"
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   width="100%" height="100%" 
+		   resize="canvas1_resizeHandler(event)" 
+		   creationComplete="canvas1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.ObjectExplainer;
+			
+			import controls.Alert.AlertPopUp;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.Menu;
+			import mx.controls.menuClasses.MenuBarItem;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			import mx.events.ResizeEvent;
+			import mx.events.VideoEvent;
+			import mx.formatters.NumberBaseRoundType;
+			import mx.formatters.NumberFormatter;
+			import mx.managers.PopUpManager;
+			
+			import splash.events.SplashCompletedEvent;
+			
+			import utils.PDFHelper;
+			
+			import views.ImageCreator;
+			import views.TermsAndConditions;
+			
+			import vyperlogix.LicenseManagement;
+			import vyperlogix.events.CompletedUserLoginEvent;
+			
+			public var hang_time_ms:int = 1500;
+			
+			[Embed(source="assets/logos/vlcLogo/vlcLogo.swf")]
+			[Bindable]
+			public var splashAnimationCls:Class;
+			
+			private var licenseManagement:LicenseManagement;
+
+			private var is_splash_complete:Boolean = false;
+			
+			private var termsPopUp:TermsAndConditions;
+
+			private var imagePopUp:ImageCreator;
+			
+			public static var const_view_fullscreen:String = 'view.fullscreen';
+			public static var const_view_cloud:String = 'view.cloud';
+			public static var const_application_exit:String = 'application.exit';
+			public static var const_actions_image:String = 'actions.image';
+			
+			private var appMenuData:Object = {
+				'label':'Logos', 'name':'application', 'children':[
+					//{'label':'Image Creator', 'name':SplashMovie.const_actions_image, 'enabled':false},
+					{'label':'Exit', 'name':SplashMovie.const_application_exit},
+				]
+			};
+			
+			private var actionsMenuData:Object = {
+				'label':'Actions', 'name':'actions', 'children':[
+					{'label':'Image Creator', 'name':SplashMovie.const_actions_image, 'enabled':false},
+				]
+			};
+			
+			private var menuBarData:Object = {
+				'label':'View', 'name':'view', 'children':[
+					{'label':'Full Screen', 'name':SplashMovie.const_view_fullscreen, 'type':"check", 'toggled':false},
+				]
+			};
+			
+			private var debugMenu:Object = {'label':'Domain', 'name':'debug.status',
+				'children':[
+					{'label':'appspot.com', 'name':SplashMovie.const_view_cloud, 'type':"check", 'toggled':false}
+				]
+			};
+
+			private function handle_splash_complete():void {
+				var _this:SplashMovie = this;
+				var _timer:Timer = new Timer(this.hang_time_ms,1);
+				_timer.addEventListener(TimerEvent.TIMER_COMPLETE, function (event:TimerEvent):void {
+					_timer.stop();
+					if (!_this.is_splash_complete) {
+						_this.handle_license_management();
+						_this.is_splash_complete = true;
+					}
+				});
+				_timer.start();
+			}
+			
+			private function handle_license_management():void {
+				var _this:SplashMovie = this;
+				if (!this.is_splash_complete) {
+					this.licenseManagement = new LicenseManagement();
+					this.licenseManagement.addEventListener(FlexEvent.CREATION_COMPLETE, function (event:FlexEvent):void {
+						_this.licenseManagement.container = _this;
+					});
+					this.licenseManagement.addEventListener(CompletedUserLoginEvent.TYPE_COMPLETED_USER_LOGIN, 
+						function(event:CompletedUserLoginEvent):void {
+							var m:Array = _this.menuBar.menuBarItems;
+							var mi:MenuBarItem;
+							var children:Array;
+							var aChild:Object;
+							for (var i:String in m) {
+								mi = m[i];
+								if (mi.data.name == _this.actionsMenuData.name) {
+									children = mi.data.children;
+									for (var ii:String in children) {
+										aChild = children[ii];
+										aChild.enabled = true;
+									}
+								}
+							}
+							_this.menuBar.enabled = FlexGlobals.topLevelApplication.appProxy.isLoggedIn
+							//AlertPopUp.infoNoOkay('LOGIN COMPLETED !!!'+'\nFlexGlobals.topLevelApplication.appProxy.isLoggedIn='+FlexGlobals.topLevelApplication.appProxy.isLoggedIn,'INFO');
+						}
+					);
+					var children:Array = this.getChildren();
+					var isPresentAlready:Boolean = false;
+					for (var i:String in children) {
+						if (children[i] is LicenseManagement) {
+							isPresentAlready = true;
+							break;
+						}
+					}
+					var isLoggedIn:Boolean = FlexGlobals.topLevelApplication.appProxy.isLoggedIn;
+//					if ( (!isPresentAlready) && (!isLoggedIn) ) {
+//					}
+					this.addChild(this.licenseManagement);
+				}
+			}
+			
+			protected function splash_creationCompleteHandler(event:FlexEvent):void {
+				this.handle_splash_complete();
+			}
+
+			protected function canvas1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:* = this;
+				this.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+					_this.handle_splash_complete();
+				});
+			}
+
+			protected function canvas1_resizeHandler(event:ResizeEvent):void {
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> event='+event.toString());
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.2 --> width='+this.width+', height='+this.height);
+			}
+
+			private function get is_debugging():Boolean {
+				return FlexGlobals.topLevelApplication.appProxy.is_debugging;
+			}
+
+			private function get is_localHost():Boolean {
+				return FlexGlobals.topLevelApplication.appProxy.is_localHost;
+			}
+
+			private function get domain():String{
+				return FlexGlobals.topLevelApplication.domain;
+			}
+			
+			private function onItemClick_menuBar(event:MenuEvent):void {
+				var _this:SplashMovie = this;
+				var menu:Menu = Menu(event.menu);
+				if (event.item.name == SplashMovie.const_view_fullscreen) {
+					trace(this.className+'.onItemClick_menuBar().1 --> event.item.toggled='+event.item.toggled);
+					if (event.item.toggled) {
+						FlexGlobals.topLevelApplication.appProxy.do_fullScreen();
+						trace(this.className+'.onItemClick_menuBar().1a --> event.menu.dataProvider.source[0].toggled='+event.menu.dataProvider.source[0].toggled);
+					} else {
+						FlexGlobals.topLevelApplication.appProxy.do_windowed();
+						trace(this.className+'.onItemClick_menuBar().1b --> event.menu.dataProvider.source[0].toggled='+event.menu.dataProvider.source[0].toggled);
+					}
+					menu.toolTip = FlexGlobals.topLevelApplication.nativeWindow.stage.displayState;
+				} else if (event.item.name == SplashMovie.const_view_cloud) {
+					trace(this.className+'.onItemClick_menuBar().2 --> event.item.toggled='+event.item.toggled);
+					if (event.item.toggled) {
+						FlexGlobals.topLevelApplication.is_localHost = false;
+						trace(this.className+'.onItemClick_menuBar().2a --> event.menu.dataProvider.source[0].toggled='+event.menu.dataProvider.source[0].toggled);
+					} else {
+						FlexGlobals.topLevelApplication.is_localHost = true;
+						trace(this.className+'.onItemClick_menuBar().2b --> event.menu.dataProvider.source[0].toggled='+event.menu.dataProvider.source[0].toggled);
+					}
+					menu.toolTip = (this.is_localHost) ? 'LocalHost' : this.domain;
+				} else if (event.item.name == SplashMovie.const_application_exit) {
+					FlexGlobals.topLevelApplication.closeApplicaton();
+				} else if (event.item.name == SplashMovie.const_actions_image) {
+					if (!FlexGlobals.topLevelApplication.appProxy.isLoggedIn) {
+						AlertPopUp.surpriseNoOkay('You MUST Login to use this part of the application.','WARNING !!!');
+					} else {
+						this.imagePopUp = PopUpManager.createPopUp(this, ImageCreator, true) as ImageCreator;
+						this.imagePopUp.x = 10;
+						this.imagePopUp.y = 10;
+//						this.imagePopUp.title = 'Image Creator Prototype';
+//						this.imagePopUp.showCloseButton = true;
+						this.imagePopUp.width = this.width - 30;
+						this.imagePopUp.height = this.height- this.menuBar.height - 50;
+						//this.imagePopUp.currentState = (info_only) ? 'INFORMATION_ONLY' : 'default';
+						this.imagePopUp.addEventListener(CloseEvent.CLOSE, 
+							function (event:CloseEvent):void {
+								PopUpManager.removePopUp(_this.imagePopUp);
+							}
+						);
+						//AlertPopUp.surpriseNoOkay('Actions-->Image','Not Yet Implemented !');
+					}
+				} else {
+					AlertPopUp.infoNoOkay(event.toString(), this.className+'.onItemClick_menuBar().1 --> item='+event.item.name);
+				}
+			}
+			
+			private function onCreationComplete_menuBar(event:FlexEvent):void {
+				var mb:MenuBar = MenuBar(event.currentTarget);
+				var ac:ArrayCollection;
+				if ((mb.dataProvider is ArrayCollection) == false) {
+					mb.dataProvider = new ArrayCollection();
+				}
+				mb.enabled = false;
+				ac = ArrayCollection(mb.dataProvider);
+				var children:Array;
+				var aChild:Object;
+				var i:String;
+				trace(this.className+'.onCreationComplete_menuBar().1 --> this.is_debugging='+this.is_debugging);
+				ac.addItem(this.appMenuData);
+				children = this.actionsMenuData.children;
+				for (i in children) {
+					aChild = children[i];
+					aChild.enabled = FlexGlobals.topLevelApplication.appProxy.isLoggedIn;
+				}
+				ac.addItem(this.actionsMenuData);
+				children = this.menuBarData.children;
+				for (i in children) {
+					aChild = children[i];
+					if (aChild.name == SplashMovie.const_view_fullscreen) {
+						trace(this.className+'.onCreationComplete_menuBar().2 --> FlexGlobals.topLevelApplication.nativeWindow.stage.displayState='+FlexGlobals.topLevelApplication.nativeWindow.stage.displayState+', StageDisplayState.FULL_SCREEN='+StageDisplayState.FULL_SCREEN+', aChild.toggled='+aChild.toggled);
+						aChild.toggled = (FlexGlobals.topLevelApplication.nativeWindow.stage.displayState == StageDisplayState.FULL_SCREEN) ? true : false;
+						trace(this.className+'.onCreationComplete_menuBar().3 --> aChild.toggled='+aChild.toggled);
+					}
+				}
+				ac.addItem(this.menuBarData);
+				if (this.is_debugging) {
+					children = this.debugMenu.children;
+					for (i in children) {
+						aChild = children[i];
+						if (aChild.name == SplashMovie.const_view_cloud) {
+							aChild.toggled = (this.is_localHost) ? false : true;
+						}
+					}
+					ac.addItem(this.debugMenu);
+				}
+			}
+
+			private function popUpTermsAndConditions(info_only:Boolean):void {
+				var _this:SplashMovie = this;
+				info_only = (info_only is Boolean) ? info_only : false;
+				if (!this.termsPopUp) {
+					this.termsPopUp = PopUpManager.createPopUp(this, TermsAndConditions, true) as TermsAndConditions;
+					this.termsPopUp.x = 10;
+					this.termsPopUp.y = 10;
+					this.termsPopUp.showCloseButton = info_only;
+					this.termsPopUp.width = this.width - 30;
+					this.termsPopUp.height = this.height- this.menuBar.height - 50;
+					this.termsPopUp.currentState = (info_only) ? 'INFORMATION_ONLY' : 'default';
+					this.termsPopUp.addEventListener(CloseEvent.CLOSE, 
+						function (event:CloseEvent):void {
+							PopUpManager.removePopUp(_this.termsPopUp);
+						}
+					);
+					this.termsPopUp.btn_dismiss.addEventListener(MouseEvent.CLICK, 
+						function (event:MouseEvent):void {
+							_this.parentApplication.appProxy.has_read_terms_and_conditions = true;
+							PopUpManager.removePopUp(_this.termsPopUp);
+						}
+					);
+					this.termsPopUp.btn_agreementYes.addEventListener(MouseEvent.CLICK, 
+						function (event:MouseEvent):void {
+							_this.parentApplication.appProxy.has_read_terms_and_conditions = true;
+							_this.parentApplication.appProxy.has_agreed_to_terms_and_conditions = true;
+							PopUpManager.removePopUp(_this.termsPopUp);
+						}
+					);
+					this.termsPopUp.btn_agreementNo.addEventListener(MouseEvent.CLICK, 
+						function (event:MouseEvent):void {
+							AlertPopUp.surpriseConfirm('If you choose YES you will NOT be allowed to upload any PDF Bank Statements... Are you sure you do not agree with our very liberal Terms and Conditions ?','Are you sure about this ?',
+								function (event:CloseEvent):void{
+									if (event.detail == Alert.YES) {
+										_this.parentApplication.appProxy.has_read_terms_and_conditions = true;
+										_this.parentApplication.appProxy.has_agreed_to_terms_and_conditions = false;
+										PopUpManager.removePopUp(_this.termsPopUp);
+									}
+								}
+							);
+						}
+					);
+				} else {
+					this.termsPopUp.currentState = (info_only) ? 'INFORMATION_ONLY' : 'default';
+					PopUpManager.addPopUp(this.termsPopUp, this, true);
+				}
+			}
+			
+			protected function buildID_clickHandler(event:MouseEvent):void {
+				this.popUpTermsAndConditions(false);
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:SWFLoader id="splash" x="-50" y="20" width="70%" height="100%" visible="{this.parentApplication.appProxy.is_logoVisible}" scaleContent="true" maintainAspectRatio="false" source="{this.splashAnimationCls}" creationComplete="splash_creationCompleteHandler(event)"/>
+	<mx:MenuBar id="menuBar" x="0" y="0" width="100%" itemClick="onItemClick_menuBar(event)" creationComplete="onCreationComplete_menuBar(event)"/>
+	<mx:Canvas x="{this.width-75}" y="{this.menuBar.y+this.menuBar.height}">
+		<mx:LinkButton id="buildID" label="{this.parentApplication.appProxy.build_number}" useHandCursor="true" click="buildID_clickHandler(event)"/>
+	</mx:Canvas>
+</mx:Canvas>

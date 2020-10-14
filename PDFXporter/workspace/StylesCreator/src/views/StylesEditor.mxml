@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   xmlns:views="views.*"
+		   width="100%" height="100%"
+		   >
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style source="css/fse.css"/>
+	<fx:Script>
+		<![CDATA[
+			import controls.Alert.AlertPopUp;
+			
+			import flash.net.FileReference;
+			import flash.net.URLRequest;
+			import flash.net.URLRequestMethod;
+			import flash.net.URLVariables;
+			
+			import mx.core.Container;
+			
+			public function concatCSS():String {	
+				var newCSS:String = "";
+				for each (var vsc:DisplayObject in myViewstack.getChildren()) {
+					var cb:Box = Box(vsc);
+					if (cb.numChildren > 0) {
+						newCSS += Object(cb.getChildAt(0)).myCSS.text + "\n\n";
+					}
+				}
+				
+				return newCSS;
+			} 
+			
+			private function saveToFile():void {
+				
+				var appUrl:URLRequest = new URLRequest();
+				appUrl.url = "application/data_to_file";
+				appUrl.method = URLRequestMethod.POST;
+				
+				var variables:URLVariables = new URLVariables();
+				variables.content = concatCSS();
+				variables.suggested_name = "stylesCreator.css";
+				
+				appUrl.data = variables;
+				
+				navigateToURL(appUrl, "_top");
+			}
+			
+			private function uploadFile():void {
+				AlertPopUp.surpriseNoOkay('Not Yet Implemented !','WARNING');
+			}
+		]]>
+	</fx:Script>
+	<s:BorderContainer width="100%" height="100%" id="myBackgroundImage" styleName="noPadding" backgroundAlpha="0">
+		<mx:Box width="100%" height="100%" id="myBackground" paddingLeft="20" paddingRight="20" paddingTop="10" paddingBottom="5" backgroundAlpha="0" >
+			<mx:VBox horizontalAlign="left" width="100%" verticalGap="5">
+				<mx:HBox horizontalGap="0" styleName="noPadding" verticalAlign="bottom">
+					<mx:Label text="Flex 2: Style Creator" styleName="styleExplorerTitle" />
+				</mx:HBox>
+				<mx:ApplicationControlBar width="100%"  styleName="fseAppControlBar">
+					<mx:LinkBar dataProvider="myViewstack" styleName="componentLinkBar" />
+					<mx:Spacer width="100%"/>
+					<mx:Button label="Download CSS" click="uploadFile()"/>
+				</mx:ApplicationControlBar>	
+			</mx:VBox>
+			<mx:ViewStack width="100%" height="100%" id="myViewstack" >
+				
+				<mx:Box width="100%" height="100%" label="Application" >
+					<views:ExplorerApplication xmlns:fse="*" /> 
+				</mx:Box>
+				
+				<mx:Box width="100%" height="100%" label="Panels"  >
+					<views:ExplorerPanels xmlns:fse="*" />
+				</mx:Box>
+				
+				<mx:Box width="100%" height="100%" label="Tabs" id="tabs" >
+					<views:ExplorerTabs xmlns:fse="*" />
+				</mx:Box>
+				
+				<mx:Box width="100%" height="100%" label="Accordions" id="accordions" >
+					<views:ExplorerAccordions xmlns:fse="*" />
+				</mx:Box>
+				
+				<mx:Box width="100%" height="100%" label="Bars" id="linkbar">
+					<views:ExplorerLinkBar xmlns:fse="*" />
+				</mx:Box>
+				
+				<mx:Box width="100%" height="100%" label="Lists &amp; Data Grids" id="lists" >
+					<views:ExplorerLists xmlns:fse="*" />
+				</mx:Box> 
+				
+				<mx:Box width="100%" height="100%" label="Form Elements" id="form" >
+					<views:ExplorerFormElements xmlns:fse="*" />
+				</mx:Box>
+				
+				<mx:Box width="100%" height="100%" label="Buttons" id="buttons"  >
+					<views:ExplorerButtons xmlns:fse="*" />
+				</mx:Box>
+				
+				<mx:Box width="100%" height="100%" label="ScrollBars" id="scrollbars" >
+					<views:ExplorerScrollbars xmlns:fse="*" />
+				</mx:Box>
+				
+				<mx:Box width="100%" height="100%" label="DateChooser" id="dateChooser">
+					<views:ExplorerDateChooser xmlns:fse="*" />
+				</mx:Box>
+				
+				<mx:Box width="100%" height="100%" label="Other" id="other">
+					<views:ExplorerOther xmlns:fse="*" />
+				</mx:Box>
+				
+				<mx:Box width="100%" height="100%" label="Text Formating" id="text" >
+					<views:ExplorerText xmlns:fse="*" />
+				</mx:Box>
+				
+			</mx:ViewStack>
+			
+			<mx:HBox width="100%">
+				<mx:Box horizontalAlign="left" width="50%">
+					<mx:LinkButton label="Copyright (c) 2006 Adobe Systems, Inc. All Rights Reserved" 
+								   click="navigateToURL(new URLRequest('http://www.adobe.com/'));"
+								   styleName="footerLink"
+								   />
+				</mx:Box>
+				<mx:Box horizontalAlign="right" width="50%">
+					<mx:LinkButton label="Created by Adobe Consulting" 
+								   click="navigateToURL(new URLRequest('http://weblogs.macromedia.com/mc/'));"
+								   styleName="footerLink"
+								   textDecoration="underline"
+								   />
+				</mx:Box>
+			</mx:HBox>
+		</mx:Box>
+	</s:BorderContainer>
+</mx:TitleWindow>

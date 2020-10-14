@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application 
+    layout="absolute"
+    creationComplete="creationActions()"
+    xmlns:mx="http://www.adobe.com/2006/mxml">
+
+    <mx:Script>
+        <![CDATA[
+            import com.adobe.ac.mxeffects.Flip;
+            import com.adobe.ac.mxeffects.DistortionConstants;
+
+
+            private function creationActions():void
+            {
+                containerForScale.scaleX = .5;
+                containerForScale.scaleY = .5;
+            }
+
+            private function flipToFront():void
+            {
+                var e:Flip = new Flip(back);
+                e.siblings = [ front ];
+                e.direction = DistortionConstants.RIGHT;
+                e.duration = 1000;
+                e.play();
+            }
+
+            private function flipToBack():void
+            {
+                var e:Flip = new Flip(front);
+                e.siblings = [ back ];
+                e.direction = DistortionConstants.LEFT;
+                e.duration = 1000;
+                e.play();
+            }
+        ]]>
+    </mx:Script>
+
+    <mx:Canvas id="containerForScale"
+        width="200" height="200"
+        horizontalCenter="0"
+        verticalCenter="0">
+
+        <mx:ViewStack id="ItemViewStack"
+            width="200" height="200">
+
+            <mx:ApplicationControlBar id="front"
+                width="100%" height="100%"
+                cornerRadius="20"
+                verticalAlign="middle">
+                <mx:VBox 
+                    width="100%" height="100%">
+                    <mx:Spacer height="50%"/>
+                    <mx:Label 
+                        width="100%"
+                        textAlign="center"
+                        text="TEST NODE"/>
+                    <mx:Spacer height="50%"/>
+                    <mx:Button 
+                        width="18" height="18"
+                        fontFamily="Geometric"
+                        label="i" toolTip="Modify the settings for this item"
+                        click="flipToBack()"/>
+                </mx:VBox>
+
+            </mx:ApplicationControlBar>
+
+            <mx:ApplicationControlBar id="back"
+                width="100%" height="100%"
+                verticalAlign="middle">
+                <mx:VBox 
+                    width="100%" height="100%">
+                    <mx:Button 
+                        height="24"
+                        fontFamily="Geometric"
+                        label="DONE"
+                        click="flipToFront()"/>
+                </mx:VBox>
+            </mx:ApplicationControlBar>
+
+        </mx:ViewStack>
+
+    </mx:Canvas>
+
+</mx:Application>

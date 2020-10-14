@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" 
+			   initialize="titlewindow1_initializeHandler(event)" 
+			   xmlns:controls="popups.controls.*"
+			   xmlns:custardbelly="custardbelly.container.*">
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import factories.BattleCruiserFactory;
+			import factories.BattleshipFactory;
+			import factories.BomberFactory;
+			import factories.ColonyShipFactory;
+			import factories.CruiserFactory;
+			import factories.DarkMatterCollectorFactory;
+			import factories.DarkStarFactory;
+			import factories.DeathStarFactory;
+			import factories.DestroyerFactory;
+			import factories.HeavyCargoFactory;
+			import factories.HeavyFighterFactory;
+			import factories.LightCargoFactory;
+			import factories.LightFighterFactory;
+			import factories.RecyclerFactory;
+			import factories.SpyProbeFactory;
+			import factories.StarDestroyerFactory;
+			import factories.StarFreighterFactory;
+			import factories.StarRecyclerFactory;
+			import factories.editors.BattleCruiserBuilder;
+			import factories.editors.BattleshipBuilder;
+			import factories.editors.BomberBuilder;
+			import factories.editors.ColonyShipBuilder;
+			import factories.editors.CruiserBuilder;
+			import factories.editors.DarkMatterCollectorBuilder;
+			import factories.editors.DarkStarBuilder;
+			import factories.editors.DeathStarBuilder;
+			import factories.editors.DestroyerBuilder;
+			import factories.editors.HeavyCargoBuilder;
+			import factories.editors.HeavyFighterBuilder;
+			import factories.editors.LightCargoBuilder;
+			import factories.editors.LightFighterBuilder;
+			import factories.editors.RecyclerBuilder;
+			import factories.editors.SpyProbeBuilder;
+			import factories.editors.StarDestroyerBuilder;
+			import factories.editors.StarFreighterBuilder;
+			import factories.editors.StarRecyclerBuilder;
+			
+			import popups.controls.ResourcesGroup;
+
+			private var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+			
+			private var _this:Shipyard;
+			
+			public function handle_timer_event(event:TimerEvent):void {
+				app.log = '(+++) '+this.className+'-->'+DebuggerUtils.getFunctionName(new Error());
+			}
+			
+			public static function get is_building_by_id():String {
+				return ResourcesGroup.is_building_by_id;
+			}
+			
+			public static function set is_building_by_id(is_building_by_id:String):void {
+				if (ResourcesGroup.is_building_by_id != is_building_by_id) {
+					ResourcesGroup.is_building_by_id = is_building_by_id;
+				}
+			}
+			
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void {
+				this.closeButton.visible = this.closeButton.includeInLayout = false;
+			}
+			
+			public function refresh_panel_titles():void {
+				this.lightCombat.refresh_panel_titles();
+			}
+			
+			public function signal_completion_of_timer(id:String):void {
+				this.lightCombat.signal_completion_of_timer(id);
+			}
+			
+			protected function lightCombat_creationCompleteHandler(event:FlexEvent):void {
+				var group:QuadGroup = event.currentTarget as QuadGroup;
+				group.currentState = 'fancy';
+
+				if (!FlexGlobals.topLevelApplication.premium_account) {
+					this.lightCombat.signal_disabled_for_others_besides(is_building_by_id);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:TabBar width="100%" dataProvider="{views}"/>
+	<custardbelly:CBViewStack id="views" width="100%" height="100%">
+		<s:NavigatorContent width="100%" height="100%" label="Light">
+			<s:VGroup width="100%" height="100%">
+				<controls:QuadGroup 
+					id="lightCombat"
+					
+					resource_label1="Light Fighter" paddingTop1="-20" width1="130" height1="160"
+					factory1="{LightFighterFactory}" builder1="{LightFighterBuilder}" building_container_name1="{LightFighterFactory.name}" building_resource_image1="{Images.lightFighterImageClass}"
+					
+					resource_label2="Heavy Fighter" paddingTop2="-20" width2="130" height2="160"
+					factory2="{HeavyFighterFactory}" builder2="{HeavyFighterBuilder}" building_container_name2="{HeavyFighterFactory.name}" building_resource_image2="{Images.heavyFighterImageClass}"
+					
+					resource_label3="Cruiser" paddingTop3="-20" width3="130" height3="160"
+					factory3="{CruiserFactory}" builder3="{CruiserBuilder}" building_container_name3="{CruiserFactory.name}" building_resource_image3="{Images.cruiserImageClass}" 
+					
+					resource_label4="Battleship" paddingTop4="-20" width4="130" height4="160"
+					factory4="{BattleshipFactory}" builder4="{BattleshipBuilder}" building_container_name4="{BattleshipFactory.name}" building_resource_image4="{Images.battleshipImageClass}" 
+					
+					creationComplete="lightCombat_creationCompleteHandler(event)"
+					/>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" height="100%" label="Heavy">
+			<s:VGroup width="100%" height="100%">
+				<controls:QuadGroup 
+					id="heavyCombat"
+					
+					resource_label1="Battle Cruiser" paddingTop1="-20" width1="130" height1="160"
+					factory1="{BattleCruiserFactory}" builder1="{BattleCruiserBuilder}" building_container_name1="{BattleCruiserFactory.name}" building_resource_image1="{Images.battleCruiserImageClass}"
+					
+					resource_label2="Bomber" paddingTop2="-20" width2="130" height2="160"
+					factory2="{BomberFactory}" builder2="{BomberBuilder}" building_container_name2="{BomberFactory.name}" building_resource_image2="{Images.bomberImageClass}"
+					
+					resource_label3="Destroyer" paddingTop3="-20" width3="130" height3="160"
+					factory3="{DestroyerFactory}" builder3="{DestroyerBuilder}" building_container_name3="{DestroyerFactory.name}" building_resource_image3="{Images.destroyerImageClass}" 
+					
+					resource_label4="Death Star" paddingTop4="-20" width4="130" height4="160"
+					factory4="{DeathStarFactory}" builder4="{DeathStarBuilder}" building_container_name4="{DeathStarFactory.name}" building_resource_image4="{Images.deathStarImageClass}" 
+					
+					creationComplete="lightCombat_creationCompleteHandler(event)"
+					/>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" height="100%" label="Special">
+			<s:VGroup width="100%" height="100%">
+				<controls:QuadGroup 
+					id="specialCombat"
+					
+					resource_label1="Dark Star" width1="140" height1="170"
+					factory1="{DarkStarFactory}" builder1="{DarkStarBuilder}" building_container_name1="{DarkStarFactory.name}" building_resource_image1="{Images.darkStarImageClass}"
+					
+					resource_label2="Star Destroyer" width2="140" height2="170" 
+					factory2="{StarDestroyerFactory}" builder2="{StarDestroyerBuilder}" building_container_name2="{StarDestroyerFactory.name}" building_resource_image2="{Images.starDestroyerImageClass}"
+					
+					resource_label3="Dark Matter Collector" width3="140" height3="170"
+					factory3="{DarkMatterCollectorFactory}" builder3="{DarkMatterCollectorBuilder}" building_container_name3="{DarkMatterCollectorFactory.name}" building_resource_image3="{Images.darkMatterCollectorImageClass}" 
+					
+					creationComplete="lightCombat_creationCompleteHandler(event)"
+					/>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" height="100%" label="Civilian">
+			<s:VGroup width="100%" height="100%">
+				<controls:QuadGroup 
+					id="civilian"
+					
+					resource_label1="Light Cargo" paddingTop1="-20" width1="130" height1="160"
+					factory1="{LightCargoFactory}" builder1="{LightCargoBuilder}" building_container_name1="{LightCargoFactory.name}" building_resource_image1="{Images.lightCargoImageClass}"
+					
+					resource_label2="Heavy Cargo" paddingTop2="-20" width2="130" height2="160"
+					factory2="{HeavyCargoFactory}" builder2="{HeavyCargoBuilder}" building_container_name2="{HeavyCargoFactory.name}" building_resource_image2="{Images.heavyCargoImageClass}"
+					
+					resource_label3="Colony Ship" paddingTop3="-20" width3="130" height3="160"
+					factory3="{ColonyShipFactory}" builder3="{ColonyShipBuilder}" building_container_name3="{ColonyShipFactory.name}" building_resource_image3="{Images.colonyShipImageClass}" 
+					
+					resource_label4="Spy Probe" paddingTop4="-20" width4="130" height4="160"
+					factory4="{SpyProbeFactory}" builder4="{SpyProbeBuilder}" building_container_name4="{SpyProbeFactory.name}" building_resource_image4="{Images.spyProbeImageClass}" 
+					
+					creationComplete="lightCombat_creationCompleteHandler(event)"
+					/>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" height="100%" label="Recyclers">
+			<s:VGroup width="100%" height="100%">
+				<controls:QuadGroup 
+					id="recyclers"
+					
+					resource_label1="Recycler" paddingTop1="-20" width1="130" height1="160"
+					factory1="{RecyclerFactory}" builder1="{RecyclerBuilder}" building_container_name1="{RecyclerFactory.name}" building_resource_image1="{Images.recyclerImageClass}"
+					
+					resource_label2="Star Freighter" width2="140" height2="170"
+					factory2="{StarFreighterFactory}" builder2="{StarFreighterBuilder}" building_container_name2="{StarFreighterFactory.name}" building_resource_image2="{Images.starFreighterImageClass}"
+					
+					resource_label3="Star Recycler" width3="140" height3="170"
+					factory3="{StarRecyclerFactory}" builder3="{StarRecyclerBuilder}" building_container_name3="{StarRecyclerFactory.name}" building_resource_image3="{Images.starRecyclerImageClass}" 
+					
+					creationComplete="lightCombat_creationCompleteHandler(event)"
+					/>
+			</s:VGroup>
+		</s:NavigatorContent>
+	</custardbelly:CBViewStack>
+</s:TitleWindow>

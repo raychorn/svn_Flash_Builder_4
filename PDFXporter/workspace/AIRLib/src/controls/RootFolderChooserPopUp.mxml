@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" creationComplete="panel1_creationCompleteHandler(event)" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  layout="absolute" 
+		  width="100%" height="100%" 
+		  xmlns:controls="controls.*" styleName="MainCanvas">
+	<mx:states>
+		<s:State name="State1"/>
+		<s:State name="Home"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ArrayCollectionUtils;
+			import com.CapabilitiesUtils;
+			import com.FileListUtils;
+			import com.ImageAssets;
+			import com.ObjectUtils;
+			import com.StringUtils;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.events.FileListInitContextMenuEvent;
+			import controls.events.FolderNavigatorChangedEvent;
+			
+			import flash.filesystem.File;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.FileSystemEnumerationMode;
+			import mx.events.FileEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			
+			import utils.AIRHelper;
+			
+			[Bindable]
+			private var _homePath:String = '';
+			
+			[Bindable]
+			private var isInitialized:Boolean = false;
+
+			[Bindable]
+			private var _newPath:String = '';
+			
+			private var _removeable_drives:Object = {};
+
+			private var _fixed_drives:Object = {};
+
+			private var _storage_volume:StorageVolume;
+			
+			public var _ProphecyFoundations_xml:String = '';
+			
+			[Bindable]
+			private var hasFoundTarget:Boolean = false;
+
+			[Bindable]
+			private var hasDismountedMedia:Boolean = false;
+			
+			[Bindable]
+			private var isSearchingForMedia:Boolean = true;
+			
+			public var callback:Function = function ():void {};
+			
+			[Bindable]
+			public var headerCls:Class;
+			
+			public var data_file_name:String;
+			
+			private function issueCallback_ifVolumeValid(fpath:String):void {
+				var aFile:File;
+				aFile = new File(StringUtils.appendSlashIfNecessary(fpath)+'data');
+				if ( (this.callback is Function) && (aFile.exists) && (aFile.isDirectory) ) {
+					try {
+						this.callback(aFile);
+					} catch (err:Error) {}
+				}
+			}
+
+			protected function panel1_creationCompleteHandler(event:FlexEvent):void {
+				var aFile:File;
+				var _this:RootFolderChooserPopUp = this;
+				var volumes:Vector.<StorageVolume> = StorageVolumeInfo.storageVolumeInfo.getStorageVolumes();
+				var hasXMLFile:Boolean;
+				for each (var volume:StorageVolume in volumes) {
+					if (volume.isRemovable) {
+						aFile = new File(volume.rootDirectory.nativePath);
+						aFile = aFile.resolvePath(this.data_file_name);
+						if (CapabilitiesUtils.isOSMac() || CapabilitiesUtils.isOSLinux()) {
+							if ( (volume.rootDirectory.nativePath.toUpperCase().indexOf('PROPHECYFOUNDATIONS') > -1) || (aFile.exists) ) {
+								this._removeable_drives[volume.drive] = volume.rootDirectory.nativePath;
+								this.issueCallback_ifVolumeValid(volume.rootDirectory.nativePath);
+								break;
+							}
+						} else if (CapabilitiesUtils.isOSWindows()) {
+							if ( (volume.name.toUpperCase().indexOf('PROPHECYFOUNDATIONS') > -1) || (aFile.exists) ) {
+								this._removeable_drives[volume.drive] = volume.rootDirectory.nativePath;
+								this.issueCallback_ifVolumeValid(volume.rootDirectory.nativePath);
+								break;
+							}
+						}
+					}
+				}
+				StorageVolumeInfo.storageVolumeInfo.addEventListener(StorageVolumeChangeEvent.STORAGE_VOLUME_MOUNT, function (event:StorageVolumeChangeEvent):void {
+					_this._storage_volume = event.storageVolume;
+					trace(_this.className+'.StorageVolumeChangeEvent.STORAGE_VOLUME_MOUNT.1 --> ',event.toString());
+					trace(_this.className+'.StorageVolumeChangeEvent.STORAGE_VOLUME_MOUNT.2 --> ',event.rootDirectory.nativePath);
+					_this.busy.visible = _this.busy.includeInLayout = false;
+					_this.issueCallback_ifVolumeValid(event.storageVolume.rootDirectory.nativePath);
+				});
+				StorageVolumeInfo.storageVolumeInfo.addEventListener(StorageVolumeChangeEvent.STORAGE_VOLUME_UNMOUNT, function (event:StorageVolumeChangeEvent):void {
+					trace(_this.className+'.StorageVolumeChangeEvent.STORAGE_VOLUME_UNMOUNT.1 --> ',event.toString());
+					_this.txt_warning1.text = 'Waiting... for you to mount your DVD media...';
+				});
+			}
+			
+			private function get removeable_drive_list():ArrayCollection {
+				var ar:Array = [];
+				for (var i:String in this._removeable_drives) {
+					ar.push({'label':i,'data':this._removeable_drives[i]});
+				}
+				return new ArrayCollection(ar);
+			}
+		]]>
+	</fx:Script>
+	<mx:Canvas id="image_canvas" x="0" y="0" width="100%">
+		<mx:VBox width="100%" height="100%" verticalAlign="top" horizontalScrollPolicy="off" verticalScrollPolicy="off">
+			<mx:Image id="header_image" width="100%" source="{this.headerCls}" scaleContent="false"/>
+			<controls:MultiLineLabel width="{this.width - 50}" height="100%" styleName="rootFolderChooserText" text="The DVD cannot be located.  You must eject it if you previously inserted it into a DVD drive. After you have ensured the DVD is not mounted in any drives you must insert it to continue..."/>
+			<mx:Spacer height="30"/>
+			<mx:HBox width="{this.width - 100}" horizontalAlign="left" visible="{this.isSearchingForMedia}" includeInLayout="{this.isSearchingForMedia}">
+				<mx:Label id="txt_warning1" width="100%" styleName="rootFolderChooserText" text="Waiting... for you to either eject or mount your media..."/>
+				<mx:SWFLoader id="busy" source="{ImageAssets.fireFoxRollerClass}" scaleContent="true" width="50" height="50"/>
+			</mx:HBox>
+		</mx:VBox>
+	</mx:Canvas>
+</mx:Panel>

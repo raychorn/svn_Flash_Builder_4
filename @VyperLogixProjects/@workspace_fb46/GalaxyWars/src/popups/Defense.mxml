@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" 
+			   initialize="titlewindow1_initializeHandler(event)" 
+			   xmlns:controls="popups.controls.*" xmlns:custardbelly="custardbelly.container.*">
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import factories.DefenseMissilesFactory;
+			import factories.GaussCannonFactory;
+			import factories.GravitonCannonFactory;
+			import factories.HLasersFactory;
+			import factories.IonCannonFactory;
+			import factories.LargeShieldFactory;
+			import factories.LasersFactory;
+			import factories.OffenseMissilesFactory;
+			import factories.OrbitalDefensePlatformFactory;
+			import factories.PlanetaryShieldFactory;
+			import factories.PlasmaCannonFactory;
+			import factories.RocketsFactory;
+			import factories.SmallShieldFactory;
+			import factories.editors.DefenseMissilesBuilder;
+			import factories.editors.GaussCannonBuilder;
+			import factories.editors.GravitonCannonBuilder;
+			import factories.editors.HLasersBuilder;
+			import factories.editors.IonCannonBuilder;
+			import factories.editors.LargeShieldBuilder;
+			import factories.editors.LasersBuilder;
+			import factories.editors.OffenseMissilesBuilder;
+			import factories.editors.OrbitalDefensePlatformBuilder;
+			import factories.editors.PlanetaryShieldBuilder;
+			import factories.editors.PlasmaCannonBuilder;
+			import factories.editors.RocketsFactoryBuilder;
+			import factories.editors.SmallShieldBuilder;
+			
+			private var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+			
+			private var _this:Defense;
+			
+			public function handle_timer_event(event:TimerEvent):void {
+				app.log = '(+++) '+this.className+'-->'+DebuggerUtils.getFunctionName(new Error());
+			}
+			
+			public static function get is_building_by_id():String {
+				return QuadGroup.is_building_by_id;
+			}
+			
+			public static function set is_building_by_id(is_building_by_id:String):void {
+				if (QuadGroup.is_building_by_id != is_building_by_id) {
+					QuadGroup.is_building_by_id = is_building_by_id;
+				}
+			}
+			
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				this.closeButton.visible = this.closeButton.includeInLayout = false;
+			}
+			
+			public function refresh_panel_titles():void {
+				this.defenseBasic.refresh_panel_titles();
+			}
+			
+			public function signal_completion_of_timer(id:String):void {
+				this.defenseBasic.signal_completion_of_timer(id);
+			}
+			
+			protected function facilitiesBasic_creationCompleteHandler(event:FlexEvent):void {
+				var group:QuadGroup = event.currentTarget as QuadGroup;
+				group.currentState = 'fancy';
+				
+				if (!FlexGlobals.topLevelApplication.premium_account) {
+					this.defenseBasic.signal_disabled_for_others_besides(is_building_by_id);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:TabBar width="100%" dataProvider="{views}"/>
+	<custardbelly:CBViewStack id="views" width="100%" height="100%">
+		<s:NavigatorContent width="100%" height="100%" label="Basic">
+			<s:VGroup width="100%" height="100%">
+				<controls:QuadGroup 
+					id="defenseBasic"
+					
+					resource_label1="Rockets" paddingTop1="-20" width1="130" height1="165"
+					factory1="{RocketsFactory}" builder1="{RocketsFactoryBuilder}" building_container_name1="{RocketsFactory.name}" 
+					building_resource_image1="{Images.missileLauncherImageClass}"
+					
+					resource_label2="Light Lasers" paddingTop2="-20" width2="130" height2="165"
+					factory2="{LasersFactory}" builder2="{LasersBuilder}" building_container_name2="{LasersFactory.name}" 
+					building_resource_image2="{Images.lightLaserTurretImageClass}" 
+					
+					resource_label3="Heavy Lasers" paddingTop3="-20" width3="130" height3="165"
+					factory3="{HLasersFactory}" builder3="{HLasersBuilder}" building_container_name3="{HLasersFactory.name}" 
+					building_resource_image3="{Images.heavyLaserTurretImageClass}" 
+					
+					resource_label4="Gauss Cannon" paddingTop4="-20" width4="130" height4="165"
+					factory4="{GaussCannonFactory}" builder4="{GaussCannonBuilder}" building_container_name4="{GaussCannonFactory.name}" 
+					building_resource_image4="{Images.gaussCannonImageClass}" 
+					
+					creationComplete="facilitiesBasic_creationCompleteHandler(event)"
+					/>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" height="100%" label="Advanced">
+			<s:VGroup width="100%" height="100%">
+				<controls:QuadGroup 
+					id="defenseAdvanced"
+					
+					resource_label1="Ion Cannon" paddingTop1="-20" width1="130" height1="165"
+					factory1="{IonCannonFactory}" builder1="{IonCannonBuilder}" building_container_name1="{IonCannonFactory.name}" 
+					building_resource_image1="{Images.ionCannonImageClass}"
+					
+					resource_label2="Plasma Cannon" paddingTop2="-20" width2="130" height2="165"
+					factory2="{PlasmaCannonFactory}" builder2="{PlasmaCannonBuilder}" building_container_name2="{PlasmaCannonFactory.name}" 
+					building_resource_image2="{Images.plasmaCannonImageClass}" 
+					
+					resource_label3="Graviton Cannon" paddingTop3="5" width3="150" height3="180"
+					factory3="{GravitonCannonFactory}" builder3="{GravitonCannonBuilder}" building_container_name3="{GravitonCannonFactory.name}" 
+					building_resource_image3="{Images.gravitonCannonImageClass}" 
+					
+					resource_label4="Orbital Platform" paddingTop4="5" width4="150" height4="180"
+					factory4="{OrbitalDefensePlatformFactory}" builder4="{OrbitalDefensePlatformBuilder}" building_container_name4="{OrbitalDefensePlatformFactory.name}" 
+					building_resource_image4="{Images.orbitalDefensePlatformImageClass}" 
+					
+					creationComplete="facilitiesBasic_creationCompleteHandler(event)"
+					/>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" height="100%" label="Shields">
+			<s:VGroup width="100%" height="100%">
+				<controls:QuadGroup 
+					id="defenseShields"
+					
+					resource_label1="Small Shield" paddingTop1="-20" width1="130" height1="165"
+					factory1="{SmallShieldFactory}" builder1="{SmallShieldBuilder}" building_container_name1="{SmallShieldFactory.name}" 
+					building_resource_image1="{Images.smallShieldImageClass}"
+					
+					resource_label2="Large Shield" paddingTop2="-20" width2="130" height2="165"
+					factory2="{LargeShieldFactory}" builder2="{LargeShieldBuilder}" building_container_name2="{LargeShieldFactory.name}" 
+					building_resource_image2="{Images.largeShieldImageClass}" 
+					
+					resource_label3="Planetary Shield" paddingTop3="5" width3="150" height3="180"
+					factory3="{PlanetaryShieldFactory}" builder3="{PlanetaryShieldBuilder}" building_container_name3="{PlanetaryShieldFactory.name}" 
+					building_resource_image3="{Images.planetaryShieldImageClass}" 
+					
+					creationComplete="facilitiesBasic_creationCompleteHandler(event)"
+					/>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent width="100%" height="100%" label="Missiles">
+			<s:VGroup width="100%" height="100%">
+				<controls:QuadGroup 
+					id="defenseMissiles"
+					
+					resource_label1="Defense" paddingTop1="-20" width1="130" height1="165"
+					factory1="{DefenseMissilesFactory}" builder1="{DefenseMissilesBuilder}" building_container_name1="{DefenseMissilesFactory.name}" 
+					building_resource_image1="{Images.defenseMissileImageClass}"
+					
+					resource_label2="Offense" paddingTop2="-20" width2="130" height2="165"
+					factory2="{OffenseMissilesFactory}" builder2="{OffenseMissilesBuilder}" building_container_name2="{OffenseMissilesFactory.name}" 
+					building_resource_image2="{Images.interplanetaryMissileImageClass}" 
+					
+					creationComplete="facilitiesBasic_creationCompleteHandler(event)"
+					/>
+			</s:VGroup>
+		</s:NavigatorContent>
+	</custardbelly:CBViewStack>
+</s:TitleWindow>

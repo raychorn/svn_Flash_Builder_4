@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Example app for github.com/srohde/Twitter -->
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/halo"
+					   xmlns:twitter="com.soenkerohde.twitter.*"
+					   currentState="initial"
+					   creationComplete="creationCompleteHandler(event)">
+	
+	<fx:Declarations>
+		<s:TraceTarget />
+		<!-- TODO Enter your Twitter Consumer Key/Secret -->
+		<twitter:Twitter id="twitter"
+						 consumerKey="ekh4BHm6JjxCiuzJUmOAYQ"
+						 consumerSecret="N3GgFurodtY3GSTpfIxqyCG9nrKeujMOxZYmhjFw"/>
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.soenkerohde.twitter.event.TwitterOAuthEvent;
+			import com.soenkerohde.twitter.event.TwitterStatusEvent;
+			import com.soenkerohde.twitter.event.TwitterUserEvent;
+			
+			import flash.events.MouseEvent;
+			import flash.net.SharedObject;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;
+			
+			import org.iotashan.oauth.OAuthToken;
+			
+			private var accessToken:OAuthToken;
+			
+			[Bindable]
+			private var pinPending:Boolean = false;
+			
+			[Bindable]
+			private var statusPending:Boolean = false;
+			
+			[Bindable]
+			private var screenName:String;
+			
+			protected function creationCompleteHandler( event : FlexEvent ) : void {
+				authenticate();
+			}
+			
+			private function authenticate() : void {
+				var so:SharedObject = SharedObject.getLocal( "twitter" );
+				
+				var token:Object = so.data["accessToken"];
+				
+				// user has already an AccessToken
+				if ( token != null ) {
+					CursorManager.setBusyCursor();
+					accessToken = new OAuthToken( token.key, token.secret );
+					verifyAccessToken( accessToken );
+					// user is not authenticated yet 
+				} else {
+					currentState = "unauthenticated";
+					twitter.authenticate();
+				}
+			}
+			
+			protected function verifyAccessToken( token : OAuthToken ) : void {
+				twitter.addEventListener( TwitterUserEvent.USER_INFO, userInfoHandler );
+				twitter.addEventListener( TwitterUserEvent.USER_ERROR, userErrorHandler );
+				twitter.verifyAccessToken( token );
+			}
+			
+			private function userInfoHandler( event : TwitterUserEvent ) : void {
+				currentState = "authenticated";
+				CursorManager.removeBusyCursor();
+				screenName = event.screenName;
+				twitter.removeEventListener( TwitterUserEvent.USER_INFO, userInfoHandler );
+				twitter.removeEventListener( TwitterUserEvent.USER_ERROR, userErrorHandler );
+			}
+			
+			private function userErrorHandler( event : TwitterUserEvent ) : void {
+				currentState = "unauthenticated";
+				CursorManager.removeBusyCursor();
+				twitter.removeEventListener( TwitterUserEvent.USER_INFO, userInfoHandler );
+				twitter.removeEventListener( TwitterUserEvent.USER_ERROR, userErrorHandler );
+			}
+			
+			protected function pinClickHandler( event : MouseEvent ) : void {
+				pinPending = true;
+				CursorManager.setBusyCursor();
+				twitter.addEventListener( TwitterOAuthEvent.ACCESS_TOKEN, accessTokenHandler );
+				twitter.obtainAccessToken( int( pin.text ) );
+			}
+			
+			private function accessTokenHandler( event : TwitterOAuthEvent ) : void {
+				var so:SharedObject = SharedObject.getLocal( "twitter" );
+				so.data["accessToken"] = event.token;
+				so.flush();
+				
+				currentState = "authenticated";
+				pinPending = false;
+				CursorManager.removeBusyCursor();
+				twitter.removeEventListener( TwitterOAuthEvent.ACCESS_TOKEN, accessTokenHandler );
+				
+				verifyAccessToken( event.token );
+			}
+			
+			protected function statusClickHandler( event : MouseEvent ) : void {
+				statusPending = true;
+				CursorManager.setBusyCursor();
+				twitter.addEventListener( TwitterStatusEvent.STATUS_SEND, statusSendHandler );
+				twitter.setStatus( accessToken, statusMessage.text );
+			}
+			
+			private function statusSendHandler( event : TwitterStatusEvent ) : void {
+				Alert.show( "Your message was successfully sent.", "Status Updated" );
+				statusPending = false;
+				statusMessage.text = "";
+				CursorManager.removeBusyCursor();
+				twitter.removeEventListener( TwitterStatusEvent.STATUS_SEND, statusSendHandler );
+			}
+			
+			protected function logoutClickHandler( event : MouseEvent ) : void {
+				var so:SharedObject = SharedObject.getLocal( "twitter" );
+				so.data["accessToken"] = null;
+				so.flush();
+				currentState = "unauthenticated";
+				authenticate();
+			}
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="initial" />
+		<s:State name="unauthenticated" />
+		<s:State name="authenticated" />
+	</s:states>
+	
+	<s:Label text="Loading"
+			 verticalCenter="0"
+			 horizontalCenter="0"
+			 includeIn="initial" />
+	
+	<s:Group includeIn="unauthenticated"
+			 horizontalCenter="0"
+			 verticalCenter="0">
+		<s:layout>
+			<s:HorizontalLayout verticalAlign="middle" />
+		</s:layout>
+		<s:Label text="PIN" />
+		<s:TextInput id="pin"
+					 enabled="{!pinPending}"
+					 restrict="0-9" />
+		<s:Button label="Validate PIN"
+				  enabled="{!pinPending &amp;&amp; pin.text != ''}"
+				  click="pinClickHandler(event)" />
+	</s:Group>
+	
+	<s:Group includeIn="authenticated"
+			 horizontalCenter="0"
+			 verticalCenter="0">
+		<s:layout>
+			<s:VerticalLayout />
+		</s:layout>
+		<s:Label text="Hello {screenName}" />
+		<s:Label text="Set Status"
+				 enabled="{!statusPending}" />
+		<s:TextArea id="statusMessage" />
+		<s:Button label="Send"
+				  enabled="{!statusPending &amp;&amp; statusMessage.text != ''}"
+				  click="statusClickHandler(event)" />
+		<s:Button label="Logout"
+				  click="logoutClickHandler(event)" />
+	</s:Group>
+	
+</s:WindowedApplication>

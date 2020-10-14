@@ -1,0 +1,538 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark"  
+					   xmlns:mx="library://ns.adobe.com/flex/mx" showStatusBar="false" 
+					   initialize="windowedapplication1_initializeHandler(event)" 
+					   applicationDeactivate="windowedapplication1_applicationDeactivateHandler(event)"
+					   creationComplete="windowedapplication1_creationCompleteHandler(event)" 
+					   xmlns:application="application.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:states>
+		<s:State name="mainView"/>
+		<s:State name="updaterView"/>
+	</s:states>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel.ttf");
+			fontFamily: NeoSansIntel;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Light.ttf");
+			fontFamily: NeoSansIntelLight;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium2;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/CALIBRI.TTF");
+			fontFamily: Calibri;
+			embedAsCFF: false;
+		}
+		
+		.splash_movie_canvas {
+			backgroundColor: #ffffff;
+		}
+		
+		.LoginPanel {
+			borderStyle: none;
+			borderColor: #3300ff;
+			borderThickness: 3;
+			roundedBottomCorners: true;
+			cornerRadius: 8;
+			headerHeight: 31;
+			headerColors: #0033ff, #330099;
+			backgroundColor: #ffffff;
+			backgroundAlpha: 0.3;
+			shadowDistance: 6;
+			shadowDirection: right;
+			titleStyleName: "LoginPanelTitle";
+		}
+		
+		.LoginPanelTitle {
+			fontFamily: Calibri;
+			fontSize: 16;
+		}
+		
+		.TreeNodeWithChildren {
+			fontFamily: Calibri;
+			fontSize: 11;
+			fontWeight: bold;
+			color: blue;
+		}
+		
+		.TreeNodeWithNoChildren {
+			fontFamily: Calibri;
+			fontSize: 11;
+			fontWeight: normal;
+			color: black;
+		}
+		
+		.ErrorMessages {
+			fontFamily: Calibri;
+			fontSize: 14;
+			fontWeight: bold;
+			color: red;
+		}
+		
+		.NormalMessages {
+			fontFamily: Calibri;
+			fontSize: 14;
+			color: black;
+		}
+		
+		.ImportantMessage {
+			fontFamily: Calibri;
+			fontSize: 14;
+			fontWeight: bold;
+			color: blue;
+		}
+		
+		.TermsAndConditionsHTML {
+			fontFamily: NeoSansIntelLight;
+			fontSize: 10;
+			color: black;
+		}
+	</fx:Style>
+	<fx:Style source="css/chartsdemo.css"/>
+	<fx:Script>
+		<![CDATA[
+			import com.CapabilitiesUtils;
+			import com.EzHTTPService;
+			import com.StringUtils;
+			import com.adobe.serialization.json.JSON;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.AppIcon;
+			import controls.crm.ReportProblems;
+			
+			import flash.net.SharedObject;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Menu;
+			import mx.core.FlexGlobals;
+			import mx.events.AIREvent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			import mx.events.ResizeEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.components.VideoDisplay;
+			
+			import utils.APIHelper;
+			
+			import views.models.ChartsDemoViewer;
+			
+			import vyperlogix.FileIO.FileUpload;
+			import vyperlogix.FileIO.events.*;
+			import vyperlogix.views.events.*;
+			
+			public static var force_localHost:Boolean = true;
+			
+			public var appDescriptor:XML = NativeApplication.nativeApplication.applicationDescriptor;
+			private var nsDeclaration:Namespace = appDescriptor.namespace();
+			
+			public var build_number:String = appDescriptor.nsDeclaration::version[0];
+			
+			public var app_title:String = appDescriptor.nsDeclaration::name[0];
+			public var app_id:String = appDescriptor.nsDeclaration::id[0];
+			public var app_name:String = appDescriptor.nsDeclaration::filename[0];
+			
+			[Bindable]
+			public var is_debugging:Boolean = false;
+			
+			[Bindable]
+			public var is_logoVisible:Boolean = false;
+			
+			public var __is_localhost__:Boolean = false;
+			
+			public static var problems:ReportProblems;
+			
+			public static var uploader:FileUpload;
+			
+			[Embed(source="assets/icons/icons/app_icon_128.png")]
+			[Bindable]
+			public var appLogoCls:Class;
+
+			[Embed(source="assets/docs/terms/TermsAndConditions.html",mimeType="application/octet-stream")]
+			[Bindable]
+			public var TermsAndConditionsClass:Class;
+			
+			[Embed(source="assets/docs/GetMoney.html",mimeType="application/octet-stream")]
+			[Bindable]
+			public var GetMoneyClass:Class;
+			
+			[Bindable]
+			public var how_to_video_id:String = ""; // WNyi0ER8pHc
+			public var how_to_video_url:String = "http://www.youtube-nocookie.com/v/'+how_to_video_id+'?fs=1&hl=en_US&hd=1";
+			
+			public var Languages:Object = {
+				'English':'',
+				'Spanish':'Spanish'
+			};
+			
+			public static var const_view_fullscreen:String = 'view.fullscreen';
+			public static var const_view_cloud:String = 'view.cloud';
+			public static var const_application_exit:String = 'application.exit';
+			public static var const_actions_1000:String = 'actions.1000';
+			public static var const_actions_2000:String = 'actions.2000';
+			public static var const_actions_3000:String = 'actions.3000';
+			public static var const_actions_5000:String = 'actions.5000';
+			public static var const_help_report_problem:String = 'help.report_problem';
+			public static var const_actions_getForm:String = 'actions.get.form';
+
+			public static function handle_any_number(aNumber:int):void {
+				if (!FlexGlobals.topLevelApplication.appProxy.isLoggedIn) {
+					AlertPopUp.surpriseNoOkay('You MUST Login to use this part of the application.','WARNING !!!');
+				} else {
+					var num:int = ((aNumber is int) ? aNumber : 1000);
+					var aView:ChartsDemoViewer = FlexGlobals.topLevelApplication.appProxy.splashPopUp.getChildByName('chartsDemoViewer') as ChartsDemoViewer;
+					if (aView == null) {
+						aView = new ChartsDemoViewer();
+						aView.name = 'chartsDemoViewer';
+						aView.x = 10;
+						aView.y = 10;
+						aView.num_points = num;
+						aView.title = 'Charting '+num+' Random Data Points...';
+						aView.percentWidth = 90.0;
+						aView.percentHeight = 90.0;
+						aView.addEventListener(CloseEvent.CLOSE, 
+							function (event:CloseEvent):void {
+								aView.isRunning = false;
+								aView.visible = false;
+							}
+						);
+						FlexGlobals.topLevelApplication.appProxy.splashPopUp.addChild(aView);
+					} else {
+						aView.isRunning = true;
+						aView.visible = true;
+						aView.refresh_chart();
+					}
+					//AlertPopUp.surpriseNoOkay('Not yet implemented.','INFO');
+				}
+			}
+			
+			public static function handle_1000(foo:*):void {
+				ChartsDemo.handle_any_number(1000);
+			}
+
+			public static function handle_2000(foo:*):void {
+				ChartsDemo.handle_any_number(2000);
+			}
+			
+			public static function handle_3000(foo:*):void {
+				ChartsDemo.handle_any_number(3000);
+			}
+			
+			public static function handle_5000(foo:*):void {
+				ChartsDemo.handle_any_number(5000);
+			}
+			
+			[Bindable]
+			private var appMenu:Array = [
+				{
+					'label':'Charts Demo', 'name':'application', 'children':[
+						{	'label':'Chart Demo and Stress Test...', 
+							'name':ChartsDemo.const_actions_1000,
+							'enabled':true,
+							'doFunc': ChartsDemo.handle_1000
+						},
+						{	'label':'Exit', 
+							'name':ChartsDemo.const_application_exit,
+							'doFunc': function(event:MenuEvent):void {
+								FlexGlobals.topLevelApplication.closeApplicaton();
+							}
+						},
+					]
+				},
+				{
+					'label':'Help', 'name':'help', 'children':[
+						{	'label':'Report a Problem...', 
+							'name':ChartsDemo.const_help_report_problem,
+							'enabled':false,
+							'doFunc': function(event:MenuEvent):void {
+								if ((ChartsDemo.problems is ReportProblems) == false) {
+									ChartsDemo.problems = PopUpManager.createPopUp(FlexGlobals.topLevelApplication.appProxy.splashPopUp, ReportProblems, true) as ReportProblems;
+									ChartsDemo.problems.title = 'Report Problems with this Application.';
+									ChartsDemo.problems.x = 10;
+									ChartsDemo.problems.y = 10;
+									ChartsDemo.problems.width = 700;
+									ChartsDemo.problems.height = 500;
+									ChartsDemo.problems.showCloseButton = true;
+									ChartsDemo.problems.addEventListener(CloseEvent.CLOSE, 
+										function (event:CloseEvent):void {
+											PopUpManager.removePopUp(ChartsDemo.problems);
+											ChartsDemo.problems = null;
+										}
+									);
+									ChartsDemo.problems.btn_send.addEventListener(MouseEvent.CLICK, 
+										function (event:MouseEvent):void {
+											var toks:Array = FlexGlobals.topLevelApplication.app_title.split(' :: ');
+											var title:String = toks[0];
+											FlexGlobals.topLevelApplication.title = title+' :: Sending your Email...'
+											var url:String = FlexGlobals.topLevelApplication.domain+APIHelper.send_email_endpoint;
+											var ezREST:EzHTTPService = new EzHTTPService(false,false);
+											ezREST.post(url,{'fromName':ChartsDemo.problems.fromName.text,'email':ChartsDemo.problems.email.text,'msg':ChartsDemo.problems.msg.text}, 
+												function (event:ResultEvent):void {
+													var response:*;
+													try {
+														response = (event.result is String) ? event.result : event.result.getItemAt(0);
+														
+														var errorMsg:String = response['error'];
+														ChartsDemo.problems.errorString = (errorMsg is String) && (errorMsg.length > 0) ? errorMsg : '';
+														
+														if ( (errorMsg is String) && (errorMsg.length > 0) ) {
+															AlertPopUp.surpriseNoOkay('Your Email was not sent due to some kind of system error.  Try again later in the day.','WARNING');
+														} else {
+															AlertPopUp.surpriseNoOkay('Your Email was successfully sent and your issue will be resolved shortly','INFO');
+														}
+														PopUpManager.removePopUp(ChartsDemo.problems);
+														ChartsDemo.problems = null;
+													} catch (e:Error) {
+														var stackTrace:String = e.getStackTrace();
+														AlertPopUp.errorNoOkay(ChartsDemo.problems.className+'.btn_send().ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR');
+													}
+												}, ezREST.jsonResultType);
+										}
+									);
+									ChartsDemo.problems.btn_dismiss.addEventListener(MouseEvent.CLICK, 
+										function (event:MouseEvent):void {
+											PopUpManager.removePopUp(ChartsDemo.problems);
+											ChartsDemo.problems = null;
+										}
+									);
+									PopUpManager.centerPopUp(ChartsDemo.problems);
+								} else {
+									ChartsDemo.problems.visible = ChartsDemo.problems.enabled = true;
+								}
+							}
+						},
+					]
+				},
+				{
+					'label':'View', 'name':'view', 'children':[
+						{	'label':'Full Screen', 
+							'name':ChartsDemo.const_view_fullscreen, 
+							'type':"check", 
+							'toggled':false, 
+							'toggledFunc':function ():Boolean {return (FlexGlobals.topLevelApplication.nativeWindow.stage.displayState != StageDisplayState.NORMAL) ? true : false}, 
+							'doFunc': function(event:MenuEvent):void {
+								var menu:Menu = Menu(event.menu);
+								if (event.item.toggled) {
+									FlexGlobals.topLevelApplication.do_fullScreen();
+								} else {
+									FlexGlobals.topLevelApplication.do_windowed();
+								}
+								menu.toolTip = FlexGlobals.topLevelApplication.nativeWindow.stage.displayState;
+							}
+						},
+					]
+				},
+//				{'label':'Domain', 'name':'debug.status',
+//					'children':[
+//						{	'label':'appspot.com', 
+//							'name':ChartsDemo.const_view_cloud, 
+//							'type':"check", 
+//							'toggled':false, 
+//							'toggledFunc':function ():Boolean {return (FlexGlobals.topLevelApplication.is_localHost) ? false : true},
+//							'doFunc': function(event:MenuEvent):void {
+//								var menu:Menu = Menu(event.menu);
+//								if (FlexGlobals.topLevelApplication.is_debugging) {
+//									if (event.item.toggled) {
+//										FlexGlobals.topLevelApplication.is_localHost = false;
+//									} else {
+//										FlexGlobals.topLevelApplication.is_localHost = true;
+//									}
+//									menu.toolTip = (this.is_localHost) ? 'LocalHost' : this.domain;
+//								}
+//							}
+//						},
+//					]
+//				}
+			];
+			
+			public var __local_domain__:String = 'http://localhost:9000';
+			public var __public_domain__:String = 'https://chartsdemo1.appspot.com';
+			
+			public var language:String;
+			
+			private var _copyrightMessage:String = appDescriptor.nsDeclaration::copyright[0];
+			private var _creditsMessage:String = appDescriptor.nsDeclaration::description[0];
+			
+			public var icon:Loader = new Loader();
+			public var systray:SystemTrayIcon;
+			private var dock:DockIcon;
+			private var copyrightCommand:NativeMenuItem = new NativeMenuItem(_copyrightMessage);
+			private var creditsCommand:NativeMenuItem = new NativeMenuItem("Credits");
+			private var exitCommand:NativeMenuItem = new NativeMenuItem("Exit");
+			
+			public var _icon:AppIcon = new AppIcon(['assets/icons/icons/app_icon_16.png','assets/icons/icons/app_icon_32.png','assets/icons/icons/app_icon_48.png','assets/icons/icons/app_icon_128.png']);
+			
+			public function init_trayIcon():void {
+				this.trayIcon(NativeApplication.supportsSystemTrayIcon, NativeApplication.supportsDockIcon);
+			}
+			
+			public function get domain():String {
+				var d:String = (this.__is_localhost__) ? this.__local_domain__ : this.__public_domain__;
+				trace(this.className+'.domain --> this.is_debugging='+this.is_debugging+', d='+d);
+				return d;
+			}
+			
+			public function get insecure_public_domain():String {
+				return this.__public_domain__.replace('https://','http://');
+			}
+			
+			public function get is_localHost():Boolean {
+				return this.domain == this.__local_domain__;
+			}
+			
+			public function set is_localHost(is_localHost:Boolean):void {
+				this.__is_localhost__ = is_localHost;
+			}
+			
+			private function iconLoadComplete(e:Event):void {
+				NativeApplication.nativeApplication.icon.bitmaps=[e.target.content.bitmapData];
+			}
+			
+			private function undock(e:Event):void {
+				this.stage.nativeWindow.restore();
+			}
+			
+			private function _closeApplicaton():void {
+			}
+			
+			public function closeApplicaton():void {
+				this._closeApplicaton();
+				this.appProxy.isLoggedIn = false;
+				NativeApplication.nativeApplication.exit();
+			}
+			
+			private function closeApp(e:Event):void {
+				this.closeApplicaton();
+			}
+			
+			private function createIconMenu(_sysTray:Boolean):NativeMenu {
+				var _this:ChartsDemo = this;
+				var iconMenu:NativeMenu = new NativeMenu();
+				iconMenu.addItem(copyrightCommand);
+				iconMenu.addItem(new NativeMenuItem("", true));
+				iconMenu.addItem(creditsCommand);
+				creditsCommand.addEventListener(Event.SELECT, function (event:Event):void {
+					AlertPopUp.infoNoOkay(_this._creditsMessage,'Credits');
+				});
+				if (_sysTray) {
+					iconMenu.addItem(new NativeMenuItem("", true));
+					iconMenu.addItem(exitCommand);
+					exitCommand.addEventListener(Event.SELECT, this.closeApp);
+				}
+				return iconMenu;
+			}
+			
+			private function trayIcon(_sysTray:Boolean, _dock:Boolean):void {
+				if (_sysTray) {
+					icon.contentLoaderInfo.addEventListener(Event.COMPLETE, this.iconLoadComplete);
+					icon.load(new URLRequest("assets/icons/icons/app_icon_16.png"));
+					systray=NativeApplication.nativeApplication.icon as SystemTrayIcon;
+					systray.tooltip=this._copyrightMessage;
+					systray.menu=this.createIconMenu(_sysTray);
+				}
+				if (_dock) {
+					icon.contentLoaderInfo.addEventListener(Event.COMPLETE, this.iconLoadComplete);
+					icon.load(new URLRequest("assets/icons/icons/app_icon_128.png"));
+					NativeApplication.nativeApplication.addEventListener(InvokeEvent.INVOKE, undock);
+					dock=NativeApplication.nativeApplication.icon as DockIcon;
+					dock.menu=this.createIconMenu(_sysTray);
+				}
+			}
+			
+			public function applicationExit():void {
+				var exitingEvent:Event = new Event(Event.EXITING, false, true);
+				if (!exitingEvent.isDefaultPrevented()) {
+					this.closeApplicaton();
+				}
+				NativeApplication.nativeApplication.dispatchEvent(exitingEvent);
+			}
+			
+			public function determine_debugging_Level():void {
+				var aUrl:String = FlexGlobals.topLevelApplication.url;
+				var aFile:File = new File(aUrl);
+				var fname:String = aFile.nativePath.toLowerCase();
+				trace(this.className+'.determine_debugging_Level().1 --> fname='+fname); 
+				this.is_debugging = ( ((fname.indexOf('\\@vyper logix corp\\@projects\\') > -1) || (fname.indexOf('\\@3\\pdfxporter') > -1) && (fname.indexOf('\\bin-debug\\') > -1)) ) ? true : this.is_debugging;
+				this.is_logoVisible = true;
+				if ( (ChartsDemo.force_localHost) && (this.is_debugging) ) {
+					this.__is_localhost__ = this.is_debugging;
+				}
+				trace(this.className+'.determine_debugging_Level().2 --> this.is_debugging='+this.is_debugging);
+			}
+			
+			public function determine_capabilities():void {
+				var c:CapabilitiesUtils = new CapabilitiesUtils();
+			}
+			
+			public function do_fullScreen():void {
+				FlexGlobals.topLevelApplication.nativeWindow.stage.displayState = StageDisplayState.FULL_SCREEN_INTERACTIVE;
+				this.appProxy.isFullScreen = true;
+			}
+			
+			public function do_windowed():void {
+				FlexGlobals.topLevelApplication.nativeWindow.stage.displayState = StageDisplayState.NORMAL;
+				this.appProxy.isFullScreen = false;
+			}
+			
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void {
+				// the code that was here has been moved to allow the Auto-Updater to function...
+			}
+			
+			protected function windowedapplication1_initializeHandler(event:FlexEvent):void {
+				trace(this.className+'.windowedapplication1_initializeHandler().1 !');
+			}
+
+			private function _onCreationComplete_appProxy():void {
+				var _this:ChartsDemo = this;
+				trace(this.className+'.onCreationComplete_appProxy().1 !');
+				this.appProxy.addEventListener(TermsAndConditionsAgreementEvent.TYPE_TERMSANDCONDITIONS_AGREEMENT,
+					function(event:TermsAndConditionsAgreementEvent):void {
+						if (_this['uploader'] is FileUpload) {
+							_this['uploader']['refresh_terms_and_conditions_checkbox_selection']();
+						}
+					}
+				);
+				this.appProxy.addEventListener(TermsAndConditionsNoAgreementEvent.TYPE_TERMSANDCONDITIONS_NO_AGREEMENT,
+					function(event:TermsAndConditionsNoAgreementEvent):void {
+						if (_this['uploader'] is FileUpload) {
+							_this['uploader']['refresh_terms_and_conditions_checkbox_selection']();
+						}
+					}
+				);
+				this.appProxy.TermsAndConditionsClass = this.TermsAndConditionsClass;
+				this.appProxy['_onCreationComplete_appProxy'](this.appMenu);
+			}
+			
+			protected function windowedapplication1_applicationDeactivateHandler(event:AIREvent):void {
+				this._closeApplicaton();
+			}
+			
+		]]>
+	</fx:Script>
+	<application:ApplicatonProxy id="appProxy" x="0" y="0" width="100%" height="100%" creationComplete="_onCreationComplete_appProxy()"/>
+</s:WindowedApplication>

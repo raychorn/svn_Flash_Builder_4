@@ -1,0 +1,833 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%" 
+		  initialize="vgroup1_initializeHandler(event)" 
+		  creationComplete="vgroup1_creationCompleteHandler(event)"
+		  xmlns:controls="popups.controls.*" xmlns:components="popups.controls.components.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:states>
+		<mx:State name="panels"/>
+		<mx:State name="nopanels"/>
+		<mx:State name="fancy"/>
+		<mx:State name="fancyHighlight1"/>
+		<mx:State name="fancyHighlight2"/>
+		<mx:State name="fancyHighlight3"/>
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.DisplayObjectUtils;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.skins.spark.PanelSkin;
+			
+			import factories.MetalFactory;
+			import factories.ResourceFactory;
+			
+			import handlers.ResourcesHandler;
+			
+			import popups.controls.components.LevelsTableBrowser;
+			
+			import skins.NoHeaderPanelSkin;
+			import skins.PanelHighlightSkin;
+			import skins.PanelSkin;
+			
+			private var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+
+			private var _this:ResourcesGroup;
+			
+			private static var __is_building_by_id__:String;
+			
+			private var popUp:*;
+			
+			private var __factory1__:Class;
+			private var __factory2__:Class;
+			private var __factory3__:Class;
+			
+			private var __builder1__:Class;
+			private var __builder2__:Class;
+			private var __builder3__:Class;
+			
+			private var __building_container_name1__:String;
+			private var __building_container_name2__:String;
+			private var __building_container_name3__:String;
+			
+			[Bindable]
+			private var __building_resource_image1__:Class;
+
+			[Bindable]
+			private var __building_resource_image2__:Class;
+
+			[Bindable]
+			private var __building_resource_image3__:Class;
+			
+			[Bindable]
+			private var __building_icon_image1__:Class;
+			
+			[Bindable]
+			private var __building_icon_image2__:Class;
+			
+			[Bindable]
+			private var __building_icon_image3__:Class;
+			
+			[Bindable]
+			private var __resource_label1__:String;
+			
+			[Bindable]
+			private var __resource_label2__:String;
+			
+			[Bindable]
+			private var __resource_label3__:String;
+			
+			[Bindable]
+			private var __padding_top1__:Number = 0;
+			
+			[Bindable]
+			private var __padding_left1__:Number = 0;
+			
+			[Bindable]
+			private var __width1__:Number = 0;
+			
+			[Bindable]
+			private var __height1__:Number = 0;
+			
+			[Bindable]
+			private var __padding_top2__:Number = 0;
+			
+			[Bindable]
+			private var __padding_left2__:Number = 0;
+			
+			[Bindable]
+			private var __width2__:Number = 0;
+			
+			[Bindable]
+			private var __height2__:Number = 0;
+			
+			[Bindable]
+			private var __padding_top3__:Number = 0;
+			
+			[Bindable]
+			private var __padding_left3__:Number = 0;
+			
+			[Bindable]
+			private var __width3__:Number = 0;
+			
+			[Bindable]
+			private var __height3__:Number = 0;
+			
+			public function get building_data1():* {
+				return ResourcesHandler.get_building_data_for(this.__factory1__);
+			}
+			
+			public function get building_data2():* {
+				return ResourcesHandler.get_building_data_for(this.__factory2__);
+			}
+			
+			public function get building_data3():* {
+				return ResourcesHandler.get_building_data_for(this.__factory2__);
+			}
+			
+			public function get paddingTop1():Number {
+				return this.__padding_top1__;
+			}
+			
+			public function set paddingTop1(value:Number):void {
+				if (this.__padding_top1__ != value) {
+					this.__padding_top1__ = value;
+				}
+			}
+			
+			public function get paddingLeft1():Number {
+				return this.__padding_left1__;
+			}
+			
+			public function set paddingLeft1(value:Number):void {
+				if (this.__padding_left1__ != value) {
+					this.__padding_left1__ = value;
+				}
+			}
+			
+			public function get width1():Number {
+				return this.__width1__;
+			}
+			
+			public function set width1(value:Number):void {
+				if (this.__width1__ != value) {
+					this.__width1__ = value;
+				}
+			}
+			
+			public function get height1():Number {
+				return this.__height1__;
+			}
+			
+			public function set height1(value:Number):void {
+				if (this.__height1__ != value) {
+					this.__height1__ = value;
+				}
+			}
+			
+			public function get paddingTop2():Number {
+				return this.__padding_top2__;
+			}
+			
+			public function set paddingTop2(value:Number):void {
+				if (this.__padding_top2__ != value) {
+					this.__padding_top2__ = value;
+				}
+			}
+			
+			public function get paddingLeft2():Number {
+				return this.__padding_left2__;
+			}
+			
+			public function set paddingLeft2(value:Number):void {
+				if (this.__padding_left2__ != value) {
+					this.__padding_left2__ = value;
+				}
+			}
+			
+			public function get width2():Number {
+				return this.__width2__;
+			}
+			
+			public function set width2(value:Number):void {
+				if (this.__width2__ != value) {
+					this.__width2__ = value;
+				}
+			}
+			
+			public function get height2():Number {
+				return this.__height2__;
+			}
+			
+			public function set height2(value:Number):void {
+				if (this.__height2__ != value) {
+					this.__height2__ = value;
+				}
+			}
+			
+			public function get paddingTop3():Number {
+				return this.__padding_top3__;
+			}
+			
+			public function set paddingTop3(value:Number):void {
+				if (this.__padding_top3__ != value) {
+					this.__padding_top3__ = value;
+				}
+			}
+			
+			public function get paddingLeft3():Number {
+				return this.__padding_left3__;
+			}
+			
+			public function set paddingLeft3(value:Number):void {
+				if (this.__padding_left3__ != value) {
+					this.__padding_left3__ = value;
+				}
+			}
+			
+			public function get width3():Number {
+				return this.__width3__;
+			}
+			
+			public function set width3(value:Number):void {
+				if (this.__width3__ != value) {
+					this.__width3__ = value;
+				}
+			}
+			
+			public function get height3():Number {
+				return this.__height3__;
+			}
+			
+			public function set height3(value:Number):void {
+				if (this.__height3__ != value) {
+					this.__height3__ = value;
+				}
+			}
+			
+			public function get resource_label1():String {
+				return this.__resource_label1__;
+			}
+			
+			public function set resource_label1(label:String):void {
+				if (this.__resource_label1__ != label) {
+					this.__resource_label1__ = label;
+				}
+			}
+			
+			public function get resource_label2():String {
+				return this.__resource_label2__;
+			}
+			
+			public function set resource_label2(label:String):void {
+				if (this.__resource_label2__ != label) {
+					this.__resource_label2__ = label;
+				}
+			}
+			
+			public function get resource_label3():String {
+				return this.__resource_label3__;
+			}
+			
+			public function set resource_label3(label:String):void {
+				if (this.__resource_label3__ != label) {
+					this.__resource_label3__ = label;
+				}
+			}
+			
+			public function get building_resource_image1():Class {
+				return this.__building_resource_image1__;
+			}
+			
+			public function set building_resource_image1(image:Class):void {
+				if (this.__building_resource_image1__ != image) {
+					this.__building_resource_image1__ = image;
+				}
+			}
+			
+			public function get building_resource_image2():Class {
+				return this.__building_resource_image2__;
+			}
+			
+			public function set building_resource_image2(image:Class):void {
+				if (this.__building_resource_image2__ != image) {
+					this.__building_resource_image2__ = image;
+				}
+			}
+			
+			public function get building_resource_image3():Class {
+				return this.__building_resource_image3__;
+			}
+			
+			public function set building_resource_image3(image:Class):void {
+				if (this.__building_resource_image3__ != image) {
+					this.__building_resource_image3__ = image;
+				}
+			}
+			
+			public function get building_icon_image1():Class {
+				return this.__building_icon_image1__;
+			}
+			
+			public function set building_icon_image1(image:Class):void {
+				if (this.__building_icon_image1__ != image) {
+					this.__building_icon_image1__ = image;
+				}
+			}
+			
+			public function get building_icon_image2():Class {
+				return this.__building_icon_image2__;
+			}
+			
+			public function set building_icon_image2(image:Class):void {
+				if (this.__building_icon_image2__ != image) {
+					this.__building_icon_image2__ = image;
+				}
+			}
+			
+			public function get building_icon_image3():Class {
+				return this.__building_icon_image3__;
+			}
+			
+			public function set building_icon_image3(image:Class):void {
+				if (this.__building_icon_image3__ != image) {
+					this.__building_icon_image3__ = image;
+				}
+			}
+			
+			public function get building_container_name1():String {
+				return this.__building_container_name1__;
+			}
+			
+			public function set building_container_name1(name:String):void {
+				if (this.__building_container_name1__ != name) {
+					this.__building_container_name1__ = name;
+				}
+			}
+			
+			public function get building_container_name2():String {
+				return this.__building_container_name2__;
+			}
+			
+			public function set building_container_name2(name:String):void {
+				if (this.__building_container_name2__ != name) {
+					this.__building_container_name2__ = name;
+				}
+			}
+			
+			public function get building_container_name3():String {
+				return this.__building_container_name3__;
+			}
+			
+			public function set building_container_name3(name:String):void {
+				if (this.__building_container_name3__ != name) {
+					this.__building_container_name3__ = name;
+				}
+			}
+			
+			public function get factory1():Class {
+				return this.__factory1__;
+			}
+			
+			public function set factory1(factory1:Class):void {
+				if (this.__factory1__ != factory1) {
+					this.__factory1__ = factory1;
+				}
+			}
+			
+			public function get factory2():Class {
+				return this.__factory2__;
+			}
+			
+			public function set factory2(factory2:Class):void {
+				if (this.__factory2__ != factory2) {
+					this.__factory2__ = factory2;
+				}
+			}
+			
+			public function get factory3():Class {
+				return this.__factory3__;
+			}
+			
+			public function set factory3(factory3:Class):void {
+				if (this.__factory3__ != factory3) {
+					this.__factory3__ = factory3;
+				}
+			}
+			
+			public function get builder1():Class {
+				return this.__builder1__;
+			}
+			
+			public function set builder1(builder1:Class):void {
+				if (this.__builder1__ != builder1) {
+					this.__builder1__ = builder1;
+				}
+			}
+			
+			public function get builder2():Class {
+				return this.__builder2__;
+			}
+			
+			public function set builder2(builder2:Class):void {
+				if (this.__builder2__ != builder2) {
+					this.__builder2__ = builder2;
+				}
+			}
+			
+			public function get builder3():Class {
+				return this.__builder3__;
+			}
+			
+			public function set builder3(builder3:Class):void {
+				if (this.__builder3__ != builder3) {
+					this.__builder3__ = builder3;
+				}
+			}
+			
+			public function signal_enabled_or_disabled_for_others_besides(id:String,__is__:Boolean):void {
+				var children:Array = DisplayObjectUtils.getChildrenFrom(this.building_panels_hgroup);
+				var child:*;
+				__is__ = (id == null) ? true : __is__;
+				for (var i:int = 0; i < children.length; i++) {
+					child = children[i];
+					if (child.id != id) {
+						//child.enabled = __is__;
+					}
+				}
+			}
+			
+			public function signal_disabled_for_others_besides(id:String):void {
+				this.signal_enabled_or_disabled_for_others_besides(id,false);
+			}
+			
+			public static function get is_building_by_id():String {
+				return __is_building_by_id__;
+			}
+			
+			public static function set is_building_by_id(is_building_by_id:String):void {
+				if (__is_building_by_id__ != is_building_by_id) {
+					__is_building_by_id__ = is_building_by_id;
+				}
+			}
+			
+			public function signal_completion_of_timer(id:String):void {
+				//var panel:ResourcePanel;
+				this.signal_enabled_or_disabled_for_others_besides(id,true);
+				//this.refresh_panel_title(panel);
+				is_building_by_id = null;
+			}
+			
+			private function get_resource_title_for(panel:ResourcePanel):String {
+				var title:String;
+				app.log = 'get_resource_title_for.1 --> panel.id='+panel.id;
+				if ( (this.factory1) && (panel.name.indexOf(this.factory1.name) > -1) ) {
+					title = this.__resource_label1__ + ' (' + ResourceFactory.current_level_toString(this.factory1.current_level) + ')';
+					app.log = 'get_resource_title_for.2 --> panel.title='+panel.title;
+				} else if ( (this.factory2) && (panel.name.indexOf(this.factory2.name) > -1) ) {
+					title = this.__resource_label2__ + ' (' + ResourceFactory.current_level_toString(this.factory2.current_level) + ')';
+					app.log = 'get_resource_title_for.3 --> panel.title='+panel.title;
+				} else if ( (this.factory3) && (panel.name.indexOf(this.factory3.name) > -1) ) {
+					title = this.__resource_label3__ + ' (' + ResourceFactory.current_level_toString(this.factory3.current_level) + ')';
+					app.log = 'get_resource_title_for.4 --> panel.title='+panel.title;
+				}
+				return title;
+			}
+			
+			private function refresh_panel_title(panel:ResourcePanel):void {
+				app.log = 'refresh_panel_title.1 --> panel.id='+panel.id;
+				panel.title = this.get_resource_title_for(panel);
+			}
+			
+			public function refresh_panel_titles():void {
+				if (this.currentState == 'panels') {
+					if (this.building_panels_container1 is ResourcePanel) {
+						this.building_panels_container1.title = this.get_resource_title_for(this.building_panels_container1);
+					}
+					if (this.building_panels_container2 is ResourcePanel) {
+						this.building_panels_container2.title = this.get_resource_title_for(this.building_panels_container2);
+					}
+					if (this.building_panels_container3 is ResourcePanel) {
+						this.building_panels_container3.title = this.get_resource_title_for(this.building_panels_container3);
+					}
+				}
+			}
+			
+			protected function panel1_creationCompleteHandler(event:FlexEvent):void {
+				var panel:ResourcePanel = event.currentTarget as ResourcePanel;
+				panel.name = this.building_container_name1;
+				this.refresh_panel_title(panel);
+			}
+			
+			protected function panel2_creationCompleteHandler(event:FlexEvent):void {
+				var panel:ResourcePanel = event.currentTarget as ResourcePanel;
+				panel.name = this.building_container_name2;
+				this.refresh_panel_title(panel);
+			}
+			
+			protected function panel3_creationCompleteHandler(event:FlexEvent):void {
+				var panel:ResourcePanel = event.currentTarget as ResourcePanel;
+				panel.name = this.building_container_name3;
+				this.refresh_panel_title(panel);
+			}
+			
+			private function building_container_clickHandler(parent:DisplayObject,classNameBuilder:Class,data:*,container:*,title:String,width:Number,height:Number,xOffset:Number,yOffset:Number,signal:Function,__is__:Boolean,closeHandler:Function):void {
+				if (!is_building_by_id) {
+					this.popUp = PopUpManager.createPopUp(parent,classNameBuilder,true);
+					var pt:Point = new Point(0,0);
+					var pt2:Point = container.localToGlobal(pt);
+					this.popUp.x = pt2.x + xOffset;
+					this.popUp.y = pt2.y + yOffset;
+					this.popUp.width = width;
+					this.popUp.height = height;
+					this.popUp.title = title + '   ' + this.get_resource_title_for(container);
+					this.popUp.addEventListener(CloseEvent.CLOSE, 
+						function (event:CloseEvent):void {
+							PopUpManager.removePopUp(_this.popUp);
+							if (closeHandler is Function) {
+								try {
+									closeHandler();
+								} catch (err:Error) {}
+							}
+						}
+					);
+					this.popUp.btn_build.addEventListener(MouseEvent.CLICK, 
+						function (event:MouseEvent):void {
+							PopUpManager.removePopUp(_this.popUp);
+							
+							app.add_timer = data;
+							_this.refresh_panel_title(container);
+							if (!app.premium_account) {
+								if (signal is Function) {
+									try {
+										signal(container.id,__is__);
+									} catch (err:Error) {
+										_this.signal_disabled_for_others_besides(container.id);
+									}
+								}
+							} else {
+								// queue the build...
+							}
+							is_building_by_id = container.id;
+						}
+					);
+				}
+			}
+			
+			protected function building_container_clickHandler1(event:MouseEvent):void {
+				this.building_container_clickHandler(this.building_panels_hgroup,this.builder1,this.building_data1,this.building_panels_container1,this.resource_label1,450,200,0,0,signal_enabled_or_disabled_for_others_besides,false,
+					function ():void {
+					}
+				);
+			}
+			
+			protected function building_container_clickHandler2(event:MouseEvent):void {
+				this.building_container_clickHandler(this.building_panels_hgroup,this.builder2,this.building_data2,this.building_panels_container1,this.resource_label2,450,200,0,0,signal_enabled_or_disabled_for_others_besides,false,
+					function ():void {
+					}
+				);
+			}
+			
+			protected function building_container_clickHandler3(event:MouseEvent):void {
+				this.building_container_clickHandler(this.building_panels_hgroup,this.builder3,this.building_data3,this.building_panels_container1,this.resource_label3,450,200,0,0,signal_enabled_or_disabled_for_others_besides,false,
+					function ():void {
+					}
+				);
+			}
+			
+			private function info_name_from_container_name(name:String,suffix:String):String {
+				var toks:Array = name.split('_');
+				toks[toks.length-1] = suffix;
+				return toks.join('_');
+			}
+			
+			protected function building_container_mouseOverHandler1(event:MouseEvent):void {
+				if ( (this.building_panels_vgroup1.building_group.enabled) && (this.currentState == 'fancy') ) {
+					this.currentState = 'fancyHighlight1';
+				}
+				var __is__:Boolean = (this.__factory1__ == MetalFactory);
+				var __cost__:Object;
+				try {
+					__cost__ = this.__factory1__['level_upgrade_cost_for'](this.__factory1__['current_level']);
+				} catch (err:Error) {
+					app.log = err.message;
+					app.log = err.getStackTrace();
+				}
+				var __has__:Boolean = ResourceFactory.has_resources_using(__cost__);
+				var __free__:Boolean = ((__is__) && (app.premium_account));
+				app.log = '($$$) building_container_mouseOverHandler1.1 __is__='+__is__+', app.premium_account='+app.premium_account;
+				app.log = '($$$) building_container_mouseOverHandler1.2 __cost__='+DebuggerUtils.explainThis(__cost__);
+				app.log = '($$$) building_container_mouseOverHandler1.3 __has__='+__has__;
+				app.log = '($$$) building_container_mouseOverHandler1.4 __free__='+__free__;
+				this.building_panels_container1.toolTip = 'Click to Build '+ this.__resource_label1__ + '<BR/>' + (((!__free__) || (__has__)) ? ResourceFactory.current_level_upgrade_cost_as_string(this.__factory1__['current_level_upgrade_cost'],true) : 'PREMIUM ACCOUNTS BUILD AT NO COST !!!');
+			}
+			
+			protected function building_container_mouseOutHandler1(event:MouseEvent):void {
+				if (this.currentState != 'fancy') {
+					this.currentState = 'fancy';
+				}
+			}
+			
+			protected function building_container_mouseOverHandler2(event:MouseEvent):void {
+				if ( (this.building_panels_vgroup2.building_group.enabled) && (this.currentState == 'fancy') ) {
+					this.currentState = 'fancyHighlight2';
+				}
+				this.building_panels_container2.toolTip = 'Click to Build '+ this.__resource_label2__ + '<BR/>' + ResourceFactory.current_level_upgrade_cost_as_string(this.__factory2__['current_level_upgrade_cost'],true);
+			}
+			
+			protected function building_container_mouseOutHandler2(event:MouseEvent):void {
+				if (this.currentState != 'fancy') {
+					this.currentState = 'fancy';
+				}
+			}
+			
+			protected function building_container_mouseOverHandler3(event:MouseEvent):void {
+				if ( (this.building_panels_vgroup2.building_group.enabled) && (this.currentState == 'fancy') ) {
+					this.currentState = 'fancyHighlight3';
+				}
+				this.building_panels_container3.toolTip = 'Click to Build '+ this.__resource_label3__ + '<BR/>' + ResourceFactory.current_level_upgrade_cost_as_string(this.__factory3__['current_level_upgrade_cost'],true);
+			}
+			
+			protected function building_container_mouseOutHandler3(event:MouseEvent):void {
+				if (this.currentState != 'fancy') {
+					this.currentState = 'fancy';
+				}
+			}
+			
+			protected function vgroup1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+			}
+			
+			protected function building_panels_vgroup1_creationCompleteHandler(event:FlexEvent):void {
+				var group:QuadVGroup = event.currentTarget as QuadVGroup;
+				if ( (!isNaN(this.width1)) && (!isNaN(this.height1)) ) {
+					group.width = this.width1;
+					group.height = this.height1;
+				}
+				group.building_group.addEventListener(MouseEvent.CLICK, this.building_container_clickHandler1);
+				this.building_panels_container1.addEventListener(MouseEvent.MOUSE_OVER, this.building_container_mouseOverHandler1);
+				this.building_panels_container1.addEventListener(MouseEvent.MOUSE_OUT, this.building_container_mouseOutHandler1);
+				group.btn_levels.addEventListener(MouseEvent.CLICK, 
+					function (event:MouseEvent):void {
+						var factory:Class = _this.__factory1__;
+						var levels:Array = ResourceFactory.levels_table_for_factory(factory,20);
+						var popUp:LevelsTableBrowser = PopUpManager.createPopUp(_this,LevelsTableBrowser,true) as LevelsTableBrowser;
+						popUp.width = 500;
+						popUp.height = 300;
+						popUp.grid_dataProvider = new ArrayCollection(levels);
+						try {
+							popUp.grid_columns_dataProvider = factory.levels_table_columns;
+						} catch (err:Error) {}
+						popUp.title = _this.__resource_label1__ + ' Levels Table';
+						PopUpManager.centerPopUp(popUp);
+						popUp.addEventListener(CloseEvent.CLOSE, 
+							function (event:CloseEvent):void {
+								PopUpManager.removePopUp(popUp);
+							}
+						);
+					}
+				);
+
+				group.btn_force_build.addEventListener(MouseEvent.CLICK, 
+					function (event:MouseEvent):void {
+						var data:* = _this.building_data1;
+						app.add_timer = data;
+					}
+				);
+			}
+			
+			protected function building_panels_vgroup2_creationCompleteHandler(event:FlexEvent):void {
+				var group:QuadVGroup = event.currentTarget as QuadVGroup;
+				if ( (!isNaN(this.width2)) && (!isNaN(this.height2)) ) {
+					group.width = this.width2;
+					group.height = this.height2;
+				}
+				group.building_group.addEventListener(MouseEvent.CLICK, this.building_container_clickHandler2);
+				this.building_panels_container2.addEventListener(MouseEvent.MOUSE_OVER, this.building_container_mouseOverHandler2);
+				this.building_panels_container2.addEventListener(MouseEvent.MOUSE_OUT, this.building_container_mouseOutHandler2);
+				group.btn_levels.addEventListener(MouseEvent.CLICK, 
+					function (event:MouseEvent):void {
+						var factory:Class = _this.__factory2__;
+						var levels:Array = ResourceFactory.levels_table_for_factory(factory,20);
+						var popUp:LevelsTableBrowser = PopUpManager.createPopUp(_this,LevelsTableBrowser,true) as LevelsTableBrowser;
+						popUp.width = 500;
+						popUp.height = 300;
+						popUp.grid_dataProvider = new ArrayCollection(levels);
+						popUp.title = _this.__resource_label2__ + ' Levels Table';
+						PopUpManager.centerPopUp(popUp);
+						popUp.addEventListener(CloseEvent.CLOSE, 
+							function (event:CloseEvent):void {
+								PopUpManager.removePopUp(popUp);
+							}
+						);
+					}
+				);
+
+				group.btn_force_build.addEventListener(MouseEvent.CLICK, 
+					function (event:MouseEvent):void {
+						var data:* = _this.building_data2;
+						app.add_timer = data;
+					}
+				);
+			}
+			
+			protected function building_panels_vgroup3_creationCompleteHandler(event:FlexEvent):void {
+				var group:QuadVGroup = event.currentTarget as QuadVGroup;
+				if ( (!isNaN(this.width3)) && (!isNaN(this.height3)) ) {
+					group.width = this.width3;
+					group.height = this.height3;
+				}
+				group.building_group.addEventListener(MouseEvent.CLICK, this.building_container_clickHandler3);
+				this.building_panels_container3.addEventListener(MouseEvent.MOUSE_OVER, this.building_container_mouseOverHandler3);
+				this.building_panels_container3.addEventListener(MouseEvent.MOUSE_OUT, this.building_container_mouseOutHandler3);
+				group.btn_levels.addEventListener(MouseEvent.CLICK, 
+					function (event:MouseEvent):void {
+						var factory:Class = _this.__factory3__;
+						var levels:Array = ResourceFactory.levels_table_for_factory(factory,20);
+						var popUp:LevelsTableBrowser = PopUpManager.createPopUp(_this,LevelsTableBrowser,true) as LevelsTableBrowser;
+						popUp.width = 500;
+						popUp.height = 300;
+						popUp.grid_dataProvider = new ArrayCollection(levels);
+						popUp.title = _this.__resource_label3__ + ' Levels Table';
+						PopUpManager.centerPopUp(popUp);
+						popUp.addEventListener(CloseEvent.CLOSE, 
+							function (event:CloseEvent):void {
+								PopUpManager.removePopUp(popUp);
+							}
+						);
+					}
+				);
+
+				group.btn_force_build.addEventListener(MouseEvent.CLICK, 
+					function (event:MouseEvent):void {
+						var data:* = _this.building_data3;
+						app.add_timer = data;
+					}
+				);
+			}
+			
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void {
+				this.building_panels_vgroup1.building_group.enabled = false;
+				this.building_panels_vgroup2.building_group.enabled = false;
+				this.building_panels_vgroup3.building_group.enabled = false;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:HGroup id="building_panels_hgroup" width="100%" height="100%">
+		<components:ResourcePanel 
+				id="building_panels_container1" 
+				visible="{this.__building_resource_image1__ != null}" includeInLayout="{this.__building_resource_image1__ != null}"
+				styleName="resourceBuildPanel" 
+				skinClass.panels="spark.skins.spark.PanelSkin" 
+				skinClass.nopanels="skins.NoHeaderPanelSkin" 
+				skinClass.fancy="skins.PanelSkin" 
+				skinClass.fancyHighlight1="skins.PanelHighlightSkin"
+				skinClass.fancyHighlight2="skins.PanelSkin" 
+				skinClass.fancyHighlight3="skins.PanelSkin"
+				width="{this.building_panels_vgroup1.building_image.width+20}" 
+				height="0" 
+				creationComplete="panel1_creationCompleteHandler(event)" 
+				>
+			<controls:QuadVGroup id="building_panels_vgroup1" 
+								 width="100%" 
+								 padding_left="{this.__padding_left1__}"
+								 resource_label="{this.__resource_label1__}" 
+								 building_resource_image="{this.__building_resource_image1__}" 
+								 creationComplete="building_panels_vgroup1_creationCompleteHandler(event)"/>
+		</components:ResourcePanel>
+		<components:ResourcePanel 
+				id="building_panels_container2" 
+				visible="{this.__building_resource_image2__ != null}" includeInLayout="{this.__building_resource_image2__ != null}"
+				skinClass.panels="spark.skins.spark.PanelSkin" 
+				skinClass.nopanels="skins.NoHeaderPanelSkin" 
+				skinClass.fancy="skins.PanelSkin" 
+				skinClass.fancyHighlight1="skins.PanelSkin" 
+				skinClass.fancyHighlight2="skins.PanelHighlightSkin"
+				skinClass.fancyHighlight3="skins.PanelSkin"
+				styleName="resourceBuildPanel" 
+				width="{this.building_panels_vgroup2.building_image.width+20}" 
+				height="0" 
+				creationComplete="panel2_creationCompleteHandler(event)" 
+				>
+			<controls:QuadVGroup id="building_panels_vgroup2" 
+									 width="100%" height="100%" 
+									 padding_left="{this.__padding_left2__}"
+									 resource_label="{this.__resource_label2__}" 
+									 building_resource_image="{this.__building_resource_image2__}" 
+									 creationComplete="building_panels_vgroup2_creationCompleteHandler(event)"/>
+		</components:ResourcePanel>
+		<components:ResourcePanel 
+			id="building_panels_container3" 
+			visible="{this.__building_resource_image3__ != null}" includeInLayout="{this.__building_resource_image3__ != null}"
+			skinClass.panels="spark.skins.spark.PanelSkin" 
+			skinClass.nopanels="skins.NoHeaderPanelSkin" 
+			skinClass.fancy="skins.PanelSkin" 
+			skinClass.fancyHighlight1="skins.PanelSkin" 
+			skinClass.fancyHighlight2="skins.PanelSkin"
+			skinClass.fancyHighlight3="skins.PanelHighlightSkin"
+			styleName="resourceBuildPanel" 
+			width="{this.building_panels_vgroup3.building_image.width+20}" 
+			height="0" 
+			creationComplete="panel3_creationCompleteHandler(event)" 
+			>
+			<controls:QuadVGroup id="building_panels_vgroup3" 
+									 width="100%" height="100%" 
+									 padding_left="{this.__padding_left3__}"
+									 resource_label="{this.__resource_label3__}" 
+									 building_resource_image="{this.__building_resource_image3__}" 
+									 creationComplete="building_panels_vgroup3_creationCompleteHandler(event)"/>
+		</components:ResourcePanel>
+	</s:HGroup>
+</s:VGroup>

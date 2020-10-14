@@ -1,0 +1,449 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   width="100%" height="100%" 
+			   creationComplete="titlewindow1_creationCompleteHandler(event)" 
+			   close="titlewindow1_closeHandler(event)" 
+			   xmlns:gauges="com.betterthantomorrow.components.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:SolidColor id="sc1" color="blue" alpha=".3"/>
+		<mx:SolidColorStroke id="stroke1" color="blue" weight="1"/>
+		<mx:NumberFormatter id="gauge_value_formatter" precision="2" rounding="none"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			import com.EzHTTPService;
+			import com.GUID;
+			import com.StringUtils;
+			
+			import flash.utils.clearTimeout;
+			import flash.utils.setTimeout;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.components.Button;
+			import spark.components.HSlider;
+			
+			import controls.Alert.AlertPopUp;
+			
+			import utils.AIRHelper;
+			import utils.APIHelper;
+			
+			import vyperlogix.views.HTMLViewer;
+			
+			private static var free_run_limit:int = 1000;
+			
+			private var _num_points_:int = 1000;
+
+			public var isRunning:Boolean = true;
+
+			public var start_time_ms:Number = 0;
+			
+			[Bindable]
+			public var bytes_per_second:Number = 0;
+			
+			[Bindable]
+			public var bytes_per_second_max:Number = -1;
+			
+			[Bindable]
+			public var bytes_total:Number = 0;
+
+			public var bytes_per_second_increment:Number = 1000;
+			
+			[Bindable]
+			public var bytes_per_second_maximum:Number = bytes_per_second_increment;
+			
+			[Bindable]
+			public var current_elapsed_time:String = '';
+			
+			public var isPresentlyRefreshingChart:Boolean = false;
+			
+			private var request_stack:Object = {};
+			
+			private var _dataPoints_buffer:Array = [];
+			
+			[Bindable]
+			private var dataPoints:ArrayCollection = new ArrayCollection( [
+				{ Month: "Jan", Profit: 2000, Expenses: 1500, Amount: 450 },
+				{ Month: "Feb", Profit: 1000, Expenses: 200, Amount: 600 },
+				{ Month: "Mar", Profit: 1500, Expenses: 500, Amount: 300 },
+				{ Month: "Apr", Profit: 1800, Expenses: 1200, Amount: 900 },
+				{ Month: "May", Profit: 2400, Expenses: 575, Amount: 500 } ]);
+
+			public function set num_points(num_points:int):void {
+				if (this._num_points_ != num_points) {
+					this._num_points_ = num_points;
+				}
+			}
+			
+			public function get num_points():int {
+				return this._num_points_;
+			}
+			
+			public function get_usage_data():void {
+				var _this:ChartsDemoViewer = this;
+				var url:String = FlexGlobals.topLevelApplication.domain+APIHelper.get_usage_data_endpoint;
+				trace(this.className+'.get_usage_data().1 --> url='+url);
+				var ezREST:EzHTTPService = new EzHTTPService(false,false);
+				ezREST.post(url,{}, 
+					function (event:ResultEvent):void {
+						var response:*;
+						try {
+							response = (event.result is String) ? event.result : event.result.getItemAt(0);
+							trace(_this.className+'.get_usage_data().2 event='+event.toString());
+							
+							var errorMsg:String = response['error'];
+							_this.errorString = (errorMsg is String) && (errorMsg.length > 0) ? errorMsg : '';
+							
+							trace(_this.className+'.get_usage_data().2 --> this.errorString.length='+_this.errorString.length);
+							if (_this.errorString.length == 0) {
+								if (response['count'] != null) {
+									var run_count:int = int(response.count);
+									FlexGlobals.topLevelApplication.appProxy.mySO.data.__charts_demo_run_count = run_count;
+									FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+									if (run_count >= ChartsDemoViewer.free_run_limit) {
+										_this.ask_for_money_or_continue();
+									} else {
+										_this.start_time_ms = new Date().time;
+										_this.refresh_chart();
+									}
+								} else {
+									AlertPopUp.surpriseNoOkay('Cannot retrieve usage data due to some kind of system error.  Try back later...','WARNING');
+								}
+							} else {
+							}
+						} catch (e:Error) {
+							var stackTrace:String = e.getStackTrace();
+							AlertPopUp.errorNoOkay(_this.className+'.get_usage_data().ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR');
+						}
+					}, ezREST.jsonResultType);
+			}
+			
+			public function set_usage_data():void {
+				var _this:ChartsDemoViewer = this;
+				var url:String = FlexGlobals.topLevelApplication.domain+APIHelper.set_usage_data_endpoint;
+				trace(this.className+'.set_usage_data().1 --> url='+url);
+				var ezREST:EzHTTPService = new EzHTTPService(false,false);
+				ezREST.post(url,{'count':FlexGlobals.topLevelApplication.appProxy.mySO.data.__charts_demo_run_count}, 
+					function (event:ResultEvent):void {
+						var response:*;
+						try {
+							response = (event.result is String) ? event.result : event.result.getItemAt(0);
+							trace(_this.className+'.set_usage_data().2 event='+event.toString());
+							
+							var errorMsg:String;
+							try {errorMsg = response['error'];} 
+								catch (err:Error) {}
+							_this.errorString = (errorMsg is String) && (errorMsg.length > 0) ? errorMsg : '';
+							
+							trace(_this.className+'.set_usage_data().2 --> this.errorString.length='+_this.errorString.length);
+							if (_this.errorString.length == 0) {
+							} else {
+							}
+						} catch (e:Error) {
+							var stackTrace:String = e.getStackTrace();
+							AlertPopUp.errorNoOkay(_this.className+'.set_usage_data().ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR');
+						}
+					}, ezREST.jsonResultType);
+			}
+			
+			private function ask_for_money_or_continue():void {
+				var _this:ChartsDemoViewer = this;
+				if (!FlexGlobals.topLevelApplication.is_debugging) {
+					HTMLViewer.htmlClass = FlexGlobals.topLevelApplication.GetMoneyClass;
+					var popUp:HTMLViewer = PopUpManager.createPopUp(this, HTMLViewer, true) as HTMLViewer;
+					popUp.width = FlexGlobals.topLevelApplication.nativeWindow.width - 30;
+					popUp.height = FlexGlobals.topLevelApplication.nativeWindow.height - 30;
+					popUp.title = 'Time to Pay for your Usage';
+					//popUp.showCloseButton = true;
+					popUp.addEventListener(CloseEvent.CLOSE, 
+						function (event:CloseEvent):void {
+							PopUpManager.removePopUp(popUp);
+						}
+					);
+					PopUpManager.centerPopUp(popUp);
+				} else {
+					AlertPopUp.surpriseConfirm('This is where you will be asked to pay for yoru usage... Usage will be reset to allow additional debugging...','INFO',
+						function (event:CloseEvent):void {
+							FlexGlobals.topLevelApplication.appProxy.mySO.data.__charts_demo_run_count = 1;
+							FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+							_this.set_usage_data();
+						}
+					);
+				}
+			}
+			
+			public function refresh_chart():void {
+				var _this:ChartsDemoViewer = this;
+				if (this.isPresentlyRefreshingChart) {
+					return; // cannot do more than once...
+				}
+				this.isPresentlyRefreshingChart = true;
+
+				var t:String = this.title.split(' :: ')[0];
+				var url:String = FlexGlobals.topLevelApplication.domain+APIHelper.get_data1000_endpoint;
+				trace(this.className+'.bubblechart1_creationCompleteHandler().1 --> url='+url);
+				CursorManager.setBusyCursor();
+				var run_count:int = FlexGlobals.topLevelApplication.appProxy.mySO.data.__charts_demo_run_count;
+				var isDataRetrievalError:Boolean = false;
+				var guid:String;
+				var ezREST:EzHTTPService;
+
+				function handle_response(event:ResultEvent):void {
+					var response:*;
+					var aRequest:Object;
+					try {
+						response = (event.result is String) ? event.result : event.result.getItemAt(0);
+						trace(_this.className+'.bubblechart1_creationCompleteHandler().2 event='+event.toString());
+						
+						var errorMsg:String = response['error'];
+						_this.errorString = (errorMsg is String) && (errorMsg.length > 0) ? errorMsg : '';
+						
+						trace(_this.className+'.bubblechart1_creationCompleteHandler().2 --> this.errorString.length='+_this.errorString.length);
+						if (_this.errorString.length == 0) {
+							if (response['data'] is Array) {
+								if (response['guid'] != null) {
+									aRequest = _this.request_stack[response.guid];
+								}
+								aRequest.actual_count = (response['count'] is int) ? response.count : -1;
+								_this.bytes_total += response.data.length;
+								var elapsed_ms:Number = new Date().time - _this.start_time_ms;
+								_this.bytes_per_second = (_this.bytes_total / (elapsed_ms/1000));
+								_this.bytes_per_second_max = Math.max(_this.bytes_per_second_max,_this.bytes_per_second);
+								_this.bytes_per_second_maximum = (Math.ceil(_this.bytes_per_second_max / _this.bytes_per_second_increment) + 0) * _this.bytes_per_second_increment;
+								_this.current_elapsed_time = StringUtils.milliseconds_as_time(elapsed_ms);
+								_this._dataPoints_buffer.push(response.data);
+								/*
+								if (_this._dataPoints_buffer.length >= _this.hslider_optimizationLevel.value) {
+								_this.dataPoints.removeAll();
+								for (var j:int = 0; j < _this.hslider_optimizationLevel.value; j++) {
+								var aBucket:Array = _this._dataPoints_buffer.pop();
+								for (var i:int = 0; i < aBucket.length; i++) {
+								_this.dataPoints.addItem({ Month: aBucket[i].m, Profit: aBucket[i].p, Expenses: aBucket[i].x, Amount: aBucket[i]['$'] });
+								}
+								}
+								run_count += 1;
+								FlexGlobals.topLevelApplication.appProxy.mySO.data.__charts_demo_run_count = run_count;
+								FlexGlobals.topLevelApplication.appProxy.mySO.flush();
+								_this.set_usage_data();
+								
+								if (run_count >= ChartsDemoViewer.free_run_limit) {
+								_this.ask_for_money_or_continue();
+								}
+								}
+								*/
+							} else {
+								isDataRetrievalError = true;
+								AlertPopUp.surpriseNoOkay('Cannot retrieve data due to some kind of system error.  Try back later...','WARNING');
+							}
+						} else {
+						}
+						CursorManager.removeBusyCursor();
+						var end_time:Number = (new Date()).getTime();
+						var et:Number = (end_time-aRequest.begin_time);
+						if (et < 0) {
+							var ii:int = -1;
+						}
+						run_stats = 'Received '+aRequest.actual_count+' records in ' + ((et > 1000) ? (et/1000).toFixed(2) : et.toString()) + ' ' + ((et > 1000) ? '' : 'milli') + 'seconds' ;
+						_this.logger.text = ' (' + run_stats + ')\n\n' + _this.logger.text;
+						_this.title = t + ' :: ' + run_stats;
+						
+						if ( (!isDataRetrievalError) && (_this.isRunning) ) {
+							var timer:Timer = new Timer(250);
+							timer.addEventListener(TimerEvent.TIMER, 
+								function (event:TimerEvent):void {
+									_this.refresh_chart();
+									timer.stop();
+									_this.isPresentlyRefreshingChart = false;
+								}
+							);
+							timer.start();
+						}
+						if (response['guid'] != null) {
+							try {delete _this.request_stack[response.guid];} catch (err:Error) {}
+						}
+						_this.isPresentlyRefreshingChart = false;
+					} catch (e:Error) {
+						var stackTrace:String = e.getStackTrace();
+						AlertPopUp.errorNoOkay(_this.className+'.bubblechart1_creationCompleteHandler().ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR');
+					}
+				}
+
+				//run_stats = 'Run ' + run_count+' of '+ChartsDemoViewer.free_run_limit + ' Requesting ' + this.hslider_num_points.value + ' Data Points';
+				this.title = t + ' :: Busy (#'+run_stats+')...';
+				
+				var run_stats:String;
+				var available_points:int = 0; //this.hslider_num_points.value;
+				var points_per_request:int = 0; //available_points/this.hslider_optimizationLevel.value;
+				var last_n:int = 0; //this.hslider_optimizationLevel.value-1;
+				var r:Object;
+				for (var n:int = 0; n < 0 /*this.hslider_optimizationLevel.value*/; n++) {
+					guid = GUID.create();
+					ezREST = new EzHTTPService(false,false);
+					this.request_stack[guid] = {'ezREST':ezREST, 'actual_count':-1, 'begin_time':(new Date()).getTime(),'request':{'points':points_per_request + (((n == last_n) && (available_points < points_per_request)) ? available_points : 0),'guid':guid}};
+					r = this.request_stack[guid];
+
+					run_stats = 'Run ' + run_count+' of '+ChartsDemoViewer.free_run_limit + ' :: Requesting ' + r.request.points + ' Data Points';
+					this.logger.text = run_stats + '\n' + this.logger.text;
+					
+					if (r.request.points > 500) {
+						var ii:int = -1
+					}
+
+					ezREST.post(url,r.request,handle_response,ezREST.jsonResultType);
+					available_points -= points_per_request;
+				}
+			}
+			
+			protected function bubblechart1_creationCompleteHandler(event:FlexEvent):void {
+			}
+			
+			private function onCreationComplete_log():void {
+				this.logger.text = 'This demo will run for a limited time before you will be asked to help pay for the server this demo uses.\n\n';
+				this.logger.text = 'You are under NO obligation to pay anything to use this demo however the author of this demo is also not able to cover the expense of allowing unlimited use of this demo due to the amount of data trasnfer this demo requires.\n\n' + this.logger.text;
+				this.logger.text = '=========================\n' + this.logger.text;
+				
+				if (FlexGlobals.topLevelApplication.appProxy.mySO.data.__charts_demo_run_count == null) {
+					FlexGlobals.topLevelApplication.appProxy.mySO.data.__charts_demo_run_count = 1;
+				}
+			}
+
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void {
+				this.callLater(this.get_usage_data,[]);
+//				trace(DebuggerUtils.getFunctionName(new Error())+'.1 --> x='+x+', y='+y);
+//				trace(DebuggerUtils.getFunctionName(new Error())+'.2 --> width='+this.width+', height='+this.height);
+//				trace(DebuggerUtils.getFunctionName(new Error())+'.3 --> visible='+this.visible+', includeInLayout='+this.includeInLayout);
+//				trace(DebuggerUtils.getFunctionName(new Error())+'.4 --> this.parentDocument='+this.parentDocument);
+//				trace(DebuggerUtils.getFunctionName(new Error())+'.5 --> this.parentDocument.x='+this.parentDocument.x+', this.parentDocument.y='+this.parentDocument.y);
+//				trace(DebuggerUtils.getFunctionName(new Error())+'.6 --> this.parentDocument.width='+this.parentDocument.width+', this.parentDocument.height='+this.parentDocument.height);
+//				var children:Array = this.parentDocument.getChildren();
+//				trace(DebuggerUtils.getFunctionName(new Error())+'.7 --> children='+DebuggerUtils.explainThis(children));
+			}
+
+
+			protected function titlewindow1_closeHandler(event:CloseEvent):void {
+				this.isRunning = false;
+			}
+
+
+			protected function hslider_num_points_changeHandler(event:Event):void {
+				var slider:HSlider = event.currentTarget as HSlider;
+				this.num_points = int(slider.value);
+			}
+
+
+			protected function btn_pause_clickHandler(event:MouseEvent):void {
+				var btn:Button = event.currentTarget as Button;
+				this.isRunning = (this.isRunning) ? false : true;
+				btn.label = (this.isRunning) ? 'Pause' : 'Paused';
+				if (this.isRunning) {
+					this.refresh_chart();
+				}
+			}
+
+
+			protected function btn_dismiss_clickHandler(event:MouseEvent):void {
+				this.dispatchEvent(new CloseEvent(CloseEvent.CLOSE));
+			}
+
+			private function hslider_optimizationLevel_changeHandler(event:Event):void {
+				var slider:HSlider = event.currentTarget as HSlider;
+				//this.num_requests = slider.value;
+			}
+
+			protected function hslider_optimizationLevel_creationCompleteHandler(event:FlexEvent):void {
+				var slider:HSlider = event.currentTarget as HSlider;
+				slider.value = 1;
+			}
+
+
+			protected function hslider_num_points_creationCompleteHandler(event:FlexEvent):void {
+				var slider:HSlider = event.currentTarget as HSlider;
+				slider.value = this.num_points;
+			}
+
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<!--
+		<mx:ApplicationControlBar id="appControlBar" width="100%">
+		<mx:Spacer width="5"/>
+		<s:Label text="Data Points Per Request:"/>
+		<mx:HSlider
+		id="hslider_num_points" 
+		width="30%" 
+		dataTipPlacement="bottom" 
+		tickColor="black" 
+		toolTip="{this.hslider_num_points.value}" 
+		snapInterval="500" tickInterval="500" 
+		allowTrackClick="true" 
+		liveDragging="true"
+		minimum="1000" 
+		maximum="5000" 
+		value="1000" 
+		change="hslider_num_points_changeHandler(event)" creationComplete="hslider_num_points_creationCompleteHandler(event)"/>
+		<s:Label text="({this.hslider_num_points.value})"/>
+		<mx:Spacer width="10%"/>
+		
+		<s:Label text="Optimiztion Level:"/>
+		<mx:HSlider
+		id="hslider_optimizationLevel" 
+		width="30%" 
+		dataTipPlacement="bottom" 
+		tickColor="black" 
+		toolTip="{this.hslider_optimizationLevel.value}" 
+		snapInterval="1" tickInterval="1" 
+		allowTrackClick="true" 
+		liveDragging="true"
+		minimum="1" 
+		maximum="5" 
+		value="1" 
+		change="hslider_optimizationLevel_changeHandler(event)" creationComplete="hslider_optimizationLevel_creationCompleteHandler(event)"/>
+		<s:Label text="({this.hslider_optimizationLevel.value})"/>
+		
+		<mx:Spacer width="10%"/>
+		<s:Button id="btn_pause" label="Pause" click="btn_pause_clickHandler(event)"/>
+		<mx:Spacer width="50"/>
+		<s:Button id="btn_dismiss" label="Dismiss" click="btn_dismiss_clickHandler(event)"/>
+		</mx:ApplicationControlBar>
+		-->
+		<s:HGroup width="100%" height="100%">
+			<s:VGroup width="100%" height="100%">
+				<mx:BubbleChart id="bubblechart1" width="100%" height="100%" showDataTips="true" maxRadius="10" dataProvider="{this.dataPoints}" creationComplete="bubblechart1_creationCompleteHandler(event)">
+					<mx:series>
+						<mx:BubbleSeries
+							displayName="Profit/Expenses/Amount"
+							xField="Profit"
+							yField="Expenses"
+							radiusField="Amount"
+							fill="{sc1}"
+							stroke="{stroke1}"
+							/>
+					</mx:series>
+				</mx:BubbleChart>
+				<mx:Legend dataProvider="{bubblechart1}"/>
+			</s:VGroup>
+			<s:VGroup id="vbox_info" width="30%" height="100%">
+				<s:Panel width="100%" height="100%" title="Bandwidth">
+					<s:VGroup width="100%" height="100%">
+						<gauges:Gauge id="gauge_bandwidth" width="100%" height="{this.vbox_info.width}" value="{this.bytes_per_second}" minValue="0" maxValue="{this.bytes_per_second_maximum}" valueFormatter="{this.gauge_value_formatter}"/>
+						<s:HGroup width="100%">
+							<s:Label text="Elapsed: {this.current_elapsed_time}" width="50%"/>
+							<s:Label text="Bytes: {this.bytes_total}" width="50%"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:Panel>
+				<s:TextArea id="logger" editable="false" width="100%" height="100%" creationComplete="onCreationComplete_log()"/>
+			</s:VGroup>
+		</s:HGroup>
+	</s:VGroup>
+</s:TitleWindow>

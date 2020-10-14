@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   minWidth="750" minHeight="550" 
+					   xmlns:distortion="view.distortion.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:TabNavigator x="0" y="0" width="100%" height="100%">
+		<s:NavigatorContent width="100%" height="100%" label="FullCube">
+			<distortion:FullCube/>
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent width="100%" height="100%" label="SimpleFlip">
+			<distortion:SimpleFlip />
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent width="100%" height="100%" label="SimpleManualFlip">
+			<distortion:SimpleManualFlip />
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent width="100%" height="100%" label="SimpleFlipHideEffect">
+			<distortion:SimpleFlipHideEffect />
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent width="100%" height="100%" label="SimpleFlipTransition">
+			<distortion:SimpleFlipTransition />
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent width="100%" height="100%" label="MultipleFlipTransition">
+			<distortion:MultipleFlipTransition />
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent width="100%" height="100%" label="DistortionCubeStateTestCase">
+			<distortion:DistortionCubeStateTestCase />
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent width="100%" height="100%" label="DistortionLab">
+			<distortion:DistortionLab />
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent width="100%" height="100%" label="ViewStack3D">
+			<distortion:ViewStack3D />
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent width="100%" height="100%" label="Skins3D">
+			<distortion:Skins3D />
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent width="100%" height="100%" label="TestViewStack">
+			<distortion:TestViewStack />
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent width="100%" height="100%" label="FullCube">
+			<distortion:FullCube />
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent width="100%" height="100%" label="FullVideoCube">
+			<distortion:FullVideoCube />
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent width="100%" height="100%" label="Cube">
+			<distortion:Cube />
+		</s:NavigatorContent>
+		
+		<s:NavigatorContent width="100%" height="100%" label="VideoCube">
+			<distortion:VideoCube />
+		</s:NavigatorContent>
+	</mx:TabNavigator>
+</s:WindowedApplication>

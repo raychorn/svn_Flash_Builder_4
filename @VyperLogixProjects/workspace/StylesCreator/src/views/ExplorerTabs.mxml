@@ -1,0 +1,450 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+	<mx:VBox width="100%" height="100%" xmlns:mx="http://www.adobe.com/2006/mxml" verticalScrollPolicy="off" xmlns:views="views.*">
+	
+	<mx:HBox width="100%" height="100%">
+
+
+
+	<mx:VBox height="100%" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="STYLE CONTROLS" />
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+		<mx:TabNavigator width="100%" id="controlNavigator" height="550" styleName="styleControlTabNavigator"  tabWidth="130">
+			
+			
+			<mx:Box label="TabNavigator" >
+			
+			<mx:Form styleName="noPadding">
+			
+		
+			<mx:FormItem label="Tab Height">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="50"
+						value="22"
+						id="myTabHeightTabNavigator"
+						snapInterval="1"
+						change="setValue('tabHeight', event.target.value , 'number', 'tabNavigator');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Tab Width">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="200"
+						value="80"
+						id="myTabWidthTabNavigator"
+						snapInterval="1"
+						change="setValue('tabWidth', event.target.value , 'number', 'tabNavigator');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			<mx:FormItem label="Corner Radius">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="0"
+						id="myCornerRadiusTabNavigator"
+						snapInterval="1"
+						change="setValue('cornerRadius', event.target.value , 'number', 'tabNavigator');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Horizontal Gap">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="-10"
+						maximum="20"
+						value="-1"
+						id="myHorizontalGapTabNavigator"
+						
+						snapInterval="1"
+						change="setValue('horizontalGap', event.target.value , 'number', 'tabNavigator');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			
+				
+		<mx:FormItem label="Horizontal Align">
+			<mx:HBox>
+							<mx:RadioButton groupName="SBHorizontalAlignTabNavigator" label="left" selected="true" id="myHorizontalAligntabNavigator" 
+								labelPlacement="right" click="myTabNavigator.setStyle('horizontalAlign', 'left');
+								setCSS('horizontalAlign', 0, 'left', 'tabNavigator');"/>
+							<mx:RadioButton groupName="SBHorizontalAlignTabNavigator" label="center" 
+								labelPlacement="right" click="myTabNavigator.setStyle('horizontalAlign', 'center');
+								setCSS('horizontalAlign', 0, 'center', 'tabNavigator');"/>
+							<mx:RadioButton groupName="SBHorizontalAlignTabNavigator" label="right" 
+								labelPlacement="right" click="myTabNavigator.setStyle('horizontalAlign', 'right');
+								setCSS('horizontalAlign', 0, 'right', 'tabNavigator');"/>
+							
+						</mx:HBox>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Padding Left">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="0"
+						id="myPaddingLeftTabNavigator"
+						
+						snapInterval="1"
+						change="setValue('paddingLeft', event.target.value , 'number', 'tabNavigator');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			
+			<mx:FormItem label="Padding Right">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="0"
+						id="myPaddingRightTabNavigator"
+						
+						snapInterval="1"
+						change="setValue('paddingRight', event.target.value , 'number', 'tabNavigator');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+				<mx:FormItem label="Text Align">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBTextAlignTabNavigator" label="left"  
+								labelPlacement="right" click="myTabNavigator.setStyle('textAlign', 'left');
+								setCSS('textAlign', 0, 'left', 'tabNavigator');"/>
+							<mx:RadioButton groupName="SBTextAlignTabNavigator" label="center" selected="true" id="myTextAligntabNavigator"
+								labelPlacement="right" click="myTabNavigator.setStyle('textAlign', 'center');
+								setCSS('textAlign', 0, 'center', 'tabNavigator');"/>
+							<mx:RadioButton groupName="SBTextAlignTabNavigator" label="right" 
+								labelPlacement="right" click="myTabNavigator.setStyle('textAlign', 'right');
+								setCSS('textAlign', 0, 'right', 'tabNavigator');"/>
+							
+						</mx:HBox>
+						
+					</mx:FormItem>
+					
+			<mx:FormItem label="Text Indent">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="0"
+						id="myTextIndentTabNavigator"
+						
+						snapInterval="1"
+						change="setValue('textIndent', event.target.value , 'number', 'tabNavigator');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Background Alpha">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="1"
+						id="myBackgroundAlphatabNavigator"
+						
+						snapInterval=".01"
+						change="setValue('backgroundAlpha', event.target.value , 'number', 'tabNavigator');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+				<mx:FormItem label="Background Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xFFFFFF" id="myBackgroundColortabNavigator"
+								close="setValue('backgroundColor', event.target.selectedColor, 'color', 'tabNavigator')"/>
+				</mx:FormItem>
+		
+				<mx:FormItem label="Border Style">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBBorderTabNavigator" label="none"
+								labelPlacement="right" click="myTabNavigator.setStyle('borderStyle', 'none');
+								setCSS('borderStyle', 0, 'none', 'tabNavigator');"/>
+							<mx:RadioButton groupName="SBBorderTabNavigator" label="solid"  selected="true" id="myBorderStyletabNavigator"
+								labelPlacement="right" click="myTabNavigator.setStyle('borderStyle', 'solid');
+								setCSS('borderStyle', 0, 'solid', 'tabNavigator');"/>
+						</mx:HBox>
+						<mx:HBox>
+							<mx:RadioButton groupName="SBBorderTabNavigator" label="inset" 
+								labelPlacement="right" click="myTabNavigator.setStyle('borderStyle', 'inset');
+								setCSS('borderStyle', 0, 'inset', 'tabNavigator');"/>
+							<mx:RadioButton groupName="SBBorderTabNavigator" label="outset"  
+								labelPlacement="right" click="myTabNavigator.setStyle('borderStyle', 'outset');
+								setCSS('borderStyle', 0, 'outset', 'tabNavigator');"/>
+						</mx:HBox>
+						
+					</mx:FormItem>
+			
+			<mx:FormItem label="Border Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xAAB3B3" id="myBorderColortabNavigator"
+								close="setValue('borderColor', event.target.selectedColor, 'color', 'tabNavigator')"/>
+				</mx:FormItem>
+				
+				
+				<mx:FormItem label="Border Thickness">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="1"
+						id="myBorderThicknesstabNavigator"
+						
+						snapInterval="1"
+						change="setValue('borderThickness', event.target.value , 'number', 'tabNavigator');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+			
+			
+			<mx:FormItem label="Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myColortabNavigator"
+								close="setValue('color', event.target.selectedColor, 'color', 'tabNavigator')"/>
+				</mx:FormItem>
+			
+			<mx:FormItem label="Drop Shadow Enabled">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBDropShadowEnabledtabNavigator" label="true"  labelPlacement="right"
+								click="myTabNavigator.setStyle('dropShadowEnabled', true); enableShadowItemsTabNavigator();
+									   setCSS('dropShadowEnabled', 0, 'true', 'tabNavigator');"
+									   />
+							<mx:RadioButton groupName="SBDropShadowEnabledtabNavigator" label="false" labelPlacement="right" selected="true"  id="myDropShadowEnabledtabNavigator" 
+								click="myTabNavigator.setStyle('dropShadowEnabled', false); enableShadowItemsTabNavigator();
+								 setCSS('dropShadowEnabled', 0, 'false', 'tabNavigator');"/>
+						</mx:HBox>
+					</mx:FormItem>
+				<mx:Box styleName="conditionalBox" >			
+				<mx:Form styleName="conditionalForm"  >
+				
+			
+				<mx:FormItem label="Shadow Direction">
+						<mx:HBox>
+							<mx:RadioButton groupName="SBShadowDirectiontabNavigator" label="left"  id="myShadowDirection2tabNavigator" enabled="false"
+								labelPlacement="right" click="myTabNavigator.setStyle('shadowDirection', 'left'); setCSS('shadowDirection', 0, 'left', 'tabNavigator');"/>
+							<mx:RadioButton groupName="SBShadowDirectiontabNavigator" label="center" id="myShadowDirectiontabNavigator" enabled="false"
+								selected="true" labelPlacement="right" click="myTabNavigator.setStyle('shadowDirection', 'center'); setCSS('shadowDirection', 0, 'center', 'tabNavigator');"/>
+							<mx:RadioButton groupName="SBShadowDirectiontabNavigator" label="right" id="myShadowDirection3tabNavigator" enabled="false"
+								labelPlacement="right" click="myTabNavigator.setStyle('shadowDirection', 'right'); setCSS('shadowDirection', 0, 'right', 'tabNavigator');"/>
+						</mx:HBox>
+					</mx:FormItem>
+				<mx:FormItem label="Shadow Distance">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="2"
+						enabled="false"
+						id="myShadowDistancetabNavigator"
+						snapInterval="1"
+						change="setValue('shadowDistance', event.target.value , 'number', 'tabNavigator');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+				<mx:FormItem label="Drop Shadow Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x000000" id="myDropShadowColortabNavigator" enabled="false"
+								close="setValue('dropShadowColor', event.target.selectedColor, 'color', 'tabNavigator')"/>
+				</mx:FormItem>
+				</mx:Form>
+				</mx:Box>
+			</mx:Form>
+			</mx:Box>
+			<mx:Box label='Tab Style'>
+			<mx:Form>
+				
+			<mx:FormItem label="Corner Radius">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="20"
+						value="4"
+						id="myCornerRadiustab"
+						
+						snapInterval="1"
+						change="setValue('cornerRadius', event.target.value , 'number', 'tab');"
+						dataTipPlacement="right"
+						liveDragging="false"/>
+			</mx:FormItem>
+			
+			<mx:FormItem label="Highlight Alphas">
+				<mx:HBox>
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value=".30"
+						id="highlightAlpha1tab"
+						
+						snapInterval=".01"
+						change="StyleManager.getStyleDeclaration('Tab').setStyle('highlightAlphas',[highlightAlpha1tab.value , highlightAlpha2tab.value ]);
+						setArrayCSS('highlightAlphas', highlightAlpha1tab.value, highlightAlpha2tab.value, false, 'tab')"
+						dataTipPlacement="right"
+						liveDragging="false"/>
+		
+				
+					<mx:HSlider
+						width="70"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="0"
+						id="highlightAlpha2tab"
+						
+						snapInterval=".01"
+						change="StyleManager.getStyleDeclaration('Tab').setStyle('highlightAlphas',[highlightAlpha1tab.value , highlightAlpha2tab.value]);
+						setArrayCSS('highlightAlphas', highlightAlpha1tab.value, highlightAlpha2tab.value, false, 'tab')"
+						dataTipPlacement="right"
+						liveDragging="false"/>
+					</mx:HBox>
+				</mx:FormItem>
+			
+			
+			
+			
+				
+				
+					<mx:FormItem label="Fill Alphas">
+					<mx:HBox  horizontalGap="2">
+					<mx:HSlider
+								width="70"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".60"
+								id="myFillAlpha1tab"
+								
+								snapInterval=".01"
+								change="StyleManager.getStyleDeclaration('Tab').setStyle('fillAlphas', [myFillAlpha1tab.value, myFillAlpha2tab.value]);
+								setArrayCSS('fillAlphas', myFillAlpha1tab.value, myFillAlpha2tab.value, false, 'tab');"
+								dataTipPlacement="right"
+								liveDragging="false"/>
+							<mx:HSlider
+								width="70"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value=".40"
+								id="myFillAlpha2tab"
+								
+								snapInterval=".01"
+								change="StyleManager.getStyleDeclaration('Tab').setStyle('fillAlphas', [myFillAlpha1tab.value, myFillAlpha2tab.value]);
+								setArrayCSS('fillAlphas', myFillAlpha1tab.value, myFillAlpha2tab.value, false, 'tab');"
+								dataTipPlacement="right"
+								liveDragging="false"/>
+							
+							</mx:HBox>
+						</mx:FormItem>
+						<mx:FormItem label="Fill Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="fill1tab" height="22" width="70" selectedColor="0xFFFFFF"
+								close="StyleManager.getStyleDeclaration('Tab').setStyle('fillColors', [fill1tab.selectedColor, fill2tab.selectedColor]);
+								setArrayCSS('fillColors', fill1tab.selectedColor, fill2tab.selectedColor, true, 'tab');
+								"/>
+								<mx:ColorPicker id="fill2tab" height="22" width="70" selectedColor="0xCCCCCC"
+								close="StyleManager.getStyleDeclaration('Tab').setStyle('fillColors', [fill1tab.selectedColor, fill2tab.selectedColor]);
+								setArrayCSS('fillColors', fill1tab.selectedColor, fill2tab.selectedColor, true, 'tab');
+								"/>
+								
+							
+							</mx:HBox>
+						</mx:FormItem>
+						
+				<mx:FormItem label="Background Alpha">
+					<mx:HSlider
+						width="150"
+						thumbCount="1"
+						minimum="0"
+						maximum="1"
+						value="1"
+						id="myBackgroundAlphatab"
+						snapInterval=".01"
+						change="setValue('backgroundAlpha', event.target.value , 'number', 'tab');"
+						dataTipPlacement="right"
+						liveDragging="true"/>
+			</mx:FormItem>
+				<mx:FormItem label="Background Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xFFFFFF" id="myBackgroundColortab"
+								close="setValue('backgroundColor', event.target.selectedColor, 'color', 'tab')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Border Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0xB9BCBE" id="myBorderColortab"
+								close="setValue('borderColor', event.target.selectedColor, 'color', 'tab')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myColortab"
+								close="setValue('color', event.target.selectedColor, 'color', 'tab')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Text Roll Over Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myTextRollOverColortab"
+								close="setValue('textRollOverColor', event.target.selectedColor, 'color', 'tab')"/>
+				</mx:FormItem>
+				
+				<mx:FormItem label="Theme Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x009DFF" id="myThemeColortab"
+								close="setValue('themeColor', event.target.selectedColor, 'color', 'tab')"/>
+				</mx:FormItem>
+				</mx:Form>
+				</mx:Box>
+			</mx:TabNavigator>
+			
+		</mx:Box>
+		<mx:Box width="100%" paddingRight="5" paddingBottom="5" horizontalAlign="right">
+			<mx:LinkButton label="Restore Defaults" click="restoreDefaults()" styleName="undoLink" />
+		</mx:Box>
+	</mx:VBox>
+
+
+<!-- Sandbox -->
+<mx:VBox height="100%" width="100%" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="SANDBOX"/>
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+			
+			
+			<mx:TabNavigator width="100%" height="300" id="myTabNavigator">
+						
+							<mx:Box label="Tab 1" />
+							<mx:Box label="Tab 2" />
+							<mx:Box label="Tab 3" />
+							</mx:TabNavigator>
+			
+			
+			
+			
+		</mx:Box>
+	</mx:VBox>
+
+
+<!-- CSS -->
+<mx:VBox height="100%" width="315" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="CSS" />
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+		
+			<mx:TextArea id="myCSS" width="100%" height="100%" styleName="cssTextArea"	/>
+		</mx:Box>
+</mx:VBox>
+
+	<mx:Script source="as/tabs.as" />
+	</mx:HBox>
+</mx:VBox>
+
+
+  
+
+

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   minWidth="955" minHeight="600" 
+			   pageTitle="Vyper Menu Builder" 
+			   width="100%" height="100%" creationComplete="application1_creationCompleteHandler(event)">
+		<s:layout>
+			<s:VerticalLayout/>
+		</s:layout>
+		
+		<fx:Script>
+			<![CDATA[
+				import globals.GlobalsVO;
+				
+				import mx.controls.Alert;
+				import mx.events.FlexEvent;
+				import mx.events.MenuEvent;
+
+				[Bindable]
+				public var menuData:Array = [ 
+					{label: "MenuItem A"}, 
+					{label: "MenuItem B"}, 
+					{label: "MenuItem C"}, 
+					{label: "MenuItem D", children: [ 
+						{label: "SubMenuItem D-1"}, 
+						{label: "SubMenuItem D-2"},  
+						{label: "SubMenuItem D-3"}  
+					]}  
+				]; 
+				
+				[Bindable]
+				private var _title:String = '';
+				
+				protected function application1_creationCompleteHandler(event:FlexEvent):void {
+					GlobalsVO.setValueByName(GlobalsVO.APPLICATION_TITLE,'Vyper Menu Builder');
+					GlobalsVO.setValueByName(GlobalsVO.APPLICATION_VERSION,'1.0.0');
+					GlobalsVO.setValueByName(GlobalsVO.APPLICATION_COPYRIGHT,'(c).2010, All Rights Reserved');
+					this._title = GlobalsVO.getValueByName(GlobalsVO.APPLICATION_TITLE) + ' v' + GlobalsVO.getValueByName(GlobalsVO.APPLICATION_VERSION) + ' ' + GlobalsVO.getValueByName(GlobalsVO.APPLICATION_COPYRIGHT);
+					this.myMenu.addEventListener(MenuEvent.ITEM_CLICK, function (event:MenuEvent):void {
+						trace(this.className+'.createAndShowMenu().1 !');
+					});
+				}
+
+			]]>
+		</fx:Script>
+		
+		<fx:Declarations>
+			<fx:Array id="cmbDP">
+				<fx:String>Item 1</fx:String>
+				<fx:String>Item 2</fx:String>
+				<fx:String>Item 3</fx:String>
+			</fx:Array>
+		</fx:Declarations>
+		
+		<s:Panel title="{this._title}" width="100%" height="100%">
+			<s:layout>
+				<s:VerticalLayout/>
+			</s:layout>
+			<s:controlBarContent>
+				<mx:MenuBar id="myMenu" height="100%" 
+							dataProvider="{menuData}" 
+							labelField="label" 
+							showRoot="true"/>
+				<mx:HBox id="hbox_controlBarContent" paddingBottom="5" paddingTop="5">
+					<mx:ComboBox dataProvider="{cmbDP}"/>
+					<mx:Spacer width="100%"/>
+					<mx:TextInput id="myTI" text=""/>
+					<mx:Button id="srch1" 
+							   label="Search" 
+							   click="Alert.show('Searching');"/>
+				</mx:HBox>
+			</s:controlBarContent>        
+			
+			<s:Button label="Button"/>
+			<s:TextArea width="300" height="200"/>        
+		</s:Panel>    
+	</s:Application>

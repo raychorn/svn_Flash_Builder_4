@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" layout="absolute" width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import controls.Alert.AlertPopUp;
+			
+			import flash.filesystem.File;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			import spark.events.TextOperationEvent;
+			
+			import utils.FileHelper;
+			
+			[Bindable]
+			private var _dataProvider:String = '';
+			
+			[Bindable]
+			private var _fileName:String = '';
+			
+			private var _okay_to_save_file:Boolean = false;
+			
+			public function set dataProvider(dataProvider:String):void {
+				if (this._dataProvider != dataProvider) {
+					this._dataProvider = dataProvider;
+				}
+			}
+			
+			public function get dataProvider():String {
+				return this._dataProvider;
+			}
+
+			public function set fileName(fileName:String):void {
+				if (this._fileName != fileName) {
+					this._fileName = fileName;
+				}
+			}
+			
+			public function get fileName():String {
+				return this._fileName;
+			}
+			
+			public function set okay_to_save_file(okay_to_save_file:Boolean):void {
+				if (this._okay_to_save_file != okay_to_save_file) {
+					this._okay_to_save_file = okay_to_save_file;
+				}
+			}
+			
+			public function get okay_to_save_file():Boolean {
+				return this._okay_to_save_file;
+			}
+			
+			protected function editor_creationCompleteHandler(event:FlexEvent):void {
+				var ed:TextArea = TextArea(event.currentTarget);
+				ed.text = this._dataProvider;
+			}
+			
+			private function update_title(title:String):void {
+				this.title = title;
+			}
+			
+			private function handle_file_keep(fileName:String,newFileName:String):void {
+				// delete the original...
+				var aFile:File = new File(fileName);
+				var isOkay:Boolean = true;
+				aFile.addEventListener(IOErrorEvent.IO_ERROR, 
+					function (event:IOErrorEvent):void {
+						isOkay = false;
+					}
+				);
+				aFile.deleteFile();
+				var file:File = new File(fileName);
+				// rename the new file to the original name...
+				if (isOkay) {
+					aFile = new File(newFileName);
+					aFile.moveToAsync(file,false);
+					this.fileName = fileName;
+					this.callLater(this.update_title, [this.fileName + ' [Updated !]']);
+				} else {
+					var contents:String = FileHelper.readFile(file);
+					this.editor.text = contents;
+					this.callLater(this.update_title, [this.fileName]);
+					AlertPopUp.surpriseNoOkay('No changes were made to the original file... reloading the original file to proceed.','INFO');
+				}
+			}
+			
+			private function prompt_for_file_disposition(fileName:String,newFileName:String):void {
+				var _this:TextEditor = this;
+				AlertPopUp.surpriseConfirm('Do you want to keep and over-write the contents of "'+fileName+'" ?','Please Confirm ?!?',
+					function (event:CloseEvent):void{
+						if (event.detail == Alert.YES) {
+							this.callLater(_this.update_title, [newFileName+' --> '+fileName]);
+							_this.callLater(_this.handle_file_keep,[fileName,newFileName]);
+						}
+					}
+				);
+			}
+			
+			private function handle_file_save():void {
+				this.callLater(this.update_title, [this.fileName + ' [Saving...]']);
+				trace(this.className+'.handle_file_save().1 --> filename='+this.fileName);
+				var newName:String = this.fileName.replace('.bak','')+'.bak';
+				var status:String = FileHelper.writeFile(new File(newName),this.editor.text);
+				if (status is String) {
+					AlertPopUp.surpriseNoOkay('Could not save "'+newName+'" at this time due to '+((status is String) ? status : 'some kind of system error')+'.','WARNING');
+				} else {
+					this.callLater(this.update_title, [this.fileName + ' [Saved!]']);
+					this.callLater(this.prompt_for_file_disposition, [this.fileName,newName]);
+				}
+			}
+			
+			private function onChange_editor(event:TextOperationEvent):void {
+				var _this:TextEditor = this;
+				if (!this.okay_to_save_file) {
+					AlertPopUp.surpriseConfirm('Do you want to save and over-write the contents of "'+this.fileName+'" ?','Please Confirm ?!?',
+						function (event:CloseEvent):void{
+							_this.okay_to_save_file = (event.detail == Alert.YES);
+							_this.callLater(_this.handle_file_save);
+						}
+					);
+				} else {
+					this.callLater(this.handle_file_save);
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<s:TextArea x="0" y="0" id="editor" width="100%" height="100%" creationComplete="editor_creationCompleteHandler(event)" change="onChange_editor(event)"/>
+</mx:TitleWindow>

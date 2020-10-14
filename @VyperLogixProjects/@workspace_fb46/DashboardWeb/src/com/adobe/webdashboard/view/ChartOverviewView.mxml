@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group width="400"
+		 height="300"
+		 currentState="{presenter.currentState}"
+		 add="addHandler()"
+		 preinitialize="preinitializeHandler()"
+		 xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:components="com.adobe.dashboard.view.components.*">
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.dashboard.model.AppModel;
+			import com.adobe.dashboard.presenter.MainPresenter;
+
+			import mx.core.UIComponent;
+
+			import spark.filters.ColorMatrixFilter;
+
+			[Bindable]
+			private var presenter:MainPresenter;
+
+			[Bindable]
+			private var desaturateFilter:spark.filters.ColorMatrixFilter;
+
+			[Bindable]
+			private var saturateFilter:spark.filters.ColorMatrixFilter;
+
+			private const desaturateMatrix:Array=[0.309, 0.609, 0.082, 0, 0, 0.309, 0.609, 0.082, 0, 0, 0.309, 0.609, 0.082, 0, 0, 0, 0, 0, 1, 0];
+
+			private const saturateMatrix:Array=[2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0];
+
+			private var selectedChartOverview:UIComponent=null;
+
+
+
+			//
+			// Private Methods
+			//
+
+			private function disableAllOverviews():void
+			{
+				disableOverview(salesGoalsOverview);
+				disableOverview(salesPiplelineOverview);
+				disableOverview(averageRevenueOverview);
+			}
+
+			private function enableOverview(view:UIComponent):void
+			{
+				view.alpha=1;
+				view.filters=[];
+				selectedChartOverview=view;
+			}
+
+			private function disableOverview(view:UIComponent):void
+			{
+				view.alpha=0.5;
+				view.filters=[desaturateFilter];
+			}
+
+
+			//
+			// Event Handlers
+			//
+
+			protected function preinitializeHandler():void
+			{
+				presenter=AppModel.getInstance().mainPresenter;
+
+				desaturateFilter=new ColorMatrixFilter(desaturateMatrix);
+				saturateFilter=new ColorMatrixFilter(saturateMatrix);
+			}
+
+			protected function addHandler():void
+			{
+				disableAllOverviews();
+				enableOverview(salesGoalsOverview);
+
+				// load the data
+				salesGoalsOverview.loadData();
+				salesPiplelineOverview.loadData();
+				averageRevenueOverview.loadData();
+			}
+
+			protected function salesGoalsOverview_clickHandler(event:MouseEvent):void
+			{
+				presenter.goSalesGoals()
+			}
+
+			protected function addSaturate(event:Event):void
+			{
+				if (event.currentTarget != selectedChartOverview)
+				{
+					DisplayObject(event.currentTarget).filters=[saturateFilter];
+				}
+			}
+
+			protected function removeSaturate(event:Event):void
+			{
+				if (event.currentTarget == selectedChartOverview)
+				{
+					DisplayObject(event.currentTarget).filters=[];
+				}
+				else
+				{
+					DisplayObject(event.currentTarget).filters=[desaturateFilter];
+				}
+			}
+		]]>
+	</fx:Script>
+
+	<s:states>
+		<!-- MUST KEEP THIS STATES IN SYNC WITH StateEnum.as -->
+		<s:State id="salesGoalsState"
+				 name="salesGoalsState"
+				 enterState="enableOverview(salesGoalsOverview)"
+				 exitState="disableOverview(salesGoalsOverview)"/>
+		<s:State id="averageRevenuePerSaleState"
+				 name="averageRevenuePerSaleState"
+				 enterState="enableOverview(averageRevenueOverview)"
+				 exitState="disableOverview(averageRevenueOverview)"/>
+		<s:State id="salesPipelineState"
+				 name="salesPipelineState"
+				 enterState="enableOverview(salesPiplelineOverview)"
+				 exitState="disableOverview(salesPiplelineOverview)"/>
+		<s:State id="yearToDateSalesState"
+				 name="yearToDateSalesState"/>
+		<s:State id="topTenOpportunitiesState"
+				 name="topTenOpportunitiesState"/>
+	</s:states>
+
+	<!-- background -->
+	<s:Rect width="100%"
+			height="100%">
+		<s:fill>
+			<s:SolidColor color="0x1A1A1A"/>
+		</s:fill>
+	</s:Rect>
+
+	<s:HGroup width="100%"
+			  visible="false">
+		<s:Label text="Key Metrics"/>
+		<s:Rect width="100%"/>
+		<s:Button width="30"
+				  height="30"
+				  label="+"/>
+		<s:Button width="30"
+				  height="30"
+				  label="-"/>
+	</s:HGroup>
+
+	<s:Scroller left="0"
+				right="0"
+				top="0"
+				bottom="0">
+		<s:VGroup width="100%"
+				  gap="6">
+			<s:Spacer height="1"/>
+
+			<!-- Sales Goals Overview -->
+			<components:SalesGoalsOverview id="salesGoalsOverview"
+										   width="100%"
+										   height="250"
+										   paddingLeft="20"
+										   paddingRight="20"
+										   click="salesGoalsOverview_clickHandler(event)"
+										   rollOut="removeSaturate(event)"
+										   rollOver="addSaturate(event)"
+										   buttonMode="true"
+										   barHeight="49"/>
+
+			<!-- Sales Pipeline Overview -->
+			<components:SalesPipelineOverview id="salesPiplelineOverview"
+											  width="100%"
+											  height="140"
+											  paddingLeft="20"
+											  paddingRight="20"
+											  click="presenter.goSalesPipeline()"
+											  rollOut="removeSaturate(event)"
+											  rollOver="addSaturate(event)"
+											  buttonMode="true"
+											  barHeight="49"/>
+
+			<!-- Average Revenue per Sale Overview -->
+			<components:AverageRevenueOverview id="averageRevenueOverview"
+											   width="100%"
+											   height="140"
+											   paddingLeft="20"
+											   paddingRight="20"
+											   click="presenter.goAverageRevenuePerSale()"
+											   rollOut="removeSaturate(event)"
+											   rollOver="addSaturate(event)"
+											   buttonMode="true"
+											   barHeight="49"/>
+
+
+		</s:VGroup>
+	</s:Scroller>
+
+</s:Group>

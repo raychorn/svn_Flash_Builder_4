@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:views="views.*" 
+			   activate="key.setFocus()"
+			   currentState="list"
+			   applicationComplete="completeHandler(event)">
+	
+	<fx:Style source="styles.css"/>
+	
+	<fx:Script>
+		<![CDATA[
+			
+			import context.Context;
+			
+			import dao.EmployeeDAO;
+			
+			import events.EmployeeEvent;
+			
+			import model.Employee;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			
+			import util.SQLUtil;
+			
+			private var sqlConnection:SQLConnection;
+			
+			private var employeeDAO:EmployeeDAO;
+			
+			// Used to support Back button
+			private var history:Array = new Array();
+
+			[Bindable]
+			private var screenResolutionX:Number;
+			
+			[Bindable]
+			private var screenResolutionY:Number;
+			
+			protected function completeHandler(event:Event):void
+			{
+				// Setting Global Exception Handler
+				loaderInfo.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, uncaughtErrorHandler);
+
+				screenResolutionX = Capabilities.screenResolutionX;
+				screenResolutionY = Capabilities.screenResolutionY;
+				
+				openDatabase();
+				
+				Context.setAttribute("history", history);
+				
+				// Listening to the device Back button
+				stage.addEventListener(KeyboardEvent.KEY_DOWN, stage_keyDownHandler);
+				
+				addEventListener(EmployeeEvent.SELECT, employeeSelectedHandler);
+			}	
+			
+			private function uncaughtErrorHandler(event:UncaughtErrorEvent):void
+			{
+				currentState = "error";
+				errorView.message.text = event.error;
+			}			
+			
+			protected function openDatabase():void
+			{
+				var newDB:Boolean = false;
+				
+				var targetFile:File = File.applicationStorageDirectory.resolvePath("EmployeeDirectory.db");
+				if (!targetFile.exists)
+				{
+					newDB = true;
+				}
+				sqlConnection = new SQLConnection();
+				sqlConnection.open(targetFile);
+				Context.setAttribute("sqlConnection", sqlConnection);
+				if (newDB)
+				{
+					// Create the employee table and insert sample data 
+					var sqlUtil:SQLUtil = new SQLUtil();
+					sqlUtil.executeBatch(File.applicationDirectory.resolvePath("data" + File.separator + "sql.xml"), sqlConnection);
+				}
+				employeeDAO = new EmployeeDAO();
+			}
+			
+			protected function search():void
+			{
+				currentState = "list";
+				var _key:String = key.text;
+				// Remove speces (if any) at the end of the TextInput 
+				while (_key.charAt(_key.length-1)==" ")
+				{
+					_key = _key.substr(0, _key.length-1);
+				}
+				key.text = _key;
+				employeeList.employees = employeeDAO.findByName(_key);
+				
+			}
+			
+			protected function employeeSelectedHandler(event:EmployeeEvent):void
+			{
+				openEmployee(event.employee);
+			}
+			
+			protected function openEmployee(employee:Employee, state:String="default"):void
+			{
+				history.push({employee: employee, state: state});
+				employeeView.currentState = state;
+				employeeView.employee = employee;
+				currentState="details";
+			}
+			
+			protected function stage_keyDownHandler(event:KeyboardEvent):void
+			{
+				switch(event.keyCode)
+				{
+					case Keyboard.BACK: // Back button
+						if (currentState=="details")
+						{
+							event.stopImmediatePropagation();
+							event.preventDefault();
+							history.pop();
+							if (history.length>0)
+							{
+								var historyItem:Object = history.pop();
+								openEmployee(historyItem.employee, historyItem.state);
+							}
+							else
+							{
+								currentState = "list";
+							}
+						}
+						break;
+				}
+			}				
+			
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="list"/>
+		<s:State name="details"/>
+		<s:State name="error"/>
+	</s:states>
+
+	<s:transitions>
+		<s:Transition fromState="list" toState="details">
+			<s:Move target="{employeeList}" duration="300"
+					effectStart="employeeList.verticalScrollPolicy='off'" 
+					effectEnd="employeeList.verticalScrollPolicy='auto'"/>
+		</s:Transition>
+		<s:Transition fromState="details" toState="list">
+			<s:Move target="{employeeList}" duration="300" 
+					effectStart="employeeList.verticalScrollPolicy='off'" 
+					effectEnd="employeeList.verticalScrollPolicy='auto'"/>
+		</s:Transition>
+	</s:transitions>
+	
+	<s:controlBarContent>
+		<mx:TextInput id="key" width="100%" height="40" depth="1" enter="search()" creationComplete="key.setFocus()"/>
+		<mx:Button click="search()" height="40" width="70" icon="@Embed('assets/search.png')"/>
+	</s:controlBarContent>
+	
+	<s:controlBarLayout>
+		<!-- Negative gap to overlay the TextInput on top of the search button's left border -->
+		<s:HorizontalLayout verticalAlign="middle" gap="-4" paddingLeft="12" paddingRight="12" paddingTop="12" paddingBottom="12"/>
+	</s:controlBarLayout>
+	
+	<views:EmployeeView id="employeeView" left="0" right="0" top="0" bottom="0" visible.list="false"/>
+
+	<views:EmployeeList id="employeeList" x="0" x.details="{-screenResolutionX}" width="{screenResolutionX}" top="0" bottom="0"/>
+	
+	<views:ErrorView id="errorView" close="currentState='list'" left="0" right="0" top="0" bottom="0" visible="false" visible.error="true"/>
+	
+</s:Application>

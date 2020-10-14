@@ -1,0 +1,1238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" height="100%" 
+		 xmlns:widgets="com.widgets.*" 
+		 initialize="group1_initializeHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:NumberFormatter id="fmt_number" precision="2" rounding="up"/>
+		<s:RadioButtonGroup id="radiogroup1"/>
+		<mx:NumberFormatter id="fmt_geotag" precision="0" rounding="up"/>
+	</fx:Declarations>
+	<s:states>
+		<s:State name="shrink"/>
+		<s:State name="shrunk"/>
+		<s:State name="web"/>
+	</s:states>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace widgets "com.widgets.*";
+		
+		.CONTROL_PANEL_BUTTONS {
+			cornerRadius: 0;
+			chromeColor: #FFFFFF;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.ArrayCollectionUtils;
+			import com.DebuggerUtils;
+			import com.MathUtils;
+			import com.geolocation.GeolocationDistance;
+			import com.google.maps.LatLng;
+			import com.google.maps.LatLngBounds;
+			import com.google.maps.Map;
+			import com.google.maps.MapMouseEvent;
+			import com.google.maps.overlays.Marker;
+			import com.google.maps.overlays.Polygon;
+			import com.google.maps.overlays.PolygonOptions;
+			import com.google_maps.events.DataChangedEvent;
+			import com.widgets.events.StateChangeEvent;
+			
+			import controls.Alert.AlertAlternative;
+			
+			import mx.binding.utils.ChangeWatcher;
+			import mx.collections.ArrayCollection;
+			import mx.events.CloseEvent;
+			import mx.events.EffectEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			import mx.events.StateChangeEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.events.*;
+			
+			import views.HeatColorSamples;
+
+			public static const STATE_WEB:String = 'web';
+			public static const STATE_SHRUNK:String = 'shrunk';
+			public static const STATE_SHRINK:String = 'shrink';
+			public static const STATE_DEFAULT:String = '';
+			
+			public static const ACTION_GO_BUTTON:String = 'go_button';
+			public static const ACTION_RANDOM_BUTTON:String = 'random_button';
+			public static const ACTION_RANDOM_GPS_BUTTON:String = 'random_gps_button';
+
+			[Bindable]
+			[Embed(source="/assets/arrow-around.jpg",mimeType="image/jpeg")]
+			private var arrowAroundIconClass:Class;
+			
+			[Bindable]
+			public var _action_being_handled:String = ACTION_GO_BUTTON;
+			
+			[Bindable]
+			public var _global_bounds:LatLngBounds;
+			
+			[Bindable]
+			private var _global_bounds_options:Object = {ignore_mouse_events:true};
+			
+			[Bindable]
+			private var _global_bounds_markers:Object;
+			
+			private var _heat_color_samples_popup:HeatColorSamples;
+
+			private var _this:HeatMapControlPanel;
+			
+			public var default_heat_color:uint = 0xff0000;
+			
+			[Bindable]
+			public var preferred_zoomer:DropDownList;
+			
+			private var _is_user_zooming:Boolean = false;
+			
+			[Bindable]
+			public static var MAX_ZOOM_LEVEL_FOR_FINE_DETAIL:int = 5;
+			
+			[Bindable]
+			public static var NUM_SMALL_BOXES:int = 30;
+			
+			public static const label_heat_token:String = "{{this._data.length}}";
+			public static const label_heat_areas:String = "Heat: ("+label_heat_token+")";
+
+			[Bindable]
+			public var units:ArrayCollection = new ArrayCollection(GeolocationDistance.convertible_units);
+			
+			private var delayed_timer:Timer;
+
+			private var random_data_generator_timer:Timer = new Timer(1000);
+
+			private var canWatch_data:Boolean = false;
+			private var watcher_data:Function;
+			
+			private var canWatch_gps_history:Boolean = false;
+			
+			private var currently_visible_panel:int = 1;
+
+			private function explain_bounds(bounds:LatLngBounds):String {
+				var result:String = '';
+				result += '"'+this.fmt_number.format(bounds.getNorthWest().lat())+','+this.fmt_number.format(bounds.getNorthWest().lng())+'"';
+				result += ' to "'+this.fmt_number.format(bounds.getSouthEast().lat())+','+this.fmt_number.format(bounds.getSouthEast().lng())+'"';
+				return result;
+			}
+			
+			private function explain_distances_for(bounds:LatLngBounds):String {
+				var widths:Object = {};
+				var heights:Object = {};
+				var i:String;
+				var result:String = '';
+				for (i in GeolocationDistance.convertible_units) {
+					height = GeolocationDistance.distance(bounds.getNorthWest(),bounds.getSouthWest(),GeolocationDistance.convertible_units[i].label);
+					width = GeolocationDistance.distance(bounds.getNorthWest(),bounds.getNorthEast(),GeolocationDistance.convertible_units[i].label);
+					heights[GeolocationDistance.convertible_units[i].label] = height;
+					widths[GeolocationDistance.convertible_units[i].label] = width;
+				}
+				//result = 'Center is "'+this.fmt_number.format(bounds.getCenter().lat())+','+this.fmt_number.format(bounds.getCenter().lng())+'", Bounds is '+this.explain_bounds(bounds)+'';
+				result = 'Bounds is '+this.explain_bounds(bounds)+'';
+				for (i in GeolocationDistance.convertible_units) {
+					result += ', w[ '+GeolocationDistance.convertible_units[i].label+' ]='+fmt_number.format(widths[GeolocationDistance.convertible_units[i].label])+', h[ '+GeolocationDistance.convertible_units[i].label+' ]='+fmt_number.format(heights[GeolocationDistance.convertible_units[i].label]);
+				}
+				return result;
+			}
+			
+			public function callback(event:*,map:Map):void {
+				if (map is Map) {
+					var bounds:LatLngBounds = map.getLatLngBounds();
+					var distLeft:Number;
+					var distTop:Number;
+					var mapCenter:LatLng = map.getCenter();
+					if (this.lbl_map_area is Label) {
+						distLeft = GeolocationDistance.distance(bounds.getNorthWest(),bounds.getSouthWest(),GeolocationDistance.convertible_units[0].label);
+						distTop = GeolocationDistance.distance(bounds.getNorthWest(),bounds.getNorthEast(),GeolocationDistance.convertible_units[0].label);
+						this.lbl_map_area.text = 'Left (NW to SW): ' + distLeft.toString() + ' (feet), NW to NE: ' + distTop.toString() + ' (feet)';
+						this.lbl_map_area.text += ' Center: ' + mapCenter.toString();
+					}
+					if ( (this.lbl_global_bounds is Label) && (this.lbl_global_area is Label) ) {
+						var nwLat:Number = mapCenter.lat();
+						var seLat:Number = mapCenter.lat();
+						var nwLng:Number = mapCenter.lng();
+						var seLng:Number = mapCenter.lng();
+						var isSignLat:Boolean = nwLat <= seLat;
+						var isSignLng:Boolean = nwLng <= seLng;
+						var gNwLatLng:LatLng = new LatLng(Number(int((isSignLat) ? Math.floor(nwLat+1) : Math.ceil(nwLat))),Number(int((isSignLng) ? Math.ceil(nwLng-1) : Math.floor(nwLng))));
+						var gSeLatLng:LatLng = new LatLng(Number(int((isSignLat) ? Math.floor(seLat) : Math.ceil(seLat-1))),Number(int((isSignLng) ? Math.ceil(seLng) : Math.floor(seLng))));
+						var gSwLatLng:LatLng = new LatLng(gNwLatLng.lat(),gSeLatLng.lng());
+						var gNeLatLng:LatLng = new LatLng(gSeLatLng.lat(),gNwLatLng.lng());
+						var offset:Number;
+						var latSpread:Number = Math.max(Math.abs(gSwLatLng.lat()),Math.abs(gNeLatLng.lat())) - Math.min(Math.abs(gSwLatLng.lat()),Math.abs(gNeLatLng.lat()));
+						if (latSpread > 1) {
+							offset = latSpread-1;
+							gSwLatLng = new LatLng(Math.ceil(gSwLatLng.lat())-((gSwLatLng.lat() > 0) ? offset : offset),Math.ceil(gSwLatLng.lng()));
+							latSpread = Math.max(Math.abs(gSwLatLng.lat()),Math.abs(gNeLatLng.lat())) - Math.min(Math.abs(gSwLatLng.lat()),Math.abs(gNeLatLng.lat()));
+							DebuggerUtils.assert(latSpread <= 1,'Oops !');
+						}
+						var lngSpread:Number = Math.max(Math.abs(gSwLatLng.lng()),Math.abs(gNeLatLng.lng())) - Math.min(Math.abs(gSwLatLng.lng()),Math.abs(gNeLatLng.lng()));
+						if (lngSpread > 1) {
+							offset = lngSpread-1;
+							gSwLatLng = new LatLng(gSwLatLng.lat(),Math.ceil(gSwLatLng.lng())-((gSwLatLng.lng() > 0) ? offset : offset));
+							lngSpread = Math.max(Math.abs(gSwLatLng.lng()),Math.abs(gNeLatLng.lng())) - Math.min(Math.abs(gSwLatLng.lng()),Math.abs(gNeLatLng.lng()));
+							DebuggerUtils.assert(lngSpread <= 1,'Oops !');
+						}
+						this._global_bounds = new LatLngBounds(gNeLatLng,gSwLatLng);
+
+						if (this.lbl_map_bounds is Label) {
+							this.lbl_map_bounds.text = 'NW: ' + bounds.getNorthWest().toString() + ', SE: ' + bounds.getSouthEast().toString();
+							this.lbl_map_bounds.text += ' gNW: ' + this._global_bounds.getNorthWest().toString() + ', gSE: ' + this._global_bounds.getSouthEast().toString();
+						}
+						
+						this.lbl_global_bounds.text = 'NW: ' + this._global_bounds.getNorthWest().toString() + ', SE: ' + this._global_bounds.getSouthEast().toString();
+						this.lbl_global_area.text = 'Global: ' + this.explain_distances_for(this._global_bounds);
+						this.lbl_global_area.toolTip = this.lbl_global_area.text;
+					}
+					// determine the zoom level and update the global zoom...
+					if (!this._is_user_zooming) {
+						var cmbo_zoomer_selected:int = this.cmbo_zoomer.selectedIndex;
+						var cmbo_global_zoomer_selected:int = this.cmbo_global_zoomer.selectedIndex;
+						if ( (cmbo_zoomer_selected < 0) && (cmbo_global_zoomer_selected < 0) ) {
+							this._is_user_zooming = true;
+							this.cmbo_global_zoomer.selectedIndex = this.cmbo_global_zoomer.dataProvider.length-1;
+							this.synchronize_zoomer(this.cmbo_global_zoomer,this.cmbo_zoomer);
+							this._is_user_zooming = false;
+						}
+					}
+					this.width = this.parentDocument.width; // not sure why this is required however it is for now...
+				}
+			}
+			
+			protected function group1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				var fname:String = DebuggerUtils.getFunctionName(new Error());
+				var data:*;
+				this.watcher_data = function(event:DataChangedEvent):void {
+					data = event.data;
+					if (event.name == '_data') {
+						_this.cmbo_heat_areas.dataProvider = data as ArrayCollection;
+						_this.lbl_heat_areas.text = label_heat_areas.replace(label_heat_token,data.length);
+						_this.cmbo_heat_areas.enabled = data.length > 0;
+						//DebuggerUtils.tracer(fname+'.2 --> _data Changed ! ('+_this.lbl_heat_areas.text+')');
+					} else if (event.name == '_gps_history') {
+						_this.cmbo_gps_history.dataProvider = data as ArrayCollection;
+						_this.cmbo_gps_history.enabled = data.length > 0;
+						//DebuggerUtils.tracer(fname+'.2 --> _gps_history Changed ! ('+data.length+')');
+					}
+				};
+				this.parentDocument.removeEventListener(DataChangedEvent.DATA_CHANGED, this.watcher_data);
+				this.parentDocument.addEventListener(DataChangedEvent.DATA_CHANGED, this.watcher_data);
+			}
+			
+			private function get _data():ArrayCollection {
+				var fname:String = DebuggerUtils.getFunctionName(new Error());
+				var data:ArrayCollection;
+				try {
+					data = (_this is HeatMapControlPanel) ? _this.parentDocument['_data'] : null;
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+				if ( (!this.canWatch_data) && (_this is HeatMapControlPanel) && (_this.parentDocument['_data']) ) {
+					this.canWatch_data = ChangeWatcher.canWatch(_this.parentDocument,'_data');
+					//DebuggerUtils.tracer(fname+'.1 --> this.canWatch_data='+this.canWatch_data);
+				}
+				return data;
+			}
+
+			private function get _gps_history():ArrayCollection {
+				var fname:String = DebuggerUtils.getFunctionName(new Error());
+				var data:ArrayCollection;
+				try {
+					data = (_this is HeatMapControlPanel) ? _this.parentDocument['_gps_history'] : null;
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+				if ( (!this.canWatch_gps_history) && (_this is HeatMapControlPanel) && (_this.parentDocument['_gps_history']) ) {
+					this.canWatch_gps_history = ChangeWatcher.canWatch(_this.parentDocument,'_gps_history');
+					//DebuggerUtils.tracer(fname+'.1 --> this.canWatch_gps_history='+this.canWatch_gps_history);
+				}
+				return data;
+			}
+
+			private function get _valid_zoom_values():ArrayCollection {
+				var data:ArrayCollection;
+				try {
+					data = (_this is HeatMapControlPanel) ? _this.parentDocument['_valid_zoom_values'] : null;
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+				return data;
+			}
+			
+			private function get _valid_global_zoom_values():ArrayCollection {
+				var data:ArrayCollection = new ArrayCollection();
+				for (var i:int = 0; i <= 8; i++) {
+					data.addItem({label:i,value:i+4});
+				}
+				return data;
+			}
+			
+			public function get map_center_coords():LatLng {
+				var coords:LatLng;
+				try {
+					coords = (_this is HeatMapControlPanel) ? _this.parentDocument['map_center_coords'] : null;
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+				return coords;
+			}
+			
+			private function handle_center_map_event():void {
+				var map_center_coords:LatLng;
+				try {
+					var toks:Array = this.txt_center_map.text.replace('(','').replace(')','').split(',');
+					map_center_coords = new LatLng(Number(toks[0]),Number(toks[toks.length-1]));
+					this.parentDocument['map_center_on_LatLng'](map_center_coords);
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			protected function btn_center_map_clickHandler(event:MouseEvent):void {
+				this.handle_center_map_event();
+			}
+			
+			private function add_gps_marker(latLng:LatLng,label:String='1',tooltip:String='1',color:uint=0xff0000,alpha:Number=0.5,radius:int=12):Marker {
+				var aMarker:Marker;
+				var aFuncMarker:Function = this.parentDocument['add_marker'] as Function;
+				if (aFuncMarker is Function) {
+					aMarker = aFuncMarker(latLng,{label:label,tooltip:tooltip,'fillStyle.color':color,'fillStyle.alpha':alpha,radius:radius});
+				}
+				return aMarker;
+			}
+			
+			private function add_bounds_markers(bounds:LatLngBounds,tag:String='1'):Object {
+				var result:Object = {};
+				var aMarker:Marker;
+				aMarker = this.add_gps_marker(bounds.getNorthWest(),'NW'+tag,'NorthWest #'+tag+bounds.getNorthWest().toString(),0xff0000,0.5);
+				result['nw'] = aMarker;
+				aMarker = this.add_gps_marker(bounds.getNorthEast(),'NE'+tag,'NorthEast #'+tag+bounds.getNorthEast().toString(),0x00ff00,0.8);
+				result['ne'] = aMarker;
+				aMarker = this.add_gps_marker(bounds.getSouthWest(),'SW'+tag,'SouthWest #'+tag+bounds.getSouthWest().toString(),0x0000ff,0.5);
+				result['sw'] = aMarker;
+				aMarker = this.add_gps_marker(bounds.getSouthEast(),'SE'+tag,'SouthEast #'+tag+bounds.getSouthEast().toString(),0x00ffff,0.8);
+				result['se'] = aMarker;
+				return result;
+			}
+			
+			public function geotagprefix_from(bounds:LatLngBounds):String {
+				return ((bounds.getNorthWest().lat() >= 0) ? '+' : '')+this.fmt_geotag.format(bounds.getNorthWest().lat())+((bounds.getNorthWest().lng() >= 0) ? '+' : '')+this.fmt_geotag.format(bounds.getNorthWest().lng());
+			}
+			
+			private function add_overlays_for_small_boxes(bounds:LatLngBounds):void {
+				var aFuncPolygon:Function = this.parentDocument['add_polygon_from_bounds_overlay'] as Function;
+				var aFuncShowBusySpinner:Function = this.parentDocument['show_busy_spinner'] as Function;
+				var aFuncHideBusySpinner:Function = this.parentDocument['hide_busy_spinner'] as Function;
+				var aFuncIncrementHeatMapCensus:Function = this.parentDocument['increment_heat_map_census_for'] as Function;
+				var aFuncHandlePolygonRollOver:Function = this.parentDocument['handle_polygon_roll_over'] as Function;
+				if (aFuncPolygon is Function) {
+					var num_boxes:int = NUM_SMALL_BOXES;
+					var LatOffset:Number = GeolocationDistance.distance(bounds.getNorthWest(),bounds.getNorthEast(),GeolocationDistance.convertible_units[0].label);
+					var LngOffset:Number = GeolocationDistance.distance(bounds.getNorthWest(),bounds.getSouthWest(),GeolocationDistance.convertible_units[0].label);
+
+					var small_LngOffset:Number = LngOffset/num_boxes;
+					var small_LatOffset:Number = LatOffset/num_boxes;
+					
+					var delta_small_LngOffset:Number = GeolocationDistance.delta_from_units_lat(small_LngOffset,GeolocationDistance.convertible_units[0].label);
+					var delta_small_LatOffset:Number = GeolocationDistance.delta_from_units_lng(small_LatOffset,GeolocationDistance.convertible_units[0].label);
+
+					var data_item:Object;
+
+					delta_small_LngOffset = ((bounds.getNorthWest().lat() > 0) ? delta_small_LngOffset : -delta_small_LngOffset);
+					delta_small_LatOffset = ((bounds.getNorthWest().lng() > 0) ? delta_small_LatOffset : -delta_small_LatOffset);
+					
+					//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.1 --> bounds='+bounds);
+
+					var neLatLng:LatLng = new LatLng(bounds.getNorthWest().lat(),bounds.getNorthWest().lng()+delta_small_LngOffset);
+					var swLatLng:LatLng = new LatLng(bounds.getNorthWest().lat()+delta_small_LatOffset,bounds.getNorthWest().lng());
+
+					//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.2 --> neLatLng='+neLatLng+', swLatLng='+swLatLng);
+					
+					var aBounds:LatLngBounds;
+
+					if (aFuncShowBusySpinner is Function) {
+						aFuncShowBusySpinner();
+					}
+					var geoTagPrefix:String = this.geotagprefix_from(bounds);
+					var funcName:String = DebuggerUtils.getFunctionName(new Error());
+					var timer:Timer = new Timer(250);
+					timer.addEventListener(TimerEvent.TIMER, 
+						function (event:TimerEvent):void {
+							timer.stop();
+							var _neLatLng:LatLng;
+							var _swLatLng:LatLng;
+							for (var j:int = 0; j < num_boxes; j++) {
+								_neLatLng = neLatLng.clone();
+								_swLatLng = swLatLng.clone();
+								for (var i:int = 0; i < num_boxes; i++) {
+									aBounds = new LatLngBounds(neLatLng,swLatLng);
+									aFuncPolygon({ignore_mouse_events:true,label:geoTagPrefix+','+j+','+i+','+num_boxes,
+										onClick:function (event:MapMouseEvent,_data_:Object):void {
+											var poly:Polygon = event.currentTarget as Polygon;
+											if (poly is Polygon) {
+												var latLngBounds:LatLngBounds = poly.getLatLngBounds();
+												var centerLatLng:LatLng = latLngBounds.getCenter();
+												var label:String = _data_['label'] as String;
+												var opts:PolygonOptions = poly.getOptions();
+												if (aFuncIncrementHeatMapCensus is Function) {
+													aFuncIncrementHeatMapCensus(label,poly,opts);
+												}
+												//DebuggerUtils.tracer(funcName+'.onClick.1 (+++) --> ('+label+') --> centerLatLng='+centerLatLng+', latLngBounds='+latLngBounds);
+											}
+										},
+										onMouseOver:function (event:MapMouseEvent,_data_:Object):void {
+											var poly:Polygon = event.currentTarget as Polygon;
+											if (poly is Polygon) {
+												var latLngBounds:LatLngBounds = poly.getLatLngBounds();
+												var centerLatLng:LatLng = latLngBounds.getCenter();
+												var label:String = _data_['label'] as String;
+												var opts:PolygonOptions = poly.getOptions();
+												if (aFuncHandlePolygonRollOver is Function) {
+													aFuncHandlePolygonRollOver(centerLatLng,label,poly,opts);
+												}
+												//DebuggerUtils.tracer(funcName+'.onMouseOver.1 (+++) --> ('+label+') --> centerLatLng='+centerLatLng+', latLngBounds='+latLngBounds);
+											}
+										}
+									},aBounds,0.2,0x00ff00,{'strokestyle.color':0x000000,'strokestyle.alpha':0.8});
+									neLatLng = new LatLng(neLatLng.lat(),neLatLng.lng()+delta_small_LngOffset);
+									swLatLng = new LatLng(swLatLng.lat(),swLatLng.lng()+delta_small_LngOffset);
+								}
+								neLatLng = new LatLng(neLatLng.lat()+delta_small_LatOffset,_neLatLng.lng());
+								swLatLng = new LatLng(swLatLng.lat()+delta_small_LatOffset,_swLatLng.lng());
+							}
+							if (aFuncHideBusySpinner is Function) {
+								aFuncHideBusySpinner();
+							}
+						}
+					);
+					timer.start();
+				}
+			}
+			
+			private function show_or_hide_boundary_markers_in(markers:Object,is_showing:Boolean=false):void {
+				if (markers) {
+					var aMarker:Marker;
+					for (var i:String in markers) {
+						aMarker = markers[i] as Marker;
+						if (aMarker is Marker) {
+							if (is_showing) {
+								aMarker.show();
+							} else {
+								aMarker.hide();
+							}
+						}
+					}
+				}
+			}
+			
+			private function handle_draw_global_bounds_event():void {
+				var aFuncPolygon:Function = this.parentDocument['add_polygon_from_bounds_overlay'] as Function;
+				if (aFuncPolygon is Function) {
+					var numGlobalBoxes:int = 1;
+					var _bounds:LatLngBounds = new LatLngBounds(this._global_bounds.getNorthEast(),this._global_bounds.getSouthWest());
+					for (var latOffset:int = 0; latOffset < numGlobalBoxes; latOffset++) {
+						for (var lngOffset:int = 0; lngOffset < numGlobalBoxes; lngOffset++) {
+							var is_showing_global_bounds:Boolean = this.cb_show_global_markers.selected;
+							//this.cb_show_global_markers.enabled = false;
+							_bounds = new LatLngBounds(new LatLng(_bounds.getNorthEast().lat()+latOffset,_bounds.getNorthEast().lng()+lngOffset),new LatLng(_bounds.getSouthWest().lat()+latOffset,_bounds.getSouthWest().lng()+lngOffset));
+							//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.1 --> _bounds='+_bounds);
+							aFuncPolygon(this._global_bounds_options,_bounds,0.1,0xff0000);
+							if (!is_showing_global_bounds) {
+								var poly:Polygon = this._global_bounds_options.Polygon.aPolygon as Polygon;
+								if (poly is Polygon) {
+									poly.hide();
+								}
+							}
+							var aZoomLevel:Object = this.preferred_zoomer.selectedItem;
+							if (aZoomLevel.value <= MAX_ZOOM_LEVEL_FOR_FINE_DETAIL) {
+								// draw the fine details based on the Zoom Level...
+								// ignore this for now... probably not required...
+							}
+							//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.2 --> _bounds='+_bounds);
+							var LngOffset:Number = GeolocationDistance.hemispherical_offset_for_lat_or_lng(_bounds.getNorthEast().lng(),1,false);
+							var LatOffset:Number = GeolocationDistance.hemispherical_offset_for_lat_or_lng(_bounds.getNorthEast().lat(),1,false);
+							this.add_overlays_for_small_boxes(new LatLngBounds(new LatLng(_bounds.getNorthEast().lat()+LatOffset,_bounds.getNorthEast().lng()+LngOffset),new LatLng(_bounds.getSouthWest().lat()+LatOffset,_bounds.getSouthWest().lng()+LngOffset)));
+							//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.3 --> _bounds='+_bounds);
+							this._global_bounds_markers = this.add_bounds_markers(_bounds,'1');
+							this.show_or_hide_boundary_markers_in(this._global_bounds_markers,is_showing_global_bounds);
+						}
+					}
+				} else {
+					AlertAlternative.error(DebuggerUtils.getFunctionName(new Error())+'.1 --> MISSING add_polygon_overlay() !!!');
+				}
+			}
+			
+			protected function btn_draw_global_bounds_clickHandler(event:MouseEvent):void {
+				this.handle_draw_global_bounds_event();
+			}
+			
+			private function get heat_map_census_total():Number {
+				var aFuncGetHeatMapCensusTotal:Function = this.parentDocument['get_heat_map_census_total'] as Function;
+				var total:Number = -1;
+				if (aFuncGetHeatMapCensusTotal is Function) {
+					total = aFuncGetHeatMapCensusTotal();
+				}
+				return total;
+			}
+
+			private function handle_random_data_generator_timer_events(event:TimerEvent):void {
+				var geoTagPrefix:String;
+				var parsedGeoTag:Object;
+				var aFuncIncrementHeatMapCensus:Function = this.parentDocument['increment_heat_map_census_for'] as Function;
+				var aFuncParseGeotag:Function = this.parentDocument['parse_geotag'] as Function;
+				geoTagPrefix = this.geotagprefix_from(this._global_bounds);
+				if (aFuncParseGeotag is Function) {
+					parsedGeoTag = aFuncParseGeotag(geoTagPrefix+',0,0,'+NUM_SMALL_BOXES);
+					if ( (parsedGeoTag) && (parsedGeoTag.latLng is LatLng) ) {
+						var latLng:LatLng = parsedGeoTag.latLng;
+						var latLng2:LatLng = new LatLng(latLng.lat()+GeolocationDistance.hemispherical_offset_for_lat_or_lng(latLng.lat(),1,false),latLng.lng()+GeolocationDistance.hemispherical_offset_for_lat_or_lng(latLng.lng(),1,false));
+						var latOffset:Number = MathUtils.randRange(0,100000)/100000;
+						var lngOffset:Number = MathUtils.randRange(0,100000)/100000;
+						var latLngTarget:LatLng = new LatLng(latLng.lat()+GeolocationDistance.hemispherical_offset_for_lat_or_lng(latLng.lat(),latOffset,true),latLng.lng()+GeolocationDistance.hemispherical_offset_for_lat_or_lng(latLng.lng(),lngOffset,true));
+						var topLatLng:LatLng = new LatLng(latLng.lat()+latOffset,latLng.lng());
+						var leftLatLng:LatLng = new LatLng(latLng.lat(),latLng.lng()+lngOffset);
+						var topDist:Number = GeolocationDistance.distance(latLng,topLatLng,GeolocationDistance.convertible_units[0].label);
+						var leftDist:Number = GeolocationDistance.distance(latLng,leftLatLng,GeolocationDistance.convertible_units[0].label);
+						var refTopDist:Number = GeolocationDistance.distance(latLng,new LatLng(latLng2.lat(),latLng.lng()),GeolocationDistance.convertible_units[0].label);
+						var refLeftDist:Number = GeolocationDistance.distance(latLng,new LatLng(latLng.lat(),latLng2.lng()),GeolocationDistance.convertible_units[0].label);
+						var x:int = topDist / (refTopDist/NUM_SMALL_BOXES);
+						var y:int = leftDist / (refLeftDist/NUM_SMALL_BOXES);
+						var geotag:String = geoTagPrefix+','+x+','+y+','+NUM_SMALL_BOXES;
+						var info_string:String = ' latLng='+latLng.toString()+', latOffset='+latOffset+', lngOffset='+lngOffset+', geotag='+geotag+', latLngTarget='+latLngTarget.toString();
+						var is_marking:Boolean = this.cb_random_data_markers.selected;
+						if (is_marking) {
+							this.add_gps_marker(latLngTarget,'!',info_string,0xE0FFFF,0.6);
+						}
+						if (aFuncIncrementHeatMapCensus is Function) {
+							aFuncIncrementHeatMapCensus(geotag);
+						}
+						this.lbl_heat_map_census_total.text = 'Total: ('+this.heat_map_census_total+')';
+					} else {
+						this.random_data_generator_timer.stop();
+						this.cb_random_data_generator_running.selected = false;
+						AlertAlternative.error('<p>WARNING: #1</p><p>Cannot process the random data in the background just now... Aomething is wrong with the API...</p>');
+					}
+				} else {
+					this.random_data_generator_timer.stop();
+					this.cb_random_data_generator_running.selected = false;
+					AlertAlternative.error('<p>WARNING: #2</p><p>Cannot process the random data in the background just now... Aomething is wrong with the API...</p>');
+				}
+			}
+
+			protected function cb_generate_random_data_onChange(event:Event):void {
+				var cb:CheckBox = event.currentTarget as CheckBox;
+				var checked:Boolean = cb.selected;
+				if ( (checked) && (this._global_bounds is LatLngBounds) ) {
+					this.handle_draw_global_bounds_event();
+					this.random_data_generator_timer.removeEventListener(TimerEvent.TIMER, this.handle_random_data_generator_timer_events);
+					this.random_data_generator_timer.addEventListener(TimerEvent.TIMER, this.handle_random_data_generator_timer_events);
+					this.cb_random_data_generator_running.selected = true;
+					this.random_data_generator_timer.start();
+					return;
+				} else if (this.random_data_generator_timer.running) {
+					this.random_data_generator_timer.stop();
+					this.cb_random_data_generator_running.selected = false;
+					return;
+				}
+				AlertAlternative.show('<p>Not Implemented !</p><p>'+DebuggerUtils.getFunctionName(new Error())+'</p>');
+			}
+			
+			protected function cb_show_global_markers_change(event:Event):void {
+				var cb:CheckBox = event.currentTarget as CheckBox;
+				var checked:Boolean = cb.selected;
+				var poly:Polygon = this._global_bounds_options.Polygon.aPolygon as Polygon;
+				if (checked) {
+					if (poly is Polygon) {
+						poly.show();
+					}
+				} else {
+					if (poly is Polygon) {
+						poly.hide();
+					}
+				}
+				this.show_or_hide_boundary_markers_in(this._global_bounds_markers,checked);
+			}
+			
+			protected function cb_random_data_generator_running_onChange(event:Event):void {
+				var cb:CheckBox = event.currentTarget as CheckBox;
+				var checked:Boolean = cb.selected;
+				if ( (!checked) && (this.random_data_generator_timer.running) ) {
+					this.random_data_generator_timer.stop();
+				}
+				if ( (checked) && (!this.random_data_generator_timer.running) ) {
+					this.random_data_generator_timer.start();
+				}
+			}
+			
+			protected function slider_random_data_generator_creationCompleteHandler(event:FlexEvent):void {
+				var target:HSlider = event.currentTarget as HSlider;
+			}
+			
+			protected function slider_random_data_generator_change(event:*):void {
+				var target:HSlider = event.currentTarget as HSlider;
+				//this.random_data_generator_timer.delay = target.value;
+			}
+			
+			private function handle_clear_overlays_event():void {
+				try {
+					this.parentDocument['handle_clear_overlays_event']();
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+
+			protected function btn_clear_overlays_clickHandler(event:MouseEvent):void {
+				this.handle_clear_overlays_event()
+			}
+			
+			private function handle_heat_color_samples_event():void {
+				try {
+					if (this._heat_color_samples_popup == null) {
+						this._heat_color_samples_popup = PopUpManager.createPopUp(this,HeatColorSamples,true) as HeatColorSamples;
+						this._heat_color_samples_popup.addEventListener(CloseEvent.CLOSE, 
+							function (event:CloseEvent):void {
+								PopUpManager.removePopUp(_this._heat_color_samples_popup);
+								_this._heat_color_samples_popup = null;
+							}
+						);
+						this._heat_color_samples_popup.title = 'Heat Color Samples';
+						this._heat_color_samples_popup.width = 700;
+						this._heat_color_samples_popup.height = 500;
+						this._heat_color_samples_popup.alphas = this.parentDocument['_heat_color_alphas'];
+						PopUpManager.centerPopUp(this._heat_color_samples_popup);
+					}
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			protected function btn_heat_color_samples_clickHandler(event:MouseEvent):void {
+				this.handle_heat_color_samples_event();
+			}
+			
+			
+			private function handle_randomData_event():void {
+				this._action_being_handled = ACTION_RANDOM_BUTTON;
+				try {
+					this.parentDocument['handle_submit_event']();
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			protected function btn_random_data_clickHandler(event:MouseEvent):void {
+				this.handle_randomData_event();
+			}
+			
+			
+			private function handle_random_gps_Data_event():void {
+				this._action_being_handled = ACTION_RANDOM_GPS_BUTTON;
+				try {
+					this.parentDocument['handle_submit_event']();
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			protected function btn_random_gps_clickHandler(event:MouseEvent):void {
+				this.handle_random_gps_Data_event();
+			}
+			
+			
+			private function handle_shrink_event():void {
+				this.currentState = (this.currentState != HeatMapControlPanel.STATE_SHRUNK) ? HeatMapControlPanel.STATE_SHRUNK : HeatMapControlPanel.STATE_SHRINK;
+			}
+			
+			protected function btn_shrink_clickHandler(event:MouseEvent):void {
+				this.handle_shrink_event();
+			}
+			
+			
+			private function handle_submit_event():void {
+				this._action_being_handled = ACTION_GO_BUTTON;
+				try {
+					this.parentDocument['handle_submit_event']();
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			protected function btn_submit_clickHandler(event:MouseEvent):void {
+				this.handle_submit_event();
+			}
+			
+			private function handle_drawing_marker_change_event():void {
+				try {
+					this.parentDocument['handle_drawing_marker_change_event']();
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			protected function cb_drawing_marker_changeHandler(event:Event):void {
+				this.handle_drawing_marker_change_event();
+			}
+			
+			protected function cb_drawing_polygon_changeHandler(event:Event):void {
+				this.handle_drawing_marker_change_event();
+			}
+			
+			protected function cmbo_gps_history_changeHandler(event:IndexChangeEvent):void {
+				try {
+					var cmbo:DropDownList = event.currentTarget as DropDownList;
+					if (cmbo) {
+						var data:Object = cmbo.selectedItem;
+						this.parentDocument['ignore_gps_history'] = true;
+						var latLng:LatLng = data[cmbo.labelField];
+						if (latLng) {
+							this.parentDocument['map_center_on_LatLng'](latLng);
+						}
+					}
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			protected function cmbo_heat_areas_changeHandler(event:IndexChangeEvent):void {
+				try {
+					var cmbo:DropDownList = event.currentTarget as DropDownList;
+					if (cmbo) {
+						var data:Object = cmbo.selectedItem;
+						var latLng:LatLng = data[cmbo.labelField];
+						if (latLng) {
+							this.parentDocument['map_center_on_LatLng'](latLng);
+						}
+					}
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			protected function cmbo_num_segments_changeHandler(event:IndexChangeEvent):void {
+				this.handle_clear_overlays_event();
+				try {
+					this.parentDocument['refresh_data']();
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			protected function cmbo_zoomer_changeHandler(event:IndexChangeEvent):void {
+				try {
+					if (!this._is_user_zooming) {
+						var cmbo:DropDownList = event.currentTarget as DropDownList;
+						this.parentDocument['map_zoom'](this.parentDocument['_valid_zoom_values'].getItemAt(event.newIndex)['value']);
+						this._is_user_zooming = true;
+						this.synchronize_zoomer(cmbo,this.cmbo_global_zoomer);
+						this._is_user_zooming = false;
+					}
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			private function synchronize_zoomer(source:DropDownList,target:DropDownList):void {
+				var zoomLevel:Object = source.selectedItem;
+				if ( (zoomLevel) && (zoomLevel['value'] is int) ) {
+					var i:int = ArrayCollectionUtils.findIndexOfItem(target.dataProvider,'value',zoomLevel['value']);
+					if (i > -1) {
+						target.selectedIndex = i;
+					}
+				}
+			}
+			
+			protected function cmbo_global_zoomer_changeHandler(event:IndexChangeEvent):void {
+				try {
+					if (!this._is_user_zooming) {
+						var cmbo:DropDownList = event.currentTarget as DropDownList;
+						var item:Object = cmbo.dataProvider.getItemAt(event.newIndex);
+						if (item['value']) {
+							this.parentDocument['map_zoom'](item['value']);
+							this._is_user_zooming = true;
+							this.synchronize_zoomer(cmbo,this.cmbo_zoomer);
+							this._is_user_zooming = false;
+						}
+					}
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			protected function cmbo_global_zoomer_creationCompleteHandler(event:FlexEvent):void {
+				this.preferred_zoomer = event.currentTarget as DropDownList;
+			}
+			
+			protected function colors_creationCompleteHandler(event:FlexEvent):void {
+				var colors:ColorPicker = event.currentTarget as ColorPicker;
+				if (colors is ColorPicker) {
+					colors.selectedColor = this.default_heat_color;
+				}
+			}
+			
+			protected function drop_down_grid_creationCompleteHandler(event:FlexEvent):void {
+				var dd:DropDownGrid = event.currentTarget as DropDownGrid;
+				dd.addEventListener(mx.events.StateChangeEvent.CURRENT_STATE_CHANGE, 
+					function (event:mx.events.StateChangeEvent):void {
+						//DebuggerUtils.tracer('StateChangeEvent.CURRENT_STATE_CHANGE.1 --> event='+event.toString());
+					}
+				);
+				var btn_handler:Function = function (event:*):void {
+					try {
+						_this.drop_down_grid.dataProvider = _this.parentDocument['_data'];
+					} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+				};
+				dd.btn.addEventListener(MouseEvent.CLICK, btn_handler);
+			}
+			
+			protected function lst_height_units_changeHandler(event:IndexChangeEvent):void {
+				try {
+					this.parentDocument['_height_units'] = this.lst_height_units.selectedItem;
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			protected function lst_height_units_creationCompleteHandler(event:FlexEvent):void {
+				try {
+					var i:int = ArrayCollectionUtils.findIndexOfItem(this.parentDocument['units'],'label',this.parentDocument['_height_units']);
+					this.lst_height_units.selectedIndex = ((i > 0) ? i : 0);
+					var height:Number = Number(this.txt_height.text);
+					if (height == 0) {
+						height = GeolocationDistance.delta_from_units_lng(1,this.parentDocument['_height_units']);
+					}
+					this.txt_height.text = this.fmt_number.format(height);
+					this.parentDocument['_height_of_cell'] = height;
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			protected function lst_width_units_changeHandler(event:IndexChangeEvent):void {
+				try {
+					this.parentDocument['_width_units'] = this.lst_width_units.selectedItem;
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			protected function lst_width_units_creationCompleteHandler(event:FlexEvent):void {
+				try {
+					var i:int = ArrayCollectionUtils.findIndexOfItem(this.parentDocument['units'],'label',this.parentDocument['_width_units']);
+					this.lst_width_units.selectedIndex = ((i > 0) ? i : 0);
+					var width:Number = Number(this.txt_width.text);
+					if (width == 0) {
+						width = GeolocationDistance.delta_from_units_lat(1,this.parentDocument['_width_units']);
+					}
+					this.txt_width.text = this.fmt_number.format(width);
+					this.parentDocument['_width_of_cell'] = width;
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			protected function slider_distance_creationCompleteHandler(event:FlexEvent):void {
+				var target:HSlider = event.currentTarget as HSlider;
+			}
+			
+			protected function slider_population_creationCompleteHandler(event:FlexEvent):void {
+				var target:HSlider = event.currentTarget as HSlider;
+			}
+
+			protected function txt_cell_height_changeHandler(event:TextOperationEvent):void {
+				var min:Number = GeolocationDistance.min_delta_lng;
+				var value:Number = Number(this.txt_cell_height.text);
+				if (value < min) {
+					this.txt_cell_height.errorString = 'WARNING: Cannot use a value that is less than '+min+'.';
+				} else {
+					this.txt_cell_height.errorString = '';
+				}
+			}
+			
+			protected function txt_cell_width_changeHandler(event:TextOperationEvent):void {
+				var min:Number = GeolocationDistance.min_delta_lat;
+				var value:Number = Number(this.txt_cell_width.text);
+				if (value < min) {
+					this.txt_cell_width.errorString = 'WARNING: Cannot use a value that is less than '+min+'.';
+				} else {
+					this.txt_cell_width.errorString = '';
+				}
+			}
+			
+			protected function txt_height_changeHandler(event:TextOperationEvent):void {
+				try {
+					this.parentDocument['_width_units'] = this.lst_width_units.selectedItem;
+					var height:Number = this.parentDocument['_height_of_cell'];
+					height = Number(this.txt_height.text);
+					this.parentDocument['_height_of_cell'] = height;
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			protected function txt_width_changeHandler(event:TextOperationEvent):void {
+				try {
+					var width:Number = this.parentDocument['_width_of_cell'];
+					width = Number(this.txt_width.text);
+					this.parentDocument['_width_of_cell'] = width;
+				} catch (err:Error) {AlertAlternative.error('WARNING:\n\n'+err.toString()+'\n\n'+err.getStackTrace().substr(0,512))}
+			}
+			
+			import com.adobe.ac.mxeffects.Flip;
+			import com.adobe.ac.mxeffects.DistortionConstants;
+			
+			private function flipToPanel2(callback:Function):void {
+				var e:Flip = new Flip(this.panel1);
+				e.siblings = [ this.panel2 ];
+				e.direction = DistortionConstants.RIGHT;
+				e.horizontalLightingLocation = DistortionConstants.LEFT;
+				e.duration = 750;
+				e.play();
+				e.addEventListener(EffectEvent.EFFECT_END, 
+					function (event:EffectEvent):void {
+						if (callback is Function) {
+							callback();
+						}
+					}
+				);
+			}
+			
+			private function flipToPanel1(callback:Function):void {
+				var e : Flip = new Flip( this.panel2 );
+				e.siblings = [ this.panel1 ];
+				e.direction = DistortionConstants.LEFT;
+				e.horizontalLightingLocation = DistortionConstants.RIGHT;			
+				e.duration = 750;
+				e.play();
+				e.addEventListener(EffectEvent.EFFECT_END, 
+					function (event:EffectEvent):void {
+						if (callback is Function) {
+							callback();
+						}
+					}
+				);
+			}
+			
+			private function delayed_function_call(callback:Function,args:Array,delay_ms:Number=1000):void {
+				this.delayed_timer = new Timer(delay_ms);
+				this.delayed_timer.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						if (callback is Function) {
+							_this.delayed_timer.stop();
+							_this.callLater(callback,args);
+						}
+					}
+				);
+				this.delayed_timer.start();
+			}
+
+			private function handle_shrink_with_notification(_old:int,_new:int):void {
+				//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.1 --> !');
+				handle_shrink_event();
+				this.parentDocument.dispatchEvent(new com.widgets.events.StateChangeEvent(com.widgets.events.StateChangeEvent.CHANGE,_old,_new));
+			}
+			
+			private function handle_reshrink(num:int,_old:int,_new:int):void {
+				//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.1 --> currentState='+this.currentState);
+				//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.2 --> num='+num);
+				handle_shrink_with_notification(_old,_new);
+				//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.3 --> currentState='+this.currentState);
+				//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.4 --> container_address_bar.height='+this.container_address_bar.height+', container_address_bar.percentHeight='+this.container_address_bar.percentHeight);
+				//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.5--> this.panel1.height='+this.panel1.height+', this.panel1.percentHeight='+this.panel1.percentHeight);
+				if (num == 1) {
+					//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.6--> this.panel1.height='+this.panel1.height+', this.panel1.percentHeight='+this.panel1.percentHeight);
+				} else if (num == 2) {
+					//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.7--> this.panel1.height='+this.panel1.height+', this.panel1.percentHeight='+this.panel1.percentHeight);
+				}
+				this.delayed_function_call(handle_shrink_with_notification,[_old,_new],250);
+			}
+			
+			private function _handle_flip_to_panel1_event(issue_reshrink:Boolean=false):void {
+				var fname:String = DebuggerUtils.getFunctionName(new Error());
+				//DebuggerUtils.tracer(fname+'.1 BEGIN !');
+				var _old:int = this.viewStack.selectedIndex;
+				this.flipToPanel1(function ():void {
+					//DebuggerUtils.tracer(fname+'.2 DONE !');
+					var _new:int = _this.viewStack.selectedIndex;
+					if (issue_reshrink) {
+						_this.delayed_function_call(handle_reshrink,[1,_old,_new]);
+					}
+					_this.currently_visible_panel = 1;
+					_this.refresh_viewStack_controls();
+				});
+			}
+			
+			private function _handle_flip_to_panel2_event(issue_reshrink:Boolean=false):void {
+				var fname:String = DebuggerUtils.getFunctionName(new Error());
+				//DebuggerUtils.tracer(fname+'.1 BEGIN !');
+				var _old:int = this.viewStack.selectedIndex;
+				this.flipToPanel2(function ():void {
+					//DebuggerUtils.tracer(fname+'.2 DONE !');
+					var _new:int = _this.viewStack.selectedIndex;
+					if (issue_reshrink) {
+						_this.delayed_function_call(handle_reshrink,[2,_old,_new]);
+					}
+					_this.currently_visible_panel = 2;
+					_this.refresh_viewStack_controls();
+				});
+			}
+			
+			private function handle_container_address_bar_resize1(event:ResizeEvent):void {
+				//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.1 --> !');
+				//this.delayed_function_call(_handle_flip_to_panel1_event,[]);
+				//this.callLater(_handle_flip_to_panel1_event,[]);
+			}
+			
+			private function handle_flip_to_panel1_event():void {
+				//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.1 --> !');
+				//this.container_address_bar.height = 200.0;
+				this.container_address_bar.removeEventListener(ResizeEvent.RESIZE, handle_container_address_bar_resize1);
+				this.container_address_bar.addEventListener(ResizeEvent.RESIZE, handle_container_address_bar_resize1);
+				this.delayed_function_call(_handle_flip_to_panel1_event,[],10);
+			}
+			
+			private function handle_container_address_bar_resize2(event:ResizeEvent):void {
+				//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.1 --> !');
+				//this.delayed_function_call(_handle_flip_to_panel2_event,[]);
+				//this.callLater(_handle_flip_to_panel2_event,[]);
+			}
+			
+			private function handle_flip_to_panel2_event():void {
+				//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.1 --> !');
+				//this.container_address_bar.height = 200.0;
+				this.container_address_bar.removeEventListener(ResizeEvent.RESIZE, handle_container_address_bar_resize2);
+				this.container_address_bar.addEventListener(ResizeEvent.RESIZE, handle_container_address_bar_resize2);
+				this.delayed_function_call(_handle_flip_to_panel2_event,[],10);
+			}
+			
+			protected function btn_flip_to_panel1_clickHandler(event:MouseEvent):void {
+				this.handle_flip_to_panel1_event();
+			}
+			
+			protected function btn_flip_to_panel2_clickHandler(event:MouseEvent):void {
+				this.handle_flip_to_panel2_event();
+			}
+			
+			protected function refresh_viewStack_controls():void {
+				this.btn_flip_to_panel1.enabled = this.currently_visible_panel == 2;
+				//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.1 --> this.btn_flip_to_panel1.enabled='+this.btn_flip_to_panel1.enabled);
+				this.btn_flip_to_panel2.enabled = this.currently_visible_panel == 1;
+				//DebuggerUtils.tracer(DebuggerUtils.getFunctionName(new Error())+'.2 --> this.btn_flip_to_panel2.enabled='+this.btn_flip_to_panel2.enabled);
+			}
+
+			protected function viewStack_onCreationComplete(event:FlexEvent):void {
+				this.refresh_viewStack_controls();
+			}
+			
+			protected function debugger_creationCompleteHandler(event:FlexEvent):void {
+				//DebuggerUtils.start_tracer(event.currentTarget,'text');
+				//DebuggerUtils.tracer('BEGIN DEBUGGER!');
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:VGroup id="container_address_bar" width="100%"
+				  includeInLayout="{this.container_address_bar.visible}"
+				  visible.shrink="true"
+				  visible.shrunk="false"
+				  visible.web="false">
+			<mx:ViewStack id="viewStack" width="100%" height="100%" backgroundColor="#cfcfcf" backgroundAlpha="0.5" creationComplete="viewStack_onCreationComplete(event)">
+				<s:NavigatorContent id="panel1" width="100%" height="200">
+					<s:Scroller width="100%" height="100%">
+						<s:VGroup width="100%">
+							<s:HGroup width="100%" paddingTop="5">
+								<s:HGroup paddingLeft="5" paddingTop="5">
+									<s:Label text="Address:"/>
+								</s:HGroup>
+								<s:TextInput id="txt_address" text="1600 Amphitheatre Pkwy, Mountain View, CA 94043, USA" width="100%" minWidth="{this.width*0.2}" maxWidth="{this.width*0.5}" toolTip="{this.txt_address.width},{this.txt_address.widthInChars}" editable="true" selectable="true"/>
+								<s:HGroup width="100%" paddingLeft="5" paddingTop="0">
+									<s:TextInput id="txt_center_map" width="100%" minWidth="200" text="{this.map_center_coords.toString()}"/>
+									<s:Button id="btn_center_map" label="(go)" width="50" click="btn_center_map_clickHandler(event)"/>
+									<s:DropDownList id="cmbo_gps_history" width="250" enabled="{this._gps_history.length > 0}" dataProvider="{this._gps_history}" labelField="gps" change="cmbo_gps_history_changeHandler(event)"/>
+								</s:HGroup>
+								<s:HGroup paddingLeft="5" paddingRight="5">
+									<s:Button id="btn_submit" label="Go" width="50" click="btn_submit_clickHandler(event)"/>
+								</s:HGroup>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingTop="5">
+								<s:HGroup paddingLeft="5" paddingTop="5">
+									<s:Label text="Map ViewPort:"/>
+									<s:Label id="lbl_map_bounds" text="()"/>
+								</s:HGroup>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingTop="5">
+								<s:HGroup paddingLeft="5" paddingTop="5">
+									<s:Label text="Map Area:"/>
+									<s:Label id="lbl_map_area" text="()"/>
+								</s:HGroup>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingTop="5">
+								<s:HGroup paddingLeft="5" paddingTop="5">
+									<s:Label text="Global Bounds:"/>
+									<s:Label id="lbl_global_bounds" text="()"/>
+								</s:HGroup>
+								<s:HGroup paddingLeft="5" paddingTop="5">
+									<s:Label text="Global Area:"/>
+									<s:Label id="lbl_global_area" text="()"/>
+								</s:HGroup>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingTop="5">
+								<s:HGroup paddingLeft="5" paddingTop="5">
+									<s:Label text="Width:"/>
+								</s:HGroup>
+								<s:TextInput id="txt_width" width="100%" text="400" change="txt_width_changeHandler(event)"/>
+								<s:DropDownList id="lst_width_units" width="70" dataProvider="{this.units}" selectedIndex="{0}" change="lst_width_units_changeHandler(event)" creationComplete="lst_width_units_creationCompleteHandler(event)"/>
+								<mx:Spacer width="20"/>
+								<s:HGroup paddingLeft="5" paddingTop="5">
+									<s:Label text="Height:"/>
+								</s:HGroup>
+								<s:TextInput id="txt_height" width="100%" text="400" change="txt_height_changeHandler(event)"/>
+								<s:DropDownList id="lst_height_units" width="70" dataProvider="{this.units}" selectedIndex="{0}" change="lst_height_units_changeHandler(event)" creationComplete="lst_height_units_creationCompleteHandler(event)"/>
+								<mx:Spacer width="5"/>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingLeft="5" paddingTop="5">
+								<s:Button id="btn_clear_overlays" label="Clear" click="btn_clear_overlays_clickHandler(event)"/>
+								<s:HGroup paddingLeft="5" paddingTop="5">
+									<s:Label text="Zoom:"/>
+								</s:HGroup>
+								<s:DropDownList id="cmbo_zoomer" width="55" dataProvider="{this._valid_zoom_values}" selectedIndex="12" change="cmbo_zoomer_changeHandler(event)"/>
+								<s:HGroup paddingLeft="5" paddingTop="5">
+									<s:Label text="Global Zoom:"/>
+								</s:HGroup>
+								<s:DropDownList id="cmbo_global_zoomer" width="50" dataProvider="{this._valid_global_zoom_values}" change="cmbo_global_zoomer_changeHandler(event)" creationComplete="cmbo_global_zoomer_creationCompleteHandler(event)"/>
+								<s:CheckBox id="cb_show_global_markers" label="Show Global Markers" selected="false" change="cb_show_global_markers_change(event)"/>
+								<s:CheckBox id="cb_random_data_markers" label="Random Data Markers" selected="false"/>
+								<s:CheckBox id="cb_generate_random_data" label="Generate Random Data" selected="false" change="cb_generate_random_data_onChange(event)"/>
+								<s:CheckBox id="cb_random_data_generator_running" label="Generator Running" selected="false" change="cb_random_data_generator_running_onChange(event)"/>
+								<s:HGroup paddingTop="5">
+									<s:HSlider 
+										id="slider_random_data_generator" 
+										width="100%" 
+										maximum="5000" 
+										minimum="1" 
+										dataTipPrecision="10" 
+										liveDragging="true" 
+										stepSize="10" 
+										styleName="HSlider"
+										snapInterval="10" minWidth="100"
+										value="1000" skinClass="skins.HSliderCustomSkin" 
+										change="slider_random_data_generator_change(event)"
+										creationComplete="slider_random_data_generator_creationCompleteHandler(event)"/>
+								</s:HGroup>
+								<s:HGroup paddingLeft="0" paddingTop="5">
+									<s:Label text="{this.slider_random_data_generator.value}"/>
+								</s:HGroup>
+								<s:Button id="btn_draw_global_bounds" label="(draw zoom {this.cmbo_global_zoomer.selectedItem.label})" enabled="{this.cmbo_global_zoomer.selectedIndex > -1}" width="100" click="btn_draw_global_bounds_clickHandler(event)"/>
+								<s:HGroup paddingLeft="0" paddingTop="5">
+									<s:Label id="lbl_heat_map_census_total"/>
+								</s:HGroup>
+								<mx:Spacer width="5"/>
+							</s:HGroup>
+							<s:HGroup width="100%">
+								<s:HGroup paddingLeft="5">
+									<s:RadioButton id="radio_old_marker_controls_on" label="On" groupName="radio_old_marker_controls"/>
+									<s:RadioButton id="radio_old_marker_controls_off" label="Off"
+												   groupName="radio_old_marker_controls"
+												   selected="true"/>
+								</s:HGroup>
+								<s:HGroup id="hgroup_old_marker_controls" paddingLeft="5" visible="{this.radio_old_marker_controls_on.selected}" includeInLayout="{this.hgroup_old_marker_controls.visible}">
+									<s:HGroup paddingLeft="5" paddingTop="5">
+										<s:Label text="Segments:"/>
+									</s:HGroup>
+									<s:DropDownList id="cmbo_num_segments" width="60" dataProvider="{new ArrayCollection([1,2,3,4])}" selectedIndex="{this.cmbo_num_segments.dataProvider.length-1}" change="cmbo_num_segments_changeHandler(event)"/>
+									<s:HGroup paddingLeft="10" paddingTop="5">
+										<s:Label text="Draw Marker:"/>
+									</s:HGroup>
+									<s:CheckBox id="cb_drawing_marker" selected="false" change="cb_drawing_marker_changeHandler(event)"/>
+									<s:HGroup paddingLeft="10" paddingTop="5">
+										<s:Label text="Draw Polygon:"/>
+									</s:HGroup>
+									<s:CheckBox id="cb_drawing_polygon" selected="true" change="cb_drawing_polygon_changeHandler(event)"/>
+									<s:HGroup paddingLeft="10" paddingTop="5">
+										<s:Label text="Heat Color:"/>
+									</s:HGroup>
+									<mx:ColorPicker id="colors" width="100%" creationComplete="colors_creationCompleteHandler(event)"/>
+									<s:HGroup paddingLeft="5">
+										<s:Button id="btn_heat_color_samples" label="Heat Samples" click="btn_heat_color_samples_clickHandler(event)"/>
+									</s:HGroup>
+								</s:HGroup>
+							</s:HGroup>
+							<s:HGroup width="100%" paddingLeft="5" paddingTop="5" paddingRight="5">
+								<s:HGroup paddingLeft="5" paddingTop="5">
+									<s:Label text="Width (feet):"/>
+								</s:HGroup>
+								<s:TextInput id="txt_cell_width" width="100%" minWidth="40" maxWidth="90" text="400" change="txt_cell_width_changeHandler(event)"/>
+								<s:HGroup paddingLeft="15" paddingTop="5">
+									<s:Label text="Height (feet):"/>
+								</s:HGroup>
+								<s:TextInput id="txt_cell_height" width="100%" minWidth="40" maxWidth="90" text="400" change="txt_cell_height_changeHandler(event)"/>
+								<s:HGroup paddingLeft="5">
+									<s:HGroup paddingLeft="5" paddingTop="5">
+										<s:Label text="Cells:"/>
+									</s:HGroup>
+									<s:HGroup paddingTop="5">
+										<s:HSlider 
+											id="slider_population" 
+											width="100%" 
+											maximum="500" 
+											minimum="10" 
+											dataTipPrecision="10" 
+											liveDragging="true" 
+											stepSize="10" 
+											styleName="HSlider"
+											snapInterval="1" minWidth="100"
+											value="10" skinClass="skins.HSliderCustomSkin"
+											creationComplete="slider_population_creationCompleteHandler(event)"/>
+									</s:HGroup>
+									<s:HGroup paddingLeft="0" paddingTop="5">
+										<s:Label text="{this.slider_population.value}"/>
+									</s:HGroup>
+								</s:HGroup>
+								<s:HGroup paddingLeft="5" paddingTop="5">
+									<s:Label text="Distance:"/>
+								</s:HGroup>
+								<s:HGroup paddingTop="5">
+									<s:HSlider 
+										id="slider_distance" 
+										width="100%" 
+										maximum="100" 
+										minimum="10" 
+										dataTipPrecision="1" 
+										liveDragging="true" 
+										stepSize="5" 
+										styleName="HSlider"
+										snapInterval="1" minWidth="100"
+										value="20" skinClass="skins.HSliderCustomSkin"
+										creationComplete="slider_distance_creationCompleteHandler(event)"/>
+								</s:HGroup>
+								<s:HGroup paddingLeft="0" paddingTop="5">
+									<s:Label text="{this.slider_distance.value}"/>
+								</s:HGroup>
+								<s:HGroup paddingLeft="5">
+									<s:Button id="btn_random_data" label="Random Data" toolTip="Random Canned Data (for general demo purposes)." click="btn_random_data_clickHandler(event)"/>
+								</s:HGroup>
+							</s:HGroup>
+							<s:HGroup width="100%" horizontalAlign="left" paddingLeft="5" paddingTop="5" paddingRight="5">
+								<s:HGroup paddingLeft="0" paddingTop="5">
+									<s:Label id="lbl_heat_areas" text=""/>
+								</s:HGroup>
+								<s:DropDownList id="cmbo_heat_areas" width="300" enabled="{this._data.length > 0}" dataProvider="{this._data}" labelField="gps" change="cmbo_heat_areas_changeHandler(event)"/>
+								<s:HGroup paddingLeft="5">
+									<s:Button id="btn_random_gps" label="Random GPS Data" toolTip="Random Canned Data (demo the method for collecting data into cells)" click="btn_random_gps_clickHandler(event)"/>
+								</s:HGroup>
+							</s:HGroup>
+							<s:HGroup width="100%" horizontalAlign="left" paddingLeft="5" paddingTop="5" paddingRight="5" paddingBottom="20">
+								<widgets:DropDownGrid id="drop_down_grid" enabled="{this.cmbo_heat_areas.enabled}" currentState="{this.drop_down_grid.state_closed.name}" height="{this.drop_down_grid.correct_height}" creationComplete="drop_down_grid_creationCompleteHandler(event)"/>
+							</s:HGroup>
+							<s:HGroup width="100%">
+								<s:TextArea id="debugger" width="100%" height="100" editable="false" selectable="false" creationComplete="debugger_creationCompleteHandler(event)"/>
+							</s:HGroup>
+						</s:VGroup>
+					</s:Scroller>
+				</s:NavigatorContent>
+				<s:NavigatorContent id="panel2" width="100%" height="200">
+					<s:VGroup width="100%" paddingTop="5" paddingLeft="5" paddingRight="5" paddingBottom="-5">
+						<s:HGroup paddingBottom="5">
+							<s:Label text="(???)"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:ViewStack>
+		</s:VGroup>
+		<s:HGroup id="hgroup_shrink" width="100%" horizontalAlign="center" visible.shrink="true" visible.shrunk="true" visible.web="false" includeInLayout="{this.hgroup_shrink.visible}">
+			<mx:Spacer width="1"/>
+			<s:Button id="btn_flip_to_panel2"
+					  click="btn_flip_to_panel2_clickHandler(event)"
+					  label="-->" 
+					  width="60"
+					  styleName="CONTROL_PANEL_BUTTONS" 
+					  enabled="false" 
+					  visible.shrink="true" visible.shrunk="false" 
+					  includeInLayout="{this.btn_flip_to_panel2.visible}"
+					  />
+			<mx:Spacer width="1"/>
+			<s:Button id="btn_shrink" width="100%" 
+					  click="btn_shrink_clickHandler(event)"
+					  label.shrink="Close Options"
+					  label.shrunk="Open Options"
+					  label.web="Open Options"/>
+			<mx:Spacer width="1"/>
+			<s:Button id="btn_flip_to_panel1"
+					  styleName="CONTROL_PANEL_BUTTONS" 
+					  label="-->"
+					  width="60"
+					  enabled="false" 
+					  visible.shrink="true" visible.shrunk="false"
+					  includeInLayout="{this.btn_flip_to_panel1.visible}"
+					  click="btn_flip_to_panel1_clickHandler(event)" 
+					  />
+			<mx:Spacer width="1"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Group>

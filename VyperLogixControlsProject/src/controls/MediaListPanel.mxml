@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+		   creationComplete="canvas1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import controls.renderers.MediaCard;
+			import flash.filters.DropShadowFilter;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			private var _dataProvider:ArrayCollection;
+			
+			public var verticalGap:Number = 0;
+			
+			public var horizontalGap:Number = 0;
+			
+			public var columnWidth:Number = 0;
+			
+			public var rowHeight:Number = 0;
+			
+			private function populate():void {
+//				var gr:Graphics = this.graphics;
+//				gr.beginFill(0x7c7c7c,1.0);
+//				gr.drawRect(0,0,this.width,this.height);
+				
+				if ( (this._dataProvider is ArrayCollection) && (this._dataProvider.length > 0) ) {
+					var i:int;
+					var aCard:MediaCard;
+					var aPt:Point = new Point(0,0);
+					var deltaPtX:Point = new Point(this.columnWidth+this.verticalGap,0);
+					var deltaPtY:Point = new Point(0,this.rowHeight+this.horizontalGap);
+					for (i = 0; i < this._dataProvider.length; i++) {
+						aCard = new MediaCard();
+						aCard.x = aPt.x;
+						aCard.y = aPt.y;
+						aPt = aPt.add(deltaPtX);
+						trace(this.className+'.populate().1 --> (aCard.x+aCard.width)='+(aCard.x+aCard.width)+', this.width='+this.width);
+						if ((aCard.x+aCard.width) >= (this.width-this.columnWidth)) {
+							aPt.x = 0;
+							aPt = aPt.add(deltaPtY);
+							trace(this.className+'.populate().1a !');
+							aCard.x = aPt.x;
+							aCard.y = aPt.y;
+						}
+						trace(this.className+'.populate().2 aCard.x='+aCard.x+', aCard.y='+aCard.y);
+						aCard.width = this.columnWidth;
+						aCard.height = this.rowHeight;
+						this.addChild(aCard);
+
+						var shadow:DropShadowFilter = new DropShadowFilter();
+						shadow.distance = 5;
+						shadow.angle = 25;
+						aCard.filters = [shadow];
+					}
+				}
+			}
+			
+			public function set dataProvider(dataProvider:ArrayCollection):void {
+				if (this._dataProvider != dataProvider) {
+					this._dataProvider = dataProvider;
+					this.populate();
+				}
+			}
+			
+			public function get dataProvider():ArrayCollection {
+				return this._dataProvider;
+			}
+
+			protected function canvas1_creationCompleteHandler(event:FlexEvent):void {
+				if ( (this._dataProvider is ArrayCollection) && (this._dataProvider.length > 0) ) {
+					// ???
+				}
+			}
+
+		]]>
+	</fx:Script>
+</mx:Canvas>

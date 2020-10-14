@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View preinitialize="preinitializeHandler()"
+		viewDeactivate="viewDeactivateHandler()"
+		viewActivate="viewActivateHandler(event)"
+		actionBarVisible.portrait="true"
+		actionBarVisible.landscape="true"
+		xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		title="Sales Pipeline"
+		xmlns:components="com.adobe.mobiledashboard.view.components.*"
+		xmlns:charts="com.adobe.dashboard.view.charts.*">
+
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.dashboard.model.AppModel;
+			import com.adobe.dashboard.presenter.SalesPipelinePresenter;
+
+			import spark.events.ViewNavigatorEvent;
+
+			[Bindable]
+			private var presenter:SalesPipelinePresenter;
+
+			private function addListeners():void
+			{
+				presenter.chartDetailsPresenter.addEventListener(Event.CHANGE, dataChangeHandler, false, 0, true);
+			}
+
+			private function removeListeners():void
+			{
+				if (presenter && presenter.chartDetailsPresenter && presenter.chartDetailsPresenter.hasEventListener(Event.CHANGE))
+				{
+					presenter.chartDetailsPresenter.removeEventListener(Event.CHANGE, dataChangeHandler);
+				}
+			}
+
+
+			protected function preinitializeHandler():void
+			{
+				presenter=AppModel.getInstance().salesPipelinePresenter;
+			}
+
+			protected function viewActivateHandler(event:ViewNavigatorEvent):void
+			{
+				addListeners();
+
+				presenter.getDetailsData();
+				presenter.hideAllTourTips();
+			}
+
+			protected function viewDeactivateHandler():void
+			{
+				// Prevent memory leaks and remove listeners when this view is removed from the stage
+				removeListeners();
+			}
+
+			protected function dataChangeHandler(event:Event):void
+			{
+				loadingMessageDisplay.visible=false;
+
+				chartDisplay.visible=true;
+				chartDisplay.includeInLayout=true;
+			}
+		]]>
+
+	</fx:Script>
+
+	<!-- framework changes state on device rotation -->
+	<s:states>
+		<s:State name="portrait"/>
+		<s:State name="landscape"/>
+	</s:states>
+
+	<!-- header background -->
+	<s:Rect width="100%"
+			height="45"
+			includeIn="portrait">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0xee9922"/>
+				<s:GradientEntry color="0xa5551b"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<!-- chart area background -->
+	<s:Rect width="100%"
+			top="0"
+			height="45"
+			includeIn="portrait">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0x3C3C3C"/>
+				<s:GradientEntry color="0x151515"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<!-- details title -->
+	<s:HGroup height="44"
+			  left="10"
+			  right="10"
+			  verticalAlign="middle"
+			  includeIn="portrait">
+
+		<s:Label fontWeight="bold"
+				 styleName="detailsStyle"
+				 text="Sales Pipeline &gt;"/>
+		<s:Label styleName="detailsStyle"
+				 text="{presenter.detailsStatusType.toString()}"/>
+
+	</s:HGroup>
+
+	<!-- charts -->
+	<charts:PipelineChart id="chartDisplay"
+						  left.landscape="0"
+						  left.portrait="15"
+						  right.landscape="0"
+						  right.portrait="0"
+						  top.landscape="5"
+						  top.portrait="55"
+						  bottom.landscape="0"
+						  bottom.portrait="30"
+						  currentState="{presenter.chartDetailsConfig}"
+						  includeInLayout="false"
+						  visible="false"
+						  chartPresenter="{presenter.chartDetailsPresenter}"/>
+
+
+	<!-- loading message -->
+	<s:VGroup id="loadingMessageDisplay"
+			  horizontalCenter="0"
+			  verticalCenter="0"
+			  horizontalAlign="center">
+		<s:BusyIndicator id="loadingIndicator"
+						 symbolColor="#ffffff"
+						 width="30"
+						 height="30"/>
+		<s:Label text="Building Chart"
+				 color="#ffffff"/>
+	</s:VGroup>
+
+	<!-- the title content for this view -->
+	<s:titleContent>
+		<s:Label styleName="titleWhiteStyle"
+				 text="Sales Pipeline"/>
+	</s:titleContent>
+
+</s:View>

@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   minWidth="384" minHeight="640" maxWidth="384" maxHeight="640" width="384" height="640"
+			   initialize="application1_initializeHandler(event)" 
+			   mouseMove="application1_mouseMoveHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		.PlayingField {
+			horizontalScrollPolicy: off;
+			verticalScrollPolicy: off;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import boxes.Box;
+			
+			import dots.BlueDot;
+			
+			import mx.controls.Image;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			import views.Backdrop;
+			import views.ControlPanel;
+			
+			private const numRows:int = 10;
+			private const numCols:int = 10;
+			
+			private var xSpread:Number;
+			private var ySpread:Number;
+			
+			private var grid:Array = [];
+
+			private var drawing_from:BlueDot;
+			
+			private var gameBoard:UIComponent;
+
+			private var controlPanel:ControlPanel;
+			
+			private const controlPanelHeight:Number = 30.0;
+			
+			private function get isDrawingLine():Boolean {
+				return (this.drawing_from is BlueDot);
+			}
+			
+			protected function application1_initializeHandler(event:FlexEvent):void {
+				this.xSpread = (this.width / this.numCols);
+				this.ySpread = ((this.height - this.controlPanelHeight) / this.numRows);
+				for (var row:int = 0; row < this.numRows; row++) {
+					this.grid.push([]);
+				}
+			}
+			
+			private function touch_all_dots(stateName:String,pts:Array=null):void {
+				var aBox:Box;
+				var dots:Array;
+				var aDot:BlueDot;
+				var isValid:Boolean = true;
+				var hasPts:Boolean = ( (pts is Array) && (pts.length > 0) );
+				function contains(aPt:Point):Boolean {
+					for (var i:String in pts) {
+						if (pts[i].equals(aPt)) {
+							return true;
+						}
+					}
+					return false;
+				}
+				for (var row:int = 0; row < this.numRows; row++) {
+					for (var col:int = 0; col < this.numCols; col++) {
+						isValid = (hasPts) && (contains(new Point(row,col))) ? false : true;
+						if (isValid) {
+							aBox = this.grid[row][col];
+							dots = aBox.dots;
+							for (var i:String in dots) {
+								aDot = dots[i];
+								aDot.currentState = stateName;
+							}
+						}
+					}
+				}
+			}
+			
+			private function disable_all_dots(pts:Array=null):void {
+				this.touch_all_dots('disabled',pts);
+			}
+			
+			private function enable_all_dots(pts:Array=null):void {
+				this.touch_all_dots('',pts);
+			}
+			
+			private function onClick_Dot(event:MouseEvent):void {
+				var aBox:Box;
+				var _this:BoxTheDotsV1 = this;
+				var aDot:BlueDot = event.currentTarget as BlueDot;
+				if (this.isDrawingLine) {
+					this.controlPanel.stopTimer();
+					trace(this.className+'.onClick_Dot() --> Draw Line #'+aDot.id);
+					aBox = this.drawing_from.parentBox;
+					aBox.draw_line(this.drawing_from,aDot);
+					this.controlPanel.timerMessage.text = 'Line Drawn !';
+					this.drawing_from.isDrawingLine = false;
+					this.drawing_from = null;
+					this.enable_all_dots();
+				} else {
+					this.drawing_from = aDot;
+					var pts:Array = aDot.adjacentPts;
+					this.disable_all_dots(pts);
+					this.controlPanel._timerMessage = 'Time remaining: ';
+					this.controlPanel.timerComplete_callback = function (event:TimerEvent,panel:ControlPanel):void {
+						if (aBox is Box) {
+							aBox.clear_box();
+						}
+						_this.drawing_from.isDrawingLine = false;
+						_this.drawing_from = null;
+						_this.enable_all_dots();
+					};
+					this.controlPanel.startTimer();
+					aBox = aDot.parentBox;
+					aBox.cyan_box();
+					trace(this.className+'.onClick_Dot() --> #'+aDot.id+', aBox='+aBox.id);
+				}
+			}
+			
+			protected function canvas_creationCompleteHandler(event:FlexEvent):void {
+				var _this:BoxTheDotsV1 = this;
+				
+				var backdrop:Backdrop = new Backdrop();
+				backdrop.x = 0;
+				backdrop.y = this.controlPanelHeight + 5;
+				backdrop.width = this.width;
+				backdrop.height = this.height;
+				this.canvas.addChild(backdrop);
+				
+				this.controlPanel = new ControlPanel();
+				this.controlPanel.id = 'controlPanel';
+				this.controlPanel.x = 0;
+				this.controlPanel.y = 0;
+				this.controlPanel.width = this.width;
+				this.controlPanel.height = this.controlPanelHeight;
+				this.canvas.addChild(this.controlPanel);
+				
+				this.gameBoard = new UIComponent();
+				this.gameBoard.x = 0;
+				this.gameBoard.y = this.controlPanel.height;
+				this.gameBoard.width = this.canvas.width;
+				this.gameBoard.height = this.canvas.height - this.controlPanel.height;
+				this.gameBoard.styleName = 'PlayingField';
+				this.gameBoard.addEventListener(FlexEvent.CREATION_COMPLETE, function ():void {
+					var aBox:Box;
+					var xSpread2:Number = _this.xSpread / 2;
+					var xSpread4:Number = xSpread2 / 2;
+					var xySpread:Number = Math.min(_this.xSpread,_this.ySpread)-5;
+					var xySpread2:Number = xySpread / 2;
+					var yOffset:Number = _this.controlPanelHeight / 2; // hangs the grid from the top...
+					var aPt:Point = new Point(xSpread4,(_this.ySpread / 2));
+					var xPt:Point = new Point(_this.xSpread-5,0);
+					var yPt:Point = new Point(0,xySpread);
+					for (var row:int = 0; row < _this.numRows; row++) {
+						for (var col:int = 0; col < _this.numCols; col++) {
+							aBox = new Box();
+							aBox.x = aPt.x+xySpread2;
+							aBox.y = aPt.y+yOffset;
+							aBox.width = xySpread;
+							aBox.height = xySpread;
+							aBox.id = row+'@'+col;
+							aBox.toolTip = aBox.id;
+							_this.grid[row].push(aBox);
+							_this.addElement(aBox);
+							
+							aBox.boxRight = (col < (_this.numCols-1)) ? _this.grid[row][col+1] : null;
+							aBox.boxBelow = (row < (_this.numRows-1)) ? _this.grid[row+1][col] : null;
+							aBox.boxLeft = (col > 0) ? _this.grid[row][col-1] : null;
+							aBox.boxLeft = (row > 0) ? _this.grid[row-1][col] : null;
+
+							aBox.hang_the_dots(row,col,_this.numRows,_this.numCols,_this.onClick_Dot);
+							//aBox.green_box();
+							
+							aPt = aPt.add(xPt);
+						}
+						aPt = aPt.add(yPt);
+						aPt.x = xSpread4;
+					}
+				});
+				this.canvas.addChild(this.gameBoard);
+			}
+
+			protected function application1_mouseMoveHandler(event:MouseEvent):void {
+				if (this.isDrawingLine) {
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<mx:Canvas id="canvas" width="100%" height="100%" borderColor="black" borderStyle="outset" horizontalScrollPolicy="off" verticalScrollPolicy="off" creationComplete="canvas_creationCompleteHandler(event)"/>
+</s:Application>

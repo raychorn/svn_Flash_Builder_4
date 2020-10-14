@@ -1,0 +1,981 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   width="100%" height="100%" 
+			   currentState="minutesView" 
+			   initialize="titlewindow1_initializeHandler(event)"
+			   creationComplete="titlewindow1_creationCompleteHandler(event)" xmlns:layouts="org.flexlayouts.layouts.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:states>
+		<mx:State name="mainView"/>
+		<mx:State name="minutesView" basedOn="mainView"/>
+		<mx:State name="hoursView" basedOn="mainView"/>
+		<mx:State name="daysOfMonthView" basedOn="mainView"/>
+		<mx:State name="monthsView" basedOn="mainView"/>
+		<mx:State name="daysOfWeekView" basedOn="mainView"/>
+		<mx:State name="commandView" basedOn="mainView"/>
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import com.ArrayCollectionUtils;
+			import com.ArrayUtils;
+			import com.DebuggerUtils;
+			import com.ObjectUtils;
+			import com.StringUtils;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.ToolTip;
+			import mx.events.FlexEvent;
+			import mx.managers.ToolTipManager;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			
+			import assets.resources.Resources;
+			
+			import controls.ToolTips.HTMLToolTip;
+			
+			[Bindable]
+			private var tabs_minutes_data:ArrayCollection = new ArrayCollection(['every minute','every N minutes','each selected minute']);
+			
+			[Bindable]
+			private var tabs_hours_data:ArrayCollection = new ArrayCollection(['every hour','every N hours','each selected hour']);
+			
+			[Bindable]
+			private var tabs_days_data:ArrayCollection = new ArrayCollection(['every day','each selected day']);
+			
+			[Bindable]
+			private var tabs_months_data:ArrayCollection = new ArrayCollection(['every month','each selected month']);
+			
+			[Bindable]
+			private var tabs_days_of_week_data:ArrayCollection = new ArrayCollection(['every day of the week','each selected day of the week']);
+			
+			[Bindable]
+			private var __expressions__:ArrayCollection = new ArrayCollection();
+			
+			[Bindable]
+			private var __expression__:Array = ['*','*','*','*','*',''];
+			
+			[Bindable]
+			private var __command__:String = '';
+			
+			[Bindable]
+			private var __selected_minutes__:Object = {};
+			
+			private const __expression_spacer__:String = '   ';
+			
+			private function get crontab_file_from_parent():File {
+				var aFile:File = this.parentDocument['__scheduleFile__'] as File;
+				return ( (aFile is File) && (aFile.exists) ) ? aFile : null;
+			}
+			
+			private function write_expressions():void {
+				var aFile:File = this.crontab_file_from_parent;
+				if (aFile is File) {
+					var fileStream:FileStream = new FileStream(); 
+					fileStream.open(aFile, FileMode.WRITE);
+					try {
+						var contents:String;
+						var anItem:*;
+						var items:Array = [];
+						for (var i:int = 0; i < this.__expressions__.length; i++) {
+							anItem = this.__expressions__.getItemAt(i);
+							items.push(anItem['data']);
+						}
+						contents = items.join('\r\n');
+						var ba:ByteArray = new ByteArray();
+						ba.writeUTF(contents);
+						fileStream.writeBytes(ba);
+					} catch (err:Error) {}
+					fileStream.close();
+				}
+			}
+			
+			/*
+			initialize_config_crontab_status has to be public... just the way it is... get over it !!!
+			*/
+			public function initialize_config_crontab_status(target:*):void {
+				var tooltip:ToolTip;
+				
+				var data:* = (this.parentDocument['__data__'] && this.parentDocument['__data__'][this.parentDocument.WEBSERVICE_GET_CONFIG_URL] && this.parentDocument['__data__'][this.parentDocument.WEBSERVICE_GET_CONFIG_URL]['data']) ? this.parentDocument['__data__'][this.parentDocument.WEBSERVICE_GET_CONFIG_URL]['data'] : {};
+				var status:String = (this.parentDocument['__data__'] && this.parentDocument['__data__'][this.parentDocument.WEBSERVICE_GET_CONFIG_URL] && this.parentDocument['__data__'][this.parentDocument.WEBSERVICE_GET_CONFIG_URL]['status']) ? this.parentDocument['__data__'][this.parentDocument.WEBSERVICE_GET_CONFIG_URL]['status'] : 'UNKNOWN';
+				//var schedulefpath:String = ((data) && (data['__data__']) && (data['__data__']['schedulefpath'])) ? data['__data__']['schedulefpath'] : null;
+				var aFile:File = this.crontab_file_from_parent;
+				trace('(+++) schedulefpath='+aFile.nativePath);
+				if (aFile is File) {
+					if (aFile.exists) {
+						tooltip = this.parentDocument.createCustomToolTip_for(target,Resources.vcron_config_data_status_is+status,vCRON.CustomToolTipRight,0,0,0);
+						tooltip.styleName = (status.toUpperCase() == 'SUCCESS') ? 'ButtonToolTip' : 'ButtonErrorToolTip';
+						
+						this.crontabView_editor_container.enabled = true;
+					} else {
+						tooltip = this.parentDocument.createCustomToolTip_for(target,Resources.crontab_file_is_inaccessible,vCRON.CustomToolTipRight,0,0,0);
+						tooltip.styleName = 'ButtonErrorToolTip';
+						this.crontabView_editor_container.enabled = false;
+					}
+				} else {
+					tooltip = this.parentDocument.createCustomToolTip_for(target,Resources.crontab_file_is_not_defined,vCRON.CustomToolTipRight,0,0,0);
+					tooltip.styleName = 'ButtonErrorToolTip';
+					this.crontabView_editor_container.enabled = false;
+				}
+			}
+			
+			protected function lbl_config_crontab_status_creationCompleteHandler(event:FlexEvent):void {
+				var target:Label = event.currentTarget as Label;
+				this.initialize_config_crontab_status(target);
+			}
+			
+			protected function tabs_crontab_editor_minutes_creationCompleteHandler(event:FlexEvent):void {
+				var ch:String = this.__expression__[0];
+				var target:TabBar = event.currentTarget as TabBar;
+				var dp:ArrayCollection = target.dataProvider as ArrayCollection;
+				if (ch == '*') {
+					var i:int = -1; 
+					ArrayCollectionUtils.iterate_until(dp, 
+						function (item:*,selector:*,index:int):Boolean {
+							var bool:Boolean = (String(item).toLowerCase().indexOf(selector) > -1);
+							if (bool) {
+								i = index;
+							}
+							return bool;
+						}, 
+					'every');
+					target.selectedIndex = i;
+				}
+			}
+			
+			private function handle_selects_for_selections(dataProvider:ArrayCollection,choices:Array=null,__is__:Boolean=false):void {
+				var dp:ArrayCollection = dataProvider;
+				var aRow:*;
+				var ar:Array = [];
+				var keys:Array;
+				var i:int;
+				var aKey:String;
+				var item:*;
+				var selected:Boolean;
+				var isNumeric:Boolean = false;
+				for (var row:int = 0; row < dp.length; row++) {
+					aRow = dp.getItemAt(row);
+					keys = ObjectUtils.keys(aRow);
+					for (i = 0; i < keys.length; i++) {
+						aKey = keys[i];
+						item = aRow[aKey];
+						item['selected'] = false;
+						if ( (choices) && (__is__) && (choices.length > 0) ) {
+							var aChoice:String;
+							var choice:int;
+							var value:int = int(item['value']);
+							for (var n:int = 0; n < choices.length; n++) {
+								aChoice = choices[n];
+								isNumeric = StringUtils.isStringNumeric(aChoice);
+								if (isNumeric) {
+									choice = int(aChoice);
+									if (choice == value) {
+										item['selected'] = (__is__) ? true : false;
+										break;
+									}
+								}
+							}
+						}
+					}
+					dp.setItemAt(aRow,row);
+				}
+			}
+			
+			private function handle_selects_minutes_selections(choices:Array=null,__is__:Boolean=false):void {
+				this.handle_selects_for_selections(this.grid_minutes.dataProvider as ArrayCollection,choices,__is__);
+			}
+			
+			private function unselect_minutes_selections(choices:Array=null):void {
+				this.handle_selects_minutes_selections(choices,false);
+			}
+			
+			private function select_minutes_selections(choices:Array=null):void {
+				this.handle_selects_minutes_selections(choices,true);
+			}
+			
+			private function handle_selects_hours_selections(choices:Array=null,__is__:Boolean=false):void {
+				this.handle_selects_for_selections(this.grid_hours.dataProvider as ArrayCollection,choices,__is__);
+			}
+			
+			private function unselect_hours_selections(choices:Array=null):void {
+				this.handle_selects_hours_selections(choices,false);
+			}
+			
+			private function select_hours_selections(choices:Array=null):void {
+				this.handle_selects_hours_selections(choices,true);
+			}
+			
+			private function handle_selects_days_selections(choices:Array=null,__is__:Boolean=false):void {
+				this.handle_selects_for_selections(this.grid_days.dataProvider as ArrayCollection,choices,__is__);
+			}
+			
+			private function unselect_days_selections(choices:Array=null):void {
+				this.handle_selects_days_selections(choices,false);
+			}
+			
+			private function select_days_selections(choices:Array=null):void {
+				this.handle_selects_days_selections(choices,true);
+			}
+			
+			private function handle_selects_months_selections(choices:Array=null,__is__:Boolean=false):void {
+				this.handle_selects_for_selections(this.grid_months.dataProvider as ArrayCollection,choices,__is__);
+			}
+			
+			private function unselect_months_selections(choices:Array=null):void {
+				this.handle_selects_months_selections(choices,false);
+			}
+			
+			private function select_months_selections(choices:Array=null):void {
+				this.handle_selects_months_selections(choices,true);
+			}
+			
+			private function handle_selects_days_of_week_selections(choices:Array=null,__is__:Boolean=false):void {
+				this.handle_selects_for_selections(this.grid_days_of_week.dataProvider as ArrayCollection,choices,__is__);
+			}
+			
+			private function unselect_days_of_week_selections(choices:Array=null):void {
+				this.handle_selects_days_of_week_selections(choices,false);
+			}
+			
+			private function select_days_of_week_selections(choices:Array=null):void {
+				this.handle_selects_days_of_week_selections(choices,true);
+			}
+			
+			private function get selected_minutes():Array {
+				var dp:ArrayCollection = this.grid_minutes.dataProvider as ArrayCollection;
+				var aRow:*;
+				var ar:Array = [];
+				var keys:Array;
+				var i:int;
+				var aKey:String;
+				var item:*;
+				var selected:Boolean;
+				for (var row:int = 0; row < dp.length; row++) {
+					aRow = dp.getItemAt(row);
+					keys = ObjectUtils.keys(aRow);
+					for (i = 0; i < keys.length; i++) {
+						aKey = keys[i];
+						item = aRow[aKey];
+						selected = item['selected'];
+						if (selected) {
+							ar.push(int(item['value']));
+						}
+					}
+				}
+				return ar;
+			}
+			
+			private function get selected_hours():Array {
+				var dp:ArrayCollection = this.grid_hours.dataProvider as ArrayCollection;
+				var aRow:*;
+				var ar:Array = [];
+				var keys:Array;
+				var i:int;
+				var aKey:String;
+				var item:*;
+				var selected:Boolean;
+				for (var row:int = 0; row < dp.length; row++) {
+					aRow = dp.getItemAt(row);
+					keys = ObjectUtils.keys(aRow);
+					for (i = 0; i < keys.length; i++) {
+						aKey = keys[i];
+						item = aRow[aKey];
+						selected = item['selected'];
+						if (selected) {
+							ar.push(int(item['value']));
+						}
+					}
+				}
+				return ar;
+			}
+			
+			private function get selected_months():Array {
+				var dp:ArrayCollection = this.grid_months.dataProvider as ArrayCollection;
+				var aRow:*;
+				var ar:Array = [];
+				var keys:Array;
+				var i:int;
+				var aKey:String;
+				var item:*;
+				var selected:Boolean;
+				for (var row:int = 0; row < dp.length; row++) {
+					aRow = dp.getItemAt(row);
+					keys = ObjectUtils.keys(aRow);
+					for (i = 0; i < keys.length; i++) {
+						aKey = keys[i];
+						item = aRow[aKey];
+						selected = item['selected'];
+						if (selected) {
+							ar.push(int(item['data']));
+						}
+					}
+				}
+				return ar;
+			}
+			
+			private function get selected_days():Array {
+				var dp:ArrayCollection = this.grid_days.dataProvider as ArrayCollection;
+				var aRow:*;
+				var ar:Array = [];
+				var keys:Array;
+				var i:int;
+				var aKey:String;
+				var item:*;
+				var selected:Boolean;
+				for (var row:int = 0; row < dp.length; row++) {
+					aRow = dp.getItemAt(row);
+					keys = ObjectUtils.keys(aRow);
+					for (i = 0; i < keys.length; i++) {
+						aKey = keys[i];
+						item = aRow[aKey];
+						selected = item['selected'];
+						if (selected) {
+							ar.push(int(item['value']));
+						}
+					}
+				}
+				return ar;
+			}
+			
+			private function get selected_days_of_week():Array {
+				var dp:ArrayCollection = this.grid_days_of_week.dataProvider as ArrayCollection;
+				var aRow:*;
+				var ar:Array = [];
+				var keys:Array;
+				var i:int;
+				var aKey:String;
+				var item:*;
+				var selected:Boolean;
+				for (var row:int = 0; row < dp.length; row++) {
+					aRow = dp.getItemAt(row);
+					keys = ObjectUtils.keys(aRow);
+					for (i = 0; i < keys.length; i++) {
+						aKey = keys[i];
+						item = aRow[aKey];
+						selected = item['selected'];
+						if (selected) {
+							ar.push(int(item['data']));
+						}
+					}
+				}
+				return ar;
+			}
+			
+			private function get new_expression():String {
+				var exp:Array = ['*','*','*','*','*'];
+				return exp.join(__expression_spacer__);
+			}
+			
+			private function get expression():String {
+				var selections:Array;
+				if ( (this.currentState == 'minutesView') && (this.tabs_crontab_editor_minutes) ) {
+					if (this.tabs_crontab_editor_minutes.selectedIndex == 0) {
+						this.__expression__[0] = '*';
+					} else if (this.tabs_crontab_editor_minutes.selectedIndex == 1) {
+						this.__expression__[0] = '*/'+this.hslider_crontab_editor_minutes.value;
+					} else if (this.tabs_crontab_editor_minutes.selectedIndex == 2) {
+						selections = this.selected_minutes;
+						selections.sort(Array.NUMERIC);
+						this.__expression__[0] = (selections.length > 0) ? selections.join(',') : '*';
+					}
+				}
+				if ( (this.currentState == 'hoursView') && (this.tabs_crontab_editor_hours) ) {
+					if (this.tabs_crontab_editor_hours.selectedIndex == 0) {
+						this.__expression__[1] = '*';
+					} else if (this.tabs_crontab_editor_hours.selectedIndex == 1) {
+						this.__expression__[1] = '*/'+this.hslider_crontab_editor_hours.value;
+					} else if (this.tabs_crontab_editor_hours.selectedIndex == 2) {
+						selections = this.selected_hours;
+						selections.sort(Array.NUMERIC);
+						this.__expression__[1] = (selections.length > 0) ? selections.join(',') : '*';
+					}
+				}
+				if ( (this.currentState == 'daysOfMonthView') && (this.tabs_crontab_editor_days_of_month) ) {
+					if (this.tabs_crontab_editor_days_of_month.selectedIndex == 0) {
+						this.__expression__[2] = '*';
+					} else if (this.tabs_crontab_editor_days_of_month.selectedIndex == 1) {
+						selections = this.selected_days;
+						selections.sort(Array.NUMERIC);
+						this.__expression__[2] = (selections.length > 0) ? selections.join(',') : '*';
+					}
+				}
+				if ( (this.currentState == 'monthsView') && (this.tabs_crontab_editor_days_of_month) ) {
+					if (this.tabs_crontab_editor_days_of_month.selectedIndex == 0) {
+						this.__expression__[3] = '*';
+					} else if (this.tabs_crontab_editor_month.selectedIndex == 1) {
+						selections = this.selected_months;
+						selections.sort(Array.NUMERIC);
+						this.__expression__[3] = (selections.length > 0) ? selections.join(',') : '*';
+					}
+				}
+				if ( (this.currentState == 'daysOfWeekView') && (this.tabs_crontab_editor_days_of_week) ) {
+					if (this.tabs_crontab_editor_days_of_week.selectedIndex == 0) {
+						this.__expression__[4] = '*';
+					} else if (this.tabs_crontab_editor_days_of_week.selectedIndex == 1) {
+						selections = this.selected_days_of_week;
+						selections.sort(Array.NUMERIC);
+						this.__expression__[4] = (selections.length > 0) ? selections.join(',') : '*';
+					}
+				}
+				this.__expression__[5] = this.__command__;
+				var exp:String = this.__expression__.join(__expression_spacer__);
+				if (this.dropdown_list is DropDownList) {
+					if (this.dropdown_list.selectedIndex > -1) {
+						this.dropdown_list.dataProvider.setItemAt({'label':exp,'data':exp},this.dropdown_list.selectedIndex);
+					} else {
+						this.dropdown_list.dataProvider.addItemAt({'label':exp,'data':exp},0);
+						this.dropdown_list.dataProvider.addItemAt({'label':'Add expression...','data':null},1);
+						this.dropdown_list.selectedIndex = 0;
+					}
+				}
+				return exp;
+			}
+			
+			protected function panel_crontab_editor_minutes_clickHandler(event:MouseEvent):void {
+				this.currentState = 'minutesView';
+				if (this.tabs_crontab_editor_minutes) {
+					this.update_tabs_crontab_editor_minutes(this.tabs_crontab_editor_minutes);
+				}
+			}
+			
+			protected function panel_crontab_editor_hours_clickHandler(event:MouseEvent):void {
+				this.currentState = 'hoursView';
+				if (this.tabs_crontab_editor_hours) {
+					this.update_tabs_crontab_editor_hours(this.tabs_crontab_editor_hours);
+				}
+			}
+			
+			protected function panel_crontab_editor_day_of_month_clickHandler(event:MouseEvent):void {
+				this.currentState = 'daysOfMonthView';
+			}
+			
+			protected function panel_crontab_editor_month_clickHandler(event:MouseEvent):void {
+				this.currentState = 'monthsView';
+			}
+			
+			protected function panel_crontab_editor_day_of_week_clickHandler(event:MouseEvent):void {
+				this.currentState = 'daysOfWeekView';
+			}
+			
+			protected function panel_crontab_editor_command_clickHandler(event:MouseEvent):void {
+				this.currentState = 'commandView';
+			}
+			
+			private function update_tabs_crontab_editor_minutes(target:TabBar):void {
+				this.hg_crontab_editor_minutes_0.visible = false;
+				this.hg_crontab_editor_minutes_1.visible = false;
+				this.hg_crontab_editor_minutes_2.visible = false;
+				if (target.selectedIndex == 1) {
+					this.hg_crontab_editor_minutes_1.visible = true;
+					this.panel_crontab_editor_minutes.height = 120;
+				} else if (target.selectedIndex == 2) {
+					this.hg_crontab_editor_minutes_2.visible = true;
+					this.panel_crontab_editor_minutes.height = 250;
+				} else {
+					this.hg_crontab_editor_minutes_0.visible = true;
+					this.panel_crontab_editor_minutes.height = 120;
+				}
+				this.lbl_config_crontab_expression.text = this.expression;
+				this.write_expressions();
+			}
+			
+			protected function tabs_crontab_editor_minutes_changeHandler(event:IndexChangeEvent):void {
+				this.update_tabs_crontab_editor_minutes(event.currentTarget as TabBar);
+			}
+			
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void {
+				this.hg_crontab_editor_minutes_0.visible = true;
+				ToolTipManager.toolTipClass = HTMLToolTip;
+			}
+			
+			protected function hslider_crontab_editor_minutes_updateCompleteHandler(event:FlexEvent):void {
+				this.lbl_config_crontab_expression.text = this.expression;
+				this.write_expressions();
+			}
+			
+			protected function hgroup1_creationCompleteHandler(event:FlexEvent):void {
+				var target:HGroup = event.currentTarget as HGroup;
+				this.initialize_config_crontab_status(target);
+			}
+			
+			private function __callback__(label:*,item:*):void {
+				trace('minute_callback --> item='+DebuggerUtils.explainThis(item));
+				this.lbl_config_crontab_expression.text = this.expression;
+				this.write_expressions();
+			}
+			
+			private function normalize_to_letter(value:int):String {
+				var letters:String = 'abcdefghijklmnopqrstuvwxyz';
+				return letters.substr(value%letters.length,1)
+			}
+			
+			private function normalize_to_letter2(value:int):String {
+				var letters:String = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+				return letters.substr(value%letters.length,1)
+			}
+			
+			private function get minutes_for_list():ArrayCollection {
+				var ac:ArrayCollection = new ArrayCollection();
+				var obj:*;
+				var value:String;
+				for (var i:int = 0; i < 60; i += 10) {
+					obj = {};
+					for (var j:int = 0; j < 10; j++) {
+						value = ((i+j) < 10) ? '0'+(i+j) : (i+j)+'';
+						obj['item_'+normalize_to_letter(j)] = {'value':value,'callback':this.__callback__,'selected':false,'width':30};
+					}
+					ac.addItem(obj);
+				}
+				return ac;
+			}
+			
+			private function get hours_for_list():ArrayCollection {
+				var ac:ArrayCollection = new ArrayCollection();
+				var obj:*;
+				var value:String;
+				for (var i:int = 0; i < 24; i += 12) {
+					obj = {};
+					for (var j:int = 0; j < 12; j++) {
+						value = ((i+j) < 10) ? '0'+(i+j) : (i+j)+'';
+						obj['item_'+normalize_to_letter(j)] = {'value':value,'callback':this.__callback__,'selected':false,'width':30};
+					}
+					ac.addItem(obj);
+				}
+				return ac;
+			}
+			
+			private function get days_for_list():ArrayCollection {
+				var ac:ArrayCollection = new ArrayCollection();
+				var obj:*;
+				var value:String;
+				obj = {};
+				for (var i:int = 1; i <= 31; i++) {
+					value = (i < 10) ? '0'+i : i+'';
+					obj['item_'+value] = {'value':value,'callback':this.__callback__,'selected':false,'width':30}; // normalize_to_letter2(i)
+				}
+				ac.addItem(obj);
+				return ac;
+			}
+			
+			private function get months_for_list():ArrayCollection {
+				var ac:ArrayCollection = new ArrayCollection();
+				var obj:*;
+				var value:String;
+				obj = {};
+				var months:Array = ['Jan','Feb','Mar','Apr','May','June','July','Aug','Sept','Oct','Nov','Dec'];
+				for (var i:int = 0; i < months.length; i++) {
+					value = months[i]+" ";
+					obj['item_'+normalize_to_letter(i)] = {'value':value,'data':(i+1),'callback':this.__callback__,'selected':false,'width':40};
+				}
+				ac.addItem(obj);
+				return ac;
+			}
+			
+			private function get days_of_week_for_list():ArrayCollection {
+				var ac:ArrayCollection = new ArrayCollection();
+				var obj:*;
+				var value:String;
+				obj = {};
+				var days:Array = ['Sun','Mon','Tues','Wed','Thurs','Fri','Sat'];
+				for (var i:int = 0; i < days.length; i++) {
+					value = days[i]+" ";
+					obj['item_'+normalize_to_letter(i)] = {'value':value,'data':(i+1),'callback':this.__callback__,'selected':false,'width':50};
+				}
+				ac.addItem(obj);
+				return ac;
+			}
+			
+			private function update_tabs_crontab_editor_hours(target:TabBar):void {
+				this.hg_crontab_editor_hours_0.visible = false;
+				this.hg_crontab_editor_hours_1.visible = false;
+				this.hg_crontab_editor_hours_2.visible = false;
+				if (target.selectedIndex == 1) {
+					this.hg_crontab_editor_hours_1.visible = true;
+					this.panel_crontab_editor_hours.height = 120;
+				} else if (target.selectedIndex == 2) {
+					this.hg_crontab_editor_hours_2.visible = true;
+					this.panel_crontab_editor_hours.height = 150;
+				} else {
+					this.hg_crontab_editor_hours_0.visible = true;
+					this.panel_crontab_editor_hours.height = 120;
+				}
+				this.lbl_config_crontab_expression.text = this.expression;
+				this.write_expressions();
+			}
+			
+			private function update_tabs_crontab_editor_days(target:TabBar):void {
+				this.hg_crontab_editor_days_0.visible = false;
+				this.hg_crontab_editor_days_1.visible = false;
+				if (target.selectedIndex == 1) {
+					this.hg_crontab_editor_days_1.visible = true;
+					this.panel_crontab_editor_day_of_month.height = 150;
+				} else {
+					this.hg_crontab_editor_days_0.visible = true;
+					this.panel_crontab_editor_day_of_month.height = 120;
+				}
+				this.lbl_config_crontab_expression.text = this.expression;
+				this.write_expressions();
+			}
+			
+			private function update_tabs_crontab_editor_months(target:TabBar):void {
+				this.hg_crontab_editor_months_0.visible = false;
+				this.hg_crontab_editor_months_1.visible = false;
+				if (target.selectedIndex == 1) {
+					this.hg_crontab_editor_months_1.visible = true;
+					this.panel_crontab_editor_month.height = 150;
+				} else {
+					this.hg_crontab_editor_months_0.visible = true;
+					this.panel_crontab_editor_month.height = 120;
+				}
+				this.lbl_config_crontab_expression.text = this.expression;
+				this.write_expressions();
+			}
+			
+			private function update_tabs_crontab_editor_days_of_week(target:TabBar):void {
+				this.hg_crontab_editor_days_of_week_0.visible = false;
+				this.hg_crontab_editor_days_of_week_1.visible = false;
+				if (target.selectedIndex == 1) {
+					this.hg_crontab_editor_days_of_week_1.visible = true;
+					this.panel_crontab_editor_day_of_week.height = 150;
+				} else {
+					this.hg_crontab_editor_days_of_week_0.visible = true;
+					this.panel_crontab_editor_day_of_week.height = 120;
+				}
+				this.lbl_config_crontab_expression.text = this.expression;
+				this.write_expressions();
+			}
+			
+			protected function tabs_crontab_editor_hours_changeHandler(event:IndexChangeEvent):void {
+				this.update_tabs_crontab_editor_hours(event.currentTarget as TabBar);
+			}
+			
+			protected function hslider_crontab_editor_hours_updateCompleteHandler(event:FlexEvent):void {
+				this.lbl_config_crontab_expression.text = this.expression;
+				this.write_expressions();
+			}
+			
+			protected function tabs_crontab_editor_days_of_month_changeHandler(event:IndexChangeEvent):void {
+				this.update_tabs_crontab_editor_days(event.currentTarget as TabBar);
+			}
+			
+			protected function tabs_crontab_editor_month_changeHandler(event:IndexChangeEvent):void {
+				this.update_tabs_crontab_editor_months(event.currentTarget as TabBar);
+			}
+			
+			protected function tabs_crontab_editor_days_of_week_changeHandler(event:IndexChangeEvent):void {
+				this.update_tabs_crontab_editor_days_of_week(event.currentTarget as TabBar);
+			}
+			
+			protected function txt_crontab_editor_command_changeHandler(event:TextOperationEvent):void {
+				var txt:TextInput = event.currentTarget as TextInput;
+				if (txt is TextInput) {
+					this.__command__ = txt.text;
+					this.lbl_config_crontab_expression.text = this.expression;
+					this.write_expressions();
+				}
+			}
+			
+			private function get dropdown_list_tips():String {
+				var content:String = '';
+				var item:*;
+				content += '<UL>';
+				for (var i:int = 0; i < this.dropdown_list.dataProvider.length; i++) {
+					item = this.dropdown_list.dataProvider.getItemAt(i)
+					content += '<LI>' + item['label'] + '<LI>';
+				}
+				content += '</UL>';
+				return content;
+			}
+			
+			private function get dropdown_list_current_selection_analysis():Array {
+				var toks:Array;
+				var analysis:Array = [];
+				if (this.dropdown_list is DropDownList) {
+					var index:int = this.dropdown_list.selectedIndex;
+					if (index > -1) {
+						var item:* = this.dropdown_list.dataProvider.getItemAt(index);
+						if (item['data'] != null) {
+							toks = item['data'].split(__expression_spacer__);
+							var i:int;
+							var ch:String;
+							for (i = 0; i < toks.length; i++) {
+								ch = toks[i];
+								if (ch.length > 0) {
+									analysis.push(ch);
+								}
+							}
+						}
+					}
+				}
+				return analysis;
+			}
+			
+			private function apply_currently_selected_pattern():void {
+				var __is_slider__:Boolean = false;
+				var __is_choices__:Boolean = false;
+				var analysis:Array = this.dropdown_list_current_selection_analysis;
+				if (analysis.length > 0) {
+					__is_slider__ = (analysis[0].indexOf('*/') > -1);
+					__is_choices__ = (analysis[0].indexOf(',') > -1)
+				}
+				if (this.hslider_crontab_editor_minutes is HSlider) {
+					this.apply_currently_selected_pattern_to_minutes(this.hslider_crontab_editor_minutes);
+				}
+				if (this.grid_minutes is DataGrid) {
+					this.grid_minutes.dataProvider = this.minutes_for_list;
+					this.select_minutes_selections(analysis[0].split(','));
+				}
+				if (this.hslider_crontab_editor_hours is HSlider) {
+					this.apply_currently_selected_pattern_to_hours(this.hslider_crontab_editor_hours);
+				}
+				if (this.grid_hours is DataGrid) {
+					this.grid_hours.dataProvider = this.hours_for_list;
+					this.select_hours_selections(analysis[1].split(','));
+				}
+				if (this.grid_days is DataGrid) {
+					this.grid_days.dataProvider = this.days_for_list;
+					this.select_days_selections(analysis[2].split(','));
+				}
+				if (this.grid_months is DataGrid) {
+					this.grid_months.dataProvider = this.months_for_list;
+					this.select_months_selections(analysis[3].split(','));
+				}
+				if (this.grid_days_of_week is DataGrid) {
+					this.grid_days_of_week.dataProvider = this.days_of_week_for_list;
+					this.select_days_of_week_selections(analysis[4].split(','));
+				}
+				// set __expression__ from the analysis rather than getting the expression as stated below.
+				this.__expression__ = [];
+				for (var i:int = 0; i < analysis.length; i++) {
+					this.__expression__.push(analysis[i]);
+				}
+				this.lbl_config_crontab_expression.text = this.__expression__.join(__expression_spacer__);
+				this.write_expressions();
+				// +++
+			}
+			
+			protected function dropdown_list_changeHandler(event:IndexChangeEvent):void {
+				var toks:Array;
+				var dd_list:DropDownList = event.currentTarget as DropDownList;
+				if (dd_list is DropDownList) {
+					var item:* = dd_list.dataProvider.getItemAt(event.newIndex);
+					if (item['data'] == null) {
+						var exp:String = this.new_expression;
+						dd_list.dataProvider.addItemAt({'label':exp,'data':exp},dd_list.dataProvider.length-1);
+						dd_list.selectedIndex = dd_list.dataProvider.length-2;
+					}
+					this.apply_currently_selected_pattern();
+				}
+			}
+			
+			protected function dropdown_list_creationCompleteHandler(event:FlexEvent):void {
+				var dd_list:DropDownList = event.currentTarget as DropDownList;
+				if (dd_list is DropDownList) {
+					if (dd_list.selectedIndex > -1) {
+						var ii:int = -1;
+					}
+				}
+			}
+			
+			private function __apply_currently_selected_pattern_to_slider__(slider:HSlider,index:int):void {
+				if (slider is HSlider) {
+					var analysis:Array = this.dropdown_list_current_selection_analysis;
+					if ( (analysis.length > 0) && (index < analysis.length) ) {
+						var value:int = int(analysis[index].replace('*/',''));
+						slider.value = value;
+					}
+				}
+			}
+			
+			private function apply_currently_selected_pattern_to_minutes(slider:HSlider):void {
+				this.__apply_currently_selected_pattern_to_slider__(slider,0);
+			}
+			
+			private function apply_currently_selected_pattern_to_hours(slider:HSlider):void {
+				this.__apply_currently_selected_pattern_to_slider__(slider,1);
+			}
+			
+			protected function hslider_crontab_editor_minutes_creationCompleteHandler(event:FlexEvent):void {
+				var slider:HSlider = event.currentTarget as HSlider;
+				this.apply_currently_selected_pattern_to_minutes(slider);
+			}
+			
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void {
+				var aFile:File = this.crontab_file_from_parent;
+				if (aFile is File) {
+					var fileStream:FileStream = new FileStream(); 
+					fileStream.open(aFile, FileMode.READ);
+					var contents:String;
+					var ba:ByteArray = new ByteArray();
+					fileStream.readBytes(ba,0,aFile.size);
+					var ch:int;
+					var space:int = ' '.charCodeAt(0);
+					for (var i:int = 0; i < aFile.size; i++) {
+						ch = ba.readByte();
+						if (ch > space) {
+							contents += ch as String;
+						}
+					}
+					var lines:Array = contents.split('\r\n');
+					var new_lines:Array = [];
+					ArrayUtils.iterate(lines, 
+						function (item:String,i:int,source:Array):void {
+							var anItem:* = {};
+							var s:String = StringUtils.trim(item);
+							var ch:String = s.substr(0,1);
+							if ( (s.length > 0) && (ch != '#') ) {
+								anItem['data'] = s;
+								anItem['label'] = s;
+								new_lines.push(anItem);
+							}
+						}
+					);
+					this.__expressions__.removeAll();
+					ArrayCollectionUtils.appendAllInto(this.__expressions__,new_lines);
+					fileStream.close();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	
+	<s:VGroup width="100%" paddingLeft="20" paddingTop="20" paddingRight="20" paddingBottom="20">
+		<s:VGroup width="100%">
+			<s:HGroup id="hgroup_config_crontab_status" width="30%" creationComplete="hgroup1_creationCompleteHandler(event)"/>
+			<s:HGroup>
+				<s:Label id="lbl_config_crontab_status" text="Crontab Data Status: "/>
+			</s:HGroup>
+		</s:VGroup>
+		<s:VGroup width="100%" paddingTop="10">
+			<s:HGroup width="100%">
+				<s:HGroup>
+					<s:Label text="Crontab Expression: "/>
+				</s:HGroup>
+				<s:HGroup>
+					<s:Label id="lbl_config_crontab_expression" text=""/>
+				</s:HGroup>
+			</s:HGroup>
+		</s:VGroup>
+		<s:VGroup width="100%" paddingTop="10">
+			<s:HGroup width="100%">
+				<s:DropDownList id="dropdown_list" width="100%" dataProvider="{this.__expressions__}" toolTip="{this.dropdown_list_tips}" change="dropdown_list_changeHandler(event)" creationComplete="dropdown_list_creationCompleteHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+		<s:VGroup id="crontabView_editor_container" width="100%">
+			<s:Panel id="panel_crontab_editor_minutes" width="100%" height="30" height.minutesView="120" title="Minute" click="panel_crontab_editor_minutes_clickHandler(event)">
+				<s:VGroup width="100%" includeIn="minutesView">
+					<s:TabBar id="tabs_crontab_editor_minutes" dataProvider="{this.tabs_minutes_data}" change="tabs_crontab_editor_minutes_changeHandler(event)" creationComplete="tabs_crontab_editor_minutes_creationCompleteHandler(event)"/>
+					<s:VGroup width="100%" paddingLeft="20" paddingRight="20">
+						<s:HGroup id="hg_crontab_editor_minutes_0" width="100%" paddingLeft="20" paddingTop="20" visible="true" includeInLayout="{this.hg_crontab_editor_minutes_0.visible}">
+							<s:Label text="*"/>
+						</s:HGroup>
+						<s:HGroup id="hg_crontab_editor_minutes_1" width="100%" visible="false" includeInLayout="{this.hg_crontab_editor_minutes_1.visible}">
+							<s:VGroup width="100%" paddingTop="10" paddingBottom="30">
+								<s:HGroup>
+									<s:Label text="Every {this.hslider_crontab_editor_minutes.value} minutes"/>
+								</s:HGroup>
+								<s:HGroup width="100%">
+									<s:HSlider id="hslider_crontab_editor_minutes" minimum="1" maximum="59" width="100%" updateComplete="hslider_crontab_editor_minutes_updateCompleteHandler(event)" creationComplete="hslider_crontab_editor_minutes_creationCompleteHandler(event)"/>
+								</s:HGroup>
+							</s:VGroup>
+						</s:HGroup>
+						<s:HGroup id="hg_crontab_editor_minutes_2" width="100%" height="300" visible="false" includeInLayout="{this.hg_crontab_editor_minutes_2.visible}">
+							<s:VGroup width="500" paddingLeft="{(this.hg_crontab_editor_minutes_2.width/2)-500}" paddingTop="10" paddingBottom="30">
+								<s:DataGrid id="grid_minutes" editable="false" requestedRowCount="6" selectionMode="multipleCells" sortableColumns="false" dataProvider="{this.minutes_for_list}" itemRenderer="views.renderer.CustomDataGridItemRenderer" skinClass="views.skins.DataGridSkin"/>
+							</s:VGroup>
+						</s:HGroup>
+					</s:VGroup>
+				</s:VGroup>
+			</s:Panel>
+			<s:Panel id="panel_crontab_editor_hours" width="100%" height="30" height.hoursView="120" title="Hour" click="panel_crontab_editor_hours_clickHandler(event)">
+				<s:VGroup width="100%" includeIn="hoursView">
+					<s:TabBar id="tabs_crontab_editor_hours" dataProvider="{this.tabs_hours_data}" change="tabs_crontab_editor_hours_changeHandler(event)"/>
+					<s:VGroup width="100%" paddingLeft="20" paddingRight="20">
+						<s:HGroup id="hg_crontab_editor_hours_0" width="100%" paddingLeft="20" paddingTop="20" visible="true" includeInLayout="{this.hg_crontab_editor_hours_0.visible}">
+							<s:Label text="*"/>
+						</s:HGroup>
+						<s:HGroup id="hg_crontab_editor_hours_1" width="100%" visible="false" includeInLayout="{this.hg_crontab_editor_hours_1.visible}">
+							<s:VGroup width="100%" paddingTop="10" paddingBottom="30">
+								<s:HGroup>
+									<s:Label text="Every {this.hslider_crontab_editor_hours.value} hours"/>
+								</s:HGroup>
+								<s:HGroup width="100%">
+									<s:HSlider id="hslider_crontab_editor_hours" minimum="1" maximum="23" width="100%" updateComplete="hslider_crontab_editor_hours_updateCompleteHandler(event)"/>
+								</s:HGroup>
+							</s:VGroup>
+						</s:HGroup>
+						<s:HGroup id="hg_crontab_editor_hours_2" width="100%" height="200" visible="false" includeInLayout="{this.hg_crontab_editor_hours_2.visible}">
+							<s:VGroup width="500" paddingLeft="{(this.hg_crontab_editor_hours_2.width/2)-500}" paddingTop="10" paddingBottom="30">
+								<s:DataGrid id="grid_hours" editable="false" height="50" requestedRowCount="2" requestedMaxRowCount="2" selectionMode="multipleCells" sortableColumns="false" dataProvider="{this.hours_for_list}" itemRenderer="views.renderer.CustomDataGridItemRenderer" skinClass="views.skins.DataGridSkin"/>
+							</s:VGroup>
+						</s:HGroup>
+					</s:VGroup>
+				</s:VGroup>
+			</s:Panel>
+			<s:Panel id="panel_crontab_editor_day_of_month" width="100%" height="30" height.daysOfMonthView="100" title="Day of month" click="panel_crontab_editor_day_of_month_clickHandler(event)">
+				<s:VGroup width="100%" includeIn="daysOfMonthView">
+					<s:TabBar id="tabs_crontab_editor_days_of_month" dataProvider="{this.tabs_days_data}" change="tabs_crontab_editor_days_of_month_changeHandler(event)"/>
+					<s:VGroup width="100%" paddingLeft="20" paddingRight="20">
+						<s:HGroup id="hg_crontab_editor_days_0" width="100%" paddingLeft="20" paddingTop="20" visible="true" includeInLayout="{this.hg_crontab_editor_days_0.visible}">
+							<s:Label text="*"/>
+						</s:HGroup>
+						<s:HGroup id="hg_crontab_editor_days_1" width="100%" height="150" visible="false" includeInLayout="{this.hg_crontab_editor_days_1.visible}">
+							<s:VGroup width="500" paddingLeft="{(this.hg_crontab_editor_days_1.width/2)-500}" paddingTop="10" paddingBottom="30">
+								<s:DataGrid id="grid_days" editable="false" height="26" requestedRowCount="5" requestedMaxRowCount="5" selectionMode="multipleCells" sortableColumns="false" dataProvider="{this.days_for_list}" itemRenderer="views.renderer.CustomDataGridItemRenderer" skinClass="views.skins.DataGridSkin"/>
+							</s:VGroup>
+						</s:HGroup>
+					</s:VGroup>
+				</s:VGroup>
+			</s:Panel>
+			<s:Panel id="panel_crontab_editor_month" width="100%" height="30" height.monthsView="100" title="Month" click="panel_crontab_editor_month_clickHandler(event)">
+				<s:VGroup width="100%" includeIn="monthsView">
+					<s:TabBar id="tabs_crontab_editor_month" dataProvider="{this.tabs_months_data}" change="tabs_crontab_editor_month_changeHandler(event)"/>
+					<s:VGroup width="100%" paddingLeft="20" paddingRight="20">
+						<s:HGroup id="hg_crontab_editor_months_0" width="100%" paddingLeft="20" paddingTop="20" visible="true" includeInLayout="{this.hg_crontab_editor_months_0.visible}">
+							<s:Label text="*"/>
+						</s:HGroup>
+						<s:HGroup id="hg_crontab_editor_months_1" width="100%" height="150" visible="false" includeInLayout="{this.hg_crontab_editor_months_1.visible}">
+							<s:VGroup width="500" paddingLeft="{(this.hg_crontab_editor_months_1.width/2)-500}" paddingTop="10" paddingBottom="30">
+								<s:DataGrid id="grid_months" editable="false" height="26" requestedRowCount="1" requestedMaxRowCount="1" selectionMode="multipleCells" sortableColumns="false" dataProvider="{this.months_for_list}" itemRenderer="views.renderer.CustomDataGridItemRenderer" skinClass="views.skins.DataGridSkin"/>
+							</s:VGroup>
+						</s:HGroup>
+					</s:VGroup>
+				</s:VGroup>
+			</s:Panel>
+			<s:Panel id="panel_crontab_editor_day_of_week" width="100%" height="30" height.daysOfWeekView="100" title="Day of week" click="panel_crontab_editor_day_of_week_clickHandler(event)">
+				<s:VGroup width="100%" includeIn="daysOfWeekView">
+					<s:TabBar id="tabs_crontab_editor_days_of_week" dataProvider="{this.tabs_days_of_week_data}" change="tabs_crontab_editor_days_of_week_changeHandler(event)"/>
+					<s:VGroup width="100%" paddingLeft="20" paddingRight="20">
+						<s:HGroup id="hg_crontab_editor_days_of_week_0" width="100%" paddingLeft="20" paddingTop="20" visible="true" includeInLayout="{this.hg_crontab_editor_days_of_week_0.visible}">
+							<s:Label text="*"/>
+						</s:HGroup>
+						<s:HGroup id="hg_crontab_editor_days_of_week_1" width="100%" height="150" visible="false" includeInLayout="{this.hg_crontab_editor_days_of_week_1.visible}">
+							<s:VGroup width="500" paddingLeft="{(this.hg_crontab_editor_days_of_week_1.width/2)-500}" paddingTop="10" paddingBottom="30">
+								<s:DataGrid id="grid_days_of_week" editable="false" height="26" requestedRowCount="1" requestedMaxRowCount="1" selectionMode="multipleCells" sortableColumns="false" dataProvider="{this.days_of_week_for_list}" itemRenderer="views.renderer.CustomDataGridItemRenderer" skinClass="views.skins.DataGridSkin"/>
+							</s:VGroup>
+						</s:HGroup>
+					</s:VGroup>
+				</s:VGroup>
+			</s:Panel>
+			<s:Panel id="panel_crontab_editor_command" width="100%" height="30" height.commandView="100" title="Command" click="panel_crontab_editor_command_clickHandler(event)">
+				<s:VGroup width="100%" includeIn="commandView" paddingLeft="10" paddingTop="10">
+					<s:HGroup width="100%">
+						<s:HGroup paddingTop="5">
+							<s:Label text="Command:"/>
+						</s:HGroup>
+						<s:TextInput id="txt_crontab_editor_command" width="80%" editable="true" change="txt_crontab_editor_command_changeHandler(event)"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:Panel>
+		</s:VGroup>
+	</s:VGroup>
+
+</s:TitleWindow>

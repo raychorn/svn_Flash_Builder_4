@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   width="16" height="16" 
+		   useHandCursor="true" buttonMode="true" 
+		   useHandCursor.disabled="false" buttonMode.disabled="false" 
+		   mouseOver="onMouseOver(event)" mouseOut="onMouseOut(event)" 
+		   click="canvas1_clickHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import boxes.Box;
+			
+			import utils.Images;
+			
+			import vzw.utils.ArrayUtils;
+			
+			private var _isDrawingLine:Boolean = false;
+			
+			private var _onClick_callback:Function;
+
+			private var _connections:Array = [];
+			
+			private var _parentBox:Box;
+			
+			private var _boxPts:Array = [new Point(-1,-1),new Point(1,-1),new Point(1,1),new Point(-1,1)];
+			private var _adjacentPts:Array = [new Point(0,-1),new Point(1,0),new Point(0,1),new Point(-1,0)];
+			
+			public function get parentBox():Box {
+				return this._parentBox;
+			}
+			
+			public function set parentBox(parentBox:Box):void {
+				this._parentBox = parentBox;
+			}
+			
+			public function get connections():Array {
+				return this._connections;
+			}
+			
+			public function set connectTo(aDot:BlueDot):void {
+				this._connections.push(aDot);
+			}
+			
+			private function _pointsFrom(somePts:Array):Array {
+				var aPt:Point = this.gridCoord_from_id;
+				var pts:Array = [];
+				var pt:Point;
+				for (var i:String in somePts) {
+					pt = aPt.add(somePts[i]);
+					if ( (pt.x >= 0) && (pt.y >= 0) ) {
+						pts.push(pt);
+					}
+				}
+				return pts;
+			}
+			
+			public function get boxPts():Array {
+				return this._pointsFrom(this._boxPts);
+			}
+			
+			public function get asPoint():Point {
+				return new Point(this.x,this.y);
+			}
+			
+			public function get adjacentPts():Array {
+				var aPt:Point = this.gridCoord_from_id;
+				var pts:Array = this._pointsFrom(this._adjacentPts);
+				pts.push(aPt);
+				return pts;
+			}
+			
+			public function get normalizedConnections():Array {
+				var aPt:Point;
+				var aDot:BlueDot;
+				var c:Array = [];
+				for (var i:String in this.connections) {
+					aDot = this.connections[i] as BlueDot;
+					aPt = aDot.gridCoord_from_id;
+					c.push(aPt);
+				}
+				return c;
+			}
+			
+			public function connection_by_id(id:String):BlueDot {
+				var aDot:BlueDot;
+				var are_ids_equal:Function = function (dot:BlueDot, i:int, source:Array, selector:*, id:String):Boolean {
+					return dot.id == id;
+				};
+				var m:int = ArrayUtils.findIf(this.connections,are_ids_equal,null,id);
+				if (m is int) {
+					aDot = this.connections[m];
+				}
+				return aDot;
+			}
+			
+			public function connection_by_point(aPt:Point):BlueDot {
+				return this.connection_by_id(aPt.x+'@'+aPt.y);
+			}
+			
+			public function get isDrawingLine():Boolean {
+				return this._isDrawingLine;
+			}
+			
+			public function get isDisabled():Boolean {
+				return this.currentState == 'disabled';
+			}
+			
+			public function get isNotDisabled():Boolean {
+				return !this.isDisabled;
+			}
+			
+			public function set isDrawingLine(isDrawingLine:Boolean):void {
+				this._isDrawingLine = isDrawingLine;
+				this.image.source = (this.isDrawingLine) ? Images.imgGreenCls : Images.imgBlueCls;
+			}
+			
+			public function get onClick_callback():Function {
+				return this._onClick_callback;
+			}
+			
+			public function set onClick_callback(onClick_callback:Function):void {
+				this._onClick_callback = onClick_callback;
+			}
+			
+			public static function gridCoord_from(id:String):Point {
+				var toks:Array = id.split('@');
+				return new Point(int(toks[0]),int(toks[toks.length-1]));
+			}
+			
+			public function get gridCoord_from_id():Point {
+				return BlueDot.gridCoord_from(this.id);
+			}
+			
+			private function onMouseOver(event:MouseEvent):void {
+				if ( (this.isNotDisabled) && (this.image.source == Images.imgBlueCls) ) {
+					this.image.source = Images.imgRedCls;
+				}
+			}
+
+			private function onMouseOut(event:MouseEvent):void {
+				if ( (this.isNotDisabled) && (this.image.source == Images.imgRedCls) ) {
+					this.image.source = (this.isDrawingLine) ? Images.imgGreenCls : Images.imgBlueCls;
+				}
+			}
+
+			protected function canvas1_clickHandler(event:MouseEvent):void {
+				if (this.isNotDisabled) {
+					this.isDrawingLine = true;
+					if (this.onClick_callback is Function) {
+						try { this.onClick_callback(event) } 
+							catch (err:Error) {
+								trace(this.className+'.canvas1_clickHandler().ERROR '+err.toString()+'\n'+err.getStackTrace());
+							}
+					}
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<mx:states>
+		<s:State name="State1"/>
+		<s:State name="disabled"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:Image id="image" source="{Images.imgBlueCls}" source.disabled="{Images.imgDisabledCls}" width="10" height="10" scaleContent="true" autoLoad="true"/>
+</mx:Canvas>

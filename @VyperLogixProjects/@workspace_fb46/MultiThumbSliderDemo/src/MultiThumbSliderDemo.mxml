@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:sliders="com.anjantek.controls.sliders.*"
+			   minWidth="955" minHeight="600" viewSourceURL="/wp-content/downloads/2011-12-22-mts_demo/fb_project/srcview/index.html">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			protected function button_add_thumb_clickHandler(event:MouseEvent):void
+			{
+				if( "" == text_new_value.text )
+				{
+					Alert.show( "Please enter a number between " + h_slider.minimum + " and " + h_slider.maximum, "Value required" );
+					return;
+				}
+				
+				const value: Number = Number( text_new_value.text );
+				
+				if( value < h_slider.minimum || value > h_slider.maximum )
+				{
+					Alert.show( "Please enter a number between " + h_slider.minimum + " and " + h_slider.maximum, "Value out of bounds" );
+					return;
+				}
+				
+				var new_object: Object = new Object();
+				new_object.value = value;
+				slider_dp.addItem( new_object );
+			}
+			
+			//-------------------------------------------------------------------------------------------------
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:ArrayCollection id="slider_dp">
+			<fx:Object value="10" label="C1" fixedValue="false" />
+			<fx:Object value="25" label="B1" fixedValue="false" />
+			<fx:Object value="40" label="D1" fixedValue="false" />
+			<fx:Object value="75" label="E1" fixedValue="false" />
+			<fx:Object value="100" label="A1" fixedValue="true" />
+		</s:ArrayCollection>
+	</fx:Declarations>
+	
+	<s:VGroup paddingLeft="50" paddingRight="50"
+			  paddingTop="60" paddingBottom="20"
+			  gap="50" width="100%">
+		
+		<sliders:MultiThumbHSlider id="h_slider" width="100%" height="35" slideDuration="1000"
+								   maximum="100"
+								   showTrackHighlight="{ checkbox_show_track_hl.selected }" accentColors="{[ 0xFF0000, 0x00FF00, 0x0000FF ]}"
+								   dataProvider="{slider_dp}" markers="{[ 0 ]}"
+								   allowDuplicateValues="false" allowOverlap="false" defaultTrackHighlightLabel="New Label"/>
+		
+		<s:HGroup gap="20" width="100%">
+			
+			<s:DataGrid id="data_grid"
+						dataProvider="{h_slider.dataProvider}" height="300" >
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn headerText="Max Value" dataField="value" width="100" />
+						<s:GridColumn headerText="Label" dataField="label" width="100" />
+						<s:GridColumn headerText="Is Value Fixed?" dataField="fixedValue" width="120" />
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			
+			<s:Form defaultButton="{ button_add_thumb }">
+				<s:FormItem label="New Value" required="true">
+					<s:TextInput id="text_new_value" restrict="0-9" />
+				</s:FormItem>
+				
+				<s:FormItem>
+					<s:Button id="button_add_thumb" label="Add Thumb" click="button_add_thumb_clickHandler(event)" />
+				</s:FormItem>
+				
+				<s:FormItem>
+					<s:CheckBox id="checkbox_show_track_hl" label="Show Track Highlights"
+								selected="true"/>
+				</s:FormItem>
+			</s:Form>
+			
+			
+		</s:HGroup>
+		
+		<s:Label text="* The white colored thumb-like object at 0 is a Marker."
+				 fontSize="10" color="red" />
+		
+	</s:VGroup>
+	
+</s:Application>

@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		click="view1_clickHandler(event)" 
+		touchTap="view1_touchTapHandler(event)"
+		currentState="normal" actionBarVisible="false"
+		initialize="view1_initializeHandler(event)"
+		stateChangeComplete="view1_stateChangeCompleteHandler(event)"
+		creationComplete="view1_creationCompleteHandler(event)" 
+		mouseMove="view1_mouseMoveHandler(event)" 
+		touchMove="view1_touchMoveHandler(event)" 
+		xmlns:flexMusicPlayer="*" 
+		xmlns:components="views.components.*" xmlns:MediaPresentation="controls.MediaPresentation.*">
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="information"/>
+		<s:State name="error"/>
+		<s:State name="debugger"/>
+		<s:State name="changes"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import controls.MediaPresentation.events.ChangeActionBar;
+			import controls.MediaPresentation.events.ChangeActionBarTitle;
+			
+			import mx.events.FlexEvent;
+			
+			private var _this:CiscoAmazonDemo1HomeView;
+			
+			private var __title_delay__:int = 0;
+			
+			private var __title_timer__:Timer;
+			
+			protected function exitApp_clickHandler(event:MouseEvent):void {
+				this.mediaPlayer.information = 'About to exit the application.';
+				this.parentApplication.nativeApplication.exit();
+			}
+			
+			protected function hideNavBar_creationCompleteHandler(event:FlexEvent):void {
+				this.hideNavBar.enabled = false;
+			}
+			
+			protected function hideNavBar_clickHandler(event:MouseEvent):void {
+				trace(this.className+'.hideNavBar_clickHandler.1 --> event='+event.toString());
+				var is_not_showing_media_navBar:Boolean = this.mediaPlayer.is_not_showing_media_navBar;
+				trace(this.className+'.hideNavBar_clickHandler.1a --> is_not_showing_media_navBar='+is_not_showing_media_navBar);
+				if ( (!this.mediaPlayer.is_currently_selected_tab_navbar_autohide) || (is_not_showing_media_navBar) ) {
+					trace(this.className+'.hideNavBar_clickHandler.2 --> event='+event.toString());
+					this.mediaPlayer.canvas.hide_nav();
+				} else {
+					trace(this.className+'.hideNavBar_clickHandler.3 --> event='+event.toString());
+					this.mediaPlayer.end_hiding_media_navBar();
+				}
+				this.mediaPlayer.is_showing_media_navBar = false;
+				this.showNavBar.enabled = true;
+				this.hideNavBar.enabled = false;
+				trace(this.className+'.hideNavBar_clickHandler.4 --> event='+event.toString());
+			}
+			
+			protected function showVersion_clickHandler(event:MouseEvent):void {
+				this.mediaPlayer.showVersion_clickHandler(event);
+			}
+			
+			protected function showCredits_clickHandler(event:MouseEvent):void {
+				this.mediaPlayer.showCredits_clickHandler(event);
+			}
+			
+			protected function showNavBar_clickHandler(event:MouseEvent):void {
+				trace(this.className+'.showNavBar_clickHandler.1 --> event='+event.toString());
+				this.mediaPlayer.showNavBar_clickHandler(event);
+			}
+			
+			protected function showNavBar_creationCompleteHandler(event:FlexEvent):void {
+				this.mediaPlayer.showNavBar_creationCompleteHandler(event);
+			}
+			
+			protected function resetDebugger_clickHandler(event:MouseEvent):void {
+				this.mediaPlayer.resetDebugger_clickHandler(event);
+			}
+			
+			protected function showChanges_clickHandler(event:MouseEvent):void {
+				this.mediaPlayer.showChanges_clickHandler(event);
+			}
+			
+			protected function showDebugger_clickHandler(event:MouseEvent):void {
+				this.mediaPlayer.showDebugger_clickHandler(event);
+			}
+			
+			protected function view1_clickHandler(event:MouseEvent):void {
+				this.mediaPlayer.view1_clickHandler(event);
+			}
+			
+			protected function view1_creationCompleteHandler(event:FlexEvent):void {
+				this.mediaPlayer.initialize_using_root_xml(CiscoAmazonDemo1.root_file_name_xml);
+			}
+			
+			protected function view1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				this.mediaPlayer.view1_initializeHandler(event);
+			}
+			
+			protected function view1_touchTapHandler(event:TouchEvent):void {
+				this.mediaPlayer.view1_touchTapHandler(event);
+			}
+			
+			protected function view1_mouseMoveHandler(event:MouseEvent):void {
+				this.mediaPlayer.view1_mouseMoveHandler(event);
+			}
+			
+			protected function view1_stateChangeCompleteHandler(event:FlexEvent):void {
+				this.mediaPlayer.view1_stateChangeCompleteHandler(event);
+			}
+			
+			protected function view1_touchMoveHandler(event:TouchEvent):void {
+				this.mediaPlayer.view1_touchMoveHandler(event);
+			}
+			
+			protected function mediaPlayer_changeActionBarHandler(event:ChangeActionBar):void {
+				try {this.actionBarVisible = event._is_;} 
+				catch (err:Error) {
+					trace('(+++) '+this.className+'.mediaPlayer_changeActionBarHandler.2 --> err='+err.toString()+'\n'+err.getStackTrace());
+				}
+				if (!event._always_) {
+					if ( (this.actionBarVisible) && (this.__title_delay__ > 1000) ) {
+						this.__title_timer__ = new Timer(this.__title_delay__,1);
+						this.__title_timer__.addEventListener(TimerEvent.TIMER_COMPLETE, 
+							function (event:TimerEvent):void {
+								_this.__title_timer__.stop();
+								_this.actionBarVisible = !_this.actionBarVisible;
+							}
+						);
+						this.__title_timer__.start();
+					}
+				}
+			}
+			
+			protected function mediaPlayer_ChangeActionBarTitleHandler(event:ChangeActionBarTitle):void {
+				this.title = event.title;
+				this.__title_delay__ = event.delay;
+				if (this.__title_delay__ < 1000) {
+					this.__title_delay__ *= 1000;
+				}
+			}
+			
+			protected function showOptions_clickHandler(event:MouseEvent):void {
+				this.mediaPlayer.showOptions_clickHandler(event);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:viewMenuItems>
+		<s:ViewMenuItem id="showVersion" label="Version" enabled="true" click="showVersion_clickHandler(event)"/>
+		<s:ViewMenuItem id="showCredits" label="Credits..." enabled="true" click="showCredits_clickHandler(event)"/>
+		<s:ViewMenuItem id="showOptions" label="Options..." enabled="true" visible="false" includeInLayout="{this.showOptions.visible}" click="showOptions_clickHandler(event)"/>
+		<!--
+		<s:ViewMenuItem id="showHotSpots" label="Show HotSpots" enabled="{this.has_hotspots_and_not_showing_hotspots}" click="showHotSpots_clickHandler(event)"/>
+		<s:ViewMenuItem id="hideHotSpots" label="Hide HotSpots" enabled="{this.has_hotspots_and_showing_hotspots}" click="hideHotSpots_clickHandler(event)"/>
+		<s:ViewMenuItem id="navBegin" label="{nav_begin_symbol}" enabled="false" click="navBegin_clickHandler(event)" visible="{this.navBegin.enabled}" includeInLayout="{this.navBegin.enabled}"/>
+		<s:ViewMenuItem id="navNext" label="{nav_next_symbol}" enabled="false" click="navNext_clickHandler(event)" visible="{this.navNext.enabled}" includeInLayout="{this.navNext.enabled}"/>
+		<s:ViewMenuItem id="navPrev" label="{nav_prev_symbol}" enabled="false" click="navPrev_clickHandler(event)" visible="{this.navPrev.enabled}" includeInLayout="{this.navPrev.enabled}"/>
+		<s:ViewMenuItem id="navEnd" label="{nav_end_symbol}" enabled="false" click="navEnd_clickHandler(event)" visible="{this.navEnd.enabled}" includeInLayout="{this.navEnd.enabled}"/>
+		<s:ViewMenuItem id="navAuto" label="{nav_auto_symbol}" enabled="false" click="navAuto_clickHandler(event)" visible="{this.navAuto.enabled}" includeInLayout="{this.navAuto.enabled}"/>
+		<s:ViewMenuItem id="navMenu" label="{nav_menu_symbol}" enabled="false" click="navMenu_clickHandler(event)" visible="{this.navMenu.enabled}" includeInLayout="{this.navMenu.enabled}"/>
+		-->
+		<s:ViewMenuItem id="showNavBar" label="Show Nav Bar" enabled="false" visible="false" includeInLayout="{this.showNavBar.visible}" click="showNavBar_clickHandler(event)" creationComplete="showNavBar_creationCompleteHandler(event)"/>
+		<s:ViewMenuItem id="hideNavBar" label="Hide Nav Bar" enabled="false" visible="false" includeInLayout="{this.hideNavBar.visible}" click="hideNavBar_clickHandler(event)" creationComplete="hideNavBar_creationCompleteHandler(event)"/>
+		<s:ViewMenuItem id="showChanges" label="Change Log..." enabled="true" click="showChanges_clickHandler(event)"/>
+		<s:ViewMenuItem id="showDebugger" label="Activity..." enabled="{!this.mediaPlayer.__is_playing_media__}" click="showDebugger_clickHandler(event)"/>
+		<s:ViewMenuItem id="resetDebugger" label="Save Activity" enabled="{!this.mediaPlayer.__is_playing_media__}" click="resetDebugger_clickHandler(event)"/>
+		<s:ViewMenuItem id="exitApp" label="Exit" enabled="{this.parentApplication.is_menu_enhanced}" click="exitApp_clickHandler(event)"/>
+	</s:viewMenuItems>
+	<MediaPresentation:MediaPlayer id="mediaPlayer" 
+								   parentView="{this}"
+								   width="100%" height="100%" 
+								   changeActionBar="mediaPlayer_changeActionBarHandler(event)" 
+								   ChangeActionBarTitle="mediaPlayer_ChangeActionBarTitleHandler(event)"/>
+</s:View>

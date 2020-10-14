@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				click="itemrenderer1_clickHandler(event)"
+				autoDrawBackground="false" height="100%" width="100%" xmlns:controls="controls.*">
+	<fx:Script>
+		<![CDATA[
+			import controls.events.ClickedDocsListMediaCardEvent;
+			
+			import mx.controls.Alert;
+			
+			import utils.AIRHelper;
+			
+			[Bindable]
+			public static var cell_width:Number = 290;
+			
+			[Bindable]
+			public static var cell_height:Number = 95;
+			
+			private var tips:Object = {
+				'AFStudyGuideIcon' : '27 Amazing Facts Study Guides, enjoyed all over the world',
+				'AudioIcon' : 'Audio File, Questions and answers from the hit radio program Bible Answers Live',
+				'BookIcon' : 'A huge library of books, including 44 booklets by trusted Bible experts, an electronic health magazine, plus these timeless works: Steps to Christ, Acts of the Apostles, and more!',
+				'KidStudyGuideIcon' : 'Kids Study Guide, topical study guides for kids, called Amazing Adventure',
+				'StoraclesIcon' : '24 Storacles of Prophecy Bible lessons, providing new biblical insights',
+				'VideoIcon' : '30 videos totaling over 25 hours of life-changing Bible teaching'
+			};
+
+			private function set_image_tooltip(data:Object):void {
+				for (var i:String in this.tips) {
+					if (String(data.data.image).toLowerCase().indexOf(i.toLowerCase()) > -1) {
+						this.anImage.toolTip = this.tips[i];
+						break;
+					}
+				}
+			}
+			
+			override public function set data(value:Object):void {
+				super.data = value;
+				
+				if (value) {
+					titleLbl.text = data.label;
+					contentLbl.text = data.data.text;
+					this.set_image_tooltip(data);
+					titleLbl.visible = true;
+					contentLbl.visible = true;
+				} else {
+					titleLbl.text = "";
+					contentLbl.text = "";
+					titleLbl.visible = false;
+					contentLbl.visible = false;
+				}
+				
+			}
+
+			protected function itemrenderer1_clickHandler(event:MouseEvent):void {
+				this.dispatchEvent(new ClickedDocsListMediaCardEvent(ClickedDocsListMediaCardEvent.TYPE_CLICKED_DOCSLIST_MEDIA_CARD,this.data));
+			}
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="hovered" />
+		<s:State name="selected" />
+	</s:states>
+	
+	<s:Rect left="0" right="0" top="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color.selected="0x383c40" color.normal="0x2a2d2b" color.hovered="0x383c40"
+						  alpha.selected="0.8" alpha.hovered="0.5" alpha.normal="0.8" />
+		</s:fill>
+	</s:Rect>
+
+	<mx:Image id="anImage" x="5" y="5" scaleContent="false" source="{AIRHelper.get_prefix+'data/'+data.data.image}"/>
+	<s:Label id="titleLbl" x="{this.anImage.width + this.anImage.x + 5}" y="5" width="100%" styleName="docs_listItemTitle"/>
+	<s:Line left="{this.anImage.width + 10}" right="{5}" bottom="{this.height - 22}" width="1">
+		<s:stroke>
+			<s:SolidColorStroke color="0xffffff"/>
+		</s:stroke>
+	</s:Line>
+	<controls:MultiLineLabel id="contentLbl" x="{this.anImage.width + this.anImage.x + 5}" y="30" width="{this.width - this.anImage.width - 20}" styleName="docs_listItemTitleText" htmlText="{data.data.text}" paddingTop="-10" textAlign="left"/>
+	
+</s:ItemRenderer>

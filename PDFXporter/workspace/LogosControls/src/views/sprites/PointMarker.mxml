@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   creationComplete="group1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.Label;
+			import mx.events.FlexEvent;
+			
+			public var radius:Number = 0;
+			
+			public var color:uint = 0x000000;
+			
+			public var num:int = 1;
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void {
+				//trace(this.toString()+'.spritevisualelement1_addedToStageHandler().1 !');
+				this.graphics.clear();
+				this.graphics.lineStyle(1, this.color);
+				var delta:Number = (this.radius/2) / this.num;
+				for (var i:int = 0; i < num; i++) {
+					this.graphics.drawCircle(0,0,(i == 0) ? this.radius : (i*delta));
+				}
+			}
+			
+			public function get point():Point {
+				return new Point(this.x,this.y);
+			}
+
+		]]>
+	</fx:Script>
+</s:Group>

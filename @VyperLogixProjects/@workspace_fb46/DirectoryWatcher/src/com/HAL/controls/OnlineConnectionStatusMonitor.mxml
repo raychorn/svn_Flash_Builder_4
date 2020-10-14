@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  initialize="vgroup1_initializeHandler(event)" resize="onResize(event)" 
+		  width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			
+			import com.HAL.controls.events.OnlineStatusChangedEvent;
+			
+			public static const redColor:uint = 0xff0000;
+			public static const greenColor:uint = 0x00ff00;
+			public static const blueColor:uint = 0x0000ff;
+			
+			private var _redColor:uint = redColor;
+			private var _greenColor:uint = greenColor;
+			private var _blueColor:uint = blueColor;
+			
+			private var _center:Point = new Point(11,11);
+			private var _radius:Number = 9;
+			
+			private var _alpha:Number = 0.25;
+			
+			private var _isDrawn:Boolean = false;
+			
+			private var _isOnline:Boolean = false;
+			private var _isConnected:Boolean = false;
+			
+			[Event(name="onlineStatusChanged", type="com.HAL.controls.events.OnlineStatusChangedEvent")]
+			
+			protected function vgroup1_initializeHandler(event:FlexEvent):void {
+				this._isDrawn = true;
+				this.invalidateDisplayList();
+			}
+			
+			protected function onResize(event:ResizeEvent):void {
+				this.invalidateDisplayList();
+			}
+			
+			public function beginCommunication():void {
+				this.alpha = 0.5;
+			}
+			
+			public function signalResponseFromServer():void {
+				this.alpha = 1.0;
+			}
+			
+			public override function set alpha(alpha:Number):void {
+				this._alpha = alpha;
+				this.onDraw();
+			}
+			
+			public override function get alpha():Number {
+				return this._alpha;
+			}
+			
+			public function set center(pt:Point):void {
+				this._center = pt;
+				this.onDraw();
+			}
+			
+			public function get center():Point {
+				return this._center;
+			}
+			
+			public function set radius(theRadius:Number):void {
+				this._radius = theRadius;
+				this.onDraw();
+			}
+			
+			public function get radius():Number {
+				return this._radius;
+			}
+			
+			public function set isOnline(online:Boolean):void {
+				this._isOnline = online;
+				this._alpha = 1.0;
+				this.onDraw();
+			}
+			
+			public function get isOnline():Boolean {
+				return this._isOnline;
+			}
+			
+			public function set isConnected(connected:Boolean):void {
+				this._isConnected = connected;
+				this._alpha = 0.5;
+				this.onDraw();
+			}
+			
+			public function get isConnected():Boolean {
+				return this._isConnected;
+			}
+			
+			private function onDraw():void {
+				if (this._isDrawn) {
+					this.graphics.clear();
+					var color:uint = (this._isConnected) ? ((this._isOnline) ? this._greenColor : this._redColor) : this._redColor;
+					trace(this.className+'.onDraw().1 --> _isConnected='+this._isConnected+', _isOnline='+this._isOnline+', color='+color);
+					this.graphics.beginFill(color,this._alpha);
+					this.toolTip = (this._isConnected) ? ((this._isOnline) ? 'Online' : 'Offline') : 'Offline';
+					this.graphics.drawCircle(this._center.x,this._center.y,this._radius);
+					this.dispatchEvent(new OnlineStatusChangedEvent(OnlineStatusChangedEvent.TYPE_ONLINE_STATUS_CHANGED,color,this._alpha,this._isConnected));
+				}
+			}
+		]]>
+	</fx:Script>
+</s:VGroup>

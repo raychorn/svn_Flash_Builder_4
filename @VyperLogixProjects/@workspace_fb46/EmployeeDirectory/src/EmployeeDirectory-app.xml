@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<application xmlns="http://ns.adobe.com/air/application/2.6">
+	<id>EmployeeDirectory</id>
+	<filename>EmployeeDirectory</filename>
+	<name>Employee Directory</name>
+	<versionNumber>1.0.0</versionNumber>
+	<!-- <supportedProfiles>mobileDevice</supportedProfiles>  -->
+	<initialWindow>
+		<content>EmployeeDirectory.swf</content>
+		<visible>true</visible>
+		<!-- <autoOrients>true</autoOrients> -->
+	</initialWindow>
+</application>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  layout="absolute" width="100%" height="100%"
+		  title="Terms and Conditions" showCloseButton="true" 
+		  creationComplete="titlewindow1_creationCompleteHandler(event)">
+	<mx:states>
+		<mx:State name="State1"/>
+		<mx:State name="INFORMATION_ONLY"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			
+			import controls.Alert.AlertPopUp;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			private var cache_TermsAndConditionsHTML:String;
+
+			private function get has_read_terms_and_conditions():Boolean {
+				return ( (FlexGlobals.topLevelApplication.appProxy.has_read_terms_and_conditions == true) && (FlexGlobals.topLevelApplication.appProxy.has_agreed_to_terms_and_conditions) );
+			}
+
+			private function get current_status_of_agreement():String {
+				var s:String = ' :: You have ' + ((this.has_read_terms_and_conditions) ? 'AGREED' : 'NOT agreed') + ' to the Terms and Conditions.';
+				return s;
+			}
+			
+			private function get TermsAndConditionsHTML():String {
+				if (this.cache_TermsAndConditionsHTML == null) {
+					try {
+						var aClass:Class = FlexGlobals.topLevelApplication.appProxy.TermsAndConditionsClass;
+						var data:ByteArray = new aClass();
+						data.position = 0;
+						this.cache_TermsAndConditionsHTML = data.readUTFBytes(data.length);
+					} catch (err:Error) {
+						//AlertPopUp.surpriseNoOkay('Cannot display the Terms and Conditions due to some kind of technical problem because '+err.toString(),'WARNING ('+DebuggerUtils.getFunctionName(err)+')');
+					}
+				}
+				return this.cache_TermsAndConditionsHTML;
+			}
+
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void {
+				this.title += this.current_status_of_agreement;
+			}
+
+
+			protected function termsHTML_creationCompleteHandler(event:FlexEvent):void {
+				this.termsHTML.htmlText = this.TermsAndConditionsHTML;
+			}
+
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%">
+		<mx:Spacer width="5" height="5"/>
+		<mx:HBox id="hbox1" width="100%" height="100%">
+			<mx:Spacer width="5"/>
+			<mx:TextArea id="termsHTML" htmlText="" width="100%" height="{this.height}" borderStyle="none" creationComplete="termsHTML_creationCompleteHandler(event)"/>
+		</mx:HBox>
+		<mx:HBox width="100%" horizontalAlign="center" visible.INFORMATION_ONLY="false" includeInLayout.INFORMATION_ONLY="false">
+			<mx:Spacer width="30%"/>
+			<mx:Button id="btn_agreementYes" label="I Agree"/>
+			<mx:Spacer width="30%"/>
+			<mx:Button id="btn_agreementNo" label="I Do Not Agree"/>
+		</mx:HBox>
+		<mx:Spacer height="5"/>
+	</mx:VBox>
+</mx:TitleWindow>

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group width="800"
+		 height="45"
+		 xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx">
+
+	<!-- layer one of background -->
+	<s:Rect width="100%"
+			height="100%">
+		<s:fill>
+			<s:SolidColor color="0x575757"/>
+		</s:fill>
+	</s:Rect>
+
+	<!-- layer two of background (note the blendMode-->
+	<s:Rect width="100%"
+			height="100%"
+			blendMode="multiply"
+			alpha="0.3">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0xFFFFFF"/>
+				<s:GradientEntry color="0x404040"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+
+	<!-- 1px black line -->
+	<s:Rect width="100%"
+			height="1"
+			bottom="0">
+		<s:fill>
+			<s:SolidColor color="0x000000"/>
+		</s:fill>
+	</s:Rect>
+
+	<!-- app label -->
+	<s:HGroup x="70"
+			  y="30">
+	</s:HGroup>
+
+	<!-- top right box -->
+	<s:HGroup height="100%"
+			  right="10"
+			  verticalAlign="middle"
+			  gap="2">
+		<s:Button id="myAccountDisplay"
+				  label="My Account"
+				  buttonMode="true"
+				  skinClass="skins.buttons.TextButtonSkin"/>
+
+		<!-- vertical spacer line -->
+		<s:Rect width="1"
+				height="22">
+			<s:fill>
+				<s:SolidColor color="0x333333"/>
+			</s:fill>
+		</s:Rect>
+
+		<s:Button id="signOutDisplay"
+				  label="Sign Out"
+				  buttonMode="true"
+				  skinClass="skins.buttons.TextButtonSkin"/>
+
+		<!-- vertical spacer line -->
+		<s:Rect width="1"
+				height="22">
+			<s:fill>
+				<s:SolidColor color="0x333333"/>
+			</s:fill>
+		</s:Rect>
+
+		<s:Button id="helpDisplay"
+				  label="Help"
+				  buttonMode="true"
+				  skinClass="skins.buttons.TextButtonSkin"/>
+
+	</s:HGroup>
+
+	<!-- header title -->
+	<s:HGroup x="15"
+			  height="100%"
+			  verticalAlign="middle">
+		<s:Label styleName="headerOrangeText"
+				 text="FLEX">
+			<s:filters>
+				<s:DropShadowFilter color="0xFFFFFF"
+									angle="90"
+									alpha="0.15"
+									distance="1"
+									strength="1"
+									blurX="1"
+									blurY="1"/>
+			</s:filters>
+		</s:Label>
+		<s:Label styleName="headerGrayText"
+				 text="SALES DASHBOARD">
+			<s:filters>
+				<s:DropShadowFilter color="0xFFFFFF"
+									angle="90"
+									alpha="0.15"
+									distance="1"
+									strength="1"
+									blurX="1"
+									blurY="1"/>
+			</s:filters>
+		</s:Label>
+	</s:HGroup>
+
+</s:Group>

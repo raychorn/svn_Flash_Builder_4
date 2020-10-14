@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" xmlns:controls="controls.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		.tile_list {
+			backgroundColor: #cccccc;
+		}
+
+		.document_title {
+			fontFamily: Calibri;
+			fontSize: 18pt;
+			fontWeight: bold;
+			color: #0000ff;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.ObjectUtils;
+			
+			import controls.events.ShowDocsListItemsEvent;
+			import controls.renderers.ListItemRenderer;
+			import controls.renderers.MediaCard;
+			
+			import mx.collections.*;
+			import mx.controls.Button;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import utils.AIRHelper;
+
+			[Bindable]
+			private var _dataProvider:Object;
+			
+			[Bindable]
+			private var _tileListdp:ArrayCollection;
+			
+			[Embed(source="assets/icons/help_32x32.gif")]
+			[Bindable]
+			public var helpIconCls:Class;
+
+			[Bindable]
+			public var _search_term:String = '';
+			
+			public function populate_details(search_term:String=''):void {
+				var ar:Array = [];
+				var item:Object;
+				var _keys:Array;
+				var reasons:Array = [];
+				var isFound:Boolean = false;
+				var search_option:String = AIRHelper.options['current_search_option'];
+				var isSearchAll:Boolean = ( (search_term is String) && (search_term.length > 0) ) && ((search_option == null) || (search_option == '') || (search_option == 'search_all'));
+				var isSearchTitles:Boolean = ( (search_term is String) && (search_term.length > 0) ) && ( (search_option is String) && (search_option == 'search_titles') );
+				var isSearchText:Boolean = ( (search_term is String) && (search_term.length > 0) ) && ( (search_option is String) && (search_option == 'search_text') );
+				var isSearchKeywords:Boolean = ( (search_term is String) && (search_term.length > 0) ) && ( (search_option is String) && (search_option == 'search_keywords') );
+				trace(this.className+'.(populate_details).1 --> search_option='+search_option);
+				if (this._dataProvider) {
+					var ac:ArrayCollection = this._dataProvider.item;
+					var _search_term:String = search_term.toLowerCase();
+					trace(this.className+'.(populate_details).2 --> _search_term='+_search_term);
+					for ( var i:String in ac) {
+						item = ac[i];
+						isFound = true;
+						if (_search_term.length > 0) {
+							_keys = ObjectUtils.keys(item);
+							trace(this.className+'.populate_details().3 --> _search_term='+_search_term+', isSearchAll='+isSearchAll+', isSearchTitles='+isSearchTitles+', isSearchText='+isSearchText+', isSearchKeywords='+isSearchKeywords);
+							isFound = false;
+							if ( (isSearchAll) || (isSearchTitles) ) {
+								if ( (_keys.indexOf('title') > -1) && (String(item.title).toLowerCase().indexOf(_search_term) > -1) ) {
+									isFound = true;
+									reasons.push('Title');
+									trace(this.className+'.populate_details().4 --> _search_term='+_search_term+', item.title='+item.title);
+								}
+							}
+							if ( (isSearchAll) || (isSearchText) ) {
+								if ( (_keys.indexOf('text') > -1) && (String(item.text).toLowerCase().indexOf(_search_term) > -1) ) {
+									isFound = true;
+									reasons.push('Text');
+									trace(this.className+'.populate_details().5 --> _search_term='+_search_term+', item.text='+item.text);
+								}
+							}
+							if ( (isSearchAll) || (isSearchKeywords) ) {
+								if ( (_keys.indexOf('keywords') > -1) && (String(item.keywords).toLowerCase().indexOf(_search_term) > -1) ) {
+									isFound = true;
+									reasons.push('Keywords');
+									trace(this.className+'.populate_details().6 --> _search_term='+_search_term+', item.keywords='+item.keywords);
+								}
+							}
+						}
+						if (isFound) {
+							ar.push({label: item.title, data: item, reasons:reasons});
+							reasons = [];
+						}
+					}
+					this._tileListdp = new ArrayCollection(ar);
+				}
+			}
+			
+			public function do_search(term:String):void {
+				//trace(this.className+'.do_search().1 --> term='+term);
+				this.populate_details(term);
+			}
+
+			public function get dataProvider():Object {
+				return this._dataProvider;
+			}
+			
+			public function set dataProvider(dataProvider:Object):void {
+				if (this._dataProvider != dataProvider) {
+					this._dataProvider = dataProvider;
+					this.helpIcon.visible = this.helpIcon.includeInLayout = false;
+					var term:String = this.parentDocument.btnBar.txt_search.text;
+					this.populate_details(term);
+				}
+			}
+			
+			protected function tilelist1_creationCompleteHandler(event:FlexEvent):void {
+				//var panel:MediaListPanel = MediaListPanel(event.currentTarget);
+				//this.tile_list.setStyle('backgroundColor', 0x7b7c7b);
+				this.populate_details();
+				//trace('(+++) '+this.className+'.(tilelist1_creationCompleteHandler).1');
+			}
+
+
+			protected function helpIcon_clickHandler(event:MouseEvent):void {
+				//trace(this.className+'.(helpIcon_clickHandler).1');
+				this.helpIcon.visible = this.helpIcon.includeInLayout = false;
+				this.dispatchEvent(new ShowDocsListItemsEvent(ShowDocsListItemsEvent.TYPE_SHOW_DOCSLIST_ITEMS));
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:VBox width="100%" height="100%" verticalAlign="top">
+		<mx:HBox width="100%" backgroundColor="#ffffff" paddingLeft="5">
+			<mx:Image id="helpIcon" source="{this.helpIconCls}" click="helpIcon_clickHandler(event)" buttonMode="true" useHandCursor="true" visible="false" includeInLayout="false"/>
+			<mx:Label id="document_title" styleName="document_title" text="{this._dataProvider.title}"/>
+		</mx:HBox>
+		<mx:HBox width="100%" height="100%" styleName="tile_list">
+			<!--
+			<controls:MediaListPanel id="tile_list" dataProvider="{this._tileListdp}" styleName="DocsListDetails" width="100%" height="100%" verticalGap="10" horizontalGap="10" columnWidth="{MediaCard.cell_width+2}" rowHeight="{MediaCard.cell_height+2}" creationComplete="tilelist1_creationCompleteHandler(event)"/>
+			-->
+			<s:List id="tile_list" dataProvider="{this._tileListdp}" styleName="DocsListDetails" useHandCursor="true"
+					width="100%" height="100%" creationComplete="tilelist1_creationCompleteHandler(event)" useVirtualLayout="false"
+					itemRenderer="controls.renderers.ListItemRenderer">
+				<s:layout>
+					<s:TileLayout verticalGap="10" horizontalGap="10" columnWidth="{ListItemRenderer.cell_width+2}" rowHeight="{ListItemRenderer.cell_height+2}"/>
+				</s:layout>	
+			</s:List>
+		</mx:HBox>
+	</mx:VBox>
+</mx:Canvas>

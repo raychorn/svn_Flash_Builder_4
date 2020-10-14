@@ -1,0 +1,168 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+
+/*
+.NavBackButton {
+	overSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-back_button_32x32.png");
+	upSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-back_button_32x32.png");
+	downSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-back_button_32x32.png");
+}
+
+.NavBeginButton {
+	overSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-begin_button_32x32.png");
+	upSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-begin_button_32x32.png");
+	downSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-begin_button_32x32.png");
+}
+
+.NavEndButton {
+	overSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-end_button_32x32.png");
+	upSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-end_button_32x32.png");
+	downSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-end_button_32x32.png");
+}
+
+.NavForwardButton {
+	overSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-forward_button_32x32.png");
+	upSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-forward_button_32x32.png");
+	downSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-forward_button_32x32.png");
+}
+
+.NavPlayButton {
+	overSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-play_button_32x32.png");
+	upSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-play_button_32x32.png");
+	downSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-play_button_32x32.png");
+}
+
+.NavPlayButton {
+	overSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-stop_button_32x32.png");
+	upSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-stop_button_32x32.png");
+	downSkin: Embed("/assets/buttons/vcr/web-icons-white-circle-stop_button_32x32.png");
+}
+*/
+.showingNavBar
+{
+	paddingTop: 0;
+	paddingBottom: 0;
+	paddingLeft: 0;
+	paddingRight: 0;
+}
+
+.hidingNavBar
+{
+	paddingTop: 0;
+	paddingBottom: 0;
+	paddingLeft: 0;
+	paddingRight: 0;
+}
+
+.closeInformationButton
+{
+	fontFamily: Arial;
+	fontSize: 11;
+}
+
+.informationMessage
+{
+	fontFamily: Arial;
+	fontSize: 14;
+	color: #0000ff;
+}
+
+.informationErrorMessage
+{
+	fontFamily: Arial;
+	fontSize: 14;
+	color: #ff0000;
+}
+
+.informationMessageSmall
+{
+	fontFamily: Arial;
+	fontSize: 11;
+	color: #0000ff;
+}
+
+.informationErrorMessageSmall
+{
+	fontFamily: Arial;
+	fontSize: 11;
+	color: #ff0000;
+}
+
+.informationMessageItalicSmall
+{
+	fontFamily: Arial;
+	fontSize: 11;
+	color: #0000ff;
+	fontStyle: italic;
+}
+
+.informationErrorMessageItalicSmall
+{
+	fontFamily: Arial;
+	fontSize: 11;
+	color: #ff0000;
+	fontStyle: italic;
+}
+
+
+.StatusText
+{
+	fontFamily: Arial;
+	fontSize: 11;
+	color: #000000;
+	backgroundColor: #ffffff;
+}
+
+.StatusBackground
+{
+	fontFamily: Arial;
+	fontSize: 14;
+	color: #000000;
+	backgroundColor: #ffffff;
+}
+
+.CheckBoxStyle
+{
+	fontFamily: Arial;
+	fontSize: 11;
+}
+
+.EditModeCheckBoxOn
+{
+	fontFamily: Arial;
+	fontSize: 11;
+	color: #FF0000;
+}
+
+.EditModeCheckBoxOff
+{
+	fontFamily: Arial;
+	fontSize: 11;
+	color: #CCCCCC;
+}
+
+.ListStyle
+{
+	fontFamily: Arial;
+	fontSize: 12;
+}
+
+.SmallText
+{
+	fontFamily: Arial;
+	fontSize: 10;
+}
+
+.SmallBoldText
+{
+	fontFamily: Arial;
+	fontSize: 10;
+	fontWeight: bold;
+}
+
+.ErrorList
+{
+	fontFamily: Arial;
+	fontSize: 10;
+}
+

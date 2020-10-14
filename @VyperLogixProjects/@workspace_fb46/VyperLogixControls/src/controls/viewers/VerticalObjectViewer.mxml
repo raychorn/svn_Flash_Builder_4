@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ObjectUtils;
+			
+			import controls.viewers.vertical.ObjectViewerRow;
+			
+			import mobile.MobileDebuggerUtils;
+			private var __data__:Object;
+			
+			private function populate():void {
+				var aKey:String;
+				var aDatum:*;
+				var aRow:ObjectViewerRow;
+				var iCount:int = 0;
+				var keys:Array = ObjectUtils.keys(this.__data__);
+				for (var i:String in keys) {
+					aKey = keys[i];
+					aDatum = this.__data__[aKey];
+					aRow = new ObjectViewerRow();
+					aRow.key.text = '('+iCount+') --> '+aKey+' --> ('+typeof(aDatum)+')';
+					aRow.data.text = ( (String(aDatum) == '[object Object]') || (typeof(aDatum) == 'object') ) ? MobileDebuggerUtils.explainThis(aDatum,',\n') : aDatum;
+					this.addElement(aRow);
+					iCount++;
+				}
+			}
+			
+			public function set data(data:Object):void {
+				if (this.__data__ != data) {
+					this.__data__ = data;
+					this.removeAllElements();
+//					var aRow:ObjectViewerRow;
+//					aRow = new ObjectViewerRow();
+//					aRow.key.text = 'DEBUG ('+(typeof(this.__data__))+')';
+//					aRow.data.text = MobileDebuggerUtils.explainThis(this.__data__);
+//					this.addElement(aRow);
+					this.populate();
+				}
+			}
+			
+			public function get data():Object {
+				return this.__data__;
+			}
+		]]>
+	</fx:Script>
+</s:VGroup>

@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox width="100%" height="100%" xmlns="*" xmlns:mx="http://www.adobe.com/2006/mxml" verticalScrollPolicy="off" creationComplete="init();" xmlns:views="views.*">	
+	<mx:Script source="as/application.as" /> 
+	<mx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+			import mx.events.DropdownEvent;
+			import mx.events.SliderEvent;
+
+			private var styleMgr:StyleManager = new StyleManager();
+			
+			protected function myBackgroundColor_closeHandler(event:DropdownEvent):void {
+				isBackgroundOn=true;
+				myBackgroundImage.selectedIndex = 0;
+				cssbackgroundImage = '';
+				FlexGlobals.topLevelApplication.myBackgroundImage.setStyle('backgroundAlpha', 0);
+				IStyleManager2(this.styleMgr).getStyleDeclaration('Application').setStyle('backgroundColor', myBackgroundColor.selectedColor);
+				setCSS('backgroundColor', myBackgroundColor.selectedColor, 'color');
+			}
+
+
+			protected function fill1_closeHandler(event:DropdownEvent):void {
+				FlexGlobals.topLevelApplication.myBackground.setStyle('backgroundAlpha', 0);
+				IStyleManager2(this.styleMgr).getStyleDeclaration('Application').setStyle('backgroundGradientColors', [fill1.selectedColor, fill2.selectedColor]);
+				setArrayCSS('backgroundGradientColors', fill1.selectedColor, fill2.selectedColor, true);
+			}
+
+
+			protected function fill2_closeHandler(event:DropdownEvent):void {
+				FlexGlobals.topLevelApplication.myBackground.setStyle('backgroundAlpha', 0);
+				IStyleManager2(this.styleMgr).getStyleDeclaration('Application').setStyle('backgroundGradientColors', [fill1.selectedColor, fill2.selectedColor]);
+				setArrayCSS('backgroundGradientColors', fill1.selectedColor, fill2.selectedColor, true);
+			}
+
+
+			protected function myFillAlpha1_changeHandler(event:SliderEvent):void {
+				IStyleManager2(this.styleMgr).getStyleDeclaration('Application').setStyle('backgroundGradientAlphas', [myFillAlpha1.value, myFillAlpha2.value]);
+				setArrayCSS('backgroundGradientAlphas', myFillAlpha1.value, myFillAlpha2.value, false);
+			}
+
+
+			protected function myFillAlpha2_changeHandler(event:SliderEvent):void {
+				IStyleManager2(this.styleMgr).getStyleDeclaration('Application').setStyle('backgroundGradientAlphas', [myFillAlpha1.value, myFillAlpha2.value]);
+				setArrayCSS('backgroundGradientAlphas', myFillAlpha1.value, myFillAlpha2.value, false);
+			}
+
+		]]>
+	</mx:Script>
+
+	<mx:HBox width="100%" height="100%">
+	
+ 
+	<mx:VBox height="100%" styleName="glassPods" >
+
+	<views:GlassHeaders xmlns:head="*" headerTitle="STYLE CONTROLS" />
+
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+		<mx:Form styleName="noPadding">
+				
+				<mx:FormItem label="Background Image">
+					<mx:ComboBox id="myBackgroundImage" rowCount="8" />
+				</mx:FormItem>
+				
+				<mx:FormItem label="Background Color">
+							<mx:ColorPicker id="myBackgroundColor" height="23" width="70" 
+								selectedColor="0x869CA7" close="myBackgroundColor_closeHandler(event)" 
+							/>
+					</mx:FormItem>
+				
+				<mx:FormItem label="Background Gradient Colors" >
+							<mx:HBox  horizontalGap="2">
+								<mx:ColorPicker id="fill1" height="22" width="70" selectedColor="0x9BAFB9" close="fill1_closeHandler(event)"/>
+								<mx:ColorPicker id="fill2" height="22" width="70" selectedColor="0x68808C" close="fill2_closeHandler(event)"/>
+								
+							
+							</mx:HBox>
+						</mx:FormItem>
+						<mx:FormItem label="Background Gradient Alphas">
+					<mx:HBox  horizontalGap="2">
+					<mx:HSlider
+								width="70"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value="1"
+								id="myFillAlpha1"
+								snapInterval=".01"
+								change="myFillAlpha1_changeHandler(event)"
+								dataTipPlacement="right"
+								liveDragging="false"/>
+							<mx:HSlider
+								width="70"
+								thumbCount="1"
+								minimum="0"
+								maximum="1"
+								value="1"
+								id="myFillAlpha2"
+								snapInterval=".01"
+								change="myFillAlpha2_changeHandler(event)"
+								dataTipPlacement="right"
+								liveDragging="false"/>
+							
+							</mx:HBox>
+						</mx:FormItem>
+						
+				<mx:FormItem label="Theme Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x009DFF" id="myThemeColor"
+								close="setValue('themeColor', event.target.selectedColor, 'color')"/>
+				</mx:FormItem>
+				<mx:FormItem label="Text Color">
+							<mx:ColorPicker height="23" width="70" selectedColor="0x0B333C" id="myColor"
+								close="setValue('color', event.target.selectedColor, 'color')"/>
+				</mx:FormItem>
+		</mx:Form>
+		
+		
+		</mx:Box>
+		<mx:Box width="100%" paddingRight="5" paddingBottom="5" horizontalAlign="right">
+			<mx:LinkButton label="Restore Defaults" click="restoreDefaults()" styleName="undoLink" />
+		</mx:Box>
+	</mx:VBox>
+
+<mx:VBox height="100%" styleName="glassPods" >
+ <views:GlassHeaders xmlns:head="*" headerTitle="SANDBOX" />  
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+			<mx:Panel title="Application"  id="myApplication" width="315" >
+						<mx:HBox paddingRight="10" paddingLeft="10" paddingTop="10" paddingBottom="10">
+							<mx:Accordion height="100" width="150" paddingRight="0" paddingLeft="0" paddingTop="0" paddingBottom="0" id="myAccordion">
+								<mx:Box label="Ice Cream" width="100%" height="100%" paddingRight="0" paddingTop="0" paddingBottom="0" paddingLeft="0">
+									<mx:List id="icecream" rowCount="5" paddingRight="0" paddingLeft="0" paddingTop="0" paddingBottom="0" width="100%"
+										change="myFlavor.text=event.target.selectedItem.label" selectedIndex="0" >
+										<mx:dataProvider>
+											<mx:Array>
+												 <mx:Object label="Vanilla" />
+												<mx:Object label="Chocolate" />
+												<mx:Object label="Strawberry" />
+												<mx:Object label="Peanut Butter" />
+												<mx:Object label="Coffee" />
+											</mx:Array>
+										</mx:dataProvider>
+									</mx:List>
+								</mx:Box>
+								<mx:Box label="Sherbert" id="sherbert" height="100%" width="100%" paddingRight="0" paddingTop="0" paddingBottom="0" paddingLeft="0">
+									<mx:List change="myFlavor.text=event.target.selectedItem.label" 
+										paddingRight="0" paddingLeft="0" rowCount="5" paddingTop="0" paddingBottom="0" width="100%">
+										<mx:dataProvider>
+											<mx:Array>
+												<mx:Object label="Orange" />
+												<mx:Object label="Raspberry" />
+												<mx:Object label="Lemon" />
+												<mx:Object label="Lime"/>
+												<mx:Object label="Grapefruit" />
+											</mx:Array>
+										</mx:dataProvider>
+									</mx:List>
+								</mx:Box>
+							</mx:Accordion>
+						<mx:VBox width="100%">
+							<mx:Text id="myFlavor" text="Vanilla" width="100%" height="18" fontWeight="bold"/>
+							<mx:Form paddingLeft="0" paddingRight="0" paddingTop="0" paddingBottom="0">
+								<mx:FormItem label="Size">
+									<mx:ComboBox width="60">
+										<mx:dataProvider>
+											<mx:Array>
+												<mx:Object label="SM" />
+												<mx:Object label="M" />
+												<mx:Object label="L" />
+											</mx:Array>
+										</mx:dataProvider>
+										
+									</mx:ComboBox>
+								</mx:FormItem>
+								<mx:FormItem label="in a">
+									<mx:ComboBox width="60">
+										<mx:dataProvider>
+											<mx:Array>
+												<mx:Object label="cone" />
+												<mx:Object label="cup" />
+											</mx:Array>
+										</mx:dataProvider>
+										
+									</mx:ComboBox>
+								</mx:FormItem>
+						</mx:Form>
+						</mx:VBox>
+						</mx:HBox>
+					<mx:ControlBar horizontalAlign="right" paddingTop="3" paddingBottom="3" paddingRight="3">
+						<mx:Button label="Buy" />
+					</mx:ControlBar>
+					</mx:Panel>
+		</mx:Box>
+	</mx:VBox>
+
+
+<mx:VBox height="100%" width="100%" styleName="glassPods" >
+	<views:GlassHeaders xmlns:head="*" headerTitle="CSS" />
+		<mx:Box width="100%" paddingLeft="10" paddingRight="10" paddingBottom="10" height="100%" >
+			<mx:TextArea id="myCSS" width="100%" height="100%" styleName="cssTextArea"	/>
+		</mx:Box>
+</mx:VBox>
+	</mx:HBox>  
+</mx:VBox>
+
+  
+
+

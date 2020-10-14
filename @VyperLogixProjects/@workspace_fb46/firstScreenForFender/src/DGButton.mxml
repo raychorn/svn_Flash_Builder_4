@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:GridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					xmlns:s="library://ns.adobe.com/flex/spark" 
+					xmlns:mx="library://ns.adobe.com/flex/mx" clipAndEnableScrolling="true" xmlns:local="*">
+	
+	<fx:Script>
+		<![CDATA[
+			override public function prepare(hasBeenRecycled:Boolean):void {
+				if (data) {
+					try {
+						btn.label = data[column.dataField]['label'];
+						btn.index = data[column.dataField]['index'];
+						btn.addEventListener(MouseEvent.CLICK, data[column.dataField]['handler']);
+					} catch (err:Error) {
+					}
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<s:HGroup id="button_container" width="100%" paddingLeft="5" paddingRight="5">
+		<local:GridButton id="btn" width="100%"/>
+	</s:HGroup>
+	
+</s:GridItemRenderer>

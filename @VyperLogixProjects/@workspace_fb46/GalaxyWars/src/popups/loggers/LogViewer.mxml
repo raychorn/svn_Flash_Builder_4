@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   width="100%" height="100%">
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.TimeZoneUtils;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var _grid_dataProvider:ArrayCollection = new ArrayCollection();
+			
+			private var _grid:DataGrid;
+			
+			[Bindable]
+			private var _deferredGridActions:Array = [];
+			
+			public function get deferredGridActions():Array {
+				return this._deferredGridActions;
+			}
+			
+			public function set deferredGridAction(action:Function):void {
+				if (action != null) {
+					this._deferredGridActions.push(action);
+				}
+			}
+			
+			public function get grid_dataProvider():ArrayCollection {
+				if (this.grid) {
+					return ArrayCollection(this.grid.dataProvider);
+				}
+				return this._grid_dataProvider;
+			}
+			
+			public function set grid_dataProvider(dp:ArrayCollection):void {
+				this._grid_dataProvider = dp;
+				if (this.grid) {
+					this.grid.dataProvider = dp;
+				}
+			}
+			
+			protected function grid_creationCompleteHandler(event:FlexEvent):void {
+				this._grid = DataGrid(event.currentTarget);
+				if (this._grid_dataProvider) {
+					this.grid.dataProvider = this._grid_dataProvider;
+				}
+				var i:int;
+				var actions:Array = this.deferredGridActions;
+				for (i = 0; i < actions.length; i++) {
+					this.grid.callLater(actions[i]);
+				}
+			}
+			
+			private function time_column_data_tip_provider(obj:*):String {
+				var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+				try {
+					return app.time_formatter.format(obj['__time__']) + ' ' + TimeZoneUtils.getTimeZone();
+				} catch (err:Error) {}
+				return null;
+			}
+			
+			private function time_shift_column_data_tip_provider(obj:*):String {
+				var app:GalaxyWars = FlexGlobals.topLevelApplication as GalaxyWars;
+				try {
+					return app.time_formatter.format(obj['Time-Shift']) + ' --> ' + obj['Timer-Delay'] + ' ms';
+				} catch (err:Error) {}
+				return null;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:DataGrid id="grid" width="100%" height="100%" horizontalScrollPolicy="auto" verticalScrollPolicy="auto" creationComplete="grid_creationCompleteHandler(event)">
+			<s:columns>
+				<mx:ArrayList>
+					<s:GridColumn id="col1" dataField="time" dataTipFunction="time_column_data_tip_provider" headerText="Time" resizable="true" minWidth="20" width="50" itemRenderer="popups.controls.components.renderers.PopUpGridColumnRenderer"/>
+					<s:GridColumn id="col2" dataField="message" headerText="Comments" resizable="true" minWidth="100" width="320" itemRenderer="popups.controls.components.renderers.PopUpGridColumnRenderer"/>
+					<s:GridColumn id="col3" dataField="Time-Shift" dataTipFunction="time_shift_column_data_tip_provider" headerText="Time-X" resizable="false" minWidth="30" width="40" itemRenderer="popups.controls.components.renderers.PopUpGridColumnRenderer"/>
+					<s:GridColumn id="col4" dataField="Metal-Rate" headerText="Metal" resizable="true" minWidth="50" width="70"/>
+					<s:GridColumn id="col5" dataField="Crystal-Rate" headerText="Crystal" resizable="true" minWidth="50" width="70"/>
+					<s:GridColumn id="col6" dataField="Deuterium-Rate" headerText="Deuterium" resizable="true" minWidth="50" width="70"/>
+					<s:GridColumn id="col7" dataField="Dark-Matter" headerText="DM" resizable="true" minWidth="50" width="70"/>
+				</mx:ArrayList>
+			</s:columns>
+		</s:DataGrid>
+	</s:VGroup>
+</s:TitleWindow>

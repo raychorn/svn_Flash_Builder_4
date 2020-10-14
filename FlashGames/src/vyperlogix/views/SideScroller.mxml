@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   width="100%" height="100%" 
+		   enterFrame="canvas1_enterFrameHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import Tiles.Tile;
+			
+			import vzw.utils.ArrayUtils;
+			[Bindable]
+			private var _dataProvider:Array;
+			
+			private var _frameRate:int = 30;
+			private var _frameCount:int = 0;
+
+			private var in_stack:Array = [];
+			
+			public function get dataProvider():Array {
+				return this._dataProvider;
+			}
+			
+			public function set dataProvider(dataProvider:Array):void {
+				this._dataProvider = dataProvider;
+				this.in_stack = ArrayUtils.deepCopyFrom(dataProvider);
+			}
+			
+			private function _removeChild(aChild:*):void {
+				this.removeChild(aChild);
+			}
+
+			protected function canvas1_enterFrameHandler(event:Event):void {
+				if ( (this._dataProvider is Array) && (this._dataProvider.length > 0) ) {
+					this._frameCount++;
+					var aChild:*;
+					var children:Array = this.getChildren();
+					if ((this._frameCount % this._frameRate) == 0) {
+						if (children.length == 0) {
+							var aTile:Tile = new Tile();
+							aTile.imageWidth = 150;
+							aTile.imageHeight = 150;
+							aTile.x = this.width - aTile.imageWidth;
+							aTile.y = 0;
+							aTile.dataProvider = this.in_stack.pop();
+							aTile.maintainAspectRatio = true;
+							this.addChild(aTile);
+						}
+					} else {
+						if (children.length > 0) {
+							for (var i:String in children) {
+								aChild = children[i];
+								aChild.x--;
+								if (aChild.x < 0) {
+									this.callLater(this._removeChild,[aChild]);
+								}
+							}
+						}
+					}
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+</mx:Canvas>

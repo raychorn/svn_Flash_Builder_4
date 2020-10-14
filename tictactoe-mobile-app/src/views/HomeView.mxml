@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" title="Home" xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			import classes.ImageHolder;
+			
+			//[Embed(source="assets/X.png")]
+			//private var X_PIC:Class;
+			
+			//[Embed(source="assets/O.png")]
+			//private var O_PIC:Class;
+			
+			private var game_sprite:Sprite;
+			
+			private var cells:Array = [];
+			
+			protected function draw_tic_tac_toe():void {
+				var gr:Graphics = this.game_sprite.graphics;
+				gr.clear();
+				gr.lineStyle(2,1,1.0);
+				
+				var line1_x1:int = 30;
+				var line1_x2:int = this.game_panel.width-50;
+				var line1_y:int = 100;
+
+				var line1_y1:int = line1_y-50;
+				var line1_y2:int = line1_y+100;
+				
+				var left_vert:int = ((line1_x2-line1_x1)/3)+line1_x1;
+				var right_vert:int = line1_x2-left_vert+30;
+				
+				gr.moveTo(line1_x1,line1_y);
+				gr.lineTo(line1_x2,line1_y);
+
+				gr.moveTo(line1_x1,line1_y+50);
+				gr.lineTo(line1_x2,line1_y+50);
+
+				//gr.moveTo(line1_x1,line1_y+100);
+				//gr.lineTo(line1_x2,line1_y+100);
+				
+				gr.moveTo(left_vert,line1_y1);
+				gr.lineTo(left_vert,line1_y2);
+
+				gr.moveTo(right_vert,line1_y1);
+				gr.lineTo(right_vert,line1_y2);
+				
+				var x:Number;
+				var y:Number;
+				
+				x = line1_x1 + 30;
+				y = line1_y - 30;
+				
+				cells[cells.length] = new Point(x, y);
+				
+				x = cells[0].x + 80;
+				y = cells[0].y;
+
+				cells[cells.length] = new Point(x, y);
+				
+				x = cells[1].x + 80;
+				y = cells[1].y;
+				
+				cells[cells.length] = new Point(x, y);
+
+				x = cells[0].x;
+				y = cells[0].y + 50;
+				
+				cells[cells.length] = new Point(x, y);
+
+				x = cells[1].x;
+				y = cells[3].y;
+				
+				cells[cells.length] = new Point(x, y);
+
+				x = cells[2].x;
+				y = cells[3].y;
+				
+				cells[cells.length] = new Point(x, y);
+
+				x = cells[0].x;
+				y = cells[3].y + 50;
+				
+				cells[cells.length] = new Point(x, y);
+
+				x = cells[1].x;
+				y = cells[6].y;
+				
+				cells[cells.length] = new Point(x, y);
+				
+				x = cells[2].x;
+				y = cells[6].y;
+				
+				cells[cells.length] = new Point(x, y);
+				
+			}
+			
+			private var x_Cells:Array = [];
+			private var o_Cells:Array = [];
+			
+			private function init_highlight_cells():void {
+				var x_pic:ImageHolder;
+				var o_pic:ImageHolder;
+				
+				for (var i:int = 0; i < cells.length; i++) {
+					x_pic = new ImageHolder();
+					x_pic.set_x(cells[i].x);
+					x_pic.set_y(cells[i].y);
+					
+					x_pic.set_visible(false);
+					
+					x_Cells[x_Cells.length] = x_pic;
+
+					o_pic = new ImageHolder();
+					o_pic.set_x(cells[i].x);
+					o_pic.set_y(cells[i].y);
+					
+					o_pic.set_visible(false);
+
+					o_Cells[o_Cells.length] = o_pic;
+				}
+			}
+			
+			private function highlight_cell(cnum:int, value:String):void {
+				for (var i:int = 0; i < cells.length; i++) {
+					x_Cells[i].set_visible(false);
+					o_Cells[i].set_visible(false);
+				}
+				if (value == 'X') {
+					x_Cells[cnum].set_visible(true);
+				} else if (value == 'O') {
+					o_Cells[cnum].set_visible(true);
+				}
+			}
+			
+			protected function logo_panel_creationCompleteHandler(event:FlexEvent):void
+			{
+				var t:Timer = new Timer(5000);
+				t.addEventListener(TimerEvent.TIMER, 
+					function (evt:TimerEvent):void {
+						logo_panel.visible = false;
+						game_panel.visible = true;
+						t.stop();
+						draw_tic_tac_toe();
+						init_highlight_cells();
+					} 
+				);
+				t.start();
+			}
+			
+			private var cell_number:int = 0;
+			private var frame_count:int = 0;
+			private var cell_state:int = 0;
+			
+			protected function game_panel_enterFrameHandler(event:Event):void {
+				if ((frame_count % 10) == 0) {
+					if (x_Cells.length > 0) {
+						highlight_cell(cell_number, (cell_state == 0) ? 'X' : 'O');
+						cell_number++;
+						if (cell_number > cells.length) {
+							cell_number = 0;
+							if (cell_state == 0) {
+								cell_state = 1;
+							} else {
+								cell_state = 0;
+							}
+						}
+					}
+				}
+				frame_count++;
+			}
+			
+			protected function game_panel_creationCompleteHandler(event:FlexEvent):void
+			{
+				game_sprite = new Sprite();
+				game_panel.visible = false;
+				game_field.addChild(game_sprite);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+	</fx:Style>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Panel id="logo_panel" title="Copyright 2017 (c) Vyper Logix Corp." fontSize="10" x="{parentApplication.width - this.logo_panel.width - 5}" y="{parentApplication.height - this.logo_panel.height - 100}" creationComplete="logo_panel_creationCompleteHandler(event)">
+		<s:BitmapImage id="logo_image" source="../assets/Vyper Logix Corp icon.png"/>
+	</s:Panel>
+	<s:Panel id="game_panel" title="Let's Play Tic-Tac-Toe" fontSize="15" x="0" y="0" width="100%" height="100%" creationComplete="game_panel_creationCompleteHandler(event)" enterFrame="game_panel_enterFrameHandler(event)">
+		<mx:UIComponent id="game_field" width="100%" height="100%">
+		</mx:UIComponent>
+	</s:Panel>
+</s:View>

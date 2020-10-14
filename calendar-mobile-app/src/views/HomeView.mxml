@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" title="Home">
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			protected function logo_panel_creationCompleteHandler(event:FlexEvent):void
+			{
+				var t:Timer = new Timer(5000);
+				t.addEventListener(TimerEvent.TIMER, 
+					function (evt:TimerEvent):void {
+						logo_panel.visible = false;
+					} 
+				);
+				t.start();
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Panel id="logo_panel" title="Copyright 2017 (c) Vyper Logix Corp." fontSize="10" x="{parentApplication.width - this.logo_panel.width - 5}" y="{parentApplication.height - this.logo_panel.height - 100}" creationComplete="logo_panel_creationCompleteHandler(event)">
+		<s:BitmapImage id="logo_image" source="../assets/Vyper Logix Corp icon.png"/>
+	</s:Panel>
+</s:View>

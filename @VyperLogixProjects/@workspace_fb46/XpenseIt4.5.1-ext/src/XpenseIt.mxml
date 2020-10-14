@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:views="views.*" 
+			   xmlns:utils="utils.*" 
+			   resizeForSoftKeyboard="false"
+			   splashScreenImage="@Embed(source='assets/splash/xpenseIt_tablet_splash.png')" 
+			   applicationComplete="completeHandler()">
+	
+	<fx:Script>
+		<![CDATA[           
+			import dao.Expense;
+			import dao.Report;
+			
+			import events.ReportEvent;
+			
+			import mx.events.FlexEvent;
+			import mx.events.StateChangeEvent;
+			import mx.logging.Log;
+			
+			import spark.components.View;
+			import spark.events.ViewNavigatorEvent;
+			
+			import views.ExpenseListView;
+			import views.ExpenseView;
+			import views.LogonView;
+			import views.ReportView;
+			
+			protected function completeHandler():void
+			{
+				addEventListener(ReportEvent.ADD_REPORT, function(event:ReportEvent):void
+					{
+						showView(ReportView, new Report());						
+					});
+				addEventListener(ReportEvent.ADD_EXPENSE, function(event:ReportEvent):void
+					{
+						showView(ExpenseView, new Expense(event.data.id));						
+					});
+				addEventListener(ReportEvent.EDIT_EXPENSE, function(event:ReportEvent):void
+					{
+						showView(ExpenseView, event.data);						
+					});
+				addEventListener(ReportEvent.EDIT_REPORT, function(event:ReportEvent):void
+					{
+						showView(ReportView, event.data);						
+					});
+				addEventListener(ReportEvent.VIEW_EXPENSES, function(event:ReportEvent):void
+					{
+						leftNav.pushView(ExpenseListView, event.data);
+					});
+				
+			}
+			
+			protected function showView(viewClass:Class, data:Object):void
+			{
+				var activeView:View = rightNav.activeView;
+				if (activeView is viewClass)
+					activeView.data = data;
+				else
+					rightNav.pushView(viewClass, data); 						
+			}
+			
+			protected function onLogonCreate():void
+			{
+				var v:View = logonNav.activeView;
+				v.addEventListener('logonSuccess',onLogonSuccess);
+			}
+			
+			protected function onLogonSuccess(event:Event):void
+			{
+				// Now set the state to portrait or landscape depending on the current aspectRatio and show the regular views
+				currentState = aspectRatio;	
+				leftNav.visible=true;
+				rightNav.visible=true;
+				line.visible=true;
+				logonNav.visible=false;
+			}
+			
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<utils:StatesUtil target="{this}"/>
+	</fx:Declarations>
+
+	<fx:Style source="assets/styles.css"/>
+
+	<s:states>
+		<s:State name="portrait" stateGroups="[orientation]"/>
+		<s:State name="landscape" stateGroups="[orientation]"/>
+	</s:states>
+	
+	<s:ViewNavigator id="logonNav" width="100%" height="100%" left="0" top="0" bottom="0"  
+					 firstView="views.LogonView" styleName="leftNav" creationComplete="onLogonCreate()"/>
+	
+	<s:ViewNavigator id="leftNav" left="0" width="320" width.landscape="380" top="0" bottom="0"
+					 firstView="views.ReportListView" styleName="leftNav" visible="false"/>
+	
+	<s:Line id="line" left="319" left.landscape="379" top="44" bottom="0" visible="false">
+		<s:stroke>
+			<s:SolidColorStroke color="#A1A1A1" weight="1"/>
+		</s:stroke>
+	</s:Line>
+
+	<s:ViewNavigator id="rightNav" left="320" left.landscape="380" right="0" top="0" bottom="0"
+					 firstView="views.ReportView" firstViewData="{new Report()}" styleName="rightNav"
+					 visible="false"/>
+	
+</s:Application>

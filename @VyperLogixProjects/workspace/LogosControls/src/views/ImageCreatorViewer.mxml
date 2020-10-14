@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   width="100%" height="100%" 
+		   initialize="titlewindow1_initializeHandler(event)" 
+		   xmlns:views="views.*" xmlns:controls="controls.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:NumberFormatter id="fmt" precision="2" rounding="nearest" useThousandsSeparator="false"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.MathHelper;
+			
+			import controls.ResizableTitleWindow;
+			import controls.ResizableTitleWindowSkin;
+			
+			import mx.containers.Canvas;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import utils.ImageHelper;
+			
+			import views.events.DrawImageEvent;
+			import views.events.DrawStarEvent;
+			
+			private var _dataSet_:Array = [];
+			
+			[Bindable]
+			private var _current_user_:Object;
+			
+			[Bindable]
+			public var tool:ImageCreator;
+
+			[Bindable]
+			public var tool2:ImageCreator;
+			
+			[Bindable]
+			public var overlay:Canvas;
+			
+			[Bindable]
+			public var title:String;
+			
+			public function get dataSet():Array {
+				return this._dataSet_;
+			}
+			
+			public function set dataSet(dataSet:Array):void {
+				if (this._dataSet_ != dataSet) {
+					this._dataSet_ = dataSet;
+				}
+			}
+			
+			public function get current_user():Object {
+				return this._current_user_;
+			}
+			
+			protected function hbox1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:ImageCreatorViewer = this;
+				ImageHelper.reset_counter();
+				
+				var target:HBox = event.currentTarget as HBox;
+				var container:Canvas = new Canvas();
+				container.width = this.width - 5;
+				container.height = this.height - 175;
+				container.addEventListener(FlexEvent.CREATION_COMPLETE, 
+					function (event:FlexEvent):void {
+						_this.tool = new ImageCreator();
+						_this.tool.width = container.width;
+						_this.tool.height = container.height;
+						_this.tool.is_production = true;
+						_this.tool.is_static_demo = false;
+						_this.tool.is_web_based = true;
+						_this.tool.is_auto_sized = false;
+						_this.tool.setStyle('dropShadowVisible',true);
+						_this.tool.dataSet = this._dataSet_;
+						_this.tool.addEventListener(FlexEvent.CREATION_COMPLETE, 
+							function (event:FlexEvent):void {
+								//_this.tool.draw_star();
+							}
+						);
+						_this.tool.addEventListener(DrawStarEvent.TYPE_DRAW_STAR, 
+							function (event:DrawStarEvent):void {
+								_this.lbl_xPos.text = 'X: '+_this.tool.xSlider.value+'';
+								_this.lbl_yPos.text = 'Y: '+_this.tool.ySlider.value+'';
+								_this.lbl_angle.text = 'A: '+_this.tool.angleSlider.value+'';
+								_this.lbl_innerRadius.text = 'iR: '+_this.tool.innerRadiusSlider.value+'';
+								_this.lbl_innerOuterRatio.text = 'ioR: '+_this.tool.innerOuterRatioSlider.value+'';
+								_this.lbl_outerRadius.text = 'oR: '+_this.tool.outerRadiusSlider.value+'';
+								//_this.lbl_extra.text.text = 'xL: '+fmt.format(_this.tool.handle.leastPt.x)+' xM: '+fmt.format(_this.tool.handle.mostPt.x)+' xSpan: '+fmt.format(_this.tool.handle.mostPt.x - _this.tool.handle.leastPt.x)+' yL: '+fmt.format(_this.tool.handle.leastPt.y)+' yM: '+fmt.format(_this.tool.handle.mostPt.y)+' ySpan: '+fmt.format(_this.tool.handle.mostPt.y - _this.tool.handle.leastPt.y);
+							}
+						);
+						container.addChild(_this.tool);
+						
+						_this.overlay = new Canvas();
+						_this.overlay.x = 0;
+						_this.overlay.y = 0;
+						_this.overlay.width = _this.tool.width;
+						_this.overlay.height = _this.tool.height;
+						_this.overlay.setStyle('backgroundColor',0xff0000);
+						_this.overlay.setStyle('backgroundAlpha',0.25);
+						_this.overlay.addEventListener(FlexEvent.CREATION_COMPLETE, 
+							function (event:FlexEvent):void {
+								var overlay:Canvas = event.currentTarget as Canvas;
+								if (overlay is Canvas) {
+									var w:Number = Math.min(_this.container.width,_this.container.height);
+									var h:Number = w;
+									overlay.graphics.clear();
+									overlay.graphics.lineStyle( 1, 0x0000ff );
+									overlay.graphics.drawRect(0,0,w,h);
+									var r:Number = MathHelper.radius_of_rectangle(Math.min(w,h),Math.min(w,h));
+									_this.lbl_extra2.text = 'Width/Height: '+Math.min(w,h)+' Radius: '+fmt.format(r);
+
+									ImageHelper.static_stage = true;
+									ImageHelper.current_stage = ImageHelper.STAGE_PLACEMENT;
+									
+									_this.tool2 = new ImageCreator();
+									_this.tool2.width = w;
+									_this.tool2.height = h;
+									_this.tool2.is_production = true;
+									_this.tool2.is_static_demo = false;
+									_this.tool2.is_web_based = true;
+									_this.tool2.is_auto_sized = true;
+									_this.tool2.dataSet = _this._dataSet_;
+									_this.tool2.stroke_color = 0x0000ff;
+									_this.tool2.addEventListener(FlexEvent.CREATION_COMPLETE, 
+										function (event:FlexEvent):void {
+											_this.tool2.outerRadiusSlider.value = r/(Math.PI*1.2);
+											_this.tool2.innerRadiusSlider.value = _this.tool2.innerOuterRatioSlider.value * _this.tool2.outerRadiusSlider.value;
+											_this.tool2.draw_star();
+										}
+									);
+									_this.tool2.addEventListener(DrawStarEvent.TYPE_DRAW_STAR, 
+										function (event:DrawStarEvent):void {
+											_this.lbl_xPos.text = 'X: '+_this.tool2.xSlider.value+'';
+											_this.lbl_yPos.text = 'Y: '+_this.tool2.ySlider.value+'';
+											_this.lbl_angle.text = 'A: '+_this.tool2.angleSlider.value+'';
+											_this.lbl_innerRadius.text = 'iR: '+_this.tool2.innerRadiusSlider.value+'';
+											_this.lbl_innerOuterRatio.text = 'ioR: '+_this.tool2.innerOuterRatioSlider.value+'';
+											_this.lbl_outerRadius.text = 'oR: '+_this.tool2.outerRadiusSlider.value+'';
+
+											_this.lbl_extra.text = 'xL: '+fmt.format(_this.tool2.handle.leastPt.x)+' xM: '+fmt.format(_this.tool2.handle.mostPt.x)+' xSpan: '+fmt.format(_this.tool2.handle.mostPt.x - _this.tool2.handle.leastPt.x)+' yL: '+fmt.format(_this.tool2.handle.leastPt.y)+' yM: '+fmt.format(_this.tool2.handle.mostPt.y)+' ySpan: '+fmt.format(_this.tool2.handle.mostPt.y - _this.tool2.handle.leastPt.y);
+										}
+									);
+									overlay.addChild(_this.tool2);
+								}
+							}
+						);
+						container.addChild(_this.overlay);
+					}
+				);
+				target.addChild(container);
+				
+			}
+
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void {
+				this._current_user_ = FlexGlobals.topLevelApplication.appProxy.user;
+			}
+
+			protected function titleWindow_creationCompleteHandler(event:FlexEvent):void {
+				var window:ResizableTitleWindow = ResizableTitleWindow(event.currentTarget);
+				window.setStyle("skinClass", ResizableTitleWindowSkin);
+			}
+
+		]]>
+	</fx:Script>
+	<controls:ResizableTitleWindow id="titleWindow" width="100%" height="100%" title="{this.title}" creationComplete="titleWindow_creationCompleteHandler(event)">
+		<mx:VBox width="100%" height="100%">
+			<mx:HBox id="header" width="100%">
+				<mx:Spacer width="5"/>
+				<mx:Label text="URL:"/>
+				<mx:Spacer width="5"/>
+				<mx:TextInput id="url" text="" width="100%"/>
+				<mx:Spacer width="5"/>
+				<mx:Button id="btn_makeImage" label="Make Image"/>
+				<mx:Spacer width="5"/>
+			</mx:HBox>
+			<mx:HBox id="container" width="100%" creationComplete="hbox1_creationCompleteHandler(event)"/>
+			<mx:VBox id="footer">
+				
+			</mx:VBox>
+			<mx:HBox width="100%" backgroundColor="#0000ff" backgroundAlpha="0.25" visible="{this._current_user_.is_superuser}" includeInLayout="{this._current_user_.is_superuser}">
+				<mx:Label id="lbl_xPos" text="X: {this.tool.xSlider.value}"/>
+				<mx:Label id="lbl_yPos" text="Y: {this.tool.ySlider.value}"/>
+				<mx:Label id="lbl_angle" text="A: {this.tool.angleSlider.value}"/>
+				<mx:Label id="lbl_innerRadius" text="iR: {this.tool.innerRadiusSlider.value}"/>
+				<mx:Label id="lbl_innerOuterRatio" text="ioR: {this.tool.innerOuterRatioSlider.value}"/>
+				<mx:Label id="lbl_outerRadius" text="oR: {this.tool.outerRadiusSlider.value}"/>
+			</mx:HBox>
+			<mx:HBox width="100%" backgroundColor="#0000ff" backgroundAlpha="0.25" visible="{this._current_user_.is_superuser}" includeInLayout="{this._current_user_.is_superuser}">
+				<mx:Label id="lbl_extra" text="???"/>			
+			</mx:HBox>
+			<mx:HBox width="100%" backgroundColor="#0000ff" backgroundAlpha="0.25" visible="{this._current_user_.is_superuser}" includeInLayout="{this._current_user_.is_superuser}">
+				<mx:Label id="lbl_extra2" text=""/>			
+			</mx:HBox>
+		</mx:VBox>
+	</controls:ResizableTitleWindow>
+</mx:Canvas>

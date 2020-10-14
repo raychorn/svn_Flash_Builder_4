@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" 
+		   creationComplete="canvas1_creationCompleteHandler(event)"
+		   backgroundColor="#00ff00" backgroundAlpha="0.25" 
+		   borderColor="#000000" borderAlpha="0.5" 
+		   borderColor.MOUSE_OUT="#000000" borderColor.MOUSE_OVER="#00ff00" borderColor.MOUSE_CLICK="#0000ff" borderStyle="solid">
+	<mx:states>
+		<s:State name="State1"/>
+		<s:State name="MOUSE_OVER"/>
+		<s:State name="MOUSE_OUT"/>
+		<s:State name="MOUSE_CLICK"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ObjectExplainer;
+			import com.ObjectUtils;
+			
+			import mx.events.FlexEvent;
+			
+			import utils.ImageHelper;
+			
+			import views.events.DrawImageEvent;
+			
+			import vyperlogix.shapes.DrawingHandle;
+			import vyperlogix.shapes.DrawingShapes;
+
+			private var _x_:Number;
+			private var _y_:Number;
+			private var _points_:int;
+			private var _innerOuterRatio_:Number;
+			private var _innerRadius_:Number;
+			private var _outerRadius_:Number;
+			private var _angle_:Number;
+			
+			private var _isManual_:Boolean = false;
+			private var _isAdjustable_:Boolean = true;
+			
+			private var _num_:int;
+			private var _handle_:DrawingHandle = new DrawingHandle();
+			
+			private var _stats:Array = [];
+			
+			private var _current_state:String;
+			
+			private var _initial_star_:Object;
+
+			private var _dataProvider_:Object; // typically that which describes the Star...
+			
+			private var key_translation_map:Object = {
+				'iOR': 'innerOuterRatio',
+				'iR': 'innerRadius',
+				'oR': 'outerRadius',
+				'pts': 'points',
+				'x': 'xPos',
+				'y': 'yPos'
+			};
+			
+			public function get dataProvider():Object {
+				return this._dataProvider_;
+			}
+			
+			public function set dataProvider(dataProvider:Object):void {
+				if (this._dataProvider_ != dataProvider) {
+					this._dataProvider_ = dataProvider;
+					var keys:Array = ObjectUtils.keys(dataProvider);
+					var aKey:String;
+					var rKey:String;
+					for (var i:int = 0; i < keys.length; i++) {
+						aKey = keys[i];
+						rKey = this.key_translation_map[aKey];
+						if ( (rKey is String) && (rKey.length > 0) ) {
+							try {this[rKey] = dataProvider[aKey];} catch (err:Error) {}
+						}
+					}
+					var ii:int = -1;
+				}
+			}
+			
+			public function get current_state():String {
+				return this._current_state;
+			}
+			
+			public function set current_state(current_state:String):void {
+				if ( (this._current_state != current_state) && (current_state is String) ) {
+					this._current_state = current_state;
+					if ( (this.currentState != 'MOUSE_CLICK') && (current_state.length == 0) ) {
+						this.currentState = current_state;
+					}
+				}
+			}
+			
+			public function get xPos():Number {
+				return this._x_;
+			}
+			
+			public function set xPos(x:Number):void {
+				if ( (this._x_ != x) && (x is Number) ) {
+					this._x_ = x;
+				}
+			}
+
+			public function get yPos():Number {
+				return this._y_;
+			}
+			
+			public function set yPos(y:Number):void {
+				if ( (this._y_ != y) && (y is Number) ) {
+					this._y_ = y;
+				}
+			}
+
+			public function get innerRadius():Number {
+				return this._innerRadius_;
+			}
+			
+			public function set innerRadius(innerRadius:Number):void {
+				if ( (this._innerRadius_ != innerRadius) && (innerRadius is Number) ) {
+					this._innerRadius_ = innerRadius;
+				}
+			}
+			
+			public function get innerOuterRatio():Number {
+				return this._innerOuterRatio_;
+			}
+			
+			public function set innerOuterRatio(innerOuterRatio:Number):void {
+				if ( (this._innerOuterRatio_ != innerOuterRatio) && (innerOuterRatio is Number) ) {
+					this._innerOuterRatio_ = innerOuterRatio;
+				}
+			}
+			
+			public function get initial_star():Object {
+				return this._initial_star_;
+			}
+			
+			public function get points():int {
+				return this._points_;
+			}
+			
+			public function set points(points:int):void {
+				if ( (this._points_ != points) && (points is int) ) {
+					this._points_ = points;
+				}
+			}
+			
+			public function get outerRadius():Number {
+				return this._outerRadius_;
+			}
+			
+			public function set outerRadius(outerRadius:Number):void {
+				if ( (this._outerRadius_ != outerRadius) && (outerRadius is Number) ) {
+					this._outerRadius_ = outerRadius;
+				}
+			}
+			
+			public function get isManual():Boolean {
+				return this._isManual_;
+			}
+			
+			public function set isManual(isManual:Boolean):void {
+				if ( (this._isManual_ != isManual) && (isManual is Boolean) ) {
+					this._isManual_ = isManual;
+				}
+			}
+			
+			public function get isAdjustable():Boolean {
+				return this._isAdjustable_;
+			}
+			
+			public function set isAdjustable(isAdjustable:Boolean):void {
+				if ( (this._isAdjustable_ != isAdjustable) && (isAdjustable is Boolean) ) {
+					this._isAdjustable_ = isAdjustable;
+				}
+			}
+			
+			public function get angle():Number {
+				return this._angle_;
+			}
+			
+			public function set angle(angle:Number):void {
+				if ( (this._angle_ != angle) && (angle is Number) ) {
+					this._angle_ = angle;
+				}
+			}
+
+			public function get num():int {
+				return this._num_;
+			}
+			
+			public function set num(num:int):void {
+				if ( (this._num_ != num) && (num is int) ) {
+					this._num_ = num;
+				}
+			}
+			
+			public function get handle():DrawingHandle {
+				return this._handle_;
+			}
+			
+			public function set handle(handle:DrawingHandle):void {
+				if ( (this._handle_ != handle) && (handle is DrawingHandle) ) {
+					this._handle_ = handle;
+				}
+			}
+			
+			public function draw_star():void {
+				var x:Number = this.xPos;
+				var y:Number = this.yPos;
+				var innerRadius:Number = this.innerRadius;
+				var outerRadius:Number = this.outerRadius;
+				var angle:Number = this.angle;
+				var points:int = this.points;
+				this.container.graphics.clear();
+				this.container.graphics.lineStyle( 2, 0x000000);
+				
+				if (0) {
+					var fillType:String = GradientType.RADIAL;
+					var colors:Array = [0xFF0000, 0x0000FF];
+					var alphas:Array = [100, 100];
+					var ratios:Array = [0, 255];
+					var matr:Matrix = new Matrix();
+					matr.createGradientBox(200, 100, 0, -50, 100);
+					var spreadMethod:String = SpreadMethod.REFLECT; //REPEATE, PAD, OR REFLECT
+					
+					this.container.graphics.beginGradientFill(fillType, colors, alphas, ratios, matr, spreadMethod);
+				}
+				
+				var _this:SmallImageViewer = this;
+				this.handle = new DrawingHandle();
+				this.handle.callback = function (h:DrawingHandle,pt:*):void {
+					if (pt != null) {
+						//trace(_this.className+'.this.handle.callback().1 --> pt='+pt.toString());
+					} else {
+						//trace(_this.className+'.this.handle.callback().2 --> Least='+h.leastPt.toString());
+						//trace(_this.className+'.this.handle.callback().3 --> Most='+h.mostPt.toString());
+						//trace(_this.className+'.this.handle.callback().4 --> pt='+pt);
+					}
+				}
+				DrawingShapes.drawStar( this.handle,this.container.graphics, x, y, points, innerRadius, outerRadius, angle);
+				
+				if (0) {
+					this.container.graphics.endFill();
+				}
+			}
+
+			private function adjust_image():void {
+				var isDirty:Boolean = false;
+				if (this.handle.leastPt.x < 0) {
+					this.xPos += 1;
+					isDirty = true;
+				}
+				if (this.handle.leastPt.y < 0) {
+					this.yPos += 1;
+					isDirty = true;
+				}
+				if ( (this.handle.mostPt.x < this.container.width) && (this.handle.mostPt.y < this.container.height) ) {
+					this.outerRadius += 0.5;
+					this.innerRadius = this.innerOuterRatio * this.outerRadius;
+					isDirty = true;
+				}
+				if (isDirty) {
+					this.callLater(this.draw_and_adjust);
+					isDirty = false;
+				} else {
+					if (false) {
+						isDirty = ImageHelper.are_all_expected_points_touching_borders(this,this.handle);
+						if (isDirty) {
+							this.angle += 0.5
+							this.callLater(this.draw_and_adjust);
+						}
+					}
+					if (isDirty) {
+						isDirty = false;
+					} else {
+						this.capture_size_in_stats();
+						this.report_stats();
+					}
+				}
+			}
+			
+			private function report_stats():void {
+				var i:String;
+				var anObj:Object;
+				var ex:ObjectExplainer;
+				for (i in this._stats) {
+					anObj = this._stats[i];
+					ex = new ObjectExplainer(anObj);
+					//trace(this.className+'.report_stats().1 --> '+ex.explainThisWay());
+				}
+			}
+
+			private function get star_name():String {
+				return 'star'+this.num;
+			}
+			
+			private function capture_size_in_stats():void {
+				var data:Object = {'x':this.xPos,'y':this.yPos,'iR':this.innerRadius,'oR':this.outerRadius,'a':this.angle};
+				data[this.star_name] = this.num;
+				this._stats.push(data);
+			}
+			
+			private function draw_and_adjust():void {
+				if (this.isAdjustable) {
+					this.draw_star();
+					if (this._stats.length == 0) {
+						this.capture_size_in_stats();
+					}
+					this.adjust_image();
+				}
+			}
+			
+			protected function canvas1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:SmallImageViewer = this;
+				this.addEventListener(DrawImageEvent.TYPE_COMPLETED_USER_LOGIN, 
+					function (event:DrawImageEvent):void {
+						_this.callLater(_this.draw_and_adjust);
+					}
+				);
+				if (!this.isManual) {
+					this.height = this.width;
+					var pcent:Number = (this.num/16);
+					this.xPos = 0;
+					this.yPos = 0;
+					this.points = 3+(this.num-1);
+					this.innerRadius = 1; //+(pcent*5);
+					this.outerRadius = 10;
+					this.innerOuterRatio = this.innerRadius / this.outerRadius;
+					this.angle = 0;
+					if (this.num == 1) {
+						this.angle = 90;
+					} else if (this.num == 2) {
+						this.angle = 0;
+					} else if (this.num == 3) {
+						this.angle = 17;
+					} else if (this.num == 4) {
+						this.angle = 0;
+					} else if (this.num == 5) {
+						this.angle = 10;
+					} else if (this.num == 6) {
+						this.angle = 0;
+					} else if (this.num == 7) {
+						this.angle = 0;
+					} else if (this.num == 8) {
+						this.angle = 0;
+					} else if (this.num == 9) {
+						this.angle = 0;
+					} else if (this.num == 10) {
+						this.angle = 0;
+					} else if (this.num == 11) {
+						this.angle = 0;
+					} else if (this.num == 12) {
+						this.angle = 0;
+					} else if (this.num == 13) {
+						this.angle = 0;
+					} else if (this.num == 14) {
+						this.angle = 0;
+					} else if (this.num == 15) {
+						this.angle = 0;
+					} else if (this.num == 16) {
+						this.angle = 0;
+					}
+				}
+				if (this._initial_star_ == null) {
+					this._initial_star_ = {'x':this.xPos,'y':this.yPos,'pts':this.points,'iR':this.innerRadius,'oR':this.outerRadius,'iOR':this.innerOuterRatio,'a':this.angle};
+					this._initial_star_['n'] = this.star_name;
+				}
+				this.dispatchEvent(new DrawImageEvent(DrawImageEvent.TYPE_COMPLETED_USER_LOGIN));
+			}
+
+		]]>
+	</fx:Script>
+	<mx:Canvas id="container" x="0" y="0" width="100%" height="100%"/>
+</mx:Canvas>

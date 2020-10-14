@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" xmlns:controls="controls.*">
+	<s:layout>
+		<s:HorizontalLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DateUtils;
+			import com.adobe.utils.DateUtil;
+			
+			import mx.events.FlexEvent;
+
+			[Bindable]
+			private var _date:Date;
+
+			public function get dateTime():Date {
+				try {
+					var hh:Number = Number(this.timeChooser.hour);
+					var min:Number = Number(this.timeChooser.minute);
+					var dt:String = this.dateField.text;
+					var toks:Array = dt.split('/');
+					var mm:Number = Number(toks[0]);
+					var dd:Number = Number(toks[1]);
+					var yyyy:Number = Number(toks[toks.length-1]);
+					return new Date(yyyy, mm, dd, hh, min);
+				} catch (err:Error) {}
+				return null;
+			}
+			
+			public function set dateTimeRFC822(dateTime_as_RFC822:String):void {
+				this._date = DateUtil.parseRFC822(dateTime_as_RFC822);
+				if ( (this.timeChooser is TimeChooserComponent) && (this._date is Date) ) {
+					this.timeChooser.hour = this._date.hours.toString();
+					this.timeChooser.minute = this._date.minutes.toString();
+				}
+			}
+			
+			protected function timeChooser_creationCompleteHandler(event:FlexEvent):void {
+				var chooser:TimeChooserComponent = event.currentTarget as TimeChooserComponent;
+				if (this._date is Date) {
+					chooser.hour = this._date.hours.toString();
+					chooser.minute = this._date.minutes.toString();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:DateField id="dateField" selectedDate="{this._date}"/>
+	<controls:TimeChooserComponent id="timeChooser" creationComplete="timeChooser_creationCompleteHandler(event)"/>
+</s:Group>

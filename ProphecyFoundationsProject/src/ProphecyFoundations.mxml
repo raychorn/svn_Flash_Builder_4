@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark"  
+					   xmlns:mx="library://ns.adobe.com/flex/mx" showStatusBar="false" 
+					   creationComplete="windowedapplication1_creationCompleteHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		.splash_movie_canvas {
+			backgroundColor: #ffffff;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.CapabilitiesUtils;
+			import com.HTMLToolTip;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.AppIcon;
+			
+			import flash.display.Screen;
+			
+			import mx.core.FlexGlobals;
+			import mx.effects.Move;
+			import mx.effects.Resize;
+			import mx.events.EffectEvent;
+			import mx.events.FlexEvent;
+			import mx.events.VideoEvent;
+			import mx.managers.PopUpManager;
+			import mx.managers.ToolTipManager;
+			
+			import spark.components.VideoDisplay;
+			
+			import splash.SplashMovie;
+			import splash.events.SplashCompletedEvent;
+			
+			import utils.SanityChecks;
+			
+			import views.MainCanvas;
+			
+			private var appDescriptor:XML = NativeApplication.nativeApplication.applicationDescriptor;
+			private var nsDeclaration:Namespace = appDescriptor.namespace();
+			
+			public const build_number:String = appDescriptor.nsDeclaration::version[ 0 ] ;
+
+			public var is_debugging:Boolean = false;
+			
+			private var popUp:SplashMovie;
+			
+			public var mainCanvas:MainCanvas;
+			
+			public var mainScreen:Screen = Screen.mainScreen;
+			public var screenBounds:Rectangle = mainScreen.bounds;
+			
+			private var _copyrightMessage:String = "© 2010 AmazingFacts.Org";
+			private var _creditsMessage:String = "Produced by:\nVyper Logix Corp. (http://www.VyperLogix.Com)\nand Ray C Horn (http://RayCHorn.Com)";
+			
+			private var icon:Loader = new Loader();
+			private var systray:SystemTrayIcon;
+			private var dock:DockIcon;
+			private var copyrightCommand:NativeMenuItem = new NativeMenuItem(_copyrightMessage);
+			private var creditsCommand:NativeMenuItem = new NativeMenuItem("Credits");
+			private var exitCommand:NativeMenuItem = new NativeMenuItem("Exit");
+
+			private var _icon:AppIcon = new AppIcon(['assets/icons/icons/PF_app_icon_16.png','assets/icons/icons/PF_app_icon_32.png','assets/icons/icons/PF_app_icon_48.png','assets/icons/icons/PF_app_icon_128.png']);
+			
+			private function iconLoadComplete(e:Event):void {
+				NativeApplication.nativeApplication.icon.bitmaps=[e.target.content.bitmapData];
+			}
+			
+			private function undock(e:Event):void {
+				this.stage.nativeWindow.restore();
+			}
+			
+			private function closeApp(e:Event):void {
+				NativeApplication.nativeApplication.exit();
+			}
+			
+			private function createIconMenu(_sysTray:Boolean):NativeMenu {
+				var _this:* = this;
+				var iconMenu:NativeMenu = new NativeMenu();
+				iconMenu.addItem(copyrightCommand);
+				iconMenu.addItem(new NativeMenuItem("", true));
+				iconMenu.addItem(creditsCommand);
+				creditsCommand.addEventListener(Event.SELECT, function (event:Event):void {
+					AlertPopUp.infoNoOkay(_this._creditsMessage,'Credits');
+				});
+				if (_sysTray) {
+					iconMenu.addItem(new NativeMenuItem("", true));
+					iconMenu.addItem(exitCommand);
+					exitCommand.addEventListener(Event.SELECT, this.closeApp);
+				}
+				return iconMenu;
+			}
+			
+			private function trayIcon(_sysTray:Boolean, _dock:Boolean):void {
+				if (_sysTray) {
+					icon.contentLoaderInfo.addEventListener(Event.COMPLETE, this.iconLoadComplete);
+					icon.load(new URLRequest("assets/icons/icons/PF_app_icon_16.png"));
+					systray=NativeApplication.nativeApplication.icon as SystemTrayIcon;
+					systray.tooltip=this._copyrightMessage;
+					systray.menu=this.createIconMenu(_sysTray);
+				}
+				if (_dock) {
+					icon.contentLoaderInfo.addEventListener(Event.COMPLETE, this.iconLoadComplete);
+					icon.load(new URLRequest("assets/icons/icons/PF_app_icon_128.png"));
+					NativeApplication.nativeApplication.addEventListener(InvokeEvent.INVOKE, undock);
+					dock=NativeApplication.nativeApplication.icon as DockIcon;
+					dock.menu=this.createIconMenu(_sysTray);
+				}
+			}
+			
+			private function resize_stage():void {
+				var _this:* = this;
+				var resize:Resize = new Resize(this);
+				var move:Move = new Move(this);
+				
+				this.mainScreen = Screen.mainScreen;
+				this.screenBounds = this.mainScreen.bounds;
+				
+				resize.widthFrom = this.nativeWindow.width;
+				resize.widthTo = this.screenBounds.width - 100;
+				resize.heightFrom = this.nativeWindow.height;
+				resize.heightTo = this.screenBounds.height - 100;
+				resize.addEventListener(EffectEvent.EFFECT_END, function (event:*):void {
+					_this.nativeWindow.width = resize.widthTo;
+					_this.nativeWindow.height = resize.heightTo;
+				});
+				resize.duration = 1000;
+				
+				move.xFrom = this.nativeWindow.x;
+				move.xTo = 50;
+				move.yFrom = this.nativeWindow.y;
+				move.yTo = 50;
+				move.addEventListener(EffectEvent.EFFECT_END, function (event:*):void {
+					_this.nativeWindow.x = move.xTo;
+					_this.nativeWindow.y = move.yTo;
+				});
+				move.duration = 1000;
+				
+				resize.play();
+				move.play();
+			}
+
+			private function show_mainCanvas():void {
+				this.mainCanvas = new MainCanvas();
+				this.mainCanvas.percentWidth = this.mainCanvas.percentHeight = 100.0;
+				this.mainCanvas.minWidth = 1024;
+				this.mainCanvas.minHeight = 768;
+				this.addElement(this.mainCanvas);
+			}
+			
+			public function applicationExit():void {
+				var exitingEvent:Event = new Event(Event.EXITING, false, true);
+				NativeApplication.nativeApplication.dispatchEvent(exitingEvent);
+				if (!exitingEvent.isDefaultPrevented()) {
+					NativeApplication.nativeApplication.exit();
+				}
+			}
+
+			private function determine_debugging_Level():void {
+				var aUrl:String = FlexGlobals.topLevelApplication.url;
+				var aFile:File = new File(aUrl);
+				var fname:String = aFile.nativePath.toLowerCase();
+				this.is_debugging = ( (fname.indexOf('z:\\') > -1) && (fname.indexOf('\\bin-debug\\') > -1) ) ? true : this.is_debugging;
+			}
+			
+			private function determine_capabilities():void {
+				var c:CapabilitiesUtils = new CapabilitiesUtils();
+			}
+			
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:* = this;
+				this.determine_debugging_Level();
+				this.determine_capabilities();
+				var _splash:SplashMovie = new SplashMovie();
+				_splash.addEventListener(FlexEvent.CREATION_COMPLETE, function (event:FlexEvent):void {
+					var splsh:SplashMovie = event.currentTarget as SplashMovie;
+					splsh.x = 0;
+					splsh.y = 0;
+					splsh.percentWidth = splsh.percentHeight = 100;
+					splsh.flv.addEventListener(FlexEvent.CREATION_COMPLETE, function (event:FlexEvent):void {
+						var flv:VideoDisplay = event.currentTarget as VideoDisplay;
+						flv.play();
+					});
+				});
+				ToolTipManager.toolTipClass = HTMLToolTip;
+				
+				this.trayIcon(NativeApplication.supportsSystemTrayIcon, NativeApplication.supportsDockIcon);
+
+				this._icon.addEventListener(Event.COMPLETE,function():void {
+					//trace(_this.className+'.windowedapplication1_creationCompleteHandler.1 --> _this._icon.bitmaps.length='+_this._icon.bitmaps.length);
+					NativeApplication.nativeApplication.icon.bitmaps = _this._icon.bitmaps;
+				});
+				this._icon.loadImages();
+				
+				this.nativeWindow.width = 700;
+				this.nativeWindow.height = 738;
+				this.nativeWindow.x = (Capabilities.screenResolutionX - this.nativeWindow.width) / 2;
+				this.nativeWindow.y = (Capabilities.screenResolutionY - this.nativeWindow.height) / 2;
+
+				this.popUp = PopUpManager.createPopUp(this, SplashMovie, true) as SplashMovie;
+				this.popUp.x = 0;
+				this.popUp.y = 0;
+				this.popUp.styleName = 'splash_movie_canvas';
+				this.popUp.width = this.nativeWindow.width;
+				this.popUp.height = this.nativeWindow.height;
+
+				this.addEventListener(SplashCompletedEvent.TYPE_SPLASH_COMPLETED, function (event:SplashCompletedEvent):void {
+					////trace('VideoEvent.COMPLETE !!!');
+					PopUpManager.removePopUp(_this.popUp);
+					_this.resize_stage();
+					_this.show_mainCanvas();
+				});
+			}
+
+		]]>
+	</fx:Script>
+</s:WindowedApplication>

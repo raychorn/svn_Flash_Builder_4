@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Graphic version="2.0" viewHeight="20" viewWidth="20" ai:appVersion="15.0.2.399" ATE:version="1.0.0" flm:version="1.0.0" d:id="1" d:using="" xmlns="http://ns.adobe.com/fxg/2008" xmlns:ATE="http://ns.adobe.com/ate/2009" xmlns:ai="http://ns.adobe.com/ai/2009" xmlns:d="http://ns.adobe.com/fxg/2008/dt" xmlns:flm="http://ns.adobe.com/flame/2008">
+  <Library/>
+  <Group ai:artboardActive="1" ai:artboardIndex="0" ai:seqID="1" d:layerType="page" d:pageHeight="20" d:pageWidth="20" d:type="layer" d:userLabel="Artboard 1">
+    <Group ai:objID="32540b00" ai:seqID="2" d:id="2" d:type="layer" d:userLabel="Layer 1">
+      <Group y="0.050293" ai:objID="30ccdde0" ai:seqID="3">
+        <Path winding="nonZero" ai:objID="2ee129e0" ai:seqID="4" data="M9 0C3.94678 0.501953 0 4.76416 0 9.94971 0 11.5474 0.384277 13.0513 1.05029 14.3911L9 9.396 9 0Z">
+          <fill>
+            <SolidColor color="#FFFFFF"/>
+          </fill>
+        </Path>
+        <Path x="2.11426" y="11.1294" winding="nonZero" ai:objID="29572bc0" ai:seqID="5" data="M0 4.9541C1.82959 7.30371 4.67773 8.82031 7.88574 8.82031 11.0938 8.82031 13.9414 7.30371 15.7715 4.95508L7.88574 0 0 4.9541Z">
+          <fill>
+            <SolidColor color="#FFFFFF"/>
+          </fill>
+        </Path>
+        <Path x="11" winding="nonZero" ai:objID="2b290a30" ai:seqID="6" data="M7.9502 14.3901C8.61621 13.0513 9 11.5474 9 9.94971 9 4.76416 5.05273 0.501953 0 0L0 9.396 7.9502 14.3901Z">
+          <fill>
+            <SolidColor color="#FFFFFF"/>
+          </fill>
+        </Path>
+      </Group>
+    </Group>
+  </Group>
+  <Private>
+      <ai:PrivateElement d:ref="#1">
+        <ai:SaveOptions>
+          <ai:Dict data="I expandBlendsOption 5 I versionKey 2 B aiEditCap 1 I preserveGradientPolicy 4 B includeSymbol 0 B writeImages 1 B downsampleLinkedImages 0 I preserveFilterPolicy 3 I preserveTextPolicy 4 I rasterizeResolution 72 B includeObjectOutsideArtboard 0 B includeXMP 0 "/>
+        </ai:SaveOptions>
+        <ai:DocData base="pie_chart_icon_minimal.assets/images" rulerCanvasDiffH="10.5" rulerCanvasDiffV="10.5">
+          <ai:DocRasterSettings>
+            <ai:Dict data="I dpi. 72 B alis 0 B spot 0 B mask 0 R padd 36 I colr 4 "/>
+          </ai:DocRasterSettings>
+        </ai:DocData>
+        <ai:AutoGenImageList>
+          <ai:Dict/>
+        </ai:AutoGenImageList>
+      </ai:PrivateElement>
+      <ai:PrivateElement flm:hashcode="E00C70341EF6E95AE98F8B1242BB146C" d:ref="#2">
+        <ai:LayerOptions color="5 79.31 257 128.502"/>
+      </ai:PrivateElement>
+    </Private>
+  </Graphic>

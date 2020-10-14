@@ -1,0 +1,236 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+@font-face {
+	src: url("/assets/fonts/NeoSansIntel.ttf");
+	fontFamily: NeoSansIntel;
+	embed-as-cff: false;
+}
+
+@font-face {
+	src: url("/assets/fonts/NeoSansIntel-Medium.ttf");
+	fontFamily: NeoSansIntelMedium;
+}
+
+@font-face {
+	src: url("/assets/fonts/GARA.TTF");
+	fontFamily: Garamond;
+}
+
+@font-face {
+	src: url("/assets/fonts/NeoSansIntel-Light.ttf");
+	fontFamily: NeoSansIntelLight;
+}
+
+/*
+mx|ApplicationControlBar {
+	highlightAlphas: 0.38, 0.34;
+	fillAlphas: 0.49, 0.38;
+	fillColors: #00ffff, #0066ff;
+}
+*/
+
+.errorTip {
+    color: #FFFFFF;
+	fontFamily: NeoSansIntel;
+    fontSize: 12;
+    fontWeight: "normal";
+    shadowColor: #000000;
+    borderColor: #CE2929;
+    borderStyle: "errorTipRight";
+    paddingBottom: 4;
+    paddingLeft: 4;
+    paddingRight: 4;
+    paddingTop: 4;
+}
+
+.DraggableLabel {
+	fontFamily: NeoSansIntel;
+	fontSize: 12;
+	fontWeight: "normal";
+	backgroundAlpha: 0.5;
+	backgroundColor: #cccccc;
+	borderColor: #000000;
+	cornerRadius: 10;
+}
+
+.DraggableToolTip {
+	fontFamily: NeoSansIntel;
+	fontSize: 12;
+	fontWeight: "normal";
+	backgroundAlpha: 0.5;
+	cornerRadius: 10;
+	backgroundColor: #cccccc;
+	color: #0b333c;
+}
+
+.FileSystemList {
+	fontFamily: NeoSansIntelLight;
+	fontSize: 11;
+	fontWeight: "normal";
+}
+
+.Canvas01 {
+	fontFamily: NeoSansIntelMedium;
+	fontSize: 11;
+}
+
+.ApplicationTitleBarLabel {
+	fontFamily: NeoSansIntel;
+	fontSize: 14;
+	fontWeight: "bold";
+}
+
+.ListInFocus {
+	alternatingItemColors: #cccccc, #ffffff;
+	fontFamily: NeoSansIntelMedium;
+	fontSize: 11;
+	fontWeight: "normal";
+	cornerRadius: 10;
+}
+
+.ErrorAlert {
+	fontFamily: NeoSansIntel;
+	fontSize: 11pt;
+	backgroundAlpha: .5;
+	shadowDistance: 7;
+	backgroundColor: #ff0000;
+	borderColor: #ff0000;
+	cornerRadius: 10;
+	titleStyleName: "AlertPanelTitle";
+}	
+
+.InfoAlert {
+	fontFamily: NeoSansIntel;
+	fontSize: 11pt;
+	backgroundAlpha: .5;
+	shadowDistance: 7;
+	backgroundColor: #0066ff;
+	borderColor: #0066ff;
+	cornerRadius: 10;
+	titleStyleName: "AlertPanelTitle";
+}	
+
+.ConfirmAlert {
+	fontFamily: NeoSansIntel;
+	fontSize: 11pt;
+	color: #000000;
+	backgroundAlpha: .5;
+	shadowDistance: 7;
+	backgroundColor: #ff6600;
+	borderColor: #ff6600;
+	cornerRadius: 10;
+	titleStyleName: "AlertPanelTitle";
+}	
+
+.InfoMsgAlert {
+	fontFamily: NeoSansIntel;
+	fontSize: 11pt;
+	color: #000000;
+	backgroundAlpha: .5;
+	shadowDistance: 7;
+	backgroundColor: #33ff66;
+	borderColor: #00ff66;
+	cornerRadius: 10;
+	titleStyleName: "AlertPanelTitle";
+}	
+
+.AlertPanelTitle {
+	fontFamily: NeoSansIntel;
+	fontSize: 14pt;
+	color: #000000;
+	fontWeight: "normal";
+}
+
+.ToggleButtonGridState {
+	icon: Embed(source='assets/images/grid.png');
+}
+
+.ToggleButtonGridDisabledState {
+	icon: Embed(source='assets/images/grid-disabled.jpg');
+}
+
+.ToggleButtonListState {
+	icon: Embed(source='assets/images/list.png');
+}
+
+.ToggleButtonListDisabledState {
+	icon: Embed(source='assets/images/list-disabled.jpg');
+}
+
+.DisabledButton {
+	fillColors: #999999, #cccccc, #ffffff, #ffffff;
+}
+
+.EnabledButton {
+   fillColors: #ffffff, #ffffff, #999999, #cccccc;
+}
+
+.PackageBuilderPanelInitial {
+   borderColor: #cccccc;
+   borderThicknessLeft: 8;
+   borderThicknessTop: 5;
+   borderThicknessBottom: 5;
+   borderThicknessRight: 5;
+   roundedBottomCorners: true;
+   cornerRadius: 5;
+   headerHeight: 0;
+   headerColors: #00ff00, #00cc33;
+   shadowDirection: right;
+   titleStyleName: "PackageBuilderPanelTitle";
+}
+
+.PackageBuilderPanelActive {
+   borderColor: #00ff33;
+   borderThicknessLeft: 8;
+   borderThicknessTop: 5;
+   borderThicknessBottom: 5;
+   borderThicknessRight: 5;
+   roundedBottomCorners: true;
+   cornerRadius: 5;
+   headerHeight: 0;
+   headerColors: #00ff00, #00cc33;
+   shadowDirection: right;
+   titleStyleName: "PackageBuilderPanelTitle";
+}
+
+.PackageBuilderPanelTitle {
+   fontFamily: NeoSansIntel;
+   fontSize: 11pt;
+   color: #0b333c;
+}
+
+.ToggleButtonHeaderInitial {
+	borderColor: #000000;
+	borderStyle: solid;
+	backgroundColor: #cccccc;	
+}
+
+.ToggleButtonHeaderActive {
+	borderColor: #000000;
+	borderStyle: solid;
+	backgroundColor: #ffff99;	
+}
+
+.FolderNavigatorPanel {
+	borderColor: #00ff33;
+	borderThicknessLeft: 8;
+	borderThicknessTop: 5;
+	borderThicknessBottom: 5;
+	borderThicknessRight: 5;
+	roundedBottomCorners: true;
+	backgroundColor: #0099ff;
+	cornerRadius: 5;
+	headerColors: #00ff00, #339933;
+	shadowDirection: right;
+	titleStyleName: "FolderNavigatorPanelTitle";
+}
+
+.FolderNavigatorPanelTitle {
+	fontFamily: NeoSansIntel;
+	fontSize: 16pt;
+	color: #0b333c;
+	fontWeight: "normal";
+}
+

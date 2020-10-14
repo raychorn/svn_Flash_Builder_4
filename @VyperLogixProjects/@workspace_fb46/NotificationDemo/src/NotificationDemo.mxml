@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   width="700" height="500">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:DropShadowFilter id="myShadowFilter" color="0xFFF333" />
+		<mx:WipeDown id="myWipeD" />
+		<mx:WipeUp id="myWipeU" />
+	</fx:Declarations>
+	<fx:Style source="assets/styles/styles.css"/>
+	<fx:Script>
+		<![CDATA[
+			import com.notifications.Notification;
+			
+			import controls.Alert.AlertAlternative;
+			
+			import flash.events.KeyboardEvent;
+			import flash.ui.Keyboard;
+			
+			
+			[Bindable] 
+			private var posList:Array = [
+				Notification.NOTIFICATION_POSITION_TOP_LEFT, 
+				Notification.NOTIFICATION_POSITION_TOP_CENTER, 
+				Notification.NOTIFICATION_POSITION_TOP_RIGHT,
+				Notification.NOTIFICATION_POSITION_BOTTOM_LEFT, 
+				Notification.NOTIFICATION_POSITION_BOTTOM_CENTER, 
+				Notification.NOTIFICATION_POSITION_BOTTOM_RIGHT,
+				Notification.NOTIFICATION_POSITION_MIDDLE_LEFT, 
+				Notification.NOTIFICATION_POSITION_MIDDLE_RIGHT, 
+				Notification.NOTIFICATION_POSITION_CENTER
+			];
+			
+			
+			[Embed(source = '/assets/HP-Monitor-Dock-512.png')]
+			private var notificationIcon:Class;
+			
+			
+			private function showAlert() :void
+			{
+				var aNotification:Notification;
+				if (cbParent.selected)
+				{
+					aNotification = Notification.show( taMessage.htmlText, taTitle.text, nsDuration.value, String(cbPos.value), notificationIcon, cbStackable.selected, propertiesPanel );
+				}
+				else
+				{
+					aNotification = Notification.show( taMessage.htmlText, taTitle.text, nsDuration.value, String(cbPos.value), notificationIcon, cbStackable.selected);
+				}
+				aNotification.width = this.width - 10;
+				aNotification.y = this.height - aNotification.height;
+			}
+			
+			private function keyHandler(evt:KeyboardEvent) :void
+			{
+				if (evt.ctrlKey && evt.shiftKey)
+					showAlert();
+			}
+			
+		]]>
+	</fx:Script>
+	<mx:Panel id="propertiesPanel" label="test" title="Define the notification properties">
+		<mx:Form>
+			<mx:FormItem label="Title" width="100%" >
+				<mx:TextArea id="taTitle" text="Notification title" width="100%"/>
+			</mx:FormItem>
+			<mx:FormItem label="Message">
+				<mx:RichTextEditor id="taMessage" width="100%" height="200"
+								   text="This is the message to display and send information to your user."/>
+			</mx:FormItem>
+			<mx:FormItem label="Duration" paddingTop="20">
+				<mx:NumericStepper id="nsDuration" minimum="0" maximum="5000" stepSize="100" value="2500" />
+			</mx:FormItem>
+			<mx:FormItem label="Position" direction="horizontal">
+				<mx:ComboBox id="cbPos" dataProvider="{posList}" rowCount="15" selectedIndex="5" />
+				<mx:CheckBox id="cbParent" label="In the Panel" labelPlacement="left" />
+				<mx:CheckBox id="cbStackable" label="Stackable" labelPlacement="left" selected="true" />
+			</mx:FormItem>
+			<mx:HBox width="100%" horizontalAlign="center" paddingTop="15">
+				<mx:Button label="show Alert" click="showAlert();" width="150" height="50" />
+			</mx:HBox>
+		</mx:Form>
+	</mx:Panel>
+</s:WindowedApplication>

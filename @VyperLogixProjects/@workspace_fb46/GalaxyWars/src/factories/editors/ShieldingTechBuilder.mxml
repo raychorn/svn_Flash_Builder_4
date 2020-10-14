@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 skinClass="skins.TitleWindowSkin" 
+		 styleName="builderTitleWindow" 
+		 width="100%" height="100%">
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.TimeUtils;
+			
+			import factories.ShieldingTechFactory;
+			
+			private function get current_level():int {
+				return ShieldingTechFactory.current_level;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%" paddingLeft="10" paddingTop="10">
+		<s:HGroup width="100%" verticalAlign="top">
+			<s:HGroup width="35%" horizontalAlign="left">
+				<s:Image source="{Images.shieldingResearchTechImageClass}"/>
+			</s:HGroup>
+			<s:VGroup width="65%" horizontalAlign="left">
+				<s:Label text="Required to improve to level {this.current_level+1}: " styleName="resourceBuilderLabel"/>
+				<s:VGroup toolTip="Shielding Tech {ShieldingTechFactory.current_level_upgrade_cost}" horizontalAlign="center">
+					<s:Label text="{ShieldingTechFactory.current_level_upgrade_cost}" styleName="resourceBuilderLabel"/>
+				</s:VGroup>
+				<s:HGroup>
+					<s:Label text="Production duration: {TimeUtils.convertTime(ShieldingTechFactory.current_level_upgrade_time,true)}" styleName="resourceBuilderLabel"/>
+				</s:HGroup>
+				<s:Button id="btn_build" label="BUILD"/>
+			</s:VGroup>
+		</s:HGroup>
+	</s:VGroup>
+</s:TitleWindow>

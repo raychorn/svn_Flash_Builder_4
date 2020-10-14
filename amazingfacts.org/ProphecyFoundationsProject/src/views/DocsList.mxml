@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx"
+		   xmlns:controls="controls.*"
+		   width="100%" height="100%" horizontalScrollPolicy="off" 
+		   creationComplete="canvas1_creationCompleteHandler(event)" xmlns:views="views.*">
+	<mx:states>
+		<s:State name="details"/>
+		<s:State name="document"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ArrayCollectionUtils;
+			import com.Generator;
+			import com.HTMLUtils;
+			import com.ObjectUtils;
+			import com.XMLObjectUtils;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.DocsLisDetails;
+			import controls.RootFolderChooserPopUp;
+			import controls.events.ClickedDocsListMediaCardEvent;
+			import controls.events.DocsListPopulatedEvent;
+			import controls.events.ShowDocsListDetailsEvent;
+			import controls.events.ShowDocsListItemsEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.TileList;
+			import mx.core.FlexGlobals;
+			import mx.effects.Move;
+			import mx.effects.Resize;
+			import mx.events.EffectEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.events.ResizeEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.xml.SimpleXMLDecoder;
+			
+			import spark.components.NavigatorContent;
+			import spark.events.IndexChangeEvent;
+			
+			import utils.AIRHelper;
+			import utils.SanityChecks;
+			
+			private var alert:Alert;
+			
+			private var __data__:ArrayCollection;
+			
+			private var __previous_docsList_width:Number;
+			
+			private var __resize_effect:Resize;
+
+			private var __move_effect:Move;
+			
+			private var __width_stack:Array = [];
+
+			private var popUpRootFolderChooser:RootFolderChooserPopUp;
+			
+			public static var ProphecyFoundations_xml:String = 'app:/data/ProphecyFoundations.xml';
+
+			[Bindable]
+			private var _initial_document_data:Object;
+			
+			private var _current_item_uid:String;
+			
+			public var docsListDetails:DocsLisDetails;
+			
+			public var sanity_checks_has_data_folder_callback:Function;
+			
+			public function set initial_document_data(initial_document_data:Object):void {
+				if (this._initial_document_data != initial_document_data) {
+					this._initial_document_data = initial_document_data;
+				}
+			}
+			
+			public function get initial_document_data():Object {
+				return this._initial_document_data;
+			}
+			
+			public override function set currentState(value:String):void {
+				try {
+					if ( (value == null) || (value == '') ) {
+						this.docsListDetails.visible = this.docsListDetails.includeInLayout = false;
+						this.width = 300;
+						this.document_slider.documentViewer.detach_audio_Player();
+						this.document_slider.documentViewer.detach_video_Player();
+					} else if (value == 'details') {
+						if ( (this.document_slider) && (this.document_slider.documentViewer) ) {
+							this.document_slider.documentViewer.detach_all_players();
+						}
+						this.docsListDetails.visible = this.docsListDetails.includeInLayout = true;
+					}
+				} catch (err:Error) {}
+				super.currentState = value;
+			}
+
+			public function get width_stack():Array {
+				return this.__width_stack;
+			}
+			
+			public function search(term:String):void {
+				var _this:* = this;
+				var items_found:Object = {};
+				//trace(this.className+'.search().1 --> term='+term);
+				var keys:Array;
+				var reasons:Array = [];
+				if ( (term is String) && (term.length > 0) ) {
+					var _term:String = term.toLowerCase();
+					var clone:ArrayCollection = ArrayCollectionUtils.clone(this.__data__);
+					var gen:Generator = new Generator(clone,function (parent:Generator,item:*):void {
+						keys = ObjectUtils.keys(item);
+						if ( (keys.indexOf('item') > -1) && (keys.indexOf('title') > -1) && (String(item.title).toLowerCase().indexOf(_term) > -1) ) {
+							items_found[item.title] = item;
+						}
+						var anItem:*;
+						var _keys:Array;
+						var isFound:Boolean = false;
+						try {
+							if ( (!(item is ArrayCollection)) && (keys is Array) && (keys.length > 0) ) {
+								for (var i:String in item.item) {
+									anItem = item.item[i];
+									_keys = ObjectUtils.keys(anItem);
+									if ( (_keys.indexOf('title') > -1) && (String(anItem.title).toLowerCase().indexOf(_term) > -1) ) {
+										isFound = true;
+										reasons.push('Title');
+										break;
+									}
+									if ( (_keys.indexOf('text') > -1) && (String(anItem.text).toLowerCase().indexOf(_term) > -1) ) {
+										isFound = true;
+										reasons.push('Text');
+										break;
+									}
+									if ( (_keys.indexOf('keywords') > -1) && (String(anItem.keywords).toLowerCase().indexOf(_term) > -1) ) {
+										isFound = true;
+										reasons.push('Keywords');
+										break;
+									}
+								}
+								if (isFound) {
+									items_found[item.title] = item;
+								}
+							}
+						} catch (err:Error) {
+							var ii:int = 0;
+						}
+					});
+				}
+				var items:Array = [];
+				keys = ObjectUtils.keys(items_found);
+				for (var k:String in keys) {
+					//trace(this.className+'.search().3 --> title='+keys[k]);
+					items.push(items_found[keys[k]]);
+				}
+				this.docsList.dataProvider = (items.length > 0) ? new ArrayCollection(items) : this.__data__;
+			}
+
+			private function handle_xml_result(xmlStr:String):void {
+				var resultObj:Object = XMLObjectUtils.xmlConverter(xmlStr)
+				this.__data__ = resultObj.data.category_list.categories.category;
+				this.docsList.dataProvider = this.__data__;
+				this.dispatchEvent(new DocsListPopulatedEvent(DocsListPopulatedEvent.TYPE_DOCSLIST_POPULATED));
+			}
+			
+			private function _loadData(aFileOrUrl:*):void {
+				var _this:DocsList = this;
+				if (aFileOrUrl is File) {
+					var aFile:File = aFileOrUrl;
+					var aFileStream:FileStream = new FileStream();
+					var str:String = "";
+					aFileStream.addEventListener(Event.COMPLETE, function (event:Event):void {
+						str = aFileStream.readMultiByte(aFileStream.bytesAvailable, "iso-8859-1");
+						_this.handle_xml_result(str);
+						aFileStream.close();
+					});
+					aFileStream.addEventListener(IOErrorEvent.IO_ERROR, function (event:IOErrorEvent):void {
+						AlertPopUp.surpriseNoOkay('Cannot locate the primary data file.','WARNING');
+					});
+					aFileStream.openAsync(aFile, FileMode.READ);
+				} else if (aFileOrUrl is String) {
+					HTMLUtils.load_data(aFileOrUrl, function (data:String):void {
+						_this.handle_xml_result(data);
+					});
+				} else {
+					AlertPopUp.surpriseNoOkay('Cannot load data... Sorry.','WARNING');
+				}
+			}
+			
+			private function loadData(src:String):void {
+				var _this:DocsList = this;
+				if (this.sanity_checks_has_data_folder_callback is Function) { //  && (!this.sanity_checks_has_data_folder_callback()) )
+					this.popUpRootFolderChooser = PopUpManager.createPopUp(this.parentApplication.document, RootFolderChooserPopUp, true) as RootFolderChooserPopUp;
+					this.popUpRootFolderChooser.width = 500;
+					this.popUpRootFolderChooser.height = 300;
+					this.popUpRootFolderChooser.headerCls = MainCanvas.headerCls;
+					this.popUpRootFolderChooser.data_file_name = DocsList.ProphecyFoundations_xml.replace(AIRHelper.default_prefix,'');
+					this.popUpRootFolderChooser.callback = function (aFile:File):void {
+						PopUpManager.removePopUp(_this.popUpRootFolderChooser);
+						AIRHelper.set_prefix(AIRHelper.default_prefix,aFile);
+						var _src:String = src.replace(AIRHelper.default_prefix+'data','');
+						var file:File = aFile.resolvePath(aFile.nativePath+_src);
+//						var dir:File = AIRHelper.get_directory_from(file);
+//						trace(_this.className+'.loadData().1 --> fpath='+file.nativePath+', '+dir.nativePath);
+//						FlexGlobals.topLevelApplication.mainCanvas.webserver.listen(MiniAIRWebServer.portNumber,dir);
+//						var url:String = FlexGlobals.topLevelApplication.mainCanvas.webserver.url_from_file(file);
+						var url:String = AIRHelper.normalize_url(file.nativePath);
+						trace(_this.className+'.loadData().2 --> url='+url);
+						_this._loadData(url);
+					};
+					this.popUpRootFolderChooser._ProphecyFoundations_xml = DocsList.ProphecyFoundations_xml;
+					this.popUpRootFolderChooser.x = this.parentApplication.width / 2;
+					this.popUpRootFolderChooser.y = (this.parentApplication.height / 2) - (this.popUpRootFolderChooser.height/2);
+					this.popUpRootFolderChooser.title = 'Eject or Insert the DVD to Continue...';
+					this.popUpRootFolderChooser.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+					});
+				} else {
+					this._loadData(new File(src));
+				}
+			}
+			
+			public function resize_docsList_down():void {
+				var resize:Resize = new Resize(this.docsList);
+				resize.duration = 500;
+				this.__previous_docsList_width = this.docsList.width;
+				resize.widthBy = -(this.docsList.width);
+				resize.play();
+			}
+
+			public function resize_docsList_up():void {
+				var resize:Resize = new Resize(this.docsList);
+				resize.duration = 500;
+				resize.widthBy = this.__previous_docsList_width;
+				resize.play();
+			}
+			
+			public function populate_details():void {
+				this.docsListDetails.populate_details();
+				//this.resize_docsList_down();
+			}
+			
+			protected function onCreationComplete_docsList(event:FlexEvent):void {
+				var _this:* = this;
+				this.loadData(DocsList.ProphecyFoundations_xml);
+				this.parentApplication.addEventListener(ResizeEvent.RESIZE, function (event:ResizeEvent):void {
+					//trace(_this.className+'.onCreationComplete_docsList().1 --> this.parentApplication.width='+_this.parentApplication.width);
+					_this.docsList.minWidth = _this.calculate_docsListDetails_minWidth;
+				});
+			}
+
+			protected function docsList_changeHandler(event:*):void {
+				var _this:DocsList = this;
+				this.currentState = 'details';
+				var data:Object = this.docsList.selectedItem;
+				var hasChanged:Boolean = true;
+				try {hasChanged = (this._current_item_uid != data.uid);} catch (err:Error) {}
+				if (hasChanged) {
+					this.container_docsListDetails.removeAllChildren();
+					this.docsListDetails = new DocsLisDetails();
+					this.docsListDetails.addEventListener(FlexEvent.CREATION_COMPLETE, function (event:FlexEvent):void {
+						_this.docsListDetails.dataProvider = data;
+						trace(_this.className+'.docsList_changeHandler().1 --> _this.btnBar.txt_search.text='+_this.btnBar.txt_search.text);
+						_this._current_item_uid = data.uid;
+					});
+					this.container_docsListDetails.addChild(this.docsListDetails);
+				}
+				//trace(this.className+'.docsList_changeHandler().1 --> data='+data);
+				this.dispatchEvent(new ShowDocsListDetailsEvent(ShowDocsListDetailsEvent.TYPE_SHOW_DOCSLIST_DETAILS_COMPLETED));
+			}
+			
+			private function onClick_docsListDetails(event:MouseEvent):void {
+				//trace(this.className+'.onClick_docsListDetails().1 !');
+				var tiles:TileList = event.currentTarget as TileList;
+				var mediaCard:* = tiles.selectedItem;
+			}
+
+
+			protected function canvas1_creationCompleteHandler(event:FlexEvent):void {
+				var _this:* = this;
+				this.addEventListener(ClickedDocsListMediaCardEvent.TYPE_CLICKED_DOCSLIST_MEDIA_CARD, function (event:ClickedDocsListMediaCardEvent):void {
+					//trace(_this.className+'.ClickedDocsListMediaCardEvent.TYPE_CLICKED_DOCSLIST_MEDIA_CARD !');
+				});
+			}
+			
+			private function get calculate_docsListDetails_minWidth():Number {
+				var w:Number = (this.parentApplication.width > 800) ? 300 : 200;
+				//trace(this.className+'.calculate_docsListDetails_minWidth().1 --> this.parentApplication.width='+this.parentApplication.width+', w='+w);
+				return w;
+			}
+		]]>
+	</fx:Script>
+	<mx:HBox width="100%" height="100%">
+		<mx:VBox height="100%">
+			<controls:ButtonBar id="btnBar" currentState="search" width="{this.docsList.width}" height="{this.btnBar.btn_search.height}"/>
+			<mx:List id="docsList" styleName="docs_accordion" horizontalScrollPolicy="off" verticalScrollPolicy="auto" labelField="title" itemRenderer="controls.renderers.DocsListItemRenderer" width="30%" height="100%" minWidth="{this.calculate_docsListDetails_minWidth}" click="docsList_changeHandler(event)" creationComplete="onCreationComplete_docsList(event)"/>
+		</mx:VBox>
+		<mx:Canvas id="container_docsListDetails" width="100%" height="100%" includeIn="details"/>
+	</mx:HBox>
+	<views:DocumentSlider id="document_slider" x="{this.docsList.width}" y="0" width="100%" height="100%" includeIn="document" initial_document_data="{this._initial_document_data}"/>
+</mx:Canvas>

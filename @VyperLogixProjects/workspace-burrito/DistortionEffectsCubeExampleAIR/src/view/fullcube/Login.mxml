@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel 
+    horizontalAlign="center"
+    verticalAlign="middle"
+    xmlns:mx="http://www.adobe.com/2006/mxml"
+    title="Login">
+
+    <mx:Form>
+
+        <mx:FormItem label="Username">
+            <mx:TextInput/>
+        </mx:FormItem>
+
+        <mx:FormItem label="Password">
+            <mx:TextInput displayAsPassword="true"/>
+        </mx:FormItem>
+
+        <mx:FormItem>
+            <mx:Button label="Login"/>
+        </mx:FormItem>
+
+        <mx:LinkButton label="Forgotten Password? Click Here."/>
+        <mx:LinkButton label="Not Registered? Click Here."/>
+
+    </mx:Form>
+
+</mx:Panel>

@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		creationComplete="init()">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.SWFLoader;
+			import mx.core.FlexGlobals;
+			
+			protected var loader:Loader;
+			protected var player:Object;
+			private var swfLoader:SWFLoader;
+			
+			private var __url__:String;
+			
+			public function get url():String {
+				return this.__url__;
+			}
+			
+			public function set url(url:String):void {
+				if (this.__url__ != url) {
+					this.__url__ = url;
+					this._load_video_from_url(url);
+				}
+			}
+			
+			private function _load_video_from_url(url:String):void {
+				// Load a chromeless YouTubePlayer player 
+				// More info: http://code.google.com/apis/youtube/flash_api_reference.html#GettingStarted
+				loader = new Loader();
+				loader.contentLoaderInfo.addEventListener(Event.INIT, onLoaderInit);
+				loader.load(new URLRequest(url));   
+			}
+			
+			/**
+			 * Init
+			 */
+			public function init():void {
+				// Prevents the system from dropping into an idle mode.
+				NativeApplication.nativeApplication.systemIdleMode = SystemIdleMode.KEEP_AWAKE;
+			}
+			
+			/**
+			 *  Player init event handler
+			 */
+			protected function onLoaderInit(event:Event):void {
+				// Set the YouTube Player listeners
+				// More info: http://code.google.com/apis/youtube/flash_api_reference.html#Events
+				loader.content.addEventListener("onReady", onPlayerReady);
+				loader.content.addEventListener("onError", onPlayerError);
+				loader.content.addEventListener("onStateChange", onPlayerStateChange);
+			}
+			
+			/**
+			 * On Player Ready
+			 * This event is fired when the player is loaded and initialized, meaning it is ready to receive API calls.
+			 */
+			protected function onPlayerReady(event:Event):void {
+				player = loader.content;
+				
+				// Set the Player size 
+				player.setSize(this.stage.stageWidth, 
+					this.stage.stageHeight - FlexGlobals.topLevelApplication.actionBar.height );
+				
+				// Display the YouTubePlayer into an SWFLoader
+				swfLoader = new SWFLoader(); 
+				swfLoader.autoLoad = true;
+				swfLoader.setStyle("backgroundColor", 0x333333)
+				swfLoader.scaleContent = true;
+				swfLoader.maintainAspectRatio = true;
+				swfLoader.useHandCursor = true;
+				addElement(swfLoader)				
+				swfLoader.load(player);
+				
+				// Play the Video
+				// The property 'data' contains the video ID passed  
+				// from the HomeView (i.e. "LDfM5c0ZKOw")
+//				playVideo(data as String);
+			}
+			
+			/**
+			 * Video Player Stage Change
+			 * This event is fired whenever the player's state changes. 
+			 * Possible values are unstarted (-1), ended (0), playing (1),
+			 * paused (2), buffering (3), video cued (5). 
+			 * When the SWF is first loaded it will broadcast an unstarted (-1) event. 
+			 * When the video is cued and ready to play it will broadcast a video cued event (5).
+			 */
+			protected function onPlayerStateChange(event:Event):void {
+				trace("Player state changed:", Object(event).data);
+				
+				switch (Object(event).data) {
+					// STOP
+					case -1:
+						// do nothing
+						break;
+					
+					// end
+					case 0:
+						// do nothing
+						break;
+					
+					// play
+					case 1:
+						// do nothing
+						break;
+					
+					// PAUSED
+					case 2:
+						// do nothing
+						break;
+					
+					// BUFFERING
+					case 3:
+						// do nothing
+						break;
+				}
+			}
+			
+			/**
+			 * Video Player Error event handler
+			 * This event is fired when an error in the player occurs.
+			 */
+			protected function onPlayerError(event:Event):void {
+				trace("Player error:", Object(event).data);
+			}
+			
+			/**
+			 * Play Video
+			 * @param	videoID		The YouTube video ID to play
+			 */
+			public function playVideo(videoID:String) : void {
+				// Loads the specified video's thumbnail 
+				// and prepares the player to play the video
+				player.cueVideoById(videoID);
+				
+				// You can also use:
+				// loadVideoById
+				// cueVideoByUrl
+				
+				// More info: 
+				// http://code.google.com/apis/youtube/flash_api_reference.html#Functions
+			}
+			
+			/**
+			 * Dispose
+			 * Help garbage collector to remove everything from memory
+			 */
+			public function dispose():void {
+				
+				loader.contentLoaderInfo.removeEventListener(Event.INIT, onLoaderInit);
+				loader.content.removeEventListener("onReady", onPlayerReady);
+				loader.content.removeEventListener("onError", onPlayerError);
+				loader.content.removeEventListener("onStateChange", onPlayerStateChange);
+				
+				try {
+					player.stopVideo();
+					
+					// More info: http://code.google.com/apis/youtube/flash_api_reference.html#SpecialFunctions
+					player.destroy();
+				} catch (e:Error) { trace("error")}
+				
+				removeElement(swfLoader)
+				swfLoader = null;
+				player = null;
+				
+				loader.unload();
+				loader = null;
+			}
+			
+			/**
+			 * Back To Home
+			 */
+			private function backToHome():void {
+				dispose();
+				
+				// Enable the system to dropping into an idle mode.
+				NativeApplication.nativeApplication.systemIdleMode = SystemIdleMode.NORMAL;
+			}
+		]]>
+	</fx:Script>
+</s:Group>

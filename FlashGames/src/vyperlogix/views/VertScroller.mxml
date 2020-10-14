@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" 
+		   resize="canvas1_resizeHandler(event)" 
+		   mouseWheel="canvas1_mouseWheelHandler(event)">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:WipeDown id="image_addedEffect" startDelay="100" />
+		
+		<mx:Parallel id="image_removedEffect">
+			<mx:Zoom />
+			<mx:Fade />
+		</mx:Parallel>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import Tiles.Tile;
+			
+			import communication.WebServices;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.ResizeEvent;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			private var _dataProvider:Array;
+			
+			private var aPopUpTile:Tile;
+
+			[Bindable]
+			private var _layout:String;
+			
+			public static const LAYOUT_VERTICAL:String = 'LAYOUT_VERTICAL';
+			
+			[Bindable]
+			private var _navigateOutside:Boolean = true;
+			
+			public static const NAVIGATE_OUTSIDE:Boolean = true;
+
+			public function get isLayoutVertical():Boolean {
+				return this._layout == LAYOUT_VERTICAL;
+			}
+			
+			public function get isNavigateOutside():Boolean {
+				return this._navigateOutside;
+			}
+			
+			public function get dataProvider():Array {
+				return this._dataProvider;
+			}
+			
+			private function tileList_itemClick(data:Object):void {
+				if (this.isNavigateOutside) {
+					WebServices.navigateToUrl(data['flash'],data['title']);
+				} else {
+					var _this:* = this;
+					this.aPopUpTile = new Tile();
+					this.aPopUpTile.imageWidth = (this.aPopUpTile.width = FlexGlobals.topLevelApplication.width - 50) - 50;
+					this.aPopUpTile.imageHeight = (this.aPopUpTile.height = FlexGlobals.topLevelApplication.height - 50) - 60;
+					this.aPopUpTile.dataProvider = data;
+					this.aPopUpTile.maintainAspectRatio = true;
+					this.aPopUpTile.currentState = 'flashOnly';
+					this.aPopUpTile.btnCloseClickCallback = function (event:MouseEvent):void {
+						PopUpManager.removePopUp(_this.aPopUpTile);
+					};
+					this.aPopUpTile.setStyle("addedEffect", image_addedEffect);
+					this.aPopUpTile.setStyle("removedEffect", image_removedEffect);
+					PopUpManager.addPopUp(this.aPopUpTile, this, true);
+				}
+			}
+			
+			public function set dataProvider(dataProvider:Array):void {
+				var _this:* = this;
+				this._dataProvider = dataProvider;
+				var aSize:Point;
+				var aTile:Tile;
+				var yCoord:int = 0;
+				var xCoord:int = 0;
+				var biasPt:Point = new Point(20,40);
+				var isLayoutVertical:Boolean = this.isLayoutVertical;
+				for (var i:String in dataProvider) {
+					aSize = dataProvider[i]['size'];
+					aTile = new Tile();
+					aTile.width = ((aSize is Point) ? aSize.x : 250) + biasPt.x;
+					aTile.height = ((aSize is Point) ? aSize.y : 250) + biasPt.y;
+					aTile.imageWidth = aTile.width - biasPt.x;
+					aTile.imageHeight = aTile.height - biasPt.y;
+					if (isLayoutVertical) {
+						aTile.x = (this.width / 2) - (aTile.width / 2);
+					}
+					aTile.y = yCoord;
+					aTile.dataProvider = dataProvider[i];
+					aTile.maintainAspectRatio = true;
+					aTile.currentState = 'imageOnly';
+					aTile.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+						var aTile:Tile = event.currentTarget as Tile;
+						trace(aTile.dataProvider['flash']);
+						_this.tileList_itemClick(aTile.dataProvider);
+					});
+					this.addChild(aTile);
+					yCoord += aTile.height + 30;
+				}
+			}
+			
+			public function get layout():String {
+				return this._layout;
+			}
+			
+			public function set layout(layout:String):void {
+				if (layout == LAYOUT_VERTICAL) {
+					this._layout = layout;
+				}
+			}
+			
+			public function get navigateOutside():Boolean {
+				return this._navigateOutside;
+			}
+			
+			public function set navigateOutside(navigateOutside:Boolean):void {
+				this._navigateOutside = navigateOutside;
+			}
+
+			protected function canvas1_resizeHandler(event:ResizeEvent):void {
+				var aTile:Tile;
+				var children:Array = this.getChildren();
+				for (var i:String in children) {
+					aTile = children[i] as Tile;
+					aTile.x = (this.width / 2) - (aTile.width / 2);
+				}
+			}
+
+
+			protected function canvas1_mouseWheelHandler(event:MouseEvent):void {
+				//trace(event.toString());
+			}
+
+		]]>
+	</fx:Script>
+</mx:Canvas>

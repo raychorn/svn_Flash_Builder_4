@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark" title="Button Callout">
+	
+	<s:layout>
+		<s:VerticalLayout paddingTop="40" paddingBottom="8" paddingLeft="8" paddingRight="8" gap="35" 
+						  horizontalAlign="center"/>
+	</s:layout>
+	
+	<fx:Script>
+		<![CDATA[
+			import spark.events.ViewNavigatorEvent;
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				trace(event.target.label + " clicked! " + cb.isPopUp);
+				cb.closeDropDown();
+			}			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:Image source="@Embed(source='add.png')" id="addIcon"/>
+	</fx:Declarations>
+	
+	<s:TextArea skinClass="spark.skins.mobile.TextAreaSkin" width="90%" 
+					text="A CalloutButton component is considered a drop down in that it contains callout content and a layout as children that will be used when the 
+Callout button is clicked. This tab contains two CalloutButton's, one with the callout showing on creation and one closed initially. Note: clicking the CalloutButton or outside of the callout container closes it by default, or you can programmatically close
+it as shown in this sample. If you need the callout container to be modal, you must use the Callout component itself. You can set a horizontal and vertical position for the Callout container to be shown on the CalloutButton object. See the CalloutPosition
+sample in the 3rd tab for more information about positioning. If you want to increase execution time for a callout by not having it destroyed and recreated each time you can set
+the calloutDestructionPolicy to never and it will be cached."/>
+		
+	<s:HGroup width="100%" height="100%" horizontalAlign="center" gap="30">
+		<s:CalloutButton id="cb" label="Action Callout" verticalPosition="after" calloutDestructionPolicy="never">
+			<!-- layout the callout content here -->
+			<s:calloutLayout>
+				<s:VerticalLayout paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10" horizontalAlign="center" gap="5"/>
+			</s:calloutLayout>
+			<s:calloutContent>
+				<s:Button label="Search" width="{btn.width}" click="button1_clickHandler(event)"/>
+				<s:Button label="Followers" width="{btn.width}" click="button1_clickHandler(event)"/>
+				<s:Button label="Following" width="{btn.width}" click="button1_clickHandler(event)"/>
+				<s:Button id="btn" label="Direct Messages" click="button1_clickHandler(event)"/>
+			</s:calloutContent>
+		</s:CalloutButton>	
+		
+		<s:CalloutButton id="cb2" icon="{addIcon}" verticalPosition="after" creationComplete="cb2.openDropDown()">
+			<s:calloutContent>
+				<s:BorderContainer backgroundColor="blue" color="0xFFFFFF" borderWeight="2" width="280" height="150" cornerRadius="5">
+					<s:layout>
+						<s:VerticalLayout paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10" gap="5"/>
+					</s:layout>
+					<s:HGroup verticalAlign="middle" horizontalAlign="left">
+						<s:Image source="@Embed(source='help.png')" id="helpIcon"/>
+						<s:Label text="Getting Started"/>
+					</s:HGroup>
+					<s:TextArea text="Tap this button to get started adding buddies to your buddy list immediately." color="0x000000" width="100%" 
+								skinClass="spark.skins.mobile.TextAreaSkin" editable="false"/>						
+				</s:BorderContainer>
+			</s:calloutContent>
+		</s:CalloutButton>
+	</s:HGroup>
+</s:View>

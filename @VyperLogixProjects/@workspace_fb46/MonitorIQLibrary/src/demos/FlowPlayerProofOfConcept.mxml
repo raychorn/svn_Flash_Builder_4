@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+		  width="100%" height="100%" 
+		  xmlns:google="controls.google.*" 
+		  resize="vgroup1_resizeHandler(event)" 
+		  creationComplete="view1_creationCompleteHandler(event)" xmlns:flow="controls.flow.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.GUID;
+			
+			import controls.Alert.AlertPopUp;
+			
+			import mobile.MobileDebuggerUtils;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.layouts.TileOrientation;
+			
+			[Bindable]
+			private var __items__:ArrayCollection = new ArrayCollection();
+			
+			private var __has_initialized_items__:Boolean = false;
+			
+			[Bindable]
+			private var __orientation__:String = TileOrientation.ROWS;
+			
+			[Bindable]
+			private var __player_controls__:ArrayCollection = new ArrayCollection(['Play','Pause']);
+			
+			[Bindable]
+			private var __rows__:int = 4;
+			
+			[Bindable]
+			private var __cols__:int = 4;
+			
+			private function get get_current_name():String {
+				return (this.__items__.length+1).toString();
+			}
+			
+			public function set configs(configs:Array):void {
+				this.__items__.removeAll();
+				
+				for (var i:int = 0; i < configs.length; i++) {
+					this.__items__.addItem(
+						{	'name':get_current_name,
+							'GUID':GUID.create(),
+							'target':this,
+							'rows':__rows__,
+							'cols':__cols__,
+							'url':configs[i],
+							'config':'{"playerId":"'+get_current_name+'","playlist":[{"url":"'+configs[i]+'","playerId":"'+get_current_name+'","scaling":"fit"}]}'
+						}
+					); // 1
+				}
+			}
+			
+			protected function initialize_items_list():void {
+				if (!this.__has_initialized_items__) {
+					this.__has_initialized_items__ = true;
+				}
+			}
+			
+			protected function view1_creationCompleteHandler(event:FlexEvent):void {
+				this.initialize_items_list();
+			}
+			
+			private function refresh_items():void {
+				this.items.enabled = false;
+				this._width_.enabled = false;
+				this._height_.enabled = false;
+				var player:*;
+				for (var i:int = 0; i < this.__items__.length; i++) {
+					player = this.__items__.getItemAt(i)['player'];
+					if (player) {
+						player['width'] = this._width_.value;
+						player['height'] = this._height_.value;
+					}
+				}
+				this.items.enabled = true;
+				this._width_.enabled = true;
+				this._height_.enabled = true;
+			}
+			
+			protected function _width__changeHandler(event:Event):void {
+				var target:HSlider = event.currentTarget as HSlider;
+				var aspect:Number = this.width/this.height;
+				this._height_.value = target.value / aspect;
+				trace(this.className+'(_width__changeHandler).1 --> target.value='+target.value+', aspect='+aspect+', _height_.value='+this._height_.value);
+				this.callLater(refresh_items,[]);
+			}
+			
+			protected function _height__changeHandler(event:Event):void {
+				var target:VSlider = event.currentTarget as VSlider;
+				trace(this.className+'(_height__changeHandler).1 --> target.value='+target.value);
+				this.callLater(refresh_items,[]);
+			}
+			
+			protected function orientationC_changeHandler(event:Event):void {
+				var target:RadioButton = event.currentTarget as RadioButton;
+				trace('(###).orientationC_changeHandler.1 --> target.selected='+target.selected+', target.label='+target.label);
+				this.__orientation__ = target.label;
+			}
+			
+			protected function orientationR_changeHandler(event:Event):void {
+				var target:RadioButton = event.currentTarget as RadioButton;
+				trace('(###).orientationR_changeHandler.1 --> target.selected='+target.selected+', target.label='+target.label);
+				this.__orientation__ = target.label;
+			}
+			
+			protected function _rows__changeHandler(event:Event):void {
+				var target:HSlider = event.currentTarget as HSlider;
+				trace('(###)._rows__changeHandler.1 --> target.value='+target.value);
+				this.__rows__ = target.value;
+				this.orientationR.selected = true;
+				this.__orientation__ = this.orientationC.label;
+			}
+			
+			protected function _cols__changeHandler(event:Event):void {
+				var target:HSlider = event.currentTarget as HSlider;
+				trace('(###)._cols__changeHandler.1 --> target.value='+target.value);
+				this.__cols__ = target.value;
+				this.orientationC.selected = true;
+				this.__orientation__ = this.orientationR.label;
+			}
+			
+			protected function btns_changeHandler(event:IndexChangeEvent):void {
+				var item:*;
+				var i:int;
+				var target:ButtonBar = event.currentTarget as ButtonBar;
+				trace('(###).btns_changeHandler.1 --> target.selectedItem='+target.selectedItem);
+				//this.busy.visible = true;
+				if (target.selectedItem.toString().toLowerCase() == 'pause') {
+					for (i = 0; i < this.__items__.length; i++) {
+						item = this.__items__.getItemAt(i);
+						item.player.pause();
+					}
+				} else if (target.selectedItem.toString().toLowerCase() == 'play') {
+					for (i = 0; i < this.__items__.length; i++) {
+						item = this.__items__.getItemAt(i);
+						item.player.play();
+					}
+				}
+				//this.busy.visible = false;
+			}
+			
+			protected function vgroup1_resizeHandler(event:ResizeEvent):void {
+				trace(this.className+'.vgroup1_resizeHandler().1 --> width='+this.width+', height='+this.height);
+			}
+			
+			protected function items_creationCompleteHandler(event:FlexEvent):void {
+				var target:List = event.currentTarget as List;
+				trace(this.className+'.items_creationCompleteHandler().1 --> target.width='+target.width+', target.height='+target.height);
+				if (this.__items__.length == 0) {
+					this.initialize_items_list();
+				}
+				trace(this.className+'.items_creationCompleteHandler().2 --> __items__='+MobileDebuggerUtils.explainThis(this.__items__.source));
+			}
+			
+			protected function btn_help_clickHandler(event:MouseEvent):void {
+				//AlertPopUp.surpriseNoOkay('Hover over the area to the right of each video to see the YouTube Video ID.\n\nClick on the area to the right of each video to see the YouTube Video in a separate browser window.','HELP');
+			}
+			
+		]]>
+	</fx:Script>
+	<s:HGroup paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0">
+		<s:HGroup paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0" visible="false" includeInLayout="false">
+			<s:HSlider id="_width_" 
+					   height="30" width="{this.width-this.orientationsContainer.width-50-30}" 
+					   value="300" minimum="1" maximum="{this.width}" 
+					   skinClass="controls.skins.CustomMobileHSliderSkin" 
+					   change="_width__changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0" visible="false" includeInLayout="false">
+			<s:HGroup paddingTop="10">
+				<s:Label text="Rows:"/>
+			</s:HGroup>
+			<s:HSlider id="_rows_" 
+					   height="30" width="250" 
+					   value="4" minimum="2" maximum="10" 
+					   skinClass="controls.skins.CustomMobileHSliderSkin" 
+					   change="_rows__changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0" visible="false" includeInLayout="false">
+			<s:HGroup paddingTop="10">
+				<s:Label text="Cols:"/>
+			</s:HGroup>
+			<s:HSlider id="_cols_" 
+					   height="30" width="250" 
+					   value="4" minimum="2" maximum="10" 
+					   skinClass="controls.skins.CustomMobileHSliderSkin" 
+					   change="_cols__changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup id="orientationsContainer" paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0" visible="false" includeInLayout="false">
+			<s:HGroup paddingLeft="10" paddingTop="0" paddingRight="10" paddingBottom="10">
+				<s:RadioButton id="orientationC" groupName="orientations" selected="true" label="{TileOrientation.COLUMNS}" change="orientationC_changeHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup paddingLeft="10" paddingTop="0" paddingRight="10" paddingBottom="10">
+				<s:RadioButton id="orientationR" groupName="orientations" selected="false" label="{TileOrientation.ROWS}" change="orientationR_changeHandler(event)"/>
+			</s:HGroup>
+		</s:HGroup>
+		<s:HGroup id="playerControlsContainer" paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0" visible="false" includeInLayout="false">
+			<s:ButtonBar id="btns" selectedIndex="1" dataProvider="{this.__player_controls__}" change="btns_changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup id="helpContainer" paddingLeft="10" paddingTop="10" paddingRight="10" paddingBottom="0" visible="false" includeInLayout="false">
+			<s:Button id="btn_help" label="(?)" click="btn_help_clickHandler(event)"/>
+		</s:HGroup>
+	</s:HGroup>
+	<s:HGroup width="100%" height="100%" paddingLeft="10" paddingRight="10">
+		<s:HGroup paddingLeft="10" paddingRight="20" paddingTop="10" paddingBottom="10" visible="false" includeInLayout="false">
+			<s:VSlider id="_height_" 
+					   skinClass="controls.skins.CustomMobileVSliderSkin"
+					   height="{this.height-100}" width="30" 
+					   value="150" minimum="1" maximum="{this.height}" 
+					   change="_height__changeHandler(event)"/>
+		</s:HGroup>
+		<s:List id="items" width="100%" height="100%" dataProvider="{this.__items__}" creationComplete="items_creationCompleteHandler(event)">
+			<s:layout>
+				<s:TileLayout 
+					orientation="{__orientation__}" 
+					horizontalGap="0" 
+					verticalGap="0" 
+					requestedRowCount="{__rows__}" 
+					requestedColumnCount="{__cols__}"
+					/>
+			</s:layout>
+			<s:itemRenderer>
+				<fx:Component>
+					<s:ItemRenderer>
+						<fx:Script>
+							<![CDATA[
+								import core.SWFHelper;
+								
+								import mx.events.FlexEvent;
+								
+								import utils.AIRHelper;
+								
+								private function get get_tooltip():* {
+									return '<b>'+data['url']+'</b>';
+								}
+								
+								private function get _url():* {
+									return data['url'];
+								}
+								
+								private function get width_value():Number {
+									return ((data['target'] && data['target']['_width_']) ? data['target']['_width_']['value'] : 150);
+								}
+								
+								private function get height_value():Number {
+									return ((data['target'] && data['target']['_height_']) ? data['target']['_height_']['value'] : 100);
+								}
+								
+								protected function hgroup1_creationCompleteHandler(event:FlexEvent):void {
+									var target:HGroup = event.currentTarget as HGroup;
+									target.toolTip = get_tooltip;
+								}
+								
+							]]>
+						</fx:Script>
+						<s:states>
+							<s:State name="normal" />
+							<s:State name="hovered" />
+							<s:State name="selected" />
+						</s:states>
+						<s:Rect left="0" right="0" top="0" bottom="0">
+							<s:stroke>
+								<s:SolidColorStroke color="0xCCCCCC" joints="round" weight="2"/>
+							</s:stroke>
+							<s:fill>
+								<s:SolidColor color="0x999999" alpha="0" alpha.hovered="0.2" alpha.selected="0.6" />
+							</s:fill>
+						</s:Rect>
+						<s:HGroup width="100%" creationComplete="hgroup1_creationCompleteHandler(event)">
+							<flow:FlowPlayer id="player" width="{data.target.width/data.cols}" height="{data.target.height/data.rows}" config="{data.config}"/>
+						</s:HGroup>
+					</s:ItemRenderer>
+				</fx:Component>
+			</s:itemRenderer>
+		</s:List>
+	</s:HGroup>
+</s:VGroup>

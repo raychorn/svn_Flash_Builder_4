@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:GridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					xmlns:s="library://ns.adobe.com/flex/spark" 
+					xmlns:mx="library://ns.adobe.com/flex/mx" 
+					clipAndEnableScrolling="true" width="100%" click="griditemrenderer1_clickHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			override public function prepare(hasBeenRecycled:Boolean):void {
+				var item:*;
+				try {
+					item = data[column.dataField];
+				} catch (err:Error) {}
+				if (item == null) {
+					item = data;
+				}
+				lblData.text = item['value'];
+				var selected:Boolean = item['selected'];
+				if (item['width']) {
+					this.width = item['width'];
+				}
+				this.currentState = (selected) ? 'selected' : 'normal';
+				trace(DebuggerUtils.explainThis(item));
+			}
+			
+			protected function griditemrenderer1_clickHandler(event:MouseEvent):void {
+				var item:*;
+				try {
+					item = data[column.dataField];
+				} catch (err:Error) {}
+				if (item == null) {
+					item = data;
+				}
+				var callback:Function = item['callback'];
+				if (callback is Function) {
+					try {
+						item['selected'] = (item['selected'] == false) ? true : false;
+						callback(column.dataField,item);
+					} catch (err:Error) {}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<mx:State name="normal" />
+		<mx:State name="hovered" />
+		<mx:State name="selected" />
+	</s:states>
+	<s:Rect left="0" right="0" top="0" bottom="0">
+		<s:stroke>
+			<mx:SolidColorStroke color="0xCCCCCC" joints="round" weight="2"/>
+		</s:stroke>
+		<s:fill>
+			<mx:SolidColor color="0x999999" alpha="0" alpha.hovered="0.2"
+						   alpha.selected="0.6" />
+		</s:fill>
+	</s:Rect>
+
+	<s:Label id="lblData" top="9" left="7"/>
+	
+</s:GridItemRenderer>

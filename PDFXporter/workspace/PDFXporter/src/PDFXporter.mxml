@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark"  
+					   xmlns:mx="library://ns.adobe.com/flex/mx" showStatusBar="false" 
+					   initialize="windowedapplication1_initializeHandler(event)" 
+					   applicationDeactivate="windowedapplication1_applicationDeactivateHandler(event)"
+					   creationComplete="windowedapplication1_creationCompleteHandler(event)" 
+					   xmlns:nativeApplicationUpdater="com.riaspace.nativeApplicationUpdater.*" xmlns:application="application.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:states>
+		<s:State name="mainView"/>
+		<s:State name="updaterView"/>
+	</s:states>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel.ttf");
+			fontFamily: NeoSansIntel;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Light.ttf");
+			fontFamily: NeoSansIntelLight;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium2;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/CALIBRI.TTF");
+			fontFamily: Calibri;
+			embedAsCFF: false;
+		}
+		
+		.splash_movie_canvas {
+			backgroundColor: #ffffff;
+		}
+		
+		.LoginPanel {
+			borderStyle: none;
+			borderColor: #3300ff;
+			borderThickness: 3;
+			roundedBottomCorners: true;
+			cornerRadius: 8;
+			headerHeight: 31;
+			headerColors: #0033ff, #330099;
+			backgroundColor: #ffffff;
+			backgroundAlpha: 0.3;
+			shadowDistance: 6;
+			shadowDirection: right;
+			titleStyleName: "LoginPanelTitle";
+		}
+		
+		.LoginPanelTitle {
+			fontFamily: Calibri;
+			fontSize: 16;
+		}
+		
+		.ErrorMessages {
+			fontFamily: Calibri;
+			fontSize: 14;
+			fontWeight: bold;
+			color: red;
+		}
+		
+		.NormalMessages {
+			fontFamily: Calibri;
+			fontSize: 14;
+			color: black;
+		}
+		
+		.ImportantMessage {
+			fontFamily: Calibri;
+			fontSize: 14;
+			fontWeight: bold;
+			color: blue;
+		}
+		
+		.TermsAndConditionsHTML {
+			fontFamily: NeoSansIntelLight;
+			fontSize: 10;
+			color: black;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.CapabilitiesUtils;
+			import com.HTMLToolTip;
+			import com.adobe.serialization.json.JSON;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.AppIcon;
+			
+			import flash.net.SharedObject;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.AIREvent;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.components.VideoDisplay;
+			
+			import splash.SplashMovie;
+			
+			public static var force_localHost:Boolean = true;
+			
+			public var appDescriptor:XML = NativeApplication.nativeApplication.applicationDescriptor;
+			private var nsDeclaration:Namespace = appDescriptor.namespace();
+			
+			public var build_number:String = appDescriptor.nsDeclaration::version[0];
+			
+			public var app_title:String = appDescriptor.nsDeclaration::name[0];
+			public var app_id:String = appDescriptor.nsDeclaration::id[0];
+			public var app_name:String = appDescriptor.nsDeclaration::filename[0];
+			
+			[Bindable]
+			public var is_debugging:Boolean = false;
+			
+			[Bindable]
+			public var is_logoVisible:Boolean = false;
+			
+			public var __is_localhost__:Boolean = false;
+			
+			public var Languages:Object = {
+				'English':'',
+				'Spanish':'Spanish'
+			};
+			
+			public var __local_domain__:String = 'http://localhost:9000';
+			public var __public_domain__:String = 'https://pdfxporter.appspot.com';
+			
+			public var language:String;
+			
+			public var splashPopUp:SplashMovie;
+			
+			private var _copyrightMessage:String = appDescriptor.nsDeclaration::copyright[0];
+			private var _creditsMessage:String = appDescriptor.nsDeclaration::description[0];
+			
+			public var icon:Loader = new Loader();
+			public var systray:SystemTrayIcon;
+			private var dock:DockIcon;
+			private var copyrightCommand:NativeMenuItem = new NativeMenuItem(_copyrightMessage);
+			private var creditsCommand:NativeMenuItem = new NativeMenuItem("Credits");
+			private var exitCommand:NativeMenuItem = new NativeMenuItem("Exit");
+			
+			public var _icon:AppIcon = new AppIcon(['assets/icons/icons/app_icon_16.png','assets/icons/icons/app_icon_32.png','assets/icons/icons/app_icon_48.png','assets/icons/icons/app_icon_128.png']);
+			
+			public function init_trayIcon():void {
+				this.trayIcon(NativeApplication.supportsSystemTrayIcon, NativeApplication.supportsDockIcon);
+			}
+			
+			public function get domain():String {
+				var d:String = (this.__is_localhost__) ? this.__local_domain__ : this.__public_domain__;
+				trace(this.className+'.domain --> this.is_debugging='+this.is_debugging+', d='+d);
+				return d;
+			}
+			
+			public function get is_localHost():Boolean {
+				return this.domain == this.__local_domain__;
+			}
+			
+			public function set is_localHost(is_localHost:Boolean):void {
+				this.__is_localhost__ = is_localHost;
+			}
+			
+			private function iconLoadComplete(e:Event):void {
+				NativeApplication.nativeApplication.icon.bitmaps=[e.target.content.bitmapData];
+			}
+			
+			private function undock(e:Event):void {
+				this.stage.nativeWindow.restore();
+			}
+			
+			private function _closeApplicaton():void {
+			}
+			
+			public function closeApplicaton():void {
+				this._closeApplicaton();
+				this.appProxy.isLoggedIn = false;
+				NativeApplication.nativeApplication.exit();
+			}
+			
+			private function closeApp(e:Event):void {
+				this.closeApplicaton();
+			}
+			
+			private function createIconMenu(_sysTray:Boolean):NativeMenu {
+				var _this:* = this;
+				var iconMenu:NativeMenu = new NativeMenu();
+				iconMenu.addItem(copyrightCommand);
+				iconMenu.addItem(new NativeMenuItem("", true));
+				iconMenu.addItem(creditsCommand);
+				creditsCommand.addEventListener(Event.SELECT, function (event:Event):void {
+					AlertPopUp.infoNoOkay(_this._creditsMessage,'Credits');
+				});
+				if (_sysTray) {
+					iconMenu.addItem(new NativeMenuItem("", true));
+					iconMenu.addItem(exitCommand);
+					exitCommand.addEventListener(Event.SELECT, this.closeApp);
+				}
+				return iconMenu;
+			}
+			
+			private function trayIcon(_sysTray:Boolean, _dock:Boolean):void {
+				if (_sysTray) {
+					icon.contentLoaderInfo.addEventListener(Event.COMPLETE, this.iconLoadComplete);
+					icon.load(new URLRequest("assets/icons/icons/app_icon_16.png"));
+					systray=NativeApplication.nativeApplication.icon as SystemTrayIcon;
+					systray.tooltip=this._copyrightMessage;
+					systray.menu=this.createIconMenu(_sysTray);
+				}
+				if (_dock) {
+					icon.contentLoaderInfo.addEventListener(Event.COMPLETE, this.iconLoadComplete);
+					icon.load(new URLRequest("assets/icons/icons/app_icon_128.png"));
+					NativeApplication.nativeApplication.addEventListener(InvokeEvent.INVOKE, undock);
+					dock=NativeApplication.nativeApplication.icon as DockIcon;
+					dock.menu=this.createIconMenu(_sysTray);
+				}
+			}
+			
+			public function applicationExit():void {
+				var exitingEvent:Event = new Event(Event.EXITING, false, true);
+				if (!exitingEvent.isDefaultPrevented()) {
+					this.closeApplicaton();
+				}
+				NativeApplication.nativeApplication.dispatchEvent(exitingEvent);
+			}
+			
+			public function determine_debugging_Level():void {
+				var aUrl:String = FlexGlobals.topLevelApplication.url;
+				var aFile:File = new File(aUrl);
+				var fname:String = aFile.nativePath.toLowerCase();
+				trace(this.className+'.determine_debugging_Level().1 --> fname='+fname); 
+				this.is_debugging = ( ((fname.indexOf('\\@vyper logix corp\\@projects\\') > -1) || (fname.indexOf('\\@3\\pdfxporter\\@workspace\\') > -1) || (fname.indexOf('\\@3\\@workspace\\') > -1) && (fname.indexOf('\\bin-debug\\') > -1)) ) ? true : this.is_debugging;
+				this.is_logoVisible = (fname.indexOf('f:\\') == -1);
+				if ( (PDFXporter.force_localHost) && (this.is_debugging) ) {
+					this.__is_localhost__ = this.is_debugging;
+				}
+				trace(this.className+'.determine_debugging_Level().2 --> this.is_debugging='+this.is_debugging);
+			}
+			
+			public function determine_capabilities():void {
+				var c:CapabilitiesUtils = new CapabilitiesUtils();
+			}
+			
+			public function do_fullScreen():void {
+				FlexGlobals.topLevelApplication.nativeWindow.stage.displayState = StageDisplayState.FULL_SCREEN_INTERACTIVE;
+				this.appProxy.isFullScreen = true;
+			}
+			
+			public function do_windowed():void {
+				FlexGlobals.topLevelApplication.nativeWindow.stage.displayState = StageDisplayState.NORMAL;
+				this.appProxy.isFullScreen = false;
+			}
+			
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void {
+				// the code that was here has been moved to allow the Auto-Updater to function...
+			}
+			
+			public function popUpSplashMovie():void {
+				this.splashPopUp = PopUpManager.createPopUp(this, SplashMovie, true) as SplashMovie;
+				this.splashPopUp.x = 0;
+				this.splashPopUp.y = 0;
+				this.splashPopUp.styleName = 'splash_movie_canvas';
+				this.splashPopUp.width = this.nativeWindow.width;
+				this.splashPopUp.height = this.nativeWindow.height;
+			}
+			
+			protected function windowedapplication1_initializeHandler(event:FlexEvent):void {
+				trace(this.className+'.windowedapplication1_initializeHandler().1 !');
+			}
+			
+			private function onCreationComplete_appProxy():void {
+				trace(this.className+'.onCreationComplete_appProxy().1 !');
+				this.appProxy.onCreationComplete_appProxy();
+			}
+			
+			protected function windowedapplication1_applicationDeactivateHandler(event:AIREvent):void {
+				this._closeApplicaton();
+			}
+			
+		]]>
+	</fx:Script>
+	<application:ApplicatonProxy id="appProxy" x="0" y="0" width="100%" height="100%" creationComplete="onCreationComplete_appProxy()"/>
+</s:WindowedApplication>

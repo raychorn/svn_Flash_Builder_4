@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" 
+		   verticalScrollPolicy="off" horizontalScrollPolicy="off" xmlns:validators="validators.*" 
+		   initialize="canvas1_initializeHandler(event)">
+	<fx:Declarations>
+		<validators:RssFeedValidator 
+			id="feedValidator" 
+			required="true" 
+			source="{this.rss_feed_input}" 
+			property="text" 
+			trigger="{this.btn_add_rss_feed}" 
+			triggerEvent="click" 
+			requiredFieldError="{this._rssFeedRequiredFieldError}"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import controls.Alert.AlertPopUp;
+			import vyperlogix.utils.StringUtils;
+			
+			private const left_side_text:String = ''+
+                "<p>You would want to do this if you have some additional News Sources or other Content you want to add to your site's content for the purpose of attracting additional visitors to your site, this site.</p><BR/><BR/>"+
+                "<p>For instance, you may have another Blog from which you may wish to pull content.  By entering the URL for the RSS Feed you will cause your site to pull content from the RSS Feed into your SiteMap.Xml file; doing this can cause additional visitors to come to your site as the Google Search Engine will index whatever you place into your SiteMap.Xml file as soon as you connect your site to the Google Webmaster Tools.</p><BR/><BR/>"+
+                "<p>Or you may simply wish to use other people's content through their RSS Feeds to attract more visitors to your site.</p><BR/><BR/>"+
+                "<p>All the links from the RSS Feed(s) you enter here will be handled to bring people through your site to reach each News Article from the RSS Feed(s) you enter here.</p><BR/><BR/>"+
+                "<p>With this one feature you can aggregate content from around the Internet, content that may be related to your content, content your visitors may wish to see when they visit this site.</p><BR/><BR/>"+
+                "<p>Slick, huh ?!?</p>";
+
+			[Bindable]
+			private var _rssFeedRequiredFieldError:String = "This is a Required Field that cannot be left blank and it must be a valid URL for a Feed.";
+
+			public var callback:Function;
+			
+			public static const validateRssFeed_symbol:String = 'validateRssFeed';
+			
+			private function onCreationCompleteRssFeed():void {
+				this.rss_feed_input.setFocus();
+			}
+
+			private function validateRssFeed():void {
+				var vResult:ValidationResultEvent = this.feedValidator.validate();
+				var bool:Boolean = false;
+				if (this.callback is Function) {
+					try {
+						bool = callback(this.rss_feed_input.text,this.className+'_'+WebmasterTools.validateRssFeed_symbol);
+						trace('(validateRssFeed).1 --> this.rss_feed_input.text='+this.rss_feed_input.text);
+					} catch (err:Error) {}
+				}
+				trace('(validateRssFeed).2 --> bool='+bool);
+				var btn:Button = this.btn_add_rss_feed;
+				trace('(validateRssFeed).3 --> vResult.type='+vResult.type+', ValidationResultEvent.INVALID='+ValidationResultEvent.INVALID);
+				if ( (vResult.type==ValidationResultEvent.INVALID) || (!bool) ) {
+					btn.enabled = false;
+					trace('(validateRssFeed).4 !');
+					return;
+				} else {
+					btn.enabled = true;
+					trace('(validateRssFeed).5 !');
+					return;
+				}
+			}
+			
+			private function onFocusInRssFeed():void {
+			}
+			
+			private function onChangeRssFeed():void {
+				this.validateRssFeed();
+			}
+			
+			private function onFocusOutRssFeed():void {
+				this.validateRssFeed();
+			}
+			
+			private function handle_btn_add_rss_feed_click(event:MouseEvent):void {
+				var _this:* = this;
+				function onResultPostRssFeed(event:ResultEvent):void {
+					var response:*;
+					try {
+						response = (event.result is String) ? event.result : event.result.getItemAt(0);
+						var choices:Array = response.choices;
+						_this.rss_feeds_list.dataProvider = new ArrayCollection(choices);
+						_this.rss_feed_input.text = '';
+						validateRssFeed();
+					} catch (e:Error) {
+						var stackTrace:String = e.getStackTrace();
+						AlertPopUp.errorNoOkay('onResultPostRssFeed().ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR +++');
+					}
+				}
+				var url:String = this.parentApplication.blog_rest_post_rssfeed();
+				this.parentApplication.ezREST.post(url, {'url':this.rss_feed_input.text}, onResultPostRssFeed, this.parentApplication.ezREST.jsonResultType);
+			}
+			
+
+			protected function canvas1_initializeHandler(event:FlexEvent):void {
+				var _this:* = this;
+				function onResultGetRssFeeds(event:ResultEvent):void {
+					var response:*;
+					try {
+						response = (event.result is String) ? event.result : event.result.getItemAt(0);
+						var choices:Array = response.choices;
+						_this.rss_feeds_list.dataProvider = new ArrayCollection(choices);
+					} catch (e:Error) {
+						var stackTrace:String = e.getStackTrace();
+						AlertPopUp.errorNoOkay('onResultGetUser().ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR +++');
+					}
+				}
+				this.btn_add_rss_feed.enabled = this.btn_delete_rss_feed.enabled = false;
+				var url:String = this.parentApplication.blog_rest_get_rssfeeds();
+				this.parentApplication.ezREST.send(url, onResultGetRssFeeds, this.parentApplication.ezREST.jsonResultType);
+			}
+
+
+			protected function rss_feeds_list_changeHandler(event:IndexChangeEvent):void {
+				var aList:List = event.currentTarget as List;
+				var item:* = aList.selectedItem;
+				this.btn_delete_rss_feed.enabled = true;
+			}
+
+			private function handle_btn_delete_rss_feed_click(event:MouseEvent):void {
+				var _this:* = this;
+				var item:* = this.rss_feeds_list.selectedItem;
+				var i:int = this.rss_feeds_list.selectedIndex;
+				if (i > -1) {
+					var dp:ArrayCollection = this.rss_feeds_list.dataProvider as ArrayCollection;
+					dp.removeItemAt(i);
+				}
+				this.rss_feed_input.text = item.text;
+				this.validateRssFeed();
+				function onResultRemoveRssFeeds(event:ResultEvent):void {
+					var response:*;
+					try {
+						response = (event.result is String) ? event.result : event.result.getItemAt(0);
+						var choices:Array = response.choices;
+						_this.rss_feeds_list.dataProvider = new ArrayCollection(choices);
+					} catch (e:Error) {
+						var stackTrace:String = e.getStackTrace();
+						AlertPopUp.errorNoOkay('onResultGetUser().ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR +++');
+					}
+				}
+				//this.btn_add_rss_feed.enabled = this.btn_delete_rss_feed.enabled = false;
+				var url:String = this.parentApplication.blog_rest_remove_rssfeed();
+				this.parentApplication.ezREST.post(url, {'url':item.value}, onResultRemoveRssFeeds, this.parentApplication.ezREST.jsonResultType);
+			}
+
+			protected function btn_add_rss_feed_creationCompleteHandler(event:FlexEvent):void {
+				var xMax:Number = this.btn_add_rss_feed.x + this.btn_add_rss_feed.width + this.label_rss_feed.width + this.text_left_side.width;
+				var xOffset:Number = this.parentApplication.nativeWindow.width - xMax;
+				this.rss_feed_input.width += xOffset-200;
+			}
+
+		]]>
+	</fx:Script>
+	<mx:Panel width="100%" height="100%" title="Add external RSS Feed(s) to your SiteMap.XML file">
+		<mx:VBox width="100%" height="100%" paddingTop="10">
+			<mx:HBox width="100%" height="100%">
+				<mx:HBox id="hbox_inner_left" width="70%">
+					<mx:Text id="text_left_side" htmlText="{this.left_side_text}" width="{this.hbox_inner_left.width}"/>
+				</mx:HBox>
+				<mx:HBox id="hbox_right_0" width="100%">
+					<mx:VBox width="100%" height="100%">
+						<mx:HBox id="hbox_rss_feed_control">
+							<mx:Label id="label_rss_feed" htmlText="RSS Feed:"/>
+							<mx:TextInput id="rss_feed_input" width="100%" creationComplete="onCreationCompleteRssFeed()"  change="onChangeRssFeed()" focusIn="onFocusInRssFeed()" focusOut="onFocusOutRssFeed()"/>
+							<mx:Button id="btn_add_rss_feed" icon="{this.parentApplication.addIconCls}" width="30" click="handle_btn_add_rss_feed_click(event)" creationComplete="btn_add_rss_feed_creationCompleteHandler(event)"/>
+						</mx:HBox>
+						<mx:HBox width="{this.hbox_rss_feed_control.width}">
+							<s:List id="rss_feeds_list" width="100%" labelField="text" change="rss_feeds_list_changeHandler(event)"/>
+							<mx:Button id="btn_delete_rss_feed" icon="{this.parentApplication.deleteIconCls}" width="{this.btn_add_rss_feed.width}" click="handle_btn_delete_rss_feed_click(event)"/>
+						</mx:HBox>
+					</mx:VBox>
+				</mx:HBox>
+			</mx:HBox>
+		</mx:VBox>
+	</mx:Panel>
+</mx:Canvas>

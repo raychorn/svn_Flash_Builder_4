@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" height="100%" 
+		 initialize="group1_initializeHandler(event)" xmlns:controls="controls.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:Parallel id="pulsate">
+			<s:Resize id="pulsate_resize"/>
+			<s:Move id="pulsate_move"/>
+		</s:Parallel>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.DebuggerUtils;
+			
+			import core.SWFHelper;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var _info:String;
+			
+			protected function txt_output_creationCompleteHandler(event:FlexEvent):void {
+				FlexGlobals.topLevelApplication.determine_view_debugger_for(this,event.currentTarget as TextArea);
+				FlexGlobals.topLevelApplication.handle_get_gps_location_updates();
+			}
+			
+			protected function panel1_gestureZoomHandler(event:TransformGestureEvent):void {
+				var ii:int = -1;
+				trace(this.className+'.'+DebuggerUtils.getFunctionName(new Error())+'.1 --> ZOOM ! '+event.toString());
+			}
+			
+			protected function lbl_sponsor_creationCompleteHandler(event:FlexEvent):void {
+				var lbl:Label = event.currentTarget as Label;
+				lbl.useHandCursor = true;
+			}
+			
+			private function handle_sponsor_action():void {
+				SWFHelper.navigate_to_url(FlexGlobals.topLevelApplication.sponsor_site,'_blank');
+			}
+			
+			protected function lbl_sponsor_clickHandler(event:MouseEvent):void {
+				this.handle_sponsor_action();
+			}
+			
+			protected function lbl_sponsor_touchTapHandler(event:TouchEvent):void {
+				this.handle_sponsor_action();
+			}
+			
+			protected function group1_initializeHandler(event:FlexEvent):void {
+				try {
+					var func:Function = FlexGlobals.topLevelApplication['initialize_credits_info'];
+					if (func is Function) {
+						this._info = func();
+					}
+				} catch (err:Error) {}
+			}
+			
+			private function get isDebugger():Boolean {
+				return FlexGlobals.topLevelApplication.isDebugger;
+			}
+
+			private function get versionNumber():String {
+				return FlexGlobals.topLevelApplication.appNamespace.versionNumber;
+			}
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%">
+		<s:Scroller width="100%" height="100%">
+			<s:VGroup width="100%" height="100%">
+				<s:HGroup width="100%">
+					<s:TextArea id="txt_info" editable="false" styleName="INFO" text="{this._info}" selectable="false" width="100%" height="100%" verticalScrollPolicy="auto"/>
+				</s:HGroup>
+				<controls:VyperLogixLogoControl id="logo" x="0" y="{this.txt_info.y+this.txt_info.height+10}" width="250" height="250"/>
+				<s:HGroup width="100%" horizontalAlign="center" paddingTop="30">
+					<mx:Spacer width="20"/>
+					<controls:UITextField id="lbl_versionInfo" text="Version {this.versionNumber}" is_wordWrap="true" styleName="SmallLabels"/>
+					<mx:Spacer width="20"/>
+					<s:HGroup paddingTop="-100">
+						<s:Label id="lbl_sponsor" text="www.VyperLogix.Com" styleName="LinkLabels" click="lbl_sponsor_clickHandler(event)" touchTap="lbl_sponsor_touchTapHandler(event)" creationComplete="lbl_sponsor_creationCompleteHandler(event)"/>
+					</s:HGroup>
+				</s:HGroup>
+			</s:VGroup>
+		</s:Scroller>  
+		<s:HGroup width="100%" height="20%" visible="{this.isDebugger}" includeInLayout="{this.isDebugger}">
+			<s:TextArea id="txt_output" styleName="Debugger" width="100%" height="100" editable="false" selectable="false" creationComplete="txt_output_creationCompleteHandler(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Group>

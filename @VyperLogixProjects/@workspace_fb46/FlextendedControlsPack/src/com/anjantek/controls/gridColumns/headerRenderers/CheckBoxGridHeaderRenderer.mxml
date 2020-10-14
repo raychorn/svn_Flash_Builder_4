@@ -1,0 +1,515 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:GridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							 xmlns:s="library://ns.adobe.com/flex/spark" 
+							 xmlns:mx="library://ns.adobe.com/flex/mx"
+							 creationComplete="griditemrenderer_creationCompleteHandler(event)" 
+							 xmlns:skins="com.anjantek.controls.checkBoxes.skins.*" 
+							 xmlns:checkBoxes="com.anjantek.controls.checkBoxes.*">
+	
+	
+	<fx:Script>
+		<![CDATA[
+			import com.anjantek.controls.gridColumns.CheckBoxGridColumn;
+			import com.anjantek.controls.gridColumns.events.GridColumnEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.IList;
+			import mx.events.FlexEvent;
+			
+			import spark.components.DataGrid;
+			import spark.components.gridClasses.CellRegion;
+			import spark.events.GridEvent;
+			import spark.events.GridSelectionEvent;
+			import spark.events.GridSelectionEventKind;
+			import spark.primitives.supportClasses.GraphicElement;
+			
+			//-----------------------Start of copied stuff (slightly modified) from DefaultGridHeaderRenderer---------------------------------------------------
+			
+			// chrome color constants and variables
+			private static const DEFAULT_COLOR_VALUE:uint = 0xCC;
+			private static const DEFAULT_COLOR:uint = 0xCCCCCC;
+			private static const DEFAULT_SYMBOL_COLOR:uint = 0x000000;
+			
+			private static var colorTransform:ColorTransform = new ColorTransform();
+			
+			//----------------------------------------------------------------------------------------------------------
+			
+			private var chromeColorChanged:Boolean = false;
+			private var colorized:Boolean = false;
+			
+			/**
+			 *  @private
+			 *  Apply chromeColor style.
+			 */
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void
+			{
+				// Apply chrome color
+				if (chromeColorChanged)
+				{
+					var chromeColor:uint = getStyle("chromeColor");
+					
+					if (chromeColor != DEFAULT_COLOR || colorized)
+					{          
+						colorTransform.redOffset = ((chromeColor & (0xFF << 16)) >> 16) - DEFAULT_COLOR_VALUE;
+						colorTransform.greenOffset = ((chromeColor & (0xFF << 8)) >> 8) - DEFAULT_COLOR_VALUE;
+						colorTransform.blueOffset = (chromeColor & 0xFF) - DEFAULT_COLOR_VALUE;
+						colorTransform.alphaMultiplier = alpha;
+						
+						transform.colorTransform = colorTransform;
+						
+						var exclusions:Array = [ checkBox ];		// ************ Only modification of copied stuff.
+						
+						// Apply inverse colorizing to exclusions
+						if (exclusions && exclusions.length > 0)
+						{
+							colorTransform.redOffset = -colorTransform.redOffset;
+							colorTransform.greenOffset = -colorTransform.greenOffset;
+							colorTransform.blueOffset = -colorTransform.blueOffset;
+							
+							for (var i:int = 0; i < exclusions.length; i++)
+							{
+								var exclusionObject:Object = exclusions[i];
+								
+								if (exclusionObject &&
+									(exclusionObject is DisplayObject ||
+										exclusionObject is GraphicElement))
+								{
+									colorTransform.alphaMultiplier = exclusionObject.alpha;
+									exclusionObject.transform.colorTransform = colorTransform;
+								}
+							}
+						}
+						
+						colorized = true;
+					}
+					
+					chromeColorChanged = false;
+				}
+				
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+			}
+			
+			//----------------------------------------------------------------------------------------------------------
+			
+			/**
+			 *  @private
+			 */
+			override public function styleChanged(styleProp:String):void
+			{
+				var allStyles:Boolean = !styleProp || styleProp == "styleName";
+				
+				super.styleChanged(styleProp);
+				
+				if (allStyles || styleProp == "chromeColor")
+				{
+					chromeColorChanged = true;
+					invalidateDisplayList();
+				}
+			}
+			
+			//-----------------------End of copied stuff (slightly modified) from DefaultGridHeaderRenderer---------------------------------------------------
+			
+			//----------------------------------------------------------------------------------------------------------
+			
+			override public function prepare(hasBeenRecycled:Boolean):void
+			{
+				super.prepare( hasBeenRecycled );
+				
+				if( column && (checkBox.label != column.headerText) )
+					checkBox.label = column.headerText;
+				
+				// Accounting for the blank label. Adjusting position of checkbox to center it.
+				if( "" == column.headerText )
+				{
+					checkBox.left = null;
+					checkBox.right = null;
+					checkBox.horizontalCenter = 2;
+				}
+				else
+				{
+					checkBox.left = 7;
+					checkBox.right = 7;
+					checkBox.horizontalCenter = 0;
+				}
+				
+				updateRendererCheckBoxState();
+			}
+			
+			//----------------------------------------------------------------------------------------------------------
+			
+			protected function griditemrenderer_creationCompleteHandler(event:FlexEvent):void
+			{
+				grid.dataGrid.addEventListener( GridSelectionEvent.SELECTION_CHANGE, grid_selection_changeHandler );
+				
+				// Listen for the click event on "this" only when the mouse is hovered over the actual header renderer.
+				// The header renderer's left and right edges (a few pixels wide) are reserved for the separators. 
+				// Clicking on the separators should not be detected as clicking on the header. 
+				// The GRID_ROLL_OVER event is dispatched only when over the renderer. The GRID_ROLL_OUT event is
+				// dispatched when the mouse moves from the renderer to the separator or to anywhere else.
+				grid.dataGrid.columnHeaderGroup.addEventListener( GridEvent.GRID_ROLL_OVER, On_Grid_Roll_Over );
+			}
+			
+			//----------------------------------------------------------------------------------------------------------
+			
+			protected function On_Grid_Roll_Over( event: GridEvent ): void
+			{
+				if( column != event.column )
+					return;
+				
+				grid.dataGrid.columnHeaderGroup.removeEventListener( GridEvent.GRID_ROLL_OVER, On_Grid_Roll_Over );
+				grid.dataGrid.columnHeaderGroup.addEventListener( GridEvent.GRID_ROLL_OUT, On_Grid_Roll_Out );
+				
+				this.addEventListener( MouseEvent.CLICK, griditemrenderer_clickHandler );
+			}
+			
+			//----------------------------------------------------------------------------------------------------------
+			
+			protected function On_Grid_Roll_Out( event: GridEvent ): void
+			{
+				if( column != event.column )
+					return;
+				
+				grid.dataGrid.columnHeaderGroup.removeEventListener( GridEvent.GRID_ROLL_OUT, On_Grid_Roll_Out );
+				grid.dataGrid.columnHeaderGroup.addEventListener( GridEvent.GRID_ROLL_OVER, On_Grid_Roll_Over );
+				
+				this.removeEventListener( MouseEvent.CLICK, griditemrenderer_clickHandler );
+			}
+			
+			//----------------------------------------------------------------------------------------------------------
+			
+			public var clickable: Boolean = true;
+			
+			[Bindable]
+			private var checked: Boolean = false;
+			
+			[Bindable]
+			private var partial: Boolean = false;
+			
+			protected function grid_selection_changeHandler( event: GridSelectionEvent ): void
+			{
+				updateRendererCheckBoxState();
+			}
+			
+			//----------------------------------------------------------------------------------------------------------
+			
+			protected function updateRendererCheckBoxState(): void
+			{
+				const data_provider: IList = grid.dataGrid.dataProvider;
+				
+				if( !( column is CheckBoxGridColumn ) )
+					return;
+				
+				const check_box_grid_column: CheckBoxGridColumn = CheckBoxGridColumn( column );
+				
+				var selected_items: Vector.<Object>;
+				const control_property: String = check_box_grid_column.controlProperty;
+				
+				// If there is a control property, then the state of the header checkbox is controlled by that control property.
+				// If all the DP items have that property set to true, then the header checkbox should be selected. And so on.
+				
+				// If there is no control property, then the state of the header checkbox should be controlled by the selection
+				// status of the rows.
+				if( "" == control_property )
+					selected_items = grid.dataGrid.selectedItems;
+				else
+					selected_items = getItemsWithTrueControlProperty( control_property );
+				
+				
+				var selectable_items: IList;
+				const can_edit_renderer_property: String = check_box_grid_column.canEditRendererProperty;
+				
+				// If there is a property to check if the checkbox is allowed to be toggled, then the max number of
+				// selectable items is equal to the number of items which have this property set to true.
+				
+				// If there is no such property, then all the items in the data provider can be selected, i.e.,
+				// every single checkbox in the column can be toggled.
+				if( "" == can_edit_renderer_property )
+					selectable_items = data_provider;
+				else
+					selectable_items = getItemsWithTrueCanEditRendererProperty( can_edit_renderer_property );
+				
+				
+				
+				// If ALL the selectable items are selected, then the header should be checked. (the lengths are equal)
+				// If NONE of the selectable items are selected, then the header should be unchecked. (the length of the selected_items is 0)
+				// Else, partial.
+				if( null == selected_items || null == data_provider )
+				{
+					checked = false;
+					partial = false;
+					return;
+				}
+				
+				if( 0 == selected_items.length )
+				{
+					checked = false;
+					partial = false;
+				}
+				else if( selected_items.length == selectable_items.length )
+				{
+					checked = true;
+					partial = false;
+				}
+				else
+				{
+					checked = false;
+					partial = true;
+				}
+			}
+			
+			//----------------------------------------------------------------------------------------------------------
+			
+			protected function getItemsWithTrueControlProperty( _controlProperty: String ): Vector.<Object>
+			{
+				const data_provider: IList = grid.dataGrid.dataProvider;
+				
+				if( null == data_provider )
+					return null;
+				
+				var true_items: Vector.<Object> = new Vector.<Object>();
+				
+				for each( var dp_item: Object in data_provider )
+				{
+					if( dp_item.hasOwnProperty( _controlProperty ) && (dp_item[ _controlProperty ] is Boolean) )
+					{
+						if( dp_item[ _controlProperty ] )
+							true_items.push( dp_item );
+					}
+				}
+				
+				return true_items;
+			}
+			
+			//----------------------------------------------------------------------------------------------------------
+			
+			protected function getItemsWithTrueCanEditRendererProperty( can_edit_renderer_property: String ): ArrayCollection
+			{
+				const data_provider: IList = grid.dataGrid.dataProvider;
+				
+				if( null == data_provider )
+					return null;
+				
+				var true_items: ArrayCollection = new ArrayCollection();
+				
+				for each( var dp_item: Object in data_provider )
+				{
+					if( dp_item.hasOwnProperty( can_edit_renderer_property ) && (dp_item[ can_edit_renderer_property ] is Boolean) )
+					{
+						if( dp_item[ can_edit_renderer_property ] )
+							true_items.addItem( dp_item );
+					}
+				}
+				
+				return true_items;
+			}
+			
+			//----------------------------------------------------------------------------------------------------------
+			
+			protected function griditemrenderer_clickHandler(event:MouseEvent):void
+			{
+				if( ! clickable )
+					return;
+				
+				if( !( column is CheckBoxGridColumn ) )
+					return;
+				
+				const check_box_grid_column: CheckBoxGridColumn = CheckBoxGridColumn( column );
+				const control_property: String = check_box_grid_column.controlProperty;
+				const can_edit_renderer_property: String = check_box_grid_column.canEditRendererProperty;
+				
+				if( "" == control_property )
+					Manage_Row_Selection_On_Header_Click();
+				else
+					Manage_Control_Property_On_Header_Click( control_property, can_edit_renderer_property );
+			}
+			
+			//----------------------------------------------------------------------------------------------------------
+			
+			private function Manage_Row_Selection_On_Header_Click(): void
+			{
+				var grid_selection_change_event: GridSelectionEvent = new GridSelectionEvent( GridSelectionEvent.SELECTION_CHANGE );
+				var selection_change: CellRegion;
+				
+				if( checked )
+				{
+					grid_selection_change_event.kind = GridSelectionEventKind.CLEAR_SELECTION;
+					selection_change = new CellRegion( 0, -1, 0, -1 );
+					grid.dataGrid.clearSelection();
+				}
+				else
+				{
+					grid_selection_change_event.kind = GridSelectionEventKind.SELECT_ALL;
+					
+					try
+					{
+						selection_change = new CellRegion( 0, -1, grid.dataGrid.dataProviderLength, -1 );
+					}
+					catch( er: Error )
+					{
+						selection_change = new CellRegion( 0, -1, 0, -1 );
+					}
+					
+					grid.dataGrid.selectAll();
+				}
+				
+				grid_selection_change_event.selectionChange = selection_change;
+				grid.dataGrid.dispatchEvent( grid_selection_change_event );
+			}
+			
+			//----------------------------------------------------------------------------------------------------------
+			
+			private function Manage_Control_Property_On_Header_Click( control_property: String, can_edit_renderer_property: String ): void
+			{
+				const data_provider: IList = grid.dataGrid.dataProvider;
+				
+				if( null == data_provider )
+					return;
+				
+				var boolean_to_be_set: Boolean = ! checked;
+				
+				for each( var dp_item: Object in data_provider )
+				{
+					if( dp_item.hasOwnProperty( control_property ) && (dp_item[ control_property ] is Boolean) )
+					{
+						// If there is no property to check (if the checkbox is editable), then toggle the checkbox straight-away.
+						if( "" == can_edit_renderer_property )
+						{
+							dp_item[ control_property ] = boolean_to_be_set;
+							grid.dataProvider.itemUpdated( dp_item );
+						}
+						else
+						{
+							// If there is a property to check, then check it to find out if the checkbox is allowed to be toggled.
+							if( dp_item.hasOwnProperty( can_edit_renderer_property ) && (dp_item[ can_edit_renderer_property ] is Boolean) && dp_item[ can_edit_renderer_property ] )
+							{
+								dp_item[ control_property ] = boolean_to_be_set;
+								grid.dataProvider.itemUpdated( dp_item );
+							}
+						}
+					}
+				}
+			}
+			
+			//----------------------------------------------------------------------------------------------------------
+			
+		]]>
+	</fx:Script>
+	
+	
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="hovered" />
+		<s:State name="down" />
+	</s:states>      
+	
+	<!-- layer 1: shadow -->
+	<!--- @private -->
+	<s:Rect id="shadow" left="-1" right="-1" top="-1" bottom="-1" radiusX="2">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0x000000" 
+								 color.down="0xFFFFFF"
+								 alpha="0.01"
+								 alpha.down="0" />
+				<s:GradientEntry color="0x000000" 
+								 color.down="0xFFFFFF" 
+								 alpha="0.07"
+								 alpha.down="0.5" />
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<!-- layer 2: fill -->
+	<!--- @private -->
+	<s:Rect id="fill" left="0" right="0" top="0" bottom="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0xFFFFFF" 
+								 color.hovered="0xBBBDBD" 
+								 color.down="0xAAAAAA" 
+								 alpha="0.85" />
+				<s:GradientEntry color="0xD8D8D8" 
+								 color.hovered="0x9FA0A1" 
+								 color.down="0x929496" 
+								 alpha="0.85" />
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<!-- layer 3: fill lowlight -->
+	<!--- @private -->
+	<s:Rect id="lowlight" left="0" right="0" top="0" bottom="0">
+		<s:fill>
+			<s:LinearGradient rotation="270">
+				<s:GradientEntry color="0x000000" ratio="0.0" alpha="0.0627" />
+				<s:GradientEntry color="0x000000" ratio="0.48" alpha="0.0099" />
+				<s:GradientEntry color="0x000000" ratio="0.48001" alpha="0" />
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<!-- layer 4: fill highlight -->
+	<!--- @private -->
+	<s:Rect id="highlight" left="0" right="0" top="0" bottom="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0xFFFFFF"
+								 ratio="0.0"
+								 alpha="0.33" 
+								 alpha.hovered="0.22" 
+								 alpha.down="0.12"/>
+				<s:GradientEntry color="0xFFFFFF"
+								 ratio="0.48"
+								 alpha="0.33"
+								 alpha.hovered="0.22"
+								 alpha.down="0.12" />
+				<s:GradientEntry color="0xFFFFFF"
+								 ratio="0.48001"
+								 alpha="0" />
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>  
+	
+	<!-- layer 5: highlight stroke (all states except down) -->
+	<!--- @private -->
+	<s:Rect id="highlightStroke" left="0" right="0" top="0" bottom="0" excludeFrom="down">
+		<s:stroke>
+			<s:LinearGradientStroke rotation="90" weight="1">
+				<s:GradientEntry color="0xFFFFFF" alpha.hovered="0.22" />
+				<s:GradientEntry color="0xD8D8D8" alpha.hovered="0.22" />
+			</s:LinearGradientStroke>
+		</s:stroke>
+	</s:Rect>
+	
+	<!-- layer 6: highlight stroke (down state only) -->
+	<!--- @private -->
+	<s:Rect id="hldownstroke1" left="0" right="0" top="0" bottom="0" includeIn="down">
+		<s:stroke>
+			<s:LinearGradientStroke rotation="90" weight="1">
+				<s:GradientEntry color="0x000000" alpha="0.25" ratio="0.0" />
+				<s:GradientEntry color="0x000000" alpha="0.25" ratio="0.001" />
+				<s:GradientEntry color="0x000000" alpha="0.07" ratio="0.0011" />
+				<s:GradientEntry color="0x000000" alpha="0.07" ratio="0.965" />
+				<s:GradientEntry color="0x000000" alpha="0.00" ratio="0.9651" />
+			</s:LinearGradientStroke>
+		</s:stroke>
+	</s:Rect>
+	<!--- @private -->
+	<s:Rect id="hldownstroke2" left="1" right="1" top="1" bottom="1" includeIn="down">
+		<s:stroke>
+			<s:LinearGradientStroke rotation="90" weight="1">
+				<s:GradientEntry color="0x000000" alpha="0.09" ratio="0.0" />
+				<s:GradientEntry color="0x000000" alpha="0.00" ratio="0.0001" />
+			</s:LinearGradientStroke>
+		</s:stroke>
+	</s:Rect>
+	
+	<!-- layer 7: checkBox:ThreeStateCheckBox  -->
+	<checkBoxes:ThreeStateCheckBox id="checkBox"
+								   enabled="false" fontWeight="bold"
+								   horizontalCenter="0" verticalCenter="0"
+								   left="7" right="7"
+								   selected="{ checked }" partial="{ partial }"/>
+	
+	
+</s:GridItemRenderer>

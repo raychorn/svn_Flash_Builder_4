@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%" 
+	verticalScrollPolicy="off" horizontalScrollPolicy="off"
+	creationComplete="init()">
+	
+	<mx:Canvas x="25" y="15" id="imgHighlight" mouseEnabled="false" 
+		verticalScrollPolicy="off" horizontalScrollPolicy="off" 
+		height="100%" alpha="{_currentAlpha}"/>
+	
+	<mx:HBox horizontalGap="3">
+		<mx:VBox mouseChildren="false" paddingRight="8">
+			<mx:Canvas id="imgContainer"></mx:Canvas>
+		</mx:VBox>
+		<mx:VBox id="userNameVBox" mouseOver="onMouse(event)" 
+			mouseOut="onMouse(event)" mouseDown="onMouse(event)" click="onMouse(event)"
+			mouseChildren="false" buttonMode="true" useHandCursor="true">
+			<mx:Label id="userNameLabel" width="125" truncateToFit="true"  letterSpacing="-.6"/>
+		</mx:VBox>
+		<mx:VBox id="divContainer">
+			<mx:Canvas id="dividerAsset"></mx:Canvas>
+		</mx:VBox>
+		<mx:VBox id="logoutLabelContainer" click="onMouse(event)" creationComplete="onCreationComplete_logoutLabelContainer(event)">
+		</mx:VBox>
+	</mx:HBox>
+		<mx:Style>
+			.myCanvas {
+				backgroundColor: lime;
+				backgroundAlpha: 0.5;
+			}
+		</mx:Style>
+		<mx:Script>
+			<![CDATA[
+				import vzw.menu.builder.MenuController;
+				//import vzw.utils.ObjectExplainer;
+				import mx.containers.HBox;
+				import mx.controls.Spacer;
+				import mxml.header.utils.EditableLabel;
+				import mx.messaging.channels.StreamingAMFChannel;
+				import models.Menu_Model;
+				import mx.events.FlexEvent;
+				import utils.graphics.SnapshotDisplayObject;
+				import utils.displayObject.RotateGraphics;
+				import communication.WebServices;
+				import libs.utils.ErrorMessages;
+				import mx.controls.Image;
+				import utils.displayObject.DuplicateImage;
+				import libs.vo.GlobalsVO;
+				import utils.displayObject.LoopIterator;
+				
+				public var categoryPosition:int=-1;		// Selected Category
+				
+				[Bindable]
+				public var componentHeight:Number;
+				
+				[Bindable]
+				public var overRideSelect:Boolean = false;	// External Flash vars will tell this Category to stay highlighted
+				
+				[Bindable]
+				private var _componentWidth:Number = 0;
+				
+				[Bindable]
+				private var _currentAlpha:Number = 0;		// Mouse Over alpha effect
+
+				private var aLogoutLabel:*;
+				private var aLogoutCanvas:*;
+						
+				private var _iterator:LoopIterator;			// Fade Effect
+				private var highlight:Image;
+				private var manImage:Image;
+				private var divAsset:Image;
+				private var _tabOrder:int;
+				private var _dataModel:Menu_Model;
+				private var _logoutLabelData:Object;
+				private var _isAdmin:Boolean = Boolean(GlobalsVO.getGlobal(GlobalsVO.ISADMIN));
+				
+				private const MCR:String = "MenuController";
+				private const P1:String = "image_personAssetN";		// Background asset
+				private const P2:String = "image_personAssetH";		// Background asset
+				private const P3:String = "image_logoutDivAsset";		// Background asset
+				private const WELCOME:String = "Welcome, ";
+				private const P4:String = "categoryFadeStart";
+				private const P5:String = "categoryFadeEnd";
+				private const P6:String = "categoryFadeInSpeed";
+				private const P7:String = "categoryFadeInStep";
+				private const P8:String = "categoryFadeOutSpeed";
+				private const P9:String = "categoryFadeOutStep";
+				private const P10:String = "categoryItemScaleContent";
+				private const P11:String = "categoryItemMaintainAspectRatio";
+				
+				/**
+				 * Initialize and get the background
+				 * image from GlobalsVO
+				 */
+				 		
+				public function init():void {
+				
+					// Fade Effect
+					_iterator = new LoopIterator();
+					
+					// Set focus listener and it's tab priority
+					_tabOrder = GlobalsVO.INIT_TAB_LOGO;
+					
+					// Get the data model
+					_dataModel = GlobalsVO.getGlobal(GlobalsVO.DATA_MODEL);
+					
+					_logoutLabelData = _dataModel.getHeaderData("logout");
+					
+					//trace((new ObjectExplainer(_logoutLabelData)).explainThisWay('\n'));
+					
+					var _logoutURL:String = _dataModel.getUrl(_logoutLabelData[0]).toString();
+					var target:* = ((_logoutLabelData is Array) && (_logoutLabelData.length > 0)) ? _logoutLabelData[0][_dataModel.getMetaDataHash(GlobalsVO.META_TARGET)] : '';
+					if(target == undefined) target = _dataModel.getMetaDataHash(GlobalsVO.TARGET_DEFAULT);
+					
+					if(GlobalsVO.DEVMODE) new ErrorMessages(logoutLabelContainer, _logoutURL+" , "+target);
+					
+					
+					
+					// Set focus listener and it's tab priority
+					GlobalsVO.addFocus(imgContainer,_tabOrder++);
+					
+					// Man Image
+					var asset:Object = DuplicateImage.validate(GlobalsVO.getGlobal(P1),this);
+					manImage = Image(asset.image);// as Image;
+					manImage = DuplicateImage.copy(manImage,false,true);
+					imgContainer.addChild(manImage);
+					
+					// Add Divider
+					asset = DuplicateImage.validate(GlobalsVO.getGlobal(P3),this);
+					divAsset = Image(asset.image);// as Image;
+					divAsset = DuplicateImage.copy(divAsset,false,true);
+					dividerAsset.addChild(divAsset);
+					divAsset.y += Number(GlobalsVO.getCSSProperty("headerLoginDivPadTop"));
+					
+					// Catch missing graphic asset error message					
+					if(asset.error != null) new ErrorMessages(manImage,asset.error);
+					
+					
+					
+					userNameLabel.setStyle("paddingTop",Number(GlobalsVO.getCSSProperty("headerLoginPadTop")));
+					userNameLabel.setStyle("color","#FFFFFF");
+					
+					var userName:Object = GlobalsVO.getGlobal(GlobalsVO.EXTERNALVARS).userName;
+					
+					// Set User Name
+					if(userName is String) {
+						var uNameArr:Array = userName.split("");
+						uNameArr[0] = String(uNameArr[0]).toUpperCase();
+						userNameLabel.text = WELCOME+uNameArr.join("")+"!";
+					} else {
+						userNameLabel.text = WELCOME+"Xxxxx!";
+					}
+					setHighlight();
+				}
+				
+				
+				
+				
+				
+				private function setHighlight():void {
+					var asset:Object = DuplicateImage.validate(GlobalsVO.getGlobal("image_categoryItemMouseOverAsset"),this);
+					// If Error
+					if(asset.error != null) {
+						highlight = DuplicateImage.copy(asset.image,true,false);
+						new ErrorMessages(highlight,asset.error);
+						// Otherwise
+					} else {
+						// Catch missing graphic asset error message		
+						highlight = DuplicateImage.copy(asset.image,true,false);
+					}
+					
+					imgHighlight.addChild(highlight);
+				}
+				
+				
+				
+				
+				
+				/**
+				 * Check the array with the current
+				 * selected component to see if the
+				 * component should be styled differently
+				 * @param:MouseEvent - Any mouse event
+				 */
+				 
+				private function onMouse(e:MouseEvent):void {
+					//trace('onMouse(' + e.toString() + ')');
+					switch(e.type) {
+						case MouseEvent.MOUSE_OVER :
+							// Set MenuController to show menu
+							GlobalsVO.getGlobal(MCR).onUserName(e);
+							this.onMouseOver();
+							
+						break;
+						
+						case MouseEvent.MOUSE_OUT :
+							// Set MenuController to show menu
+							GlobalsVO.getGlobal(MCR).onUserName(e);
+						break;
+						
+						case MouseEvent.CLICK :
+							var url:String;
+							
+							if (!_isAdmin) {
+								if(e.currentTarget.name.toString() == "logoutLabelContainer") {
+									WebServices.navigateToUrl(_logoutURL, _logoutLabelData.target);
+								}
+							}
+
+							if (MenuController.onMouseClickLoginState_callback is Function) {
+								//MenuController.onMouseClickLoginState_callback(this);
+							}
+					}
+				}
+				
+				
+				private var _logoutURL:String;
+				
+				/**
+				 * If the user scrols the mouse over
+				 * this component, then fade in
+				 * @param e:Event - N/A
+				 * @return void
+				 */
+				
+				public function onMouseOver():void {
+				
+					//trace('onMouseOver()');
+					
+					// Set Highlight Graphic Width
+					highlight.width = userNameVBox.width+10;
+				
+					_iterator.stop();
+	      			_iterator.init({from:_currentAlpha,
+	      						   _to:Number(GlobalsVO.getCSSProperty(P5)),
+	      						   speed:int(GlobalsVO.getCSSProperty(P6)),
+	      						   step:Number(GlobalsVO.getCSSProperty(P7))});
+	
+	      			_iterator.addEventListener(Event.CHANGE,onChange);
+					if (GlobalsVO.ISLoggedOut == false) {
+		      			_iterator.addEventListener(Event.COMPLETE,onComplete);
+					}
+	      			_iterator.play();
+	      			
+	      			
+	      			// Set Style
+					userNameLabel.setStyle("color","#FF0000");
+				}
+			
+				
+				
+			
+				/**
+				 * If the user selects a different category
+				 * Then call this method, to cause
+				 * the fade out effect.
+				 * @param e:Event - N/A
+				 * @return void
+				 * @see MenuController.as
+				 */
+				
+				public function onMouseOut():void {
+					//trace('onMouseOut()');
+
+					// Stay Highlighted based on Flashvar parameters
+					if(overRideSelect) return;
+					
+					_iterator.stop();
+	      			_iterator.init({from:_currentAlpha,
+	      						   _to:Number(GlobalsVO.getCSSProperty(P4)),
+	      						   speed:int(GlobalsVO.getCSSProperty(P8)),
+	      						   step:Number(GlobalsVO.getCSSProperty(P9))});
+	      			_iterator.addEventListener(Event.CHANGE,onChange);
+					if (GlobalsVO.ISLoggedOut == false) {
+		      			_iterator.addEventListener(Event.COMPLETE,onComplete);
+					}
+	      			_iterator.play();
+		      		userNameLabel.setStyle("color","#FFFFFF");
+				}
+				
+				
+				
+				
+				/**
+			 * Set new value for tween effect
+			 * @param value:Number - The image alpha value
+			 * from the tweener fade in effect
+			 * @return - void
+			 */
+			 
+			private function onChange(e:Event):void {
+				_currentAlpha = e.currentTarget.value;
+			}
+			
+			
+			
+			private function onComplete(e:Event):void {
+				_currentAlpha = e.currentTarget.value;
+				_iterator.removeEventListener(Event.CHANGE,onChange);
+      			_iterator.removeEventListener(Event.COMPLETE,onComplete);
+				
+				if(_currentAlpha < 0) _currentAlpha = 0;
+				if(_currentAlpha > 1) _currentAlpha = 1;
+			}
+			
+			private function onCreationComplete_logoutLabelCanvas(event:FlexEvent):void {
+				var canvas:* = event.target;
+				 
+				this.aLogoutLabel = new EditableLabel();
+				this.aLogoutLabel._setStyle({'color':'#ffffff'});
+				this.aLogoutLabel._setStyle({"letterSpacing":Number(GlobalsVO.getCSSProperty("headerLoginLetterSpacing"))});
+				this.aLogoutLabel._setStyle({'paddingLeft':'-20'});
+				this.aLogoutLabel._setStyle({'paddingTop':'23'});
+				this.aLogoutLabel._setStyle({'percentWidth':'100'});
+
+				this.aLogoutLabel._htmlText = _logoutLabelData[0][_dataModel.getMetaDataValue(GlobalsVO.META_LABEL)];
+
+				this.aLogoutLabel.onClickHandler = GlobalsVO.getGlobal(GlobalsVO.EDITABLELABEL_onClickHandler);
+				this.aLogoutLabel.onCreationCompleteHandler = GlobalsVO.getGlobal(GlobalsVO.EDITABLESIGNOUTICON_onCreationComplete);
+				
+				this.aLogoutLabel._dataProvider = _logoutLabelData;
+				this.aLogoutLabel.currentState = '';
+
+				canvas.addChild(this.aLogoutLabel);
+			}
+			
+			private function onCreationComplete_logoutLabel(event:FlexEvent):void {
+				event.target.text = _logoutLabelData[0][_dataModel.getMetaDataValue(GlobalsVO.META_LABEL)];
+			}
+			
+			private function onCreationComplete_logoutLabelContainer(event:FlexEvent):void {
+				var vbox:VBox = event.target as VBox; 
+				vbox.mouseChildren = false;
+				vbox.buttonMode = true;
+				vbox.useHandCursor = true;
+
+				if (this._isAdmin) {
+					vbox.mouseChildren = true;
+					vbox.buttonMode = false;
+					vbox.useHandCursor = false;
+
+					vbox.removeEventListener(MouseEvent.CLICK,this.onMouse); // this gobbles up events, this is not desired for the Admin Tool...
+					vbox.visible = false;
+
+					this.aLogoutCanvas = new HBox();
+					this.aLogoutCanvas.id = "logoutLabelHBox";
+					var pt:Point = new Point(vbox.x + vbox.width + 20,vbox.y);
+					this.aLogoutCanvas.x = pt.x;
+					this.aLogoutCanvas.y = pt.y;
+					this.aLogoutCanvas.percentWidth = 100;
+					this.aLogoutCanvas.percentHeight = 100;
+					this.aLogoutCanvas.addEventListener(FlexEvent.CREATION_COMPLETE, this.onCreationComplete_logoutLabelCanvas);
+					this.aLogoutCanvas.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+						if (MenuController.onMouseClickLogoutLabel_callback is Function) {
+							MenuController.onMouseClickLogoutLabel_callback(event.currentTarget);
+						}
+					});
+					
+					this.addChild(this.aLogoutCanvas);
+				} else {
+					this.aLogoutLabel = new Label();
+					this.aLogoutLabel.id = "logoutLabel";
+					this.aLogoutLabel.setStyle("color","#FFFFFF");
+					this.aLogoutLabel.setStyle("letterSpacing",Number(GlobalsVO.getCSSProperty("headerLoginLetterSpacing")));
+					this.aLogoutLabel.setStyle("paddingTop",Number(GlobalsVO.getCSSProperty("headerLoginPadTop")));
+					this.aLogoutLabel.addEventListener(FlexEvent.CREATION_COMPLETE, this.onCreationComplete_logoutLabel);
+					vbox.addChild(this.aLogoutLabel);
+					vbox.visible = true;
+				}
+			}
+			]]>
+	</mx:Script>
+</mx:Canvas>

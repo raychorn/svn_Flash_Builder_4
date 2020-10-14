@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" 
+					   applicationComplete="init()" 
+					   resize="windowedapplication1_resizeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import controls.Retwitter;
+			import controls.TwitterTools;
+			import controls.WebmasterTools;
+			
+			import flash.display.Screen;
+			import flash.geom.Rectangle;
+			import flash.net.SharedObject;
+			
+			import mx.core.FlexGlobals;
+			import mx.events.ResizeEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.ResultEvent;
+			import mx.styles.IStyleManager2;
+			
+			import controls.Alert.AlertPopUp;
+			import vyperlogix.controls.login.LoginPanel;
+			import vyperlogix.controls.login.events.LoginCompletedEvent;
+			import vyperlogix.controls.login.events.LoginRequestedEvent;
+			import vyperlogix.utils.EzHTTPService;
+			import vyperlogix.utils.GUID;
+			import vyperlogix.utils.ObjectUtils;
+			import vyperlogix.utils.StringUtils;
+
+			private var mySO:SharedObject = SharedObject.getLocal("/vyperlogix/vyperblog/data");
+
+			private const __home__:String = 'https://raychorn.appspot.com';
+			private const __version__:String = '0.30.1';
+			
+			private var __isLoggedIn:Boolean = false;
+			public var ezREST:EzHTTPService = new EzHTTPService(false,false);
+			
+			private var __api__:Object = {};
+			private var __endpoints__:Object = {};
+			private var FBID:String = '';
+			private var __air_version__:String = '';
+			private var __domain__:String = '';
+			private var __isIP__:Boolean = false;
+			private var __username__:String = '';
+			private var __password__:String = '';
+			
+			private var mainScreen:Screen = Screen.mainScreen;
+			private var screenBounds:Rectangle = mainScreen.bounds;
+			
+			private var canvas_cache:Object = {};
+			
+			private const blog_rest_post_rssfeed_symbol:String = 'blog_rest_post_rssfeed';
+			private const blog_rest_get_rssfeeds_symbol:String = 'blog_rest_get_rssfeeds';
+			private const blog_rest_remove_rssfeed_symbol:String = 'blog_rest_remove_rssfeed';
+			
+			private var __foreign_apis__:Array = [
+				blog_rest_post_rssfeed_symbol,
+				blog_rest_get_rssfeeds_symbol,
+				blog_rest_remove_rssfeed_symbol
+			]; 
+			
+			[Embed(source="assets/vyper blog admin background.jpg")]
+			[Bindable]
+			public var backgroundCls:Class;
+
+			public function get domain():String {
+				return this.__domain__;
+			}
+			
+			public function get api():* {
+				return this.__api__;
+			}
+			
+			private function loadStyles(styleURL:String):void {
+				//IStyleManager2.loadStyleDeclarations2(styleURL);
+			}
+			
+			private function performLogin(callback:Function):void {
+				var url:String = this.__domain__ + this.__api__['blog_rest_post_login'];
+				trace('1.1 url='+url);
+				this.ezREST.post(url, {'username':this.__username__,'password':this.__password__}, function (event:ResultEvent):void {
+					if (callback is Function) {
+						try {
+							var response:*;
+							response = (event.result is String) ? event.result : event.result.getItemAt(0);
+							callback(( (response.success == true) || (response.loggedin == true) ));
+						} catch (err:Error) {}
+					}
+				}, ezREST.jsonResultType);
+			}
+			
+			private function isLoggedIn():Boolean {
+				this.__username__ = this.mySO.data.__username__;
+				this.__password__ = this.mySO.data.__password__;
+				this.__domain__ = this.mySO.data.__domain__;
+				this.__endpoints__ = this.mySO.data.__endpoints__;
+				this.__air_version__ = this.mySO.data.__air_version__;
+				this.__api__ = this.mySO.data.__api__;
+				var isEndpoints:Boolean = false;
+				try {
+					isEndpoints = ObjectUtils.isEmpty(this.__endpoints__);
+				} catch (err:Error) {}
+				var isApi:Boolean = true;
+				try {
+					var keys:Array = ObjectUtils.keys(this.__api__);
+					var _isApi:Boolean = ObjectUtils.isEmpty(this.__api__);
+					for (var i:String in this.__foreign_apis__) {
+						if (keys.indexOf(this.__foreign_apis__[i]) == -1) {
+							isApi = false;
+							break;
+						}
+					}
+					isApi = ( (isApi) && (!_isApi) );
+				} catch (err:Error) {}
+				this.__isLoggedIn = false;
+				try {
+					this.__isLoggedIn = this.mySO.data.__isLoggedIn && (this.__domain__.length > 0) && (this.__air_version__.length > 0) && (!isEndpoints) && (isApi);
+				} catch (err:Error) {}
+				return this.__isLoggedIn;
+			}
+			
+			private function blog_rest_get_endpoints(domain:String):String {
+				return domain + '/'+['blog','rest','get','endpoints'].join('/')+'/';
+			}
+			
+			private function blog_rest_get_user(domain:String):String {
+				return domain + '/'+['blog','rest','get','user'].join('/')+'/0/'+GUID.create()+'/';
+			}
+			
+			private function blog_rest_refresh_admin(domain:String):String {
+				return domain + '/'+['blog','rest','refresh','admin'].join('/')+'/'+GUID.create()+'/';
+			}
+			
+			private function blog_rest_post_domain():String {
+				return (((this.__domain__.indexOf('localhost') > -1) || (this.__domain__.indexOf('127.0.0.1') > -1)) ? this.__domain__ : this.__home__) + '/'+['blog','rest','post','domain'].join('/')+'/'+GUID.create()+'/';
+			}
+			
+			public function blog_rest_get_rssfeeds():String {
+				return this.domain + this.api[this.blog_rest_get_rssfeeds_symbol] +'/'+GUID.create()+'/';
+			}
+			
+			public function blog_rest_post_rssfeed():String {
+				return this.domain + this.api[this.blog_rest_post_rssfeed_symbol] +'/'+GUID.create()+'/';
+			}
+			
+			public function blog_rest_remove_rssfeed():String {
+				return this.domain + this.api[this.blog_rest_remove_rssfeed_symbol] +'/'+GUID.create()+'/';
+			}
+			
+			private function title_show(popup:*,moreTitle:String):void {
+				var title:String = StringUtils.trim(popup.login.panel_Login.title.split(':')[0]);
+				popup.login.panel_Login.title = title + ' : ' + moreTitle;
+			}
+
+			private function handle_login_request():void {
+				var _this:* = this;
+				var popup:LoginPanel = PopUpManager.createPopUp(this, LoginPanel, true) as LoginPanel;
+				popup.width = 600;
+				popup.height = 300;
+				PopUpManager.centerPopUp(popup);
+				popup.login.panel_Login.title = 'VyperBlog Admin Login';
+				popup.login.panel_Login.styleName = 'LoginPanel';
+				popup.login.btn_Register.enabled = false;
+				popup.login.btn_Register.visible = false;
+				popup.login.btn_Register.includeInLayout = false;
+				popup.login.btn_Cancel.enabled = false;
+				popup.login.btn_Cancel.visible = false;
+				popup.login.btn_Cancel.includeInLayout = false;
+				popup.addEventListener(LoginRequestedEvent.TYPE_LOGIN_REQUESTED,function (event:LoginRequestedEvent):void {
+					popup.enabled = false;
+					function onResultGetEndpoints(event:ResultEvent):void {
+						var response:*;
+						try {
+							response = (event.result is String) ? event.result : event.result.getItemAt(0);
+							_this.__endpoints__ = response;
+							_this.__domain__ = (_this.__endpoints__['secure_endpoint']) ? _this.__endpoints__['secure_endpoint'] : _this.__domain__;
+							
+							_this.title_show(popup,'Contacting the Server...');
+							var url:String = _this.blog_rest_get_user(_this.__domain__);
+							_this.ezREST.send(url, onResultGetUser, ezREST.jsonResultType);
+						} catch (e:Error) {
+							var stackTrace:String = e.getStackTrace();
+							AlertPopUp.errorNoOkay('onResultGetEndpoints().ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR +++');
+						}
+					}
+					function onResultGetUser(event:ResultEvent):void {
+						var response:*;
+						try {
+							response = (event.result is String) ? event.result : event.result.getItemAt(0);
+							_this.__api__ = response['__api__'];
+							_this.FBID = response['FBID'];
+							_this.__air_version__ = response['air_version'];
+							_this.title_show(popup,'Attempting Login...');
+							var url:String = _this.__domain__ + _this.__api__['blog_rest_post_login'];
+							_this.ezREST.post(url, {'username':_this.__username__,'password':_this.__password__}, onResultLoginUser, ezREST.jsonResultType);
+							trace('1.1 url='+url);
+						} catch (e:Error) {
+							var stackTrace:String = e.getStackTrace();
+							AlertPopUp.errorNoOkay('onResultGetUser().ERROR\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace,1024),'ERROR +++');
+						}
+					}
+
+					function onResultRefreshAdmin(event:ResultEvent):void {
+						_this.title_show(popup,'Try again...');
+						popup.login.btn_Login.enabled = true;
+					}
+					function onResultLoginUser(event:ResultEvent):void {
+						var response:*;
+						try {
+							response = (event.result is String) ? event.result : event.result.getItemAt(0);
+							if ( (response.success == false) || (response.loggedin == false) ) {
+								popup.enabled = true;
+								var url:String = _this.blog_rest_refresh_admin(_this.__domain__);
+								_this.ezREST.send(url, onResultRefreshAdmin, ezREST.jsonResultType);
+								AlertPopUp.errorNoOkay('Unable to complete your Login at this time.\n\n'+response.error+'\n\nAre you sure you have an Active Admin Account for the Domain you entered ?\n\nDid you use your correct Admin username and password ?\n','ERROR');
+							} else {
+								_this.__isLoggedIn = true;
+								_this.mySO.data.__username = _this.__username__;
+								_this.mySO.data.__password = _this.__password__;
+								_this.mySO.data.__isLoggedIn = _this.__isLoggedIn;
+								_this.mySO.data.__domain__ = _this.__domain__;
+								_this.mySO.data.__endpoints__ = _this.__endpoints__;
+								_this.mySO.data.__air_version__ = _this.__air_version__;
+								_this.mySO.data.__api__ = _this.__api__;
+								_this.mySO.flush();
+								_this.title_show(popup,'Logged in...');
+								PopUpManager.removePopUp(popup);
+								_this.currentState = 'loggedin';
+
+								url = _this.blog_rest_post_domain();
+								_this.ezREST.post(url, {'domain':_this.__domain__}, function(event:ResultEvent):void {}, ezREST.jsonResultType);
+								
+								if (_this.__air_version__ != _this.__version__) {
+									AlertPopUp.infoNoOkay('There is a newer version available for download !','WARNING');
+								}
+							}
+						} catch (e:Error) {
+							var stackTrace2:String = e.getStackTrace();
+							AlertPopUp.errorNoOkay('onResultLoginUser()\n' + e.message.toString() + '\n' + StringUtils.ellipsis(stackTrace2,1024),'ERROR onResultLoginUser.401');
+						} finally {
+						}
+					}
+					trace('1. '+event.toString());
+					_this.title_show(popup,'Logging in...');
+					_this.__domain__ = (event.domain) ? event.domain : '';
+					_this.__isIP__ = StringUtils.isIPAddress(_this.__domain__.split(':')[0]);
+					_this.__username__ = (event.username) ? StringUtils.urlEncode(event.username) : '';
+					_this.__password__ = (event.password) ? event.password : '';
+					var url:String = _this.blog_rest_get_endpoints('http://'+_this.__domain__);
+					_this.ezREST.send(url, onResultGetEndpoints, ezREST.jsonResultType);
+				});
+				popup.addEventListener(LoginCompletedEvent.TYPE_LOGIN_COMPLETED,function (e:LoginRequestedEvent):void {
+					trace('2. '+e.toString());
+				});
+			}
+			
+			private function check_login():void {
+				var isLoggedIn:Boolean = isLoggedIn();
+				if (isLoggedIn) {
+					performLogin(function (bool:Boolean):void {
+						isLoggedIn = bool;
+					});
+				}
+				if (!isLoggedIn) {
+					handle_login_request();
+				} else {
+					this.currentState = 'loggedin';
+				}
+			}
+
+			private function init():void {
+				mainScreen = Screen.mainScreen;
+				screenBounds = mainScreen.bounds;
+				this.nativeWindow.x = 50;
+				this.nativeWindow.y = 50;
+				this.nativeWindow.width = screenBounds.width - 100;
+				this.nativeWindow.height = screenBounds.height - 100;
+				this.handle_resize(this.nativeWindow);
+				check_login();
+			}
+
+			protected function accordion_clickHandler(event:MouseEvent):void {
+				//AlertPopUp.info('accordion_clickHandler().1','INFO');
+				//var accordion:Accordion = event.currentTarget as Accordion;
+				//trace('accordion_clickHandler().1 --> accordion.selectedIndex='+accordion.selectedIndex);
+			}
+			
+			protected function btn_webmasterTools_clickHandler(event:MouseEvent):void {
+				var _this:* = this;
+				var p:WebmasterTools = this.canvas_cache['panel_webmasterTools'];
+				if (!p) {
+					p = new WebmasterTools();
+					p.id = 'panel_webmasterTools';
+					p.percentWidth = 100;
+					p.percentHeight = 100;
+					p.callback = function(value:String,section:String):Boolean {
+						trace('(btn_webmasterTools_clickHandler).1 value='+value+', section='+section);
+						return ( (value.indexOf(_this.__endpoints__['secure_endpoint']) == -1) && (value.indexOf(_this.__endpoints__['insecure_endpoint']) == -1) );
+					}
+					this.canvas_cache['panel_webmasterTools'] = p;
+					trace('btn_webmasterTools_clickHandler().1 !');
+				}
+				this.mainCanvas.addChild(p);
+				trace('btn_webmasterTools_clickHandler().2 !');
+			}
+			
+			private function handle_resize(container:*):void {
+				this.background.x = container.width - this.backgroundImage.width;
+				this.background.width = this.backgroundImage.width;
+				this.background.height = this.backgroundImage.height;
+				this.mainCanvas.height = container.height - 30;
+			}
+
+			protected function windowedapplication1_resizeHandler(event:ResizeEvent):void {
+				var app:VyperBlogAdmin = event.currentTarget as VyperBlogAdmin;
+				try {
+					this.handle_resize(app);
+				} catch (err:Error) {}
+			}
+
+			protected function btn_twitter_clickHandler(event:MouseEvent):void {
+				var _this:* = this;
+				var p:TwitterTools = this.canvas_cache['panel_twitterTools'];
+				if (!p) {
+					p = new TwitterTools();
+					p.id = 'panel_twitterTools';
+					p.percentWidth = 100;
+					p.percentHeight = 100;
+					this.canvas_cache['panel_twitterTools'] = p;
+					trace('btn_twitter_clickHandler().1 !');
+				}
+				this.mainCanvas.addChild(p);
+				trace('btn_twitter_clickHandler().2 !');
+			}
+			
+			protected function btn_retwitter_clickHandler(event:MouseEvent):void {
+				var _this:* = this;
+				var p:Retwitter = this.canvas_cache['panel_retwitter'];
+				if (!p) {
+					p = new Retwitter();
+					p.id = 'panel_retwitter';
+					p.percentWidth = 100;
+					p.percentHeight = 100;
+					this.canvas_cache['panel_retwitter'] = p;
+					trace('btn_retwitter_clickHandler().1 !');
+				}
+				this.mainCanvas.addChild(p);
+				trace('btn_retwitter_clickHandler().2 !');
+			}
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="State1"/>
+		<s:State name="loggedin"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		
+		@font-face {
+			src: url("/assets/fonts/NeoSansIntel.ttf");
+			fontFamily: NeoSansIntel;
+			embedAsCFF: false;
+		}
+		
+		mx|Accordion {
+			themeColor: #0066ff;
+			backgroundColor: #0066ff;
+			dropShadowEnabled: true;
+			shadowDistance: 10;
+			shadowDirection: right;
+			fontFamily: NeoSansIntel;
+			fontSize: 12pt;
+			headerStyleName: "myaccordionHeader";
+		}	
+
+		.myaccordionHeader {
+			fontFamily: NeoSansIntel;
+			fontSize: 14pt;
+			fontWeight: bold;
+		}
+		
+		mx|Panel {
+			borderColor: #0066ff;
+			cornerRadius: 9;
+			headerColors: #0066ff, #0033cc;
+			shadowDistance: 10;
+			shadowDirection: right;
+			fontFamily: NeoSansIntel;
+			fontSize: 12pt;
+			titleStyleName: "mypanelTitle";
+		}
+
+		.mypanelTitle {
+			fontFamily: NeoSansIntel;
+			fontSize: 18pt;
+			fontWeight: bold;
+		}		
+		
+		mx|Text {
+			fontFamily: NeoSansIntel;
+			fontSize: 18pt;
+		}
+		
+		mx|Label {
+			fontFamily: NeoSansIntel;
+			fontSize: 16pt;
+		}
+		
+		s|Button {
+			fontFamily: NeoSansIntel;
+			fontSize: 16pt;
+		}
+		
+		s|List {
+			fontFamily: NeoSansIntel;
+			fontSize: 16pt;
+		}
+	</fx:Style>
+	<mx:Canvas id="background" x="0" y="0">
+		<mx:Image id="backgroundImage" source="{this.backgroundCls}" alpha="1.0" />
+	</mx:Canvas>
+	<mx:VBox width="100%" height="100%">
+		<mx:HBox>
+			<mx:HBox>
+				<mx:Accordion id="accordion" includeIn="loggedin" width="200" height="200" click="accordion_clickHandler(event)">
+					<s:NavigatorContent label="Dashboard" width="100%" height="100%">
+						<mx:VBox id="dashboard_vbox" width="100%">
+							<s:Button id="btn_dashboard" label="Dashboard" width="100%"/>
+						</mx:VBox>
+					</s:NavigatorContent>
+					<s:NavigatorContent label="Posts" width="100%" height="100%">
+						<mx:VBox width="100%">
+							<s:Button id="btn_addNewPost" label="Add New" width="100%"/>
+							<s:Button id="btn_postCategories" label="Categories" width="100%"/>
+							<s:Button id="btn_postTags" label="Tags" width="100%"/>
+							<s:Button id="btn_postLanguages" label="Languages" width="100%"/>
+						</mx:VBox>
+					</s:NavigatorContent>
+					<s:NavigatorContent label="Twitter" width="100%" height="100%">
+						<mx:VBox width="100%">
+							<s:Button id="btn_retwitter" label="Retwitter" width="100%" click="btn_retwitter_clickHandler(event)"/>
+						</mx:VBox>
+					</s:NavigatorContent>
+					<s:NavigatorContent label="Tools" width="100%" height="100%">
+						<mx:VBox width="100%">
+							<s:Button id="btn_webmasterTools" label="Google Webmaster Tools" width="100%" click="btn_webmasterTools_clickHandler(event)"/>
+							<s:Button id="btn_analytics" label="Google Analytics" width="100%"/>
+							<s:Button id="btn_twitter" label="Twitter Accounts" width="100%" click="btn_twitter_clickHandler(event)"/>
+						</mx:VBox>
+					</s:NavigatorContent>
+				</mx:Accordion>
+			</mx:HBox>
+			<mx:Canvas id="mainCanvas" width="{this.width - this.accordion.width - 20}">
+			</mx:Canvas>
+		</mx:HBox>
+	</mx:VBox>
+</s:WindowedApplication>

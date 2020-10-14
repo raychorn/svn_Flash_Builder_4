@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		title="Timers v{this.parentApplication.versionNumber}, {this.parentApplication.copyright}" 
+		initialize="view1_initializeHandler(event)" 
+		xmlns:popups="controls.popups.*" xmlns:timers="controls.timers.*" xmlns:progress="controls.progress.*">
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="information"/>
+		<s:State name="error"/>
+		<s:State name="debugger"/>
+		<s:State name="changes"/>
+		<s:State name="credits"/>
+		<s:State name="options"/>
+		<s:State name="title"/>
+	</s:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.ArrayCollectionUtils;
+			import com.ArrayUtils;
+			import com.GUID;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.collections.Sort;
+			import spark.collections.SortField;
+			
+			import controls.timers.TimerProcessor;
+			import controls.timers.TimerWidget;
+			
+			import mobile.MobileDebuggerUtils;
+			
+			private var _this:TimersHomeView;
+			
+			[Bindable]
+			private var __timers__:ArrayCollection = new ArrayCollection();
+			
+			private var __timer__:Timer = new Timer(1000);
+
+			private var __sort_timer__:Timer = new Timer(5000);
+
+			private var __timer_initiation_timer__:Timer = new Timer(1000);
+			
+			[Bindable]
+			private var __active_timers__:Array = [];
+			
+			private var __editor_is_open_counter__:int = 0;
+			
+			public function get editor_is_open():Boolean {
+				return (this.__editor_is_open_counter__ > 0);
+			}
+			
+			private function restart_sort_timer():void {
+				this.__sort_timer__.stop();
+				this.__sort_timer__.reset();
+				this.__sort_timer__.start();
+			}
+			
+			public function set editor_opened(value:Boolean):void {
+				if (value) {
+					this.__editor_is_open_counter__++;
+					this.restart_sort_timer();
+					trace(this.className+'.set_editor_opened.1 --> this.__editor_is_open_counter__='+this.__editor_is_open_counter__);
+				}
+			}
+			
+			public function set editor_closed(value:Boolean):void {
+				if (value) {
+					this.__editor_is_open_counter__--;
+					this.restart_sort_timer();
+					trace(this.className+'.set_editor_closed.1 --> this.__editor_is_open_counter__='+this.__editor_is_open_counter__);
+				}
+			}
+			
+			private function toggle_CreditsWindowVisible():void {
+				this.currentState = (this.currentState == 'credits') ? 'normal' : 'credits';
+				var rows:Array = this.parentApplication.credits.split('\n');
+				var window:PopUpWindow = this.popUpWindow;
+				for (var i:String in rows) {
+					window.text = rows[i];
+				}
+			}
+			
+			private function toggle_ChangesWindowVisible():void {
+				this.currentState = (this.currentState == 'changes') ? 'normal' : 'changes';
+				var window:PopUpWindow = this.popUpWindow;
+				var rows:Array = this.parentApplication.description.split('\n');
+				for (var i:String in rows) {
+					window.text = rows[i];
+				}
+			}
+			
+			protected function showCredits_clickHandler(event:MouseEvent):void {
+				this.toggle_CreditsWindowVisible();
+			}
+			
+			protected function showChanges_clickHandler(event:MouseEvent):void {
+				this.toggle_ChangesWindowVisible();
+			}
+			
+			protected function exitApp_clickHandler(event:MouseEvent):void {
+				this.parentApplication.nativeApplication.exit();
+			}
+			
+			protected function popUpWindow_creationCompleteHandler(event:FlexEvent):void {
+				var window:PopUpWindow = event.currentTarget as PopUpWindow;
+				window.btnClose.addEventListener(MouseEvent.CLICK, 
+					function (event:MouseEvent):void {
+						_this.currentState = 'normal';
+						_this.showCredits.enabled = true;
+						_this.showChanges.enabled = true;
+					}
+				);
+			}
+			
+			protected function view1_initializeHandler(event:FlexEvent):void {
+				_this = this;
+				this.__timer__.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						ArrayUtils.iterate(_this.__active_timers__,
+							function (item:*, i:int, source:Array):void {
+								if (item['running']) {
+									var widget:TimerWidget = item['widget'];
+									if (widget) {
+										widget.handle_timer_event(event);
+									}
+								}
+							}
+						);
+					}
+				);
+				this.__timer__.start();
+				this.__sort_timer__.addEventListener(TimerEvent.TIMER, 
+					function (event:TimerEvent):void {
+						trace('(@@@).1 --> _this.editor_is_open='+_this.editor_is_open);
+						if (!_this.editor_is_open) {
+							var items:ArrayCollection = _this.items.dataProvider as ArrayCollection;
+							if (items.length > 1) {
+								var lastValue:Number = -1;
+								var is_sortable:Boolean = false;
+								_this.btn_sortTimers.enabled = false;
+								ArrayCollectionUtils.iterate(items,
+									function (anItem:*,aSelector:String):void {
+										var value:Number = Number(anItem[aSelector]);
+										trace('(@@@).2 --> lastValue='+lastValue+', value='+value);
+										if ( (lastValue < 0) || (lastValue > value) ) {
+											value = TimerProcessor.parse_date_to_milliseconds(anItem['time']);
+											trace('(@@@).3 --> lastValue='+lastValue+', value='+value);
+											if (lastValue > value) {
+												//is_sortable = true;
+												_this.btn_sortTimers.enabled = true;
+											} else {
+												lastValue = value;
+												trace('(@@@).4 --> lastValue='+lastValue+', value='+value);
+											}
+										}
+									},
+									'milliseconds'
+								);
+								trace('(@@@).5 --> is_sortable='+is_sortable);
+								if (is_sortable) {
+									trace('(@@@).6 --> items(before)='+MobileDebuggerUtils.explainThis(items.source));
+									var sort:Sort = new Sort();
+									var field:SortField = new SortField();
+									field.name = 'milliseconds';
+									field.numeric = true;
+									field.descending = false;
+									sort.fields = [field];
+									items.sort = sort;
+									items.refresh();
+									trace('(@@@).7 --> items(after)='+MobileDebuggerUtils.explainThis(items.source));
+									trace('(@@@).8 --> SORTED '+items.length+' items.');
+								}
+							}
+						}
+					}
+				);
+				this.__sort_timer__.start();
+			}
+			
+			public function set timer(timer:*):void {
+				var i:int = ArrayUtils.indexOf(this.__active_timers__,
+								function (item:*, i:int, source:Array, selector:String, value:*):Boolean {
+									return item[selector] == value;
+								},
+							'uuid',timer['uuid']);
+				if (i == -1) {
+					this.__active_timers__.push(timer);
+				}
+			}
+
+			private function handle_addTimer_timer_event(event:TimerEvent):void {
+				this.__timers__.addItem({'time':'00:00:00:00','parent':this.items,'target':this,'aspect':'timer','running':false,'uuid':GUID.create()});
+				this.__timer_initiation_timer__.stop();
+				this.btn_addTimer.enabled = true;
+				this.__timer_initiation_timer__.removeEventListener(TimerEvent.TIMER, handle_addTimer_timer_event);
+			}
+			
+			protected function btn_addTimer_clickHandler(event:MouseEvent):void {
+				if (!this.__timer_initiation_timer__.running) {
+					this.__timer_initiation_timer__.addEventListener(TimerEvent.TIMER, handle_addTimer_timer_event);
+					this.btn_addTimer.enabled = false;
+					this.__timer_initiation_timer__.start();
+				}
+			}
+			
+			protected function btn_startTimers_clickHandler(event:MouseEvent):void {
+				var timers:ArrayCollection = ArrayCollection(this.items.dataProvider);
+				var aWidget:TimerWidget;
+				try {
+					for (var i:int = 0; i < timers.length; i++) {
+						aWidget = timers.getItemAt(i)['widget'] as TimerWidget;
+						aWidget.start_timer();
+					}
+				} catch (err:Error) {}
+			}
+			
+			protected function btn_sortTimers_clickHandler(event:MouseEvent):void {
+			}
+			
+			protected function progress_creationCompleteHandler(event:FlexEvent):void {
+				var days:Number = this.parentApplication.num_days_trial_remaining;
+				this.progress.info = 'Premium Trial has '+((days > 0) ? days+' days to go.' : 'expired.');
+			}
+			
+			protected function ckbx_controls_changeHandler(event:Event):void {
+				var __is__:Boolean = CheckBox(event.currentTarget).selected;
+				trace('(ckbx_controls_change).1 --> __is__ --> '+__is__+'.');
+				var timers:ArrayCollection = ArrayCollection(this.items.dataProvider);
+				var aWidget:TimerWidget;
+				try {
+					for (var i:int = 0; i < timers.length; i++) {
+						aWidget = timers.getItemAt(i)['widget'] as TimerWidget;
+						trace('(ckbx_controls_change).2 --> aWidget.editable --> '+aWidget.editable+'.');
+						aWidget.editable = __is__;
+						trace('(ckbx_controls_change).3 --> aWidget.editable --> '+aWidget.editable+'.');
+					}
+				} catch (err:Error) {}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:viewMenuItems>
+		<s:ViewMenuItem id="showCredits" label="Credits..." enabled="true" click="showCredits_clickHandler(event)"/>
+		<s:ViewMenuItem id="showChanges" label="Change Log..." enabled="true" click="showChanges_clickHandler(event)"/>
+		<s:ViewMenuItem id="exitApp" label="Exit" enabled="{this.parentApplication.is_menu_enhanced}" click="exitApp_clickHandler(event)"/>
+	</s:viewMenuItems>
+	<s:VGroup width="100%" height="100%">
+		<s:HGroup width="100%">
+			<s:CheckBox id="ckbx_controls" label="Show Timer Controls" selected="true" change="ckbx_controls_changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<s:Button id="btn_addTimer" label="(+)" width="100%" click="btn_addTimer_clickHandler(event)"/>
+			<s:Button id="btn_startTimers" label="(@)" width="50" click="btn_startTimers_clickHandler(event)"/>
+			<s:Button id="btn_sortTimers" label="(=)" width="30" enabled="false" click="btn_sortTimers_clickHandler(event)" visible="false" includeInLayout="{this.btn_sortTimers.visible}"/>
+		</s:HGroup>
+		<s:HGroup width="100%">
+			<progress:MobileProgressBar id="progress" width="100%" height="25" infoStyleName="SmallBlackText" value="{this.parentApplication.num_days_trial_remaining}" max="{this.parentApplication.num_days}" creationComplete="progress_creationCompleteHandler(event)"/>
+		</s:HGroup>
+		<s:List id="items" width="100%" height="100%" labelField="value" dataProvider="{this.__timers__}">
+			<s:layout>
+				<s:VerticalLayout verticalAlign="top" horizontalAlign="center"/>
+			</s:layout>
+			<s:itemRenderer>
+				<fx:Component>
+					<s:ItemRenderer>
+						<fx:Script>
+							<![CDATA[
+								import com.ArrayCollectionUtils;
+								
+								import controls.timers.events.CancelTimerEvent;
+								import controls.timers.events.CloseEditorEvent;
+								import controls.timers.events.OpenEditorEvent;
+								import controls.timers.events.TimerCompletedEvent;
+								
+								import mx.collections.ArrayCollection;
+								import mx.events.FlexEvent;
+								
+								import utils.MediaHelper;
+								
+								protected function timeDisplay_CancelTimerEventHandler(event:CancelTimerEvent):void {
+									var parent:* = data['parent'];
+									if (parent) {
+										var i:int = ArrayCollectionUtils.findIndexOfItem(parent.dataProvider,'uuid',data['uuid']);
+										if (i > -1) {
+											var dp:ArrayCollection = parent.dataProvider;
+											dp.removeItemAt(i);
+										}
+									}
+								}
+								
+								protected function timeDisplay_creationCompleteHandler(event:FlexEvent):void {
+									this.timeDisplay.start_timer();
+								}
+								
+								protected function timeDisplay_closeEditorEventHandler(event:CloseEditorEvent):void {
+									var target:* = data['target'];
+									trace(this.className+'.timeDisplay_closeEditorEventHandler.1 !!!');
+									if (target) {
+										target['editor_closed'] = true;
+										trace(this.className+'.timeDisplay_closeEditorEventHandler.2 --> target[\'editor_is_open\']='+target['editor_is_open']);
+									}
+								}
+								
+								protected function timeDisplay_openEditorEventHandler(event:OpenEditorEvent):void {
+									var target:* = data['target'];
+									trace(this.className+'.timeDisplay_openEditorEventHandler.1 !!!');
+									if (target) {
+										target['editor_opened'] = true;
+										trace(this.className+'.timeDisplay_openEditorEventHandler.2 --> target[\'editor_is_open\']='+target['editor_is_open']);
+									}
+								}
+								
+								protected function timeDisplay_TimerCompletedEventHandler(event:TimerCompletedEvent):void {
+									trace(this.className+'.timeDisplay_TimerCompletedEventHandler.1 !!!');
+									MediaHelper.play_sound_file('app:/media/Beeps.mp3');
+								}
+								
+							]]>
+						</fx:Script>
+						<s:states>
+							<s:State name="normal" />
+							<s:State name="hovered" />
+							<s:State name="selected" />
+						</s:states>
+						<s:Rect left="0" right="0" top="0" bottom="0">
+							<s:stroke>
+								<s:SolidColorStroke color="0xCCCCCC" joints="round" weight="2"/>
+							</s:stroke>
+							<s:fill>
+								<s:SolidColor color="0x999999" alpha="0" alpha.hovered="0.2"
+											  alpha.selected="0.6" />
+							</s:fill>
+						</s:Rect>
+						<s:VGroup width="100%">
+							<timers:TimerWidget id="timeDisplay" 
+												data="{data}" 
+												TimerCompletedEvent="timeDisplay_TimerCompletedEventHandler(event)"
+												OpenEditorEvent="timeDisplay_openEditorEventHandler(event)" 
+												CancelTimerEvent="timeDisplay_CancelTimerEventHandler(event)" 
+												CloseEditorEvent="timeDisplay_closeEditorEventHandler(event)" 
+												creationComplete="timeDisplay_creationCompleteHandler(event)"/>
+						</s:VGroup>
+					</s:ItemRenderer>
+				</fx:Component>
+			</s:itemRenderer>
+		</s:List>
+	</s:VGroup>
+	<popups:PopUpWindow id="popUpWindow" 
+						width="100%" height="100%"
+						visible.normal="false" 
+						visible.information="false" 
+						visible.error="false" 
+						visible.debugger="false" 
+						visible.changes="true" 
+						visible.credits="true" 
+						visible.title="false" 
+						includeInLayout.title="false"
+						includeInLayout.normal="false" 
+						includeInLayout.information="false" 
+						includeInLayout.error="false"
+						includeInLayout.debugger="false"
+						includeInLayout.changes="true"
+						includeInLayout.credits="true"
+						creationComplete="popUpWindow_creationCompleteHandler(event)"
+						/>
+</s:View>

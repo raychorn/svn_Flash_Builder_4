@@ -1,0 +1,33 @@
+/* CSS file for WinMob */
+Button
+{
+	fontSize: 10;
+}
+
+Label
+{
+	fontSize: 12;
+}
+
+TextArea
+{
+	fontSize: 11;
+}
+
+TextInput
+{
+	fontSize: 11;
+}
+
+.lstStyle
+{
+	selectionColor: dark-gray;
+}
+
+.comments
+{
+	color: white;
+	fontSize:10;
+	fontWeight: bold;
+	fontStyle: italic;
+}

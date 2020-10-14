@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ViewNavigatorApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+							xmlns:s="library://ns.adobe.com/flex/spark" splashScreenImage="@Embed('assets/splash.png')" splashScreenScaleMode="letterbox" title="Loading..." creationComplete="viewnavigatorapplication1_creationCompleteHandler(event)" applicationDPI="160" xmlns:employeeservice="services.employeeservice.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:CallResponder id="Operation1Result"/>
+		
+		<employeeservice:EmployeeService result="employeeService_resultHandler(event)" id="employeeService"/>
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import views.sfdcempHomeView;
+			public var dispatcher:EventDispatcher;
+			
+			
+			protected function operation1():void
+			{
+				
+				Operation1Result.token = employeeService.Operation1();
+				
+				//this.parentApplication.dispatcher.addEventListener(ScrollingEvent.TAP_ACTION, onItemTap);
+			}
+			
+			protected function employeeService_resultHandler(event:ResultEvent):void
+			{
+				navigator.pushView(views.sfdcempHomeView, event.result as ArrayCollection);
+			}
+			
+			protected function viewnavigatorapplication1_creationCompleteHandler(event:FlexEvent):void
+			{
+				operation1();
+				dispatcher = new EventDispatcher;
+			}
+			
+		]]>
+	</fx:Script>
+	
+</s:ViewNavigatorApplication>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<view:CubeSide xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:view="view.cube.*"
+    title="Quick Search">
+
+    <mx:Metadata>
+		[Event("direction", type="view.cube.DirectionEvent")]
+	</mx:Metadata>
+
+    <view:sideContent>
+
+        <mx:Form>
+            <mx:FormItem label="Product">
+                <mx:Label text="Find things quick."/>
+            </mx:FormItem>
+            <mx:FormItem label="Product">
+                <mx:TextInput/>
+            </mx:FormItem>
+            <mx:FormItem label="Category">
+                <mx:TextInput/>
+            </mx:FormItem>
+            <mx:FormItem>
+                <mx:Button label="Quick Seach"/>
+            </mx:FormItem>
+        </mx:Form>
+
+    </view:sideContent>
+
+</view:CubeSide>

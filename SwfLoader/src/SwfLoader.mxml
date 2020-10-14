@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" 
+			   width="100%" height="100%"
+			   preinitialize="{initJS()}"
+			   creationComplete="application1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import Alert.AlertPopUp;
+			
+			import aw.external.JSInterface;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.utils.URLUtil;
+			
+			import utils.hex.StringUtils;
+
+			private var _url:String;
+			private var _queryString:String;
+			private var _parms:Object = {};
+			
+			private var _C:String = 'c';
+			private var _SWF:String = 'swf';
+			private var _WIDTH:String = 'width';
+			private var _HEIGHT:String = 'height';
+			private var _BGCOLOR:String = 'bgcolor';
+
+			private var flash_containerName:String = '';
+			
+			private var js:String = '';
+			
+			[Bindable]
+			private var bgColor:uint = 0xffffff;
+			
+			[Embed(source="javascript.js",mimeType="application/octet-stream")]
+			static private const J_JAVASCRIPT:Class;
+
+			protected function initJS():void{
+				var data:ByteArray = new J_JAVASCRIPT();
+				data.position = 0;
+				this.js = data.readUTFBytes(data.length);
+			}
+
+			protected function useJSInterface():void{
+				ExternalInterface.call('onSWFReady');
+			}
+
+			private function send_to_debugger(s:String):void {
+				ExternalInterface.call('debug',s);
+			}
+
+			private function handleRightClick():void {
+				var popUp:Alert = AlertPopUp.infoNoOkay('(c). Copyright 2010,\nVyper Logix Corp.,\nAll Rights Reserved.','Copyright Notice');
+				popUp.width = 200;
+			}
+
+			protected function application1_creationCompleteHandler(event:FlexEvent):void {
+				ExternalInterface.addCallback("rightClick", handleRightClick);
+				var ar:Array;
+				//this._url = 'http://127.0.0.1/flash/SwfLoader/SwfLoader.swf?swf=AFF3F4E1F4E9E3AFF3F7E6AFE7E1EDE5F3AFE6ECE1F3E8AFE1F3F4E5F2EFE9E4F3AEF3F7E6&width=120&height=120'; //FlexGlobals.topLevelApplication.url;
+				this._url = FlexGlobals.topLevelApplication.url;
+				ar = this._url.split('?');
+				this._queryString = ar[ar.length-1];
+				this._parms = URLUtil.stringToObject(this._queryString,'&');
+				if (this._parms[this._SWF]) {
+					var swfPath:String = StringUtils._decode(this._parms[this._SWF]);
+					this.loader.source = swfPath;
+				}
+				if (this._parms[this._HEIGHT]) {
+					this.loader.height = Number(this._parms[this._HEIGHT]);
+				}
+				if (this._parms[this._WIDTH]) {
+					this.loader.width = Number(this._parms[this._WIDTH]);
+				}
+				if (this._parms[this._C]) {
+					this.flash_containerName = this._parms[this._C];
+				}
+				if (this._parms[this._BGCOLOR]) {
+					this.bgColor = uint('0x'+this._parms[this._BGCOLOR]);
+				}
+				this.setStyle('backgroundColor',this.bgColor);
+				if ( (ExternalInterface.available) && (this.flash_containerName is String) && (this.flash_containerName.length > 0) ) {
+					ExternalInterface.call(this.js.replace('__flashContainer__',this.flash_containerName));
+				}
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:SWFLoader id="loader" x="0" y="0" width="100%" height="100%" scaleContent="true"/>
+</s:Application>

@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.CapabilitiesUtils;
+			import com.URLUtils;
+			
+			import controls.Alert.AlertPopUp;
+			
+			import core.SWFHelper;
+			
+			import flash.html.HTMLLoader;
+			
+			import mx.core.FlexGlobals;
+			
+			import utils.AIRHelper;
+			
+			[Bindable]
+			private var _currentLocation:String = '';
+			
+			private var _onComplete:Function;
+			
+			private var _onDOMInitialize:Function;
+			
+			private var _onLocationComplete:Function;
+			
+			private var _onLocationChange:Function;
+			
+			private var _onMissingDocument:Function;
+			
+			public function set onMissingDocument(onMissingDocument:Function):void {
+				if (this._onMissingDocument != onMissingDocument) {
+					this._onMissingDocument = onMissingDocument;
+				}
+			}
+			
+			public function get onMissingDocument():Function {
+				return this._onMissingDocument;
+			}
+			
+			public function set onComplete(onComplete:Function):void {
+				if (this._onComplete != onComplete) {
+					this._onComplete = onComplete;
+				}
+			}
+			
+			public function get onComplete():Function {
+				return this._onComplete;
+			}
+			
+			public function set onDOMInitialize(onDOMInitialize:Function):void {
+				if (this._onDOMInitialize != onDOMInitialize) {
+					this._onDOMInitialize = onDOMInitialize;
+				}
+			}
+			
+			public function get onDOMInitialize():Function {
+				return this._onDOMInitialize;
+			}
+			
+			public function set onLocationComplete(onLocationComplete:Function):void {
+				if (this._onLocationComplete != onLocationComplete) {
+					this._onLocationComplete = onLocationComplete;
+				}
+			}
+			
+			public function get onLocationComplete():Function {
+				return this._onLocationComplete;
+			}
+			
+			public function set onLocationChange(onLocationChange:Function):void {
+				if (this._onLocationChange != onLocationChange) {
+					this._onLocationChange = onLocationChange;
+				}
+			}
+			
+			public function get onLocationChange():Function {
+				return this._onLocationChange;
+			}
+			
+			/**
+			 * Sets a busy cursor when a new page is loading
+			 **/
+			public function htmlLocationChange():void {
+				if (this._onLocationChange is Function) {
+					try {
+						this._onLocationChange(this);
+					} catch (err:Error) {AlertPopUp.surpriseNoOkay('An error has been recorded by the system. Please contact Customer Support if this error persists.\n'+err.toString(),'WARNING #1')}
+				}
+			}
+			
+			/**
+			 * Removes a busy cursor when a page is done loading
+			 */
+			public function htmlLocationComplete(event:*):void {
+				if (this._onLocationComplete is Function) {
+					try {
+						this._onLocationComplete(this);
+					} catch (err:Error) {AlertPopUp.surpriseNoOkay('An error has been recorded by the system. Please contact Customer Support if this error persists.\n'+err.toString(),'WARNING #2')}
+				}
+			}
+			
+			public function onComplete_html(event:*):void {
+				if (this._onComplete is Function) {
+					try {
+						this._onComplete(this);
+					} catch (err:Error) {AlertPopUp.surpriseNoOkay('An error has been recorded by the system. Please contact Customer Support if this error persists.\n'+err.toString(),'WARNING #3')}
+				}
+			}
+			
+			public function onHtmlDOMInitialize(event:*):void {
+				if (this._onDOMInitialize is Function) {
+					try {
+						this._onDOMInitialize(this);
+					} catch (err:Error) {AlertPopUp.surpriseNoOkay('An error has been recorded by the system. Please contact Customer Support if this error persists.\n'+err.toString(),'WARNING #4')}
+				}
+			}
+			
+			public function set currentLocation(url:String):void {
+				var _this:HTMLViewer = this;
+				function show_content(url:String):void {
+					_this._currentLocation = url;
+					if ( (_this.html is HTML) && (_this._currentLocation is String) ) {
+						_this.html.location = _this._currentLocation;
+					}
+				}
+				if (this._currentLocation != url) {
+					if (url.toLowerCase().indexOf('.pdf') > -1) {
+						if (HTMLLoader.pdfCapability == HTMLPDFCapability.STATUS_OK) {
+							show_content(url);
+						} else {
+							FlexGlobals.topLevelApplication.mainCanvas.docsList.currentState = 'details';
+							//AIRHelper.navigate_to_url(AIRHelper.normalize_url(url),'_blank');
+							SWFHelper.navigate_to_url((url.indexOf('http://') > -1) ? url : SWFHelper.normalize_url(url),'_blank');
+						}
+					} else {
+						show_content(url);
+					}
+				}
+			}
+			
+			public function get currentLocation():String {
+				return this._currentLocation;
+			}
+			
+			private function onCreationComplete_html():void {
+				if ( (this.html is HTML) && (this.currentLocation is String) ) {
+					var isValid:Boolean =  URLUtils.isURLValid(this.currentLocation);
+					if (isValid) {
+						this.html.location = this.currentLocation;
+					} else {
+						this.html.location = '';
+						AlertPopUp.surpriseNoOkay('Missing Document...\nThe selected document is not present or inaccessible.','INFO');
+					}
+				}
+			}
+			
+			protected function html_uncaughtScriptExceptionHandler(event:HTMLUncaughtScriptExceptionEvent):void {
+			}
+			
+			private function get _width():Number {
+				return FlexGlobals.topLevelApplication.width;
+			}
+
+			private function get _height():Number {
+				return FlexGlobals.topLevelApplication.height;
+			}
+		]]>
+	</fx:Script>
+	<mx:HTML id="html" x="0" y="0" styleName="main_html" 
+			 locationChange="htmlLocationChange()" htmlRender="htmlLocationComplete(event)" complete="onComplete_html(event)" htmlDOMInitialize="onHtmlDOMInitialize(event)" uncaughtScriptException="html_uncaughtScriptExceptionHandler(event)"
+			 width="{this._width-325}" height="{this._height-185}" creationComplete="onCreationComplete_html()" />
+</s:Group>

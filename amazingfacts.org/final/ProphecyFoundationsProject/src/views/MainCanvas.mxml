@@ -1,0 +1,670 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" 
+		   width="100%" height="100%" styleName="MainCanvas" minWidth="1024" minHeight="768" 
+		   xmlns:controls="controls.*" currentState="html"
+		   xmlns:views="views.*" 
+		   horizontalScrollPolicy="off" verticalScrollPolicy="off"
+		   creationComplete="canvas1_creationCompleteHandler(event)" 
+		   resize="canvas1_resizeHandler(event)">
+	<mx:states>
+		<s:State name="State1"/>
+		<s:State name="bible"/>
+		<s:State name="help"/>
+		<s:State name="html"/>
+	</mx:states>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace controls "controls.*";
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel.ttf");
+			fontFamily: NeoSansIntel;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Light.ttf");
+			fontFamily: NeoSansIntelLight;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium;
+			embedAsCFF: true;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/NeoSansIntel-Medium.ttf");
+			fontFamily: NeoSansIntelMedium2;
+			embedAsCFF: false;
+		}
+		
+		@font-face {
+			src: url("assets/fonts/CALIBRI.TTF");
+			fontFamily: Calibri;
+			embedAsCFF: false;
+		}
+		
+		.build_number {
+			color: #ff0000;
+			fontFamily: NeoSansIntelMedium;
+			fontSize: 16;
+			backgroundColor: #474747;
+		}
+		
+		.video_player_ControlBar {
+			borderStyle: none;
+			borderThickness: 0;
+			borderColor: #474747;
+			backgroundColor: #474747;
+			cornerRadius: 0;
+			dropShadowEnabled: false;
+			shadowDistance: 0;
+			shadowDirection: right;
+		}
+		
+		.video_player_ProgressBar {
+			borderColor: #ffffff;
+			barColor: #ff0000;
+			trackColors: #ff9966, #ff9999;
+			color: #000000;
+			fontFamily: NeoSansIntelLight;
+			fontSize: 13;
+		}
+		
+		.volume_Slider {
+			thumbOffset: 2;
+			dataTipOffset: 12;
+			tickOffset: 0;
+			showTrackHighlight: true;
+			invertThumbDirection: false;
+			trackColors: #ffffff, #ffffff;
+			fillAlphas: 0.6, 0.61, 0.75, 0.65;
+			fillColors: #00ffff, #00ffff, #00ff00, #00ff00;
+			labelStyleName: "volume_SliderLabelStyle";
+		}
+		
+		.volume_SliderLabelStyle {
+			color: #ffffff;
+			fontFamily: NeoSansIntelLight;
+			fontSize: 12;
+		}
+		
+		.docs_accordion {
+			fontFamily: Calibri;
+			fontSize: 16pt;
+		}
+		
+		.docs_listbox {
+			fontFamily: NeoSansIntel;
+			fontSize: 12pt;
+		}
+		
+		.docs_search_options {
+			fontFamily: NeoSansIntel;
+			fontSize: 12pt;
+		}
+		
+		.docs_listItem {
+			fontFamily: NeoSansIntel;
+			fontSize: 11pt;
+			backgroundColor: #7c7c7c;
+			color: #ffffff;
+		}
+		
+		.docs_listItemTitle {
+			fontFamily: NeoSansIntel;
+			fontSize: 16pt;
+			fontWeight: bold;
+			color: #ffffff;
+		}
+		
+		.docs_listItemTitleText {
+			fontFamily: NeoSansIntel;
+			fontSize: 12pt;
+			color: #ffffff;
+			borderStyle: none;
+			backgroundColor: #2a2d2b;
+			backgroundAlpha: 0.25;
+			borderColor: #2a2d2b;
+		}
+		
+		.docs_listItemMissingText {
+			fontFamily: NeoSansIntel;
+			fontSize: 13pt;
+			color: yellow;
+		}
+		
+		.docs_listItemReasonsText {
+			fontFamily: NeoSansIntel;
+			fontSize: 13pt;
+			color: yellow;
+		}
+		
+		.document_viewer {
+			fontFamily: NeoSansIntel;
+			fontSize: 12pt;
+			backgroundColor: #7c7c7c;
+			color: #ffffff;
+		}
+		
+		.rootFolderChooserText {
+			fontFamily: NeoSansIntel;
+			fontSize: 13pt;
+			color: yellow;
+		}
+		
+		.hbox_lower {
+		}
+		
+		.main_html {
+		}
+		
+		.MainCanvas {
+			backgroundColor: #474747;
+		}
+		
+		.docs_list {
+			backgroundColor: #474747;
+		}
+		
+		.bible_button_bar {
+			backgroundColor: #474747;
+		}
+		
+		.help_button_bar {
+			backgroundColor: #474747;
+		}
+		
+		.hbox_lower_top {
+			backgroundColor: #474747;
+		}
+		
+		.main_vbox {
+		}
+		
+		.button_bar {
+		}
+		
+		.links_button { font-variant: small-caps; }
+		
+		.hbox_links_button {
+			color: #ffffff;
+			backgroundColor: #474747;
+		}
+		
+		.document_viewer_panel {
+			borderColor: #0099ff;
+			borderAlpha: 0.55;
+			roundedBottomCorners: true;
+			cornerRadius: 10;
+			headerHeight: 30;
+			highlightAlphas: 1, 0;
+			headerColors: #0099ff, #00ccff;
+			backgroundColor: #ffffff;
+			dropShadowEnabled: true;
+			shadowDistance: 1;
+			shadowDirection: right;
+			titleStyleName: "document_viewer_panel_title";
+		}
+		
+		.document_viewer_panel_title {
+			fontFamily: NeoSansIntel;
+			fontSize: 18pt;
+			fontWeight: bold;
+		}
+		
+		.document_list_detail {
+			horizontalGap: 2;
+			cornerRadius: 2;
+			backgroundColor: #cccccc;
+		}
+		
+		.DocsListDetails {
+			/*skinClass: ClassReference("com.dgrigg.skins.ListSkin"); */
+			contentBackgroundAlpha: 1.0; 
+			contentBackgroundColor: #2A2D2B;
+			borderColor: #000000;
+		}
+
+		.warning_text {
+			font-family: NeoSansIntelMedium2;
+			fontSize: 12pt;
+			fontWeight: bold;
+			color: #ff0000;
+		}
+		
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import com.CapabilitiesUtils;
+			import com.StringUtils;
+			
+			import controls.Alert.AlertPopUp;
+			import controls.events.ClickedDocsListMediaCardEvent;
+			import controls.events.ShowDocsListDetailsEvent;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.effects.Move;
+			import mx.effects.Resize;
+			import mx.events.CloseEvent;
+			import mx.events.EffectEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
+			import mx.managers.CursorManager;
+			
+			import spark.components.TextInput;
+			
+			import utils.AIRHelper;
+			import utils.FileHelper;
+			import utils.NativeProcessHelper;
+			import utils.SanityChecks;
+
+			[Bindable]
+			public static var headerCls:Class;
+			
+			[Embed(source="assets/images/header.png")]
+			[Bindable]
+			public static var headerEnglishCls:Class;
+			
+			[Embed(source="assets/images/header-spanish.png")]
+			[Bindable]
+			public static var headerSpanishCls:Class;
+			
+			[Embed(source="assets/headers/amazing-facts-header.png")]
+			[Bindable]
+			public var amazingFactsHeaderCls:Class;
+			
+			[Embed(source="assets/headers/amazing-facts-header_300x149.png")]
+			[Bindable]
+			public var amazingFactsHeader300x149Cls:Class;
+				
+			[Embed(source="assets/headers/amazing-facts-header_200x99.png")]
+			[Bindable]
+			public var amazingFactsHeader200x99Cls:Class;
+				
+			[Embed(source="assets/headers/amazing-facts-header_150x75.png")]
+			[Bindable]
+			public var amazingFactsHeader150x75Cls:Class;
+			
+			[Embed(source="assets/logos/cLogo.swf")]
+			[Bindable]
+			public var amazingFactsCLogoCls:Class;
+			
+			private var isDocsListDetailsShowing:Boolean = false;
+			
+			private var __resize_effect:Resize;
+
+			private var __move_effect:Move;
+ 			
+			public static var urls:Object = {};
+			
+			[Bindable]
+			public var currentLocation:String = '';
+
+			private function getURL(name:String):String {
+				var aUrl:String = MainCanvas.urls[name];
+				if (aUrl is String) {
+					return aUrl;
+				}
+				AlertPopUp.surpriseNoOkay('Warning 101 :: Cannot locate the document "'+aUrl+'".','WARNING')
+				return '';
+			}
+			
+			public function getHomePage():String {
+				return this.getURL('home');
+			}
+			
+			public function getAboutPage():String {
+				return this.getURL('about');
+			}
+
+			public function getBiblePage():String {
+				return this.getURL('bible');
+			}
+
+			public function getHelpPage():String {
+				return this.getURL('help');
+			}
+			
+			/**
+			 * Sets a busy cursor when a new page is loading
+			 **/
+			public function htmlLocationChange(event:*):void {
+			}
+			
+			/**
+			 * Removes a busy cursor when a page is done loading
+			 */
+			public function htmlLocationComplete(event:*):void {
+			}
+			
+			private function get screen_dimensions_label_text():String {
+				return (Screen.mainScreen.bounds.width-50)+'x'+(Screen.mainScreen.bounds.height-5);
+			}
+
+			private function doDetailsSearch(term:String=null):void {
+				if (this.isDocsListDetailsShowing) {
+					var search_term:String = (term is String) ? term : this.docsList.btnBar.txt_search.text;
+					try {
+						this.docsList.docsListDetails.do_search(search_term);
+					} catch (err:Error) {
+					}
+				}
+			}
+			
+			private function doSearch():void {
+				var search_term:String = this.docsList.btnBar.txt_search.text;
+				if (search_term is String) {
+					this.docsList.search(search_term);
+					this.doDetailsSearch(search_term);
+				}
+			}
+			
+			private function onCreationComplete_button_bar():void {
+				var _this:* = this;
+				this.init_urls();
+				this.button_bar.btn_home.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+					_this.show_canvas_html0();
+					_this.currentLocation = _this.getHomePage();
+					_this.currentState = 'html';
+					_this.docsList.currentState = '';
+				});
+				this.button_bar.btn_aboutUs.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+					_this.show_canvas_html0();
+					_this.currentLocation = _this.getAboutPage();
+					_this.currentState = 'html';
+					_this.docsList.currentState = '';
+				});
+				this.button_bar.btn_bibleSoftware.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+					_this.show_canvas_html0();
+					_this.currentLocation = _this.getBiblePage();
+					_this.currentState = 'bible';
+					_this.docsList.currentState = '';
+				});
+				this.button_bar.btn_help.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+					_this.show_canvas_html0();
+					_this.currentState = 'help';
+					_this.currentLocation = _this.getHelpPage();
+					_this.docsList.currentState = '';
+				});
+				this.button_bar.btn_quit.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+					FlexGlobals.topLevelApplication.view.applicationExit();
+				});
+				this.button_bar.addEventListener(ResizeEvent.RESIZE, function (event:ResizeEvent):void {
+				});
+				this.button_bar.btn_home.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+			}
+
+			private function onClick_btn_link(event:MouseEvent):void {
+				var btn:LinkButton = event.currentTarget as LinkButton;
+				AIRHelper.navigate_to_url("http://"+btn.label,"_blank");
+			}
+			
+			private function onCreationComplete_html():void {
+				this.currentState = '';
+			}
+
+			protected function bible_button_bar_creationCompleteHandler(event:FlexEvent):void {
+				var _this:MainCanvas = this;
+				var btn:BibleButtonBar = event.currentTarget as BibleButtonBar;
+				btn.refresh_buttons();
+				if (this.bible_button_bar.btn_addDatabase is Button) {
+					this.bible_button_bar.btn_addDatabase.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+						AIRHelper.navigate_to_url("http://www.crosswire.org/bibledesktop/howto.html#addbook","_blank");
+					});
+				}
+				if (this.bible_button_bar.btn_download is Button) {
+					this.bible_button_bar.btn_download.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+						AIRHelper.navigate_to_url("http://www.crosswire.org/bibledesktop/download.html","_blank");
+					});
+				}
+				if (this.bible_button_bar.btn_getSupport is Button) {
+					this.bible_button_bar.btn_getSupport.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+						AIRHelper.navigate_to_url("http://www.crosswire.org/bibledesktop","_blank");
+					});
+				}
+				if (this.bible_button_bar.btn_install is Button) {
+					this.bible_button_bar.btn_install.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+						AlertPopUp.confirm('Are you sure you want to Launch this software installation ?', 'Confirmation', function (event:CloseEvent):void {
+							if (event.detail == Alert.YES) {
+								NativeProcessHelper.launchProcess(BibleButtonBar.executable_file);
+							}
+						});
+					});
+				}
+				if (this.bible_button_bar.btn_saveAs is Button) {
+					this.bible_button_bar.btn_saveAs.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+						AlertPopUp.confirm('Are you sure you want to save this software to your desktop ?', 'Confirmation', function (event:CloseEvent):void {
+							if (event.detail == Alert.YES) {
+								FileHelper.selectSaveAsDestination(function (event:Event):void {
+									var srcFile:File = new File(BibleButtonBar.executable_file);
+									var destFile:File = event.target as File;
+									
+									if ( (srcFile.exists) && (!srcFile.isDirectory) && (destFile.exists) && (destFile.isDirectory) ) {
+										destFile = destFile.resolvePath(srcFile.name);
+										FileHelper.copyFile(srcFile,destFile, function (event:Event):void {
+											AlertPopUp.infoNoOkay('The file has been copied to your local computer.  You may use it at your liesure.','INFO');
+										});
+									} else {
+										AlertPopUp.surpriseNoOkay('Cannot place the chosen file on your computer. Please try again.','WARNING');
+									}
+								});
+							}
+						});
+					});
+				}
+			}
+			
+			protected function help_button_bar_creationCompleteHandler(event:FlexEvent):void {
+				var _this:* = this;
+				this.help_button_bar.btn_Help.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+					_this.navigateToUrl("http://pf.amazingfacts.org","_blank");
+				});
+			}
+			
+			protected function onCreationComplete_docsList(event:FlexEvent):void {
+				var _this:MainCanvas = this;
+				
+				this.docsList.currentState = '';
+				
+				function attach_remove_filter_listener(event:MouseEvent):void {
+					_this.docsList.btnBar.currentState = 'search';
+					_this.docsList.btnBar.txt_search.text = '';
+					_this.doSearch();
+					_this.docsList.currentState = '';
+				}
+				
+				function handle_search():void {
+					var term:String = StringUtils.trim(_this.docsList.btnBar.txt_search.text);
+					if ( (term is String) && (term.length > 0) ) {
+						_this.docsList.btnBar.currentState = 'filter';
+						_this.docsList.btnBar.btn_removeFilter_onClick_handler = attach_remove_filter_listener;
+						_this.doSearch();
+						_this.docsList.currentState = '';
+					}
+				}
+				
+				this.docsList.addEventListener(ShowDocsListDetailsEvent.TYPE_SHOW_DOCSLIST_DETAILS_COMPLETED, function (event:ShowDocsListDetailsEvent):void {
+					_this.currentState = '';
+					_this.docsList.currentState = 'details';
+					_this.docsList.width = _this.width - 20;
+					_this.isDocsListDetailsShowing = true;
+					_this.doDetailsSearch();
+					_this.hide_canvas_html0();
+				});
+				this.docsList.btnBar.btn_search.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+					handle_search();
+				});
+				this.docsList.btnBar.txt_search.addEventListener(KeyboardEvent.KEY_UP, function (event:KeyboardEvent):void {
+					if (event.keyCode == 13) {
+						handle_search();
+					} else {
+						handle_search();
+					}
+				});
+				this.docsList.btnBar.txt_search.addEventListener(FocusEvent.FOCUS_IN, function (event:FocusEvent):void {
+					_this.clear_search_text(event);
+					_this.doSearch();
+				});
+				this.docsList.btnBar.txt_search.addEventListener(MouseEvent.CLICK, function (event:MouseEvent):void {
+					_this.clear_search_text(event);
+					_this.doSearch();
+				});
+				this.docsList.btnBar.addEventListener(FlexEvent.DATA_CHANGE, function (event:FlexEvent):void {
+					_this.doSearch();
+				});
+			}
+
+			private function clear_search_text(event:*):void {
+				var txt:TextInput = event.currentTarget as TextInput;
+				txt.text = '';
+			}
+			
+			protected function btn_resize_clickHandler(event:MouseEvent):void {
+				var _this:* = this;
+				var w:Number;
+				var h:Number;
+				var btn:Button = event.currentTarget as Button;
+				var toks:Array = btn.id.split('_');
+				if (toks[toks.length-1] == '0000') {
+					w = Screen.mainScreen.bounds.width;
+					h = Screen.mainScreen.bounds.height;
+				} else {
+					toks = toks[toks.length-1].split('x');
+					w = Number(toks[0]);
+					h = Number(toks[toks.length-1]);
+				}
+				
+				var resize:Resize = new Resize(this.parentApplication);
+				resize.duration = 1000;
+				resize.widthFrom = this.parentApplication.width;
+				resize.widthTo = w;
+				resize.heightFrom = this.parentApplication.height;
+				resize.heightTo = h;
+				resize.addEventListener(EffectEvent.EFFECT_END, function (event:*):void {
+					_this.parentApplication.nativeWindow.x = 0;
+					_this.parentApplication.nativeWindow.y = 0;
+				});
+				resize.play();
+			}
+
+
+			private function show_canvas_html0():void {
+				this.canvas_html0.visible = this.canvas_html0.includeInLayout = true;
+			}
+			
+			private function hide_canvas_html0():void {
+				this.canvas_html0.visible = this.canvas_html0.includeInLayout = false;
+			}
+
+			private function init_urls():void {
+				MainCanvas.urls['home'] = AIRHelper.default_prefix+'assets/content'+((FlexGlobals.topLevelApplication.view.isLanguageEnglish) ? '' : '-spanish')+'/home/Welcome_to_Prophecy_Foundations.htm';
+				MainCanvas.urls['about'] = AIRHelper.default_prefix+'assets/content'+((FlexGlobals.topLevelApplication.view.isLanguageEnglish) ? '' : '-spanish')+'/about/about_us.html';
+				MainCanvas.urls['bible'] = AIRHelper.default_prefix+'assets/content'+((FlexGlobals.topLevelApplication.view.isLanguageEnglish) ? '' : '-spanish')+'/bible/bible_software.html';
+				MainCanvas.urls['help'] = AIRHelper.default_prefix+'assets/content'+((FlexGlobals.topLevelApplication.view.isLanguageEnglish) ? '' : '-spanish')+'/help/help.html';
+				this.currentLocation = (MainCanvas.urls['home'] is String) ? MainCanvas.urls['home'] : '';
+			}
+			
+			protected function canvas1_creationCompleteHandler(event:FlexEvent):void {
+				MainCanvas.headerCls = (FlexGlobals.topLevelApplication.view.isLanguageEnglish) ? MainCanvas.headerEnglishCls : MainCanvas.headerSpanishCls;
+			}
+
+			protected function hbox_html_creationCompleteHandler(event:FlexEvent):void {
+				var _this:MainCanvas = this;
+				this.addEventListener(ClickedDocsListMediaCardEvent.TYPE_CLICKED_DOCSLIST_MEDIA_CARD, function (event:ClickedDocsListMediaCardEvent):void {
+					_this.docsList.currentState = 'document';
+					_this.docsList.document_slider.dataProvider = event.mediaCard;
+				});
+			}
+
+
+			protected function canvas1_resizeHandler(event:ResizeEvent):void {
+				if (this.docsList.currentState == 'details') {
+					this.docsList.width = this.width - 20;
+				}
+			}
+
+
+			protected function html_htmlDOMInitializeHandler(event:Event):void {
+			}
+
+
+			protected function html_completeHandler(event:Event):void {
+			}
+			
+			private function onCreationComplete_html0(event:FlexEvent):void {
+				var html:HTML = HTML(event.currentTarget);
+				html.htmlLoader.navigateInSystemBrowser = true;
+			}
+
+		]]>
+	</fx:Script>
+	<mx:VBox styleName="main_vbox" width="100%" height="100%">
+		<mx:HBox id="hbox_title" width="100%">
+			<mx:Image id="titleImage" source="{MainCanvas.headerCls}" width="{this.width}" minHeight="104" scaleContent="false"/>
+		</mx:HBox>
+		<mx:HBox id="hbox_lower" styleName="hbox_lower" width="100%" height="100%" horizontalAlign="left">
+			<mx:VBox id="vbox_lower_left" width="100%" height="100%">
+				<mx:HBox id="hbox_html" width="100%" height="100%" creationComplete="hbox_html_creationCompleteHandler(event)">
+					<mx:Spacer width="5"/>
+					<views:DocsList id="docsList" styleName="docs_list" width="300" height="100%" sanity_checks_has_data_folder_callback="{SanityChecks.has_data_folder}" creationComplete="onCreationComplete_docsList(event)"/>
+					<mx:Spacer width="5"/>
+				</mx:HBox>
+			</mx:VBox>
+			<mx:Spacer width="5"/>
+		</mx:HBox>
+		<mx:HBox id="hbox_bottom" styleName="hbox_links_button" width="{this.parentApplication.width}" horizontalAlign="left">
+			<mx:HBox width="50%" horizontalAlign="left">
+				<mx:Spacer width="10"/>
+				<mx:LinkButton id="btn_link" styleName="links_button" label="www.AmazingFacts.org" click="onClick_btn_link(event)"/>
+			</mx:HBox>
+			<mx:HBox width="50%" horizontalAlign="right">
+				<mx:SWFLoader id="image_amazingFactsHeader" source="{this.amazingFactsCLogoCls}"/>
+				<mx:Label text="Build: {this.parentApplication.build_number}" color="#ffffff" fontFamily="NeoSansIntelMedium" fontSize="12" fontWeight="bold"/>
+				<mx:Spacer width="10"/>
+			</mx:HBox>
+		</mx:HBox>
+	</mx:VBox>
+	<mx:Canvas id="debugger" x="{this.parentApplication.width - this.debugger.width-5}" y="0" width="650" borderStyle="solid" borderColor="#000000" backgroundColor="#00ffff" backgroundAlpha="0.5" toolTip="This panel will be removed before going to final Production." visible="{FlexGlobals.topLevelApplication.view.is_debugging}" includeInLayout="{FlexGlobals.topLevelApplication.view.is_debugging}">
+		<mx:HBox width="100%" horizontalAlign="left">
+			<mx:HBox backgroundColor="silver">
+				<mx:Label text="Build: {this.parentApplication.build_number}" color="#ff0000" fontFamily="NeoSansIntelMedium" fontSize="16" fontWeight="bold"/>
+			</mx:HBox>
+			<mx:Spacer width="5"/>
+			<mx:Label text="{this.parentApplication.width},{this.parentApplication.height}"/>
+			<mx:HBox>
+				<mx:Spacer width="5"/>
+				<mx:Button id="btn_800x600" label="800x600" click="btn_resize_clickHandler(event)" visible="false" includeInLayout="false"/>
+				<mx:Button id="btn_1024x768" label="1024x768" click="btn_resize_clickHandler(event)"/>
+				<mx:Button id="btn_1280x1024" label="1280x1024" click="btn_resize_clickHandler(event)"/>
+				<mx:Button id="btn_0000" label="Full {this.screen_dimensions_label_text}" click="btn_resize_clickHandler(event)"/>
+			</mx:HBox>
+		</mx:HBox>
+	</mx:Canvas>
+	<controls:ButtonBar id="button_bar" styleName="button_bar" x="0" y="{this.titleImage.height-32}" width="{this.parentApplication.width}" height="100%" creationComplete="onCreationComplete_button_bar()"/>
+	<mx:Canvas id="canvas_html0" x="{this.docsList.docsList.width+20}" y="{this.titleImage.height+10}" width="{this.width-this.docsList.docsList.width-32}" height="{this.height-this.titleImage.height-50}" visible="false" includeInLayout="false" backgroundColor="#ffffff" backgroundAlpha="0.25">
+		<mx:VBox width="100%" height="100%" includeIn="html,bible,help">
+			<mx:HBox id="hbox_lower_top" styleName="hbox_lower_top" width="100%" verticalAlign="top">
+				<controls:BibleButtonBar id="bible_button_bar" styleName="bible_button_bar" includeIn="bible" width="100%" height="30" creationComplete="bible_button_bar_creationCompleteHandler(event)"/>
+				<controls:HelpButtonBar id="help_button_bar" styleName="help_button_bar" includeIn="help" width="100%" height="30" creationComplete="help_button_bar_creationCompleteHandler(event)"/>
+			</mx:HBox>
+			<mx:HTML id="html0" styleName="main_html" location="{this.currentLocation}" 
+					 locationChange="htmlLocationChange(event)" htmlRender="htmlLocationComplete(event)" 
+					 htmlDOMInitialize="html_htmlDOMInitializeHandler(event)" 
+					 complete="html_completeHandler(event)" creationComplete="onCreationComplete_html0(event)"
+					 width="100%" height="100%"/>
+		</mx:VBox>
+	</mx:Canvas>
+	<!--
+	<controls:MiniAIRWebServer id="webserver"/>
+	-->
+</mx:Canvas>

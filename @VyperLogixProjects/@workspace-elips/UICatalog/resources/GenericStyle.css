@@ -1,0 +1,91 @@
+/* CSS file */
+.styleBlack
+{
+	color-scheme: blackStyle;
+	title-style-name: titleText;
+}
+
+.styleBlue
+{
+	color-scheme: blueStyle;
+	title-style-name: titleText;
+}
+
+.titleText
+{
+	font-size: 20;
+	color: white;
+}
+
+.btnStyle
+{
+	color: red;
+	upSkin: Embed("button_up.png", scaleGridTop="15", scaleGridBottom="29", scaleGridLeft="15", scaleGridRight="164");
+}
+
+.messageStyle
+{
+	color: white;
+}
+
+.titleStyle
+{
+	color: white;
+	fontWeight: bold;
+}
+
+Alert
+{
+	buttonStyleName: "btnStyle";
+	messageStyleName: "messageStyle";
+	titleStyleName: "titleStyle";
+	backgroundImage: Embed("button_up.png", scaleGridTop="15", scaleGridBottom="29", scaleGridLeft="15", scaleGridRight="164");
+}
+
+
+.txtStyle
+{
+	color: red;
+	backgroundColor: yellow;
+	borderStyle: RoundRect;
+}
+
+GroupList
+{
+}
+
+.grpStyle
+{
+	backgroundColor:RGB(100, 255, 100);
+	sectionBackgroundColor:yellow;
+	sectionTextColor: red;
+}
+
+ButtonBarButton
+{
+	paddingLeft: 0;
+	paddingRight: 0;
+	fillColors: black, grey;
+	color: white;
+	cornerRadius: 0;
+	borderColor: black;
+	themeColor: black;
+}
+
+.htmlButton
+{
+	paddingLeft: 0;
+	paddingRight: 0;
+}
+
+.inBox 
+{
+	fontStyle: italic;
+}
+
+.abc 
+{
+	fontStyle: italic;
+	color: white;
+	textDecoration: underline;
+}

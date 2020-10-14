@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark">
+
+	<fx:Metadata>
+		[Style(name="cornerRadius", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="paddingTop", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="paddingBottom", type="Number", format="Length", inherit="no",  minValue="0.0")]
+		[Style(name="paddingLeft", type="Number", format="Length", inherit="no", minValue="0.0")]
+		[Style(name="paddingRight", type="Number", format="Length", inherit="no", minValue="0.0")]
+	</fx:Metadata>
+
+	<fx:Script>
+		<![CDATA[
+			import org.osmf.events.TimeEvent;
+			public var section1Percent:Number=NaN; // default to NaN for later comparison
+
+			public var section2Percent:Number=NaN; // default to NaN for later comparison
+
+			public var section3Percent:Number=NaN; // default to NaN for later comparison
+
+
+			[Bindable]
+			public var section1Label:String;
+
+			[Bindable]
+			public var section2Label:String;
+
+			[Bindable]
+			public var section3Label:String;
+
+			[Bindable]
+			public var footnoteLabel:String;
+
+			public var section1ColorList:Array=[0, 0xCCCCCC, 0xFFFFFF];
+
+			public var section2ColorList:Array=[0, 0xCCCCCC, 0xFFFFFF];
+
+			public var section3ColorList:Array=[0, 0xCCCCCC, 0xFFFFFF];
+
+			protected var timerList:Array=[];
+
+
+			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number):void
+			{
+				// Clear all graphics before drawing 
+				graphics.clear();
+
+				// Stop any animation timers
+				for each (var t:Timer in timerList)
+				{
+					t.stop();
+					t=null; // Since the anonymous function was added with a weak ref it will be garbage collected when the timer is nulled out
+				}
+
+				super.updateDisplayList(unscaledWidth, unscaledHeight);
+				layoutContents(unscaledWidth, unscaledHeight);
+
+			}
+
+			override public function styleChanged(styleProp:String):void
+			{
+				switch (styleProp)
+				{
+					case "cornerRadius":
+					case "paddingLeft":
+					case "paddingRight":
+					case "paddingTop":
+					case "paddingBottom":
+					{
+						// If one of these styles is changed redraw the component
+						invalidateDisplayList();
+						break;
+					}
+					default:
+					{
+						// do nothing
+						break;
+					}
+				}
+			}
+
+
+
+			/**
+			 * Layout the items
+			 */
+			protected function layoutContents(unscaledWidth:Number, unscaledHeight:Number):void
+			{
+				if (!section1LabelDisplay || !section2LabelDisplay || !section3LabelDisplay)
+				{
+					return;
+				}
+
+				var paddingLeft:Number=getStyle("paddingLeft");
+				var paddingRight:Number=getStyle("paddingRight");
+				var paddingTop:Number=getStyle("paddingTop");
+				var paddingBottom:Number=getStyle("paddingBottom");
+
+				var w:int=unscaledWidth - (paddingLeft + paddingRight);
+				var h:int=unscaledHeight - (paddingTop + paddingBottom);
+				var barHeight:int=30;
+
+				var barXPosition:Number=0;
+				var barYPosition:Number=0;
+				var labelStartX:Number=paddingLeft + 5;
+				var labelY:Number=barYPosition + barHeight + 10;
+
+				//Draw bar background
+				animateBar(paddingLeft, barYPosition, width, barHeight, [0x595959, 0x595959, 0x595959], [1, 1, 1], [1, 128, 255]);
+
+				// Draw bar 1
+				if (!isNaN(section1Percent))
+				{
+					animateBar(paddingLeft, barYPosition, Math.min((w * section1Percent), w), barHeight, [section1ColorList[0], section1ColorList[1], section1ColorList[2]], [1, 1, 1], [1, 128, 255]);
+					drawDecender(paddingLeft, barYPosition + barHeight - 1, 1, barHeight, section1ColorList[2]);
+
+					// Align the label
+					if (section1LabelDisplay)
+					{
+						//section1LabelDisplay.setLayoutBoundsPosition(paddingLeft + 7, unscaledHeight - paddingBottom - section1LabelDisplay.measuredHeight);
+						section1LabelDisplay.setLayoutBoundsPosition(labelStartX, labelY);
+
+						if (!isNaN(section2Percent))
+						{
+							// if there is a value for the section 2 then clip the section 1 label
+							section1LabelDisplay.setActualSize(Math.min((w * section1Percent), w) - 10, section1LabelDisplay.height);
+						}
+					}
+
+					// update the bar x position
+					barXPosition+=Math.min((w * section1Percent), w);
+				}
+
+				// Draw bar 2
+				if (!isNaN(section2Percent))
+				{
+					animateBar(paddingLeft + barXPosition, barYPosition, Math.min((w * section2Percent), w), barHeight, [section2ColorList[0], section2ColorList[1], section2ColorList[2]], [1, 1, 1], [1, 128, 255]);
+					drawDecender(paddingLeft + barXPosition, barYPosition + barHeight - 1, 1, barHeight, section2ColorList[2]);
+
+					// Align the label
+					if (section2LabelDisplay)
+					{
+						//section2LabelDisplay.setLayoutBoundsPosition(paddingLeft + barXPosition + 7, unscaledHeight - paddingBottom - section2LabelDisplay.measuredHeight);
+						section2LabelDisplay.setLayoutBoundsPosition(labelStartX + barXPosition, labelY);
+						if (!isNaN(section3Percent))
+						{
+							// if there is a value for the section 3 then clip the section 2 label
+							section2LabelDisplay.setActualSize(Math.min((w * section2Percent), w) - 10, section2LabelDisplay.height);
+						}
+					}
+
+					// update the bar x position
+					barXPosition+=Math.min((w * section2Percent), w);
+				}
+
+				// Draw bar 3
+				if (!isNaN(section3Percent))
+				{
+					animateBar(paddingLeft + barXPosition, barYPosition, Math.min((w * section3Percent), w), barHeight, [section3ColorList[0], section3ColorList[1], section3ColorList[2]], [1, 1, 1], [1, 128, 255]);
+					drawDecender(paddingLeft + barXPosition, barYPosition + barHeight - 1, 1, barHeight, section3ColorList[2]);
+
+					// Align the label
+					if (section3LabelDisplay)
+					{
+						//section3LabelDisplay.setLayoutBoundsPosition(paddingLeft + barXPosition + 7, unscaledHeight - paddingBottom - section3LabelDisplay.measuredHeight);
+						section3LabelDisplay.setLayoutBoundsPosition(labelStartX + barXPosition, labelY);
+						section3LabelDisplay.setActualSize(Math.min((w * section3Percent), w) - 10, section3LabelDisplay.height);
+					}
+				}
+
+
+
+				// Draw a footnote if required
+				if (footnoteLabel)
+				{
+					footnoteLabelDisplay.visible=true;
+					//footnoteLabelDisplay.setLayoutBoundsPosition(unscaledWidth - paddingRight - footnoteLabelDisplay.width, unscaledHeight - paddingBottom - footnoteLabelDisplay.height);
+					footnoteLabelDisplay.setLayoutBoundsPosition(labelStartX, labelY);
+				}
+				else
+				{
+					footnoteLabelDisplay.visible=false;
+				}
+
+			}
+
+			private var _skipAnimation:Boolean=false;
+
+			[Bindable]
+			public function get skipAnimation():Boolean
+			{
+				return _skipAnimation;
+			}
+
+			public function set skipAnimation(value:Boolean):void
+			{
+				_skipAnimation=value;
+				if (!_skipAnimation)
+				{
+					layoutContents(this.unscaledWidth, this.unscaledHeight);
+				}
+			}
+
+
+			protected function animateBar(x:int, y:int, width:Number, height:Number, gradientEntries:Array, gradientAlphas:Array, gradientRatios:Array):void
+			{
+				var newWidth:Number=0;
+				var segment:Number=width / 33;
+
+				if (!skipAnimation)
+				{
+					var timer:Timer=new Timer(15, 33);
+					timer.addEventListener(TimerEvent.TIMER, function(event:TimerEvent):void
+					{
+						newWidth+=segment; // TODO: add easing to this value
+						drawBar(x, y, newWidth, height, gradientEntries, gradientAlphas, gradientRatios);
+					}, false, 0, true); // Note the weak reference to ensure this event listener is garbage collected
+					timer.addEventListener(TimerEvent.TIMER_COMPLETE, function(event:TimerEvent):void
+					{
+						skipAnimation=true;
+					}, false, 0, true);
+
+					timer.start();
+
+					// Hold on to the timer so we can clear it if needed later
+					timerList.push(timer);
+				}
+				else
+				{
+					drawBar(x, y, width, height, gradientEntries, gradientAlphas, gradientRatios);
+				}
+			}
+
+			protected function drawBar(x:int, y:int, width:Number, height:Number, gradientEntries:Array, gradientAlphas:Array, gradientRatios:Array):void
+			{
+				var matrix:Matrix=new Matrix();
+				matrix.createGradientBox(width, height + 30, Math.PI / 2, 0, 0);
+				graphics.beginGradientFill(GradientType.LINEAR, gradientEntries, gradientAlphas, gradientRatios, matrix);
+				graphics.drawRect(x, y, width, height);
+				graphics.endFill();
+			}
+
+			protected function drawDecender(x:int, y:int, width:Number, height:Number, color:uint):void
+			{
+				graphics.beginFill(color, 1);
+				graphics.drawRect(x, y, width, height);
+				graphics.endFill();
+			}
+		]]>
+	</fx:Script>
+
+
+	<!-- labels -->
+	<s:Label id="section1LabelDisplay"
+			 styleName="labelStyle"
+			 text="{section1Label}"/>
+	<s:Label id="section2LabelDisplay"
+			 styleName="labelStyle"
+			 text="{section2Label}"/>
+	<s:Label id="section3LabelDisplay"
+			 styleName="labelStyle"
+			 text="{section3Label}"/>
+	<s:Label id="footnoteLabelDisplay"
+			 textAlign="right"
+			 styleName="labelStyle"
+			 text="{footnoteLabel}"/>
+
+</s:Group>

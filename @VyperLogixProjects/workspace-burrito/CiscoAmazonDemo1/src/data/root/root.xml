@@ -1,0 +1,21 @@
+<root>
+	<tabs>
+		<tab name="tab1" title="Tab 1">
+			<images>
+				<image source="tab1/#1.png" play="tab1/261.mp3"></image>
+				<image source="tab1/#2.jpg"></image>
+				<image source="tab1/#3.png" play="tab1/262.mp3"></image>
+			</images>
+		</tab>
+		<tab name="tab2" title="Tab 2">
+		</tab>
+		<tab name="tab3" title="Tab 3">
+		</tab>
+		<tab name="tab4" title="Tab 4">
+		</tab>
+		<tab name="tab5" title="Tab 5">
+		</tab>
+		<tab name="tab6" title="Tab 6">
+		</tab>
+	</tabs>
+</root>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:fc="http://ns.adobe.com/flashcatalyst/2009"
+		 width="192.347" height="96" fc:resizable="true">
+	<s:Path x="-0.347" y="0" winding="nonZero" data="M 191.347 82.5 C 191.347 89.127 186.474 95 179.847 95 L 26.847 95 C 20.22 95 14.347 89.127 14.347 82.5 L 14.347 33.733 L 1.865 25.648 L 14.347 17.878 L 14.347 12.5 C 14.347 5.873 20.22 1 26.847 1 L 179.847 1 C 186.474 1 191.347 5.873 191.347 12.5 L 191.347 82.5 Z">
+		<s:fill>
+			<s:LinearGradient x="96.606" y="2.328" scaleX="91.3468" rotation="90">
+				<s:GradientEntry ratio="0" color="#878B88"/>
+				<s:GradientEntry ratio="0.500826" color="#484848"/>
+				<s:GradientEntry ratio="0.549249" color="#3F3F3F"/>
+				<s:GradientEntry ratio="1" color="#0B090D"/>
+			</s:LinearGradient>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke weight="2" caps="none" joints="miter" miterLimit="10" color="#515151"/>
+		</s:stroke>
+	</s:Path>
+	<s:Rect x="15" y="2" alpha="0.07" width="175" height="48" radiusX="11.7304" radiusY="10.2858">
+		<s:fill>
+			<s:SolidColor color="#FFFFFF"/>
+		</s:fill>
+	</s:Rect>
+</s:Group>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="955" minHeight="600">
+	<fx:Style source="styles.css"/>
+	
+	<fx:Script>
+		<![CDATA[
+			protected function canvas1_mouseDownHandler(event:MouseEvent):void {
+				var panel:Panel = event.currentTarget as Panel
+				trace('(canvas1_mouseDownHandler).1 --> startDrag()');
+				panel.startDrag();
+			}
+			
+			protected function canvas1_mouseUpHandler(event:MouseEvent):void {
+				var panel:Panel = event.currentTarget as Panel
+				trace('(canvas1_mouseUpHandler).1 --> stopDrag()');
+				panel.stopDrag();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Panel id="canvas1" x="0" y="0" width="100%" height="100" styleName="Canvas1"
+			 mouseDown="canvas1_mouseDownHandler(event)" mouseUp="canvas1_mouseUpHandler(event)"
+			 title="(+1+)">
+		<s:HGroup width="100%" height="100%" horizontalAlign="center"
+				  verticalAlign="middle">
+			<s:Label text=""/>
+		</s:HGroup>
+	</s:Panel>
+	<s:Panel id="canvas2" x="0" y="100" width="100%" height="100" title="(+2+)" styleName="Canvas2" mouseDown="canvas1_mouseDownHandler(event)" mouseUp="canvas1_mouseUpHandler(event)">
+		<s:HGroup width="100%" height="100%" horizontalAlign="center"
+				  verticalAlign="middle">
+			<s:Label text=""/>
+		</s:HGroup>
+	</s:Panel>
+</s:Application>
